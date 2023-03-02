@@ -18,11 +18,6 @@ fmt:
 	@echo "Running Cargo fmt..."
 	@cargo fmt --all -- --check
 
-.PHONY: audit
-audit:
-	@echo "Running Cargo audit..."
-	@cargo audit
-
 .PHONY: build
 build:
 	@echo "Running Cargo build..."
@@ -31,7 +26,7 @@ build:
 .PHONY: doc
 doc:
 	@echo "Running Cargo doc..."
-	@cargo doc --all --all-features --all-targets
+	@RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
 
 .PHONY: clean
 clean:
@@ -39,4 +34,7 @@ clean:
 	@cargo clean
 
 .PHONY: all
-all: check test clippy fmt audit build doc
+all: check test clippy fmt build doc
+
+.PHONY: ci-local
+ci-local: all
