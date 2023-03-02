@@ -1,13 +1,11 @@
-name: Rust Graph SDK CI
+name: Verify PR
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  build:
+  build-test-rust-core:
     runs-on: ubuntu-latest
 
     steps:
