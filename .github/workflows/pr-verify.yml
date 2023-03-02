@@ -8,8 +8,6 @@ on:
       - main
 
 env:
-  BIN_DIR: target/release
-  RUST_TOOLCHAIN: nightly-2022-09-22 # Update this when updating the Rust toolchain
 
 jobs:
   verify:
@@ -39,11 +37,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: ${{env.RUST_TOOLCHAIN}}
-          override: true
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
       
       - name: Cargo test
         run: make test
@@ -57,11 +57,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: ${{env.RUST_TOOLCHAIN}}
-          override: true
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
       
       - name: Cargo fmt
         run: make fmt
@@ -75,11 +77,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: ${{env.RUST_TOOLCHAIN}}
-          override: true
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
       
       - name: Cargo clippy
         run: make clippy
@@ -93,11 +97,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: ${{env.RUST_TOOLCHAIN}}
-          override: true
-      
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
       - name: Cargo build
         run: make build
