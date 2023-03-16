@@ -1,0 +1,22 @@
+{
+  "type": "record",
+  "name": "PublicKey",
+  "namespace": "org.dsnp",
+  "fields": [
+    {
+      "name": "publicKey",
+      "doc": "Multicodec public key",
+      "type": "bytes"
+    },
+    {
+      "name": "keyId",
+      "type": "long",
+      "doc": "User-Assigned Key Identifier"
+    },
+    {
+      "name": "revokedAsOf",
+      "type": "long",
+      "doc": "Unix epoch seconds"
+    }
+  ]
+}
