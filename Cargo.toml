@@ -1,0 +1,17 @@
+[workspace]
+members = [
+    "core",
+]
+
+default-members = [
+    "core",
+]
+
+[profile.release]
+panic = "unwind"
+
+[profile.production]
+inherits = "release"
+lto = true
+codegen-units = 1
+strip = true

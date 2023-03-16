@@ -1,0 +1,16 @@
+[package]
+name = "graph-sdk-core"
+edition = "2021"
+homepage = "https://spec.dsnp.org"
+license = "Apache-2.0"
+publish = false
+repository = "https://github.com/libertyDSNP/graph-sdk/"
+version = "0.0.0"
+
+[dependencies]
+wasm-bindgen = {version = "0.2.63", optional = true}
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+
+[features]
+wasm = ["wasm-bindgen", "serde"]
