@@ -17,8 +17,9 @@ impl CompressionBehavior for DeflateCompression {
 	}
 
 	fn decompress(data: &[u8]) -> Result<Vec<u8>> {
-		Ok(decompress_to_vec(data)
-			.map_err(|e| Error::msg(format!("failed to decompress {:?}", e.status)))?)
+		let val = decompress_to_vec(data)
+			.map_err(|e| Error::msg(format!("failed to decompress {:?}", e.status)))?;
+		Ok(val)
 	}
 }
 
