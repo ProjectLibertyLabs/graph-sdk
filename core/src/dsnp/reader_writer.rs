@@ -10,6 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 
+/// A utility to read/write data from and to Frequency chain specific implementation of DSNP
 pub struct FrequencyReaderWriter;
 
 impl FrequencyReaderWriter {

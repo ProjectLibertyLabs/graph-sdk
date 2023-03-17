@@ -6,14 +6,16 @@ use std::{cmp, error::Error, fmt};
 
 /// Prid len in bytes
 const PRID_LEN_IN_BYTES: usize = 8;
-/// Inner Graph type
+/// Inner Graph type used in both private and public graphs
 pub type DsnpInnerGraph = Vec<DsnpGraphEdge>;
-/// Pseudonymous Relationship Identifier
+/// `Pseudonymous Relationship Identifier` which allows private connection verification
+/// Wrapping in its own Struct allows easier serialization and deserialization
 #[derive(Debug, Clone, PartialEq)]
 pub struct DsnpPrid {
 	inner: Vec<u8>,
 }
 
+/// Public key defined in DSNP used for encryption/decryption in private graph
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpPublicKey {
 	/// Multi-codec public key
@@ -30,6 +32,7 @@ pub struct DsnpPublicKey {
 	pub revoked_as_of: u64,
 }
 
+/// Public Graph Chunk defined in DSNP to store compressed public graph
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpUserPublicGraphChunk {
 	#[serde(rename = "compressedPublicGraph")]
@@ -37,6 +40,7 @@ pub struct DsnpUserPublicGraphChunk {
 	pub compressed_public_graph: Vec<u8>,
 }
 
+/// Graph Edge defined in DSNP to store each connection
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship
@@ -47,13 +51,14 @@ pub struct DsnpGraphEdge {
 	pub since: u64,
 }
 
+/// Private Graph Chunk defined in DSNP to store compressed and encrypted private graph
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpUserPrivateGraphChunk {
 	/// User-Assigned Key Identifier
 	#[serde(rename = "keyId")]
 	pub key_id: u64,
 
-	/// User-Assigned Key Identifier
+	/// list of `Pseudonymous Relationship Identifier`s associated with this private graph chunk
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
 
@@ -64,6 +69,7 @@ pub struct DsnpUserPrivateGraphChunk {
 }
 
 impl DsnpPrid {
+	/// Construct a new `DsnpPrid`
 	pub fn new(data: &[u8]) -> Self {
 		let d = data.to_vec();
 		assert_eq!(d.len(), PRID_LEN_IN_BYTES, "Prid size should be {} bytes", PRID_LEN_IN_BYTES);
@@ -71,6 +77,7 @@ impl DsnpPrid {
 	}
 }
 
+/// Serialization of avro fixed type
 impl Serialize for DsnpPrid {
 	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
 	where
@@ -80,6 +87,7 @@ impl Serialize for DsnpPrid {
 	}
 }
 
+/// Deserialization of avro fixed type
 impl<'de> Deserialize<'de> for DsnpPrid {
 	fn deserialize<D>(deserializer: D) -> Result<DsnpPrid, D::Error>
 	where
@@ -89,6 +97,7 @@ impl<'de> Deserialize<'de> for DsnpPrid {
 	}
 }
 
+/// Used in deserialization of fixed type
 struct PridVisitor;
 
 impl<'de> Visitor<'de> for PridVisitor {

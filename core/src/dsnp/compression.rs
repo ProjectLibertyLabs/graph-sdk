@@ -4,11 +4,16 @@ use miniz_oxide::{
 	inflate::decompress_to_vec,
 };
 
+/// Common trait for different compression algorithms
 pub trait CompressionBehavior {
+	/// compress the input
 	fn compress(obj: &[u8]) -> Result<Vec<u8>>;
+
+	/// decompress the input
 	fn decompress(data: &[u8]) -> Result<Vec<u8>>;
 }
 
+/// Deflate Compression algorithm
 pub struct DeflateCompression;
 
 impl CompressionBehavior for DeflateCompression {

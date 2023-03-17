@@ -17,6 +17,7 @@ lazy_static! {
 		Schema::parse_str(include_str!("../../../schemas/user_private_graph_chunk.json")).unwrap();
 }
 
+/// A utility to handle serialization and deserialization on specified schemas
 pub struct SchemaHandler;
 
 impl SchemaHandler {
