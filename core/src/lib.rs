@@ -1,2 +1,2 @@
-mod schema;
+mod dsnp;
 mod types;
