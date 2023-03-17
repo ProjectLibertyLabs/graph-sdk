@@ -2,25 +2,19 @@ use crate::dsnp::dsnp_types::{
 	DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
 };
 use anyhow::Result;
-use apache_avro::{
-	from_avro_datum, from_value, to_avro_datum, to_value, Schema,
-};
+use apache_avro::{from_avro_datum, from_value, to_avro_datum, to_value, Schema};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 
 lazy_static! {
 	static ref PUBLIC_KEY_SCHEMA: Schema =
-		Schema::parse_str(include_str!("../../../schemas/public_key_schema.json"))
-			.expect("public_key_schema.json is not avro compatible");
+		Schema::parse_str(include_str!("../../../schemas/public_key_schema.json")).unwrap();
 	static ref PUBLIC_GRAPH_CHUNK_SCHEMA: Schema =
-		Schema::parse_str(include_str!("../../../schemas/user_public_graph_chunk.json"))
-			.expect("user_public_graph_chunk.json is not avro compatible");
+		Schema::parse_str(include_str!("../../../schemas/user_public_graph_chunk.json")).unwrap();
 	static ref PUBLIC_GRAPH_SCHEMA: Schema =
-		Schema::parse_str(include_str!("../../../schemas/public_graph.json"))
-			.expect("public_graph.json is not avro compatible");
+		Schema::parse_str(include_str!("../../../schemas/public_graph.json")).unwrap();
 	static ref PRIVATE_GRAPH_CHUNK_SCHEMA: Schema =
-		Schema::parse_str(include_str!("../../../schemas/user_private_graph_chunk.json"))
-			.expect("user_private_graph_chunk.json is not avro compatible");
+		Schema::parse_str(include_str!("../../../schemas/user_private_graph_chunk.json")).unwrap();
 }
 
 pub struct SchemaHandler;

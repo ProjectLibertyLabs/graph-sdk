@@ -59,3 +59,83 @@ impl FrequencyReaderWriter {
 		})
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use crate::dsnp::dsnp_types::{DsnpGraphEdge, DsnpPrid};
+
+	#[test]
+	fn public_graph_read_and_write_using_valid_input_should_succeed() {
+		let inner_graph: DsnpInnerGraph = vec![
+			DsnpGraphEdge { user_id: 7, since: 12638718 },
+			DsnpGraphEdge { user_id: 167282, since: 28638718 },
+		];
+
+		let serialized = FrequencyReaderWriter::write_public_graph(&inner_graph)
+			.expect("serialization should work");
+		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized)
+			.expect("deserialization should work");
+
+		assert_eq!(deserialized, inner_graph);
+	}
+
+	#[test]
+	fn public_graph_read_using_invalid_input_should_fail() {
+		let inner_graph: DsnpInnerGraph = vec![
+			DsnpGraphEdge { user_id: 7, since: 12638718 },
+			DsnpGraphEdge { user_id: 167282, since: 28638718 },
+		];
+
+		let mut serialized = FrequencyReaderWriter::write_public_graph(&inner_graph)
+			.expect("serialization should work");
+		serialized.pop(); // corrupting the input
+		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized);
+
+		assert!(deserialized.is_err());
+	}
+
+	#[test]
+	fn private_graph_read_and_write_using_valid_input_should_succeed() {
+		let private_graph = PrivateGraphChunk {
+			inner_graph: vec![
+				DsnpGraphEdge { user_id: 7, since: 12638718 },
+				DsnpGraphEdge { user_id: 167282, since: 28638718 },
+			],
+			key_id: 26783,
+			prids: vec![
+				DsnpPrid::new(27737272u64.to_le_bytes().as_slice()),
+				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
+			],
+		};
+
+		let serialized = FrequencyReaderWriter::write_private_graph(&private_graph)
+			.expect("serialization should work");
+		let deserialized = FrequencyReaderWriter::read_private_graph(&serialized)
+			.expect("deserialization should work");
+
+		assert_eq!(deserialized, private_graph);
+	}
+
+	#[test]
+	fn private_graph_read_using_invalid_input_should_fail() {
+		let private_graph = PrivateGraphChunk {
+			inner_graph: vec![
+				DsnpGraphEdge { user_id: 7, since: 12638718 },
+				DsnpGraphEdge { user_id: 167282, since: 28638718 },
+			],
+			key_id: 26783,
+			prids: vec![
+				DsnpPrid::new(27737272u64.to_le_bytes().as_slice()),
+				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
+			],
+		};
+
+		let mut serialized = FrequencyReaderWriter::write_private_graph(&private_graph)
+			.expect("serialization should work");
+		serialized.pop(); // corrupting the input
+		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized);
+
+		assert!(deserialized.is_err());
+	}
+}
