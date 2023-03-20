@@ -10,33 +10,39 @@ use crate::{
 };
 use anyhow::Result;
 
-/// A utility to read/write data from and to Frequency chain specific implementation of DSNP
-pub struct FrequencyReaderWriter;
+pub trait DsnpReader {
+	/// reading public key from binary
+	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey>;
+	/// reading public graph from binary
+	fn read_public_graph(data: &[u8]) -> Result<DsnpInnerGraph>;
+	/// reading private graph from binary
+	fn read_private_graph(data: &[u8]) -> Result<PrivateGraphChunk>;
+}
 
-impl FrequencyReaderWriter {
-	pub fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
+pub trait DsnpWriter {
+	/// write public key to binary
+	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>>;
+	/// write public graph to binary
+	fn write_public_graph(inner: &DsnpInnerGraph) -> Result<Vec<u8>>;
+	/// write private graph to binary
+	fn write_private_graph(graph: &PrivateGraphChunk) -> Result<Vec<u8>>;
+}
+
+/// A utility to read/write data from and to Frequency chain specific implementation of DSNP
+pub struct Frequency;
+
+impl DsnpReader for Frequency {
+	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
 
-	pub fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
-		SchemaHandler::write_public_key(key)
-	}
-
-	pub fn read_public_graph(data: &[u8]) -> Result<DsnpInnerGraph> {
+	fn read_public_graph(data: &[u8]) -> Result<DsnpInnerGraph> {
 		let chunk = SchemaHandler::read_public_graph_chunk(data)?;
 		let decompressed = DeflateCompression::decompress(&chunk.compressed_public_graph)?;
 		SchemaHandler::read_inner_graph(&decompressed)
 	}
 
-	pub fn write_public_graph(inner: &DsnpInnerGraph) -> Result<Vec<u8>> {
-		let serialized = SchemaHandler::write_inner_graph(inner)?;
-		let compressed_public_graph = DeflateCompression::compress(&serialized)?;
-		SchemaHandler::write_public_graph_chunk(&DsnpUserPublicGraphChunk {
-			compressed_public_graph,
-		})
-	}
-
-	pub fn read_private_graph(data: &[u8]) -> Result<PrivateGraphChunk> {
+	fn read_private_graph(data: &[u8]) -> Result<PrivateGraphChunk> {
 		let chunk = SchemaHandler::read_private_graph_chunk(data)?;
 		// todo decrypt
 		let decrypted_compressed = chunk.encrypted_compressed_private_graph;
@@ -47,8 +53,22 @@ impl FrequencyReaderWriter {
 			inner_graph: SchemaHandler::read_inner_graph(&decompressed)?,
 		})
 	}
+}
 
-	pub fn write_private_graph(graph: &PrivateGraphChunk) -> Result<Vec<u8>> {
+impl DsnpWriter for Frequency {
+	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
+		SchemaHandler::write_public_key(key)
+	}
+
+	fn write_public_graph(inner: &DsnpInnerGraph) -> Result<Vec<u8>> {
+		let serialized = SchemaHandler::write_inner_graph(inner)?;
+		let compressed_public_graph = DeflateCompression::compress(&serialized)?;
+		SchemaHandler::write_public_graph_chunk(&DsnpUserPublicGraphChunk {
+			compressed_public_graph,
+		})
+	}
+
+	fn write_private_graph(graph: &PrivateGraphChunk) -> Result<Vec<u8>> {
 		let inner_serialized = SchemaHandler::write_inner_graph(&graph.inner_graph)?;
 		let compressed_inner = DeflateCompression::compress(&inner_serialized)?;
 		// todo encrypt
@@ -73,10 +93,10 @@ mod tests {
 			DsnpGraphEdge { user_id: 167282, since: 28638718 },
 		];
 
-		let serialized = FrequencyReaderWriter::write_public_graph(&inner_graph)
-			.expect("serialization should work");
-		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized)
-			.expect("deserialization should work");
+		let serialized =
+			Frequency::write_public_graph(&inner_graph).expect("serialization should work");
+		let deserialized =
+			Frequency::read_public_graph(&serialized).expect("deserialization should work");
 
 		assert_eq!(deserialized, inner_graph);
 	}
@@ -88,10 +108,10 @@ mod tests {
 			DsnpGraphEdge { user_id: 167282, since: 28638718 },
 		];
 
-		let mut serialized = FrequencyReaderWriter::write_public_graph(&inner_graph)
-			.expect("serialization should work");
+		let mut serialized =
+			Frequency::write_public_graph(&inner_graph).expect("serialization should work");
 		serialized.pop(); // corrupting the input
-		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized);
+		let deserialized = Frequency::read_public_graph(&serialized);
 
 		assert!(deserialized.is_err());
 	}
@@ -110,10 +130,10 @@ mod tests {
 			],
 		};
 
-		let serialized = FrequencyReaderWriter::write_private_graph(&private_graph)
-			.expect("serialization should work");
-		let deserialized = FrequencyReaderWriter::read_private_graph(&serialized)
-			.expect("deserialization should work");
+		let serialized =
+			Frequency::write_private_graph(&private_graph).expect("serialization should work");
+		let deserialized =
+			Frequency::read_private_graph(&serialized).expect("deserialization should work");
 
 		assert_eq!(deserialized, private_graph);
 	}
@@ -132,10 +152,10 @@ mod tests {
 			],
 		};
 
-		let mut serialized = FrequencyReaderWriter::write_private_graph(&private_graph)
-			.expect("serialization should work");
+		let mut serialized =
+			Frequency::write_private_graph(&private_graph).expect("serialization should work");
 		serialized.pop(); // corrupting the input
-		let deserialized = FrequencyReaderWriter::read_public_graph(&serialized);
+		let deserialized = Frequency::read_public_graph(&serialized);
 
 		assert!(deserialized.is_err());
 	}
