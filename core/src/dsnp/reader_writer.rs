@@ -10,6 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 
+/// DSNP compatible reader
 pub trait DsnpReader {
 	/// reading public key from binary
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey>;
@@ -19,6 +20,7 @@ pub trait DsnpReader {
 	fn read_private_graph(data: &[u8]) -> Result<PrivateGraphChunk>;
 }
 
+/// DSNP compatible writer
 pub trait DsnpWriter {
 	/// write public key to binary
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>>;
