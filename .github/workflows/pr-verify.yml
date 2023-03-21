@@ -114,7 +114,7 @@ jobs:
         run: make build
 
   generate-docs:
-    name: Generate frequency handles rust docs
+    name: Generate graph sdk rust docs
     runs-on: ubuntu-latest
     needs: [verify, test, lint, clippy, build]
     steps:
