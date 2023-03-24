@@ -261,6 +261,8 @@ dependencies = [
  "thiserror",
  "wasm-bindgen",
  "x25519-dalek",
+ "xsalsa20poly1305",
+ "zeroize",
 ]
 
 [[package]]
