@@ -197,7 +197,7 @@ mod tests {
 		let mut rng = rand::thread_rng();
 
 		let connections = 300;
-		let page_size = 1 << 11;
+		let page_size = 1 << 10;
 		let mut inner_graph: DsnpInnerGraph = vec![];
 		let mut prids = vec![];
 		for i in 0..connections {
@@ -229,7 +229,7 @@ mod tests {
 			private_serialized.len()
 		);
 
-		assert_eq!((public_serialized.len() - 1) / page_size + 1, 2);
-		assert_eq!((private_serialized.len() - 1) / page_size + 1, 3);
+		assert_eq!((public_serialized.len() - 1) / page_size + 1, 4);
+		assert_eq!((private_serialized.len() - 1) / page_size + 1, 6);
 	}
 }

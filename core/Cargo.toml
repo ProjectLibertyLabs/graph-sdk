@@ -17,6 +17,9 @@ thiserror = "1.0.39"
 anyhow = "1.0.69"
 miniz_oxide = "0.7.1"
 crypto_box = { version = "0.8.2", features = ["seal"] }
+x25519-dalek = "1"
+hkdf = "0.12.3"
+sha2 = { version = "0.10.6" }
 
 [dev-dependencies]
 rand = "0.8.5"

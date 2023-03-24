@@ -60,7 +60,7 @@ mod tests {
 
 		let secret_key = SecretKey::generate(&mut OsRng);
 		let mut encrypted = SealBox::encrypt(&plain_data, &secret_key.public_key()).unwrap();
-		encrypted[1] = 9; // corrupting data
+		encrypted[1] = encrypted[1].saturating_add(1); // corrupting data
 		let decrypted = SealBox::decrypt(&encrypted, &secret_key);
 
 		assert!(decrypted.is_err());
