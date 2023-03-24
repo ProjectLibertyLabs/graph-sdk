@@ -1,37 +1,48 @@
 use crate::dsnp::dsnp_types::DsnpPrid;
+use anyhow::{Error, Result};
 use crypto_box::{aead::AeadInPlace, Nonce, PublicKey, SecretKey};
 use hkdf::Hkdf;
 use sha2::Sha256;
 use std::ops::Deref;
-use x25519_dalek::x25519;
+use x25519_dalek::StaticSecret;
 use xsalsa20poly1305::{KeyInit, XSalsa20Poly1305};
-use zeroize::{Zeroize, Zeroizing};
+use zeroize::Zeroizing;
 
 const PRI_CONTEXT: &[u8] = b"PRIdCtx0";
 struct PseudonymousRelationshipIdentifier;
 
 impl PseudonymousRelationshipIdentifier {
-	fn create(a: u64, b: u64, a_secret_key: &SecretKey, b_public_key: &PublicKey) -> DsnpPrid {
+	fn create(
+		a: u64,
+		b: u64,
+		a_secret_key: &SecretKey,
+		b_public_key: &PublicKey,
+	) -> Result<DsnpPrid> {
 		let id_b = b.to_le_bytes();
 
-		let mut root_shared =
-			Zeroizing::new(x25519(*a_secret_key.as_bytes(), *b_public_key.as_bytes()));
-		let hk = Hkdf::<Sha256>::new(Some(&id_b[..]), root_shared.as_slice());
+		// calculate shared secret
+		let root_shared = StaticSecret::from(*a_secret_key.as_bytes())
+			.diffie_hellman(&x25519_dalek::PublicKey::from(*b_public_key.as_bytes()));
+
+		// derive a new key form pri context
 		let mut derived_key = Zeroizing::new([0u8; 32]);
-		hk.expand(PRI_CONTEXT, derived_key.as_mut_slice()).unwrap();
-		root_shared.zeroize();
+		let hk = Hkdf::<Sha256>::new(Some(&id_b[..]), root_shared.as_bytes());
+		hk.expand(PRI_CONTEXT, derived_key.as_mut_slice())
+			.map_err(|e| Error::msg(format!("key derivation error {:?}", e)))?;
 
-		let salsa = XSalsa20Poly1305::new(derived_key.deref().into());
-
+		// setting nonce with `b` for encryption
 		let mut nonce = [0u8; 24];
 		nonce.copy_from_slice(&[&[0u8; 16], &id_b[..]].concat());
 		let nonce = Nonce::from(nonce);
 
-		let mut buffer = a.to_le_bytes();
-		salsa.encrypt_in_place_detached(&nonce, &[], &mut buffer).unwrap();
-		derived_key.zeroize();
+		// encrypting `a` using nonce and derived key
+		let mut result = a.to_le_bytes();
+		let salsa = XSalsa20Poly1305::new(derived_key.deref().into());
+		salsa
+			.encrypt_in_place_detached(&nonce, &[], &mut result)
+			.map_err(|e| Error::msg(format!("failed to encrypt detached {:?}", e)))?;
 
-		DsnpPrid::new(&buffer)
+		Ok(DsnpPrid::new(&result))
 	}
 }
 
@@ -52,13 +63,15 @@ mod tests {
 			b,
 			&secret_key_a,
 			&secret_key_b.public_key(),
-		);
+		)
+		.expect("should create pri");
 		let pri_a_to_b_2 = PseudonymousRelationshipIdentifier::create(
 			a,
 			b,
 			&secret_key_b,
 			&secret_key_a.public_key(),
-		);
+		)
+		.expect("should create pri");
 
 		println!("{:?}  {:?}", pri_a_to_b, pri_a_to_b_2);
 		assert_eq!(pri_a_to_b, pri_a_to_b_2);
