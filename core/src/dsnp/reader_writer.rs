@@ -11,9 +11,13 @@ use crate::{
 };
 use anyhow::Result;
 
-/// DSNP compatible reader
-pub trait DsnpReader {
+/// a base trait to define common associated types
+pub trait DsnpBase {
 	type Encryption: EncryptionBehavior;
+}
+
+/// DSNP compatible reader
+pub trait DsnpReader: DsnpBase {
 	/// reading public key from binary
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey>;
 	/// reading public graph from binary
@@ -26,8 +30,7 @@ pub trait DsnpReader {
 }
 
 /// DSNP compatible writer
-pub trait DsnpWriter {
-	type Encryption: EncryptionBehavior;
+pub trait DsnpWriter: DsnpBase {
 	/// write public key to binary
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>>;
 	/// write public graph to binary
@@ -42,11 +45,14 @@ pub trait DsnpWriter {
 /// A utility to read/write data from and to Frequency chain specific implementation of DSNP
 pub struct Frequency;
 
+/// DsnpBase implementation for Frequency
+impl DsnpBase for Frequency {
+	/// using SealBox for encryption and decryption
+	type Encryption = SealBox;
+}
+
 /// implementing DsnpReader for Frequency
 impl DsnpReader for Frequency {
-	/// using SealBox for encryption
-	type Encryption = SealBox;
-
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
@@ -75,9 +81,6 @@ impl DsnpReader for Frequency {
 
 /// implementing DsnpWriter for Frequency
 impl DsnpWriter for Frequency {
-	/// using SealBox for encryption
-	type Encryption = SealBox;
-
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
 		SchemaHandler::write_public_key(key)
 	}
