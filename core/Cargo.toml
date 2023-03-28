@@ -1,5 +1,5 @@
 [package]
-name = "graph-sdk-core"
+name = "dsnp-graph-core"
 edition = "2021"
 homepage = "https://spec.dsnp.org"
 license = "Apache-2.0"
