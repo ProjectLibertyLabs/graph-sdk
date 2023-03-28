@@ -16,6 +16,10 @@ lazy_static = "1.4.0"
 thiserror = "1.0.39"
 anyhow = "1.0.69"
 miniz_oxide = "0.7.1"
+crypto_box = { version = "0.8.2", features = ["seal"] }
+
+[dev-dependencies]
+rand = "0.8.5"
 
 [features]
 wasm = ["wasm-bindgen"]
