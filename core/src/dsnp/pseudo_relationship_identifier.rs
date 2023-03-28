@@ -32,7 +32,7 @@ impl PseudonymousRelationshipIdentifier {
 
 		// setting nonce with `b` for encryption
 		let mut nonce = [0u8; 24];
-		nonce.copy_from_slice(&[&[0u8; 16], &id_b[..]].concat());
+		nonce[16..].copy_from_slice(&id_b[..]);
 		let nonce = Nonce::from(nonce);
 
 		// encrypting `a` using nonce and derived key

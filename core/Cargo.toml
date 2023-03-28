@@ -21,7 +21,7 @@ x25519-dalek = "1"
 hkdf = "0.12.3"
 sha2 = { version = "0.10.6" }
 zeroize = "1.5.7"
-xsalsa20poly1305 = { version = "0.9", features = ["rand_core"], default-features = false}
+xsalsa20poly1305 = { version = "0.9", default-features = false}
 
 [dev-dependencies]
 rand = "0.8.5"
