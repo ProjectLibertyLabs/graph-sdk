@@ -4,6 +4,9 @@ use serde::{
 };
 use std::{cmp, error::Error, fmt};
 
+/// DSNP User Id
+pub type DsnpId = u64;
+
 /// Prid len in bytes
 const PRID_LEN_IN_BYTES: usize = 8;
 /// Inner Graph type used in both private and public graphs
