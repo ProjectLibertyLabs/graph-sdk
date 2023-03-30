@@ -1,4 +1,5 @@
-use crate::dsnp::dsnp_types::DsnpPrid;
+#![allow(dead_code)] // todo: remove after usage
+use crate::dsnp::dsnp_types::{DsnpId, DsnpPrid};
 use anyhow::{Error, Result};
 use crypto_box::{aead::AeadInPlace, Nonce, PublicKey, SecretKey};
 use hkdf::Hkdf;
@@ -13,8 +14,8 @@ struct PseudonymousRelationshipIdentifier;
 
 impl PseudonymousRelationshipIdentifier {
 	fn create(
-		a: u64,
-		b: u64,
+		a: DsnpId,
+		b: DsnpId,
 		a_secret_key: &SecretKey,
 		b_public_key: &PublicKey,
 	) -> Result<DsnpPrid> {
@@ -32,7 +33,7 @@ impl PseudonymousRelationshipIdentifier {
 
 		// setting nonce with `b` for encryption
 		let mut nonce = [0u8; 24];
-		nonce[16..].copy_from_slice(&id_b[..]);
+		nonce[..8].copy_from_slice(&id_b[..]);
 		let nonce = Nonce::from(nonce);
 
 		// encrypting `a` using nonce and derived key

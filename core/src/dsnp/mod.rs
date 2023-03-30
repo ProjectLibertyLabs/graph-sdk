@@ -1,8 +1,7 @@
-mod compression;
+pub mod api_types;
+pub mod compression;
 pub mod dsnp_types;
-mod encryption;
-#[allow(dead_code)] // todo: remove after usage
+pub mod encryption;
 mod pseudo_relationship_identifier;
-#[allow(dead_code)] // todo: remove after usage
-mod reader_writer;
-mod schema;
+pub mod reader_writer;
+pub mod schema;

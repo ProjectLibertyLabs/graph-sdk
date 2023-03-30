@@ -213,6 +213,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "dsnp-graph-core"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "apache-avro",
+ "crypto_box",
+ "hkdf",
+ "lazy_static",
+ "miniz_oxide",
+ "rand",
+ "serde",
+ "serde_bytes",
+ "sha2",
+ "thiserror",
+ "wasm-bindgen",
+ "x25519-dalek",
+ "xsalsa20poly1305",
+ "zeroize",
+]
+
+[[package]]
 name = "generic-array"
 version = "0.14.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -242,27 +263,6 @@ dependencies = [
  "cfg-if",
  "libc",
  "wasi 0.11.0+wasi-snapshot-preview1",
-]
-
-[[package]]
-name = "graph-sdk-core"
-version = "0.0.0"
-dependencies = [
- "anyhow",
- "apache-avro",
- "crypto_box",
- "hkdf",
- "lazy_static",
- "miniz_oxide",
- "rand",
- "serde",
- "serde_bytes",
- "sha2",
- "thiserror",
- "wasm-bindgen",
- "x25519-dalek",
- "xsalsa20poly1305",
- "zeroize",
 ]
 
 [[package]]
