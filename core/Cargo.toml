@@ -16,12 +16,8 @@ lazy_static = "1.4.0"
 thiserror = "1.0.39"
 anyhow = "1.0.69"
 miniz_oxide = "0.7.1"
-crypto_box = { version = "0.8.2", features = ["seal"] }
-x25519-dalek = "1"
-hkdf = "0.12.3"
-sha2 = { version = "0.10.6" }
+dryoc = "0.4.3"
 zeroize = "1.5.7"
-xsalsa20poly1305 = { version = "0.9", default-features = false}
 
 [dev-dependencies]
 rand = "0.8.5"

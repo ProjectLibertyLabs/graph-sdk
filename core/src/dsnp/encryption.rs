@@ -1,5 +1,10 @@
 use anyhow::{Error, Result as AnyResult};
-use crypto_box::aead::OsRng;
+use dryoc::{
+	classic::crypto_box::{crypto_box_seal, crypto_box_seal_open},
+	constants::CRYPTO_BOX_SEALBYTES,
+	dryocbox::{ByteArray, PublicKey},
+	keypair::StackKeyPair,
+};
 
 /// Common trait for different encryption algorithms
 pub trait EncryptionBehavior {
@@ -19,26 +24,32 @@ pub trait EncryptionBehavior {
 pub struct SealBox;
 
 impl EncryptionBehavior for SealBox {
-	type EncryptionInput = crypto_box::PublicKey;
-	type DecryptionInput = crypto_box::SecretKey;
+	type EncryptionInput = PublicKey;
+	type DecryptionInput = StackKeyPair;
 
 	fn encrypt(plain_data: &[u8], input: &Self::EncryptionInput) -> AnyResult<Vec<u8>> {
-		let encrypted = crypto_box::seal(&mut OsRng, input, plain_data)
+		let mut encrypted = vec![0u8; plain_data.len().saturating_add(CRYPTO_BOX_SEALBYTES)];
+		crypto_box_seal(&mut encrypted, plain_data, input.as_array())
 			.map_err(|e| Error::msg(format!("failed to encrypt {:?}", e)))?;
 		Ok(encrypted)
 	}
 
 	fn decrypt(encrypted_data: &[u8], input: &Self::DecryptionInput) -> AnyResult<Vec<u8>> {
-		let encrypted = crypto_box::seal_open(input, encrypted_data)
-			.map_err(|e| Error::msg(format!("failed to decrypt {:?}", e)))?;
-		Ok(encrypted)
+		let mut plain = vec![0u8; encrypted_data.len().saturating_sub(CRYPTO_BOX_SEALBYTES)];
+		crypto_box_seal_open(
+			plain.as_mut_slice(),
+			encrypted_data,
+			input.public_key.as_array(),
+			input.secret_key.as_array(),
+		)
+		.map_err(|e| Error::msg(format!("failed to decrypt {:?}", e)))?;
+		Ok(plain)
 	}
 }
 
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crypto_box::SecretKey;
 
 	#[test]
 	fn sealbox_should_encrypt_and_decrypt_successfully() {
@@ -47,9 +58,9 @@ mod tests {
 			83, 98, 0, 10, 234, 88, 23, 54, 23, 23, 109, 198, 111, 70, 2, 89,
 		];
 
-		let secret_key = SecretKey::generate(&mut OsRng);
-		let encrypted = SealBox::encrypt(&plain_data, &secret_key.public_key()).unwrap();
-		let decrypted = SealBox::decrypt(&encrypted, &secret_key).unwrap();
+		let key_pair = StackKeyPair::gen();
+		let encrypted = SealBox::encrypt(&plain_data, &key_pair.public_key).unwrap();
+		let decrypted = SealBox::decrypt(&encrypted, &key_pair).unwrap();
 
 		assert_eq!(decrypted, plain_data);
 	}
@@ -58,10 +69,10 @@ mod tests {
 	fn sealbox_decrypting_corrupted_data_should_fail() {
 		let plain_data = vec![83, 98, 0, 10, 234, 88, 23, 54, 23, 23, 109, 198, 111, 70, 2, 89];
 
-		let secret_key = SecretKey::generate(&mut OsRng);
-		let mut encrypted = SealBox::encrypt(&plain_data, &secret_key.public_key()).unwrap();
+		let key_pair = StackKeyPair::gen();
+		let mut encrypted = SealBox::encrypt(&plain_data, &key_pair.public_key).unwrap();
 		encrypted[1] = encrypted[1].saturating_add(1); // corrupting data
-		let decrypted = SealBox::decrypt(&encrypted, &secret_key);
+		let decrypted = SealBox::decrypt(&encrypted, &key_pair);
 
 		assert!(decrypted.is_err());
 	}
