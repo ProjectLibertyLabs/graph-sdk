@@ -1,5 +1,5 @@
 #![allow(dead_code)] // todo: remove after usage
-use crate::dsnp::dsnp_types::{DsnpId, DsnpPrid};
+use crate::dsnp::dsnp_types::{DsnpPrid, DsnpUserId};
 use anyhow::{Error, Result};
 use dryoc::{
 	classic::{
@@ -20,8 +20,8 @@ trait PridProvider {
 	type DsnpPrid;
 
 	fn create(
-		a: DsnpId,
-		b: DsnpId,
+		a: DsnpUserId,
+		b: DsnpUserId,
 		a_secret_key: &SecretKey,
 		b_public_key: &PublicKey,
 	) -> Result<Self::DsnpPrid>;
@@ -31,8 +31,8 @@ impl PridProvider for DsnpPrid {
 	type DsnpPrid = DsnpPrid;
 
 	fn create(
-		a: DsnpId,
-		b: DsnpId,
+		a: DsnpUserId,
+		b: DsnpUserId,
 		a_secret_key: &SecretKey,
 		b_public_key: &PublicKey,
 	) -> Result<Self::DsnpPrid> {
