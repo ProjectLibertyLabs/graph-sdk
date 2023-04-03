@@ -5,7 +5,7 @@ use serde::{
 use std::{cmp, error::Error, fmt};
 
 /// DSNP User Id
-pub type DsnpId = u64;
+pub type DsnpUserId = u64;
 
 /// Prid len in bytes
 const PRID_LEN_IN_BYTES: usize = 8;
@@ -48,7 +48,7 @@ pub struct DsnpUserPublicGraphChunk {
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship
 	#[serde(rename = "userId")]
-	pub user_id: u64,
+	pub user_id: DsnpUserId,
 
 	/// Unix epoch in seconds when this relationship was originally established rounded to the nearest 1000
 	pub since: u64,
