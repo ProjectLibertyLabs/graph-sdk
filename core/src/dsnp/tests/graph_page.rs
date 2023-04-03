@@ -9,9 +9,9 @@ use crate::{
 };
 
 /// Create test data for a single page
-fn create_test_ids_and_page() -> (Vec<DsnpId>, GraphPage) {
-	let ids: Vec<DsnpId> =
-		vec![1u64, 2u64, 3u64].to_vec().iter().map(|id| DsnpId::from(*id)).collect();
+fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
+	let ids: Vec<DsnpUserId> =
+		vec![1u64, 2u64, 3u64].to_vec().iter().map(|id| DsnpUserId::from(*id)).collect();
 	let page = create_page(&ids);
 	(ids, page)
 }
@@ -24,8 +24,8 @@ fn create_test_graph() -> Graph {
 	let mut graph = Graph::new();
 	let mut pages = Vec::<GraphPage>::new();
 	for _ in 0..num_pages {
-		let ids: Vec<DsnpId> =
-			(curr_id..(curr_id + ids_per_page)).map(|id| DsnpId::from(id)).collect();
+		let ids: Vec<DsnpUserId> =
+			(curr_id..(curr_id + ids_per_page)).map(|id| DsnpUserId::from(id)).collect();
 		let page = create_page(&ids);
 		pages.push(page);
 		curr_id += ids_per_page;
@@ -67,14 +67,14 @@ mod page_tests {
 	fn page_contains_finds_item() {
 		let (ids, page) = create_test_ids_and_page();
 		for id in ids {
-			assert_eq!(page.contains(&id as &DsnpId), true);
+			assert_eq!(page.contains(&id as &DsnpUserId), true);
 		}
 	}
 
 	#[test]
 	fn page_contains_does_not_find_missing_items() {
 		let (_, page) = create_test_ids_and_page();
-		assert_eq!(page.contains(&(4 as DsnpId)), false);
+		assert_eq!(page.contains(&(4 as DsnpUserId)), false);
 	}
 
 	#[test]
@@ -91,7 +91,7 @@ mod page_tests {
 
 	#[test]
 	fn add_connection_succeeds() {
-		let id: DsnpId = 1;
+		let id: DsnpUserId = 1;
 		let mut page = GraphPage::new();
 
 		assert_eq!(page.add_connection(&id).is_ok(), true);
@@ -209,10 +209,10 @@ mod graph_tests {
 	#[test]
 	fn graph_iterator_should_iterate_over_all_connections() {
 		let graph = create_test_graph();
-		let mut test_connections: Vec<DsnpId> = (0..25).map(|i| i as DsnpId).collect();
+		let mut test_connections: Vec<DsnpUserId> = (0..25).map(|i| i as DsnpUserId).collect();
 		test_connections.sort();
 
-		let mut graph_connections: Vec<DsnpId> =
+		let mut graph_connections: Vec<DsnpUserId> =
 			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
 		graph_connections.sort();
 		assert_eq!(test_connections, graph_connections);

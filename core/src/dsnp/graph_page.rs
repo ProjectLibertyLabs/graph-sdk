@@ -60,7 +60,7 @@ impl GraphPage {
 	}
 
 	/// Tester to check if the page contains a connection to a particular DsnpUserId
-	pub fn contains(&self, connection_id: &DsnpId) -> bool {
+	pub fn contains(&self, connection_id: &DsnpUserId) -> bool {
 		self.connections.iter().any(|c| c.user_id == *connection_id)
 	}
 
@@ -70,7 +70,7 @@ impl GraphPage {
 	}
 
 	/// Add a connection to the page. Fail if the connection is already present.
-	pub fn add_connection(&mut self, connection_id: &DsnpId) -> Result<(), &str> {
+	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> Result<(), &str> {
 		if self.contains(connection_id) {
 			return Err("Add of duplicate connection detected")
 		}
@@ -88,7 +88,7 @@ impl GraphPage {
 	}
 
 	/// Remove a connection from the page. Error if connection not found in page.
-	pub fn remove_connection(&mut self, connection_id: &DsnpId) -> Result<(), &str> {
+	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> Result<(), &str> {
 		if !self.contains(connection_id) {
 			return Err("Connection not found in page")
 		}
@@ -152,7 +152,7 @@ impl Graph {
 	}
 
 	/// Return the PageId in which the given connection resides, if found.
-	pub fn find_connection(&self, dsnp_id: &DsnpId) -> Option<PageId> {
+	pub fn find_connection(&self, dsnp_id: &DsnpUserId) -> Option<PageId> {
 		for (id, page) in self.pages.iter() {
 			if page.contains(dsnp_id) {
 				return Some(*id)
@@ -169,7 +169,7 @@ impl Graph {
 	pub fn add_connection_to_page<'a>(
 		&'a mut self,
 		page_id: &PageId,
-		connection_id: &DsnpId,
+		connection_id: &DsnpUserId,
 	) -> Result<(), &str> {
 		if !self.pages.contains_key(page_id) {
 			self.pages.insert(*page_id, GraphPage::new());
@@ -182,7 +182,10 @@ impl Graph {
 	/// Returns Ok(Option<PageId>) containing the PageId of the page
 	/// the connection was removed from, or Ok(None) if the connection
 	/// was not found.
-	pub fn remove_connection(&mut self, connection_id: &DsnpId) -> Result<Option<PageId>, &str> {
+	pub fn remove_connection(
+		&mut self,
+		connection_id: &DsnpUserId,
+	) -> Result<Option<PageId>, &str> {
 		if let Some(page_id) = self.find_connection(connection_id) {
 			return match self.get_page_mut(&page_id) {
 				Some(page) => match page.remove_connection(connection_id) {
