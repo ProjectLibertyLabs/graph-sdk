@@ -18,6 +18,12 @@ pub struct DsnpPrid {
 	inner: Vec<u8>,
 }
 
+impl From<Vec<u8>> for DsnpPrid {
+	fn from(vec: Vec<u8>) -> Self {
+		DsnpPrid { inner: vec }
+	}
+}
+
 /// Public key defined in DSNP used for encryption/decryption in private graph
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpPublicKey {
@@ -44,7 +50,7 @@ pub struct DsnpUserPublicGraphChunk {
 }
 
 /// Graph Edge defined in DSNP to store each connection
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship
 	#[serde(rename = "userId")]
@@ -64,6 +70,10 @@ pub struct DsnpUserPrivateGraphChunk {
 	/// list of `Pseudonymous Relationship Identifier`s associated with this private graph chunk
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
+
+	/// Unix epoch in seconds when the PRIds for this chuck were last refreshed, rounded to the nearest 1000
+	#[serde(rename = "lastUpdated")]
+	pub last_updated: u64,
 
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]

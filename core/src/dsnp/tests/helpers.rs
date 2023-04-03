@@ -1,0 +1,25 @@
+use crate::dsnp::{
+	dsnp_types::{DsnpGraphEdge, DsnpId, DsnpPrid},
+	graph_page::GraphPage,
+};
+use std::time::{SystemTime, UNIX_EPOCH};
+
+pub fn create_graph_edge(id: &DsnpId) -> DsnpGraphEdge {
+	DsnpGraphEdge {
+		user_id: *id,
+		since: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+	}
+}
+
+impl From<DsnpId> for DsnpPrid {
+	fn from(id: DsnpId) -> Self {
+		Self::from(id.to_le_bytes().to_vec())
+	}
+}
+
+pub fn create_page(ids: &[DsnpId]) -> GraphPage {
+	let mut page = GraphPage::new();
+	page.set_connections(ids.iter().map(|id| create_graph_edge(id)).collect());
+	page.set_prids(ids.iter().map(|id| DsnpPrid::from(*id)).collect());
+	page
+}

@@ -21,6 +21,11 @@
       }
     },
     {
+      "name": "lastUpdated",
+      "type": "long",
+      "doc": "Days since Unix epoch"
+    },
+    {
       "doc": "lib_sodium sealed box",
       "name": "encryptedCompressedPrivateGraph",
       "type": "bytes"
