@@ -80,7 +80,7 @@ impl DsnpWriter for Frequency {
 mod tests {
 	use super::*;
 	use crate::dsnp::dsnp_types::{DsnpGraphEdge, DsnpPrid};
-	use crypto_box::{aead::OsRng, SecretKey};
+	use dryoc::keypair::StackKeyPair;
 	use rand::Rng;
 
 	#[test]
@@ -126,11 +126,11 @@ mod tests {
 				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 			],
 		};
-		let secret_key = SecretKey::generate(&mut OsRng);
+		let key_pair = StackKeyPair::gen();
 
-		let serialized = Frequency::write_private_graph(&private_graph, &secret_key.public_key())
+		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
 			.expect("serialization should work");
-		let deserialized = Frequency::read_private_graph(&serialized, &secret_key)
+		let deserialized = Frequency::read_private_graph(&serialized, &key_pair)
 			.expect("deserialization should work");
 
 		assert_eq!(deserialized, private_graph);
@@ -149,13 +149,12 @@ mod tests {
 				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 			],
 		};
-		let secret_key = SecretKey::generate(&mut OsRng);
+		let key_pair = StackKeyPair::gen();
 
-		let mut serialized =
-			Frequency::write_private_graph(&private_graph, &secret_key.public_key())
-				.expect("serialization should work");
+		let mut serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
+			.expect("serialization should work");
 		serialized.pop(); // corrupting the input
-		let deserialized = Frequency::read_private_graph(&serialized, &secret_key);
+		let deserialized = Frequency::read_private_graph(&serialized, &key_pair);
 
 		assert!(deserialized.is_err());
 	}
@@ -181,9 +180,9 @@ mod tests {
 			Frequency::write_public_graph(&inner_graph).expect("serialization should work");
 
 		let private_graph = PrivateGraphChunk { inner_graph, key_id: 200, prids };
-		let secret_key = SecretKey::generate(&mut OsRng);
+		let key_pair = StackKeyPair::gen();
 		let private_serialized =
-			Frequency::write_private_graph(&private_graph, &secret_key.public_key())
+			Frequency::write_private_graph(&private_graph, &key_pair.public_key)
 				.expect("serialization should work");
 
 		println!(
