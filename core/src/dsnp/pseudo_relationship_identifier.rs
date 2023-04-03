@@ -15,15 +15,27 @@ use std::ops::Deref;
 use zeroize::Zeroizing;
 
 const PRI_CONTEXT: &[u8] = b"PRIdCtx0";
-struct PseudonymousRelationshipIdentifier;
 
-impl PseudonymousRelationshipIdentifier {
+trait PridProvider {
+	type DsnpPrid;
+
 	fn create(
 		a: DsnpId,
 		b: DsnpId,
 		a_secret_key: &SecretKey,
 		b_public_key: &PublicKey,
-	) -> Result<DsnpPrid> {
+	) -> Result<Self::DsnpPrid>;
+}
+
+impl PridProvider for DsnpPrid {
+	type DsnpPrid = DsnpPrid;
+
+	fn create(
+		a: DsnpId,
+		b: DsnpId,
+		a_secret_key: &SecretKey,
+		b_public_key: &PublicKey,
+	) -> Result<Self::DsnpPrid> {
 		let id_a = a.to_le_bytes();
 		let id_b = b.to_le_bytes();
 
@@ -54,7 +66,7 @@ impl PseudonymousRelationshipIdentifier {
 			derived_key.deref().as_array(),
 		);
 
-		Ok(DsnpPrid::new(&result))
+		Ok(Self::DsnpPrid::new(&result))
 	}
 }
 
@@ -70,20 +82,10 @@ mod tests {
 		let key_pair_a = StackKeyPair::gen();
 		let key_pair_b = StackKeyPair::gen();
 
-		let pri_a_to_b = PseudonymousRelationshipIdentifier::create(
-			a,
-			b,
-			&key_pair_a.secret_key,
-			&key_pair_b.public_key,
-		)
-		.expect("should create pri");
-		let pri_a_to_b_2 = PseudonymousRelationshipIdentifier::create(
-			a,
-			b,
-			&key_pair_b.secret_key,
-			&key_pair_a.public_key,
-		)
-		.expect("should create pri");
+		let pri_a_to_b = DsnpPrid::create(a, b, &key_pair_a.secret_key, &key_pair_b.public_key)
+			.expect("should create pri");
+		let pri_a_to_b_2 = DsnpPrid::create(a, b, &key_pair_b.secret_key, &key_pair_a.public_key)
+			.expect("should create pri");
 
 		println!("{:?}  {:?}", pri_a_to_b, pri_a_to_b_2);
 		assert_eq!(pri_a_to_b, pri_a_to_b_2);
