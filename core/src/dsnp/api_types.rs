@@ -1,5 +1,6 @@
 #![allow(dead_code)] // todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
+use std::{fmt::Debug, hash::Hash};
 
 /// Raw page of Graph (or Key) data
 pub type PageBlob = Vec<u8>;
@@ -37,26 +38,15 @@ pub enum ConnectionType {
 	Friendship(PrivacyType),
 }
 
+/// Graph page id
+pub type PageId = u16;
+
+/// Schema ID
+pub type SchemaId = u16;
+
 /// A trait defining configurable settings for sdk
 pub trait Config {
-	/// Graph page id
-	type PageId;
-	/// Schema ID
-	type SchemaId;
-
-	const PUBLIC_FOLLOW_SCHEMAID: Self::SchemaId;
-	const PRIVATE_FOLLOW_SCHEMAID: Self::SchemaId;
-	const PUBLIC_FRIEND_SCHEMAID: Self::SchemaId;
-	const PRIVATE_FRIEND_SCHEMAID: Self::SchemaId;
-
-	fn schema_for_connection_type(connection_type: ConnectionType) -> Self::SchemaId {
-		match connection_type {
-			ConnectionType::Follow(PrivacyType::Public) => Self::PUBLIC_FOLLOW_SCHEMAID,
-			ConnectionType::Follow(PrivacyType::Private) => Self::PRIVATE_FOLLOW_SCHEMAID,
-			ConnectionType::Friendship(PrivacyType::Public) => Self::PUBLIC_FRIEND_SCHEMAID,
-			ConnectionType::Friendship(PrivacyType::Private) => Self::PRIVATE_FRIEND_SCHEMAID,
-		}
-	}
+	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
 }
 
 /// Encapsulates all the keys and page data that needs to be retrieved from chain
@@ -116,7 +106,7 @@ pub enum Action<E: EncryptionBehavior> {
 }
 
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
-pub enum Update<C: Config> {
+pub enum Update {
 	/// A `Persist` type is used to upsert a page on the chain with latest changes
 	Persist {
 		/// owner of the social graph
@@ -124,10 +114,10 @@ pub enum Update<C: Config> {
 
 		/// schema id of this change, each graph has it's own schema so it depends on the graph type
 		/// which is modified
-		schema_id: C::SchemaId,
+		schema_id: SchemaId,
 
 		/// page id associated with changed page
-		page_id: C::PageId,
+		page_id: PageId,
 
 		/// previous hash value is used to avoid updating a stale state
 		prev_hash: Vec<u8>,
@@ -143,10 +133,10 @@ pub enum Update<C: Config> {
 
 		/// schema id of this change, each graph has it's own schema so it depends on the graph type
 		/// which is modified
-		schema_id: C::SchemaId,
+		schema_id: SchemaId,
 
 		/// page id associated with changed page
-		page_id: C::PageId,
+		page_id: PageId,
 
 		/// previous hash value is used to avoid updating a stale state
 		prev_hash: Vec<u8>,

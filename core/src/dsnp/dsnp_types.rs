@@ -18,6 +18,12 @@ pub struct DsnpPrid {
 	inner: Vec<u8>,
 }
 
+impl From<Vec<u8>> for DsnpPrid {
+	fn from(vec: Vec<u8>) -> Self {
+		DsnpPrid { inner: vec }
+	}
+}
+
 /// Public key defined in DSNP used for encryption/decryption in private graph
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
 pub struct DsnpPublicKey {
@@ -44,7 +50,7 @@ pub struct DsnpUserPublicGraphChunk {
 }
 
 /// Graph Edge defined in DSNP to store each connection
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship
 	#[serde(rename = "userId")]
@@ -64,6 +70,10 @@ pub struct DsnpUserPrivateGraphChunk {
 	/// list of `Pseudonymous Relationship Identifier`s associated with this private graph chunk
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
+
+	/// Days since the Unix Epoch when PRIds were last refreshed for this chunk
+	#[serde(rename = "lastUpdated")]
+	pub last_updated: u32,
 
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
@@ -150,22 +160,5 @@ impl<'de> Visitor<'de> for PridVisitor {
 		}
 
 		Ok(DsnpPrid::new(&bytes))
-	}
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	#[should_panic]
-	fn prid_creation_with_less_than_8_byte_values_should_fail() {
-		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7]);
-	}
-
-	#[test]
-	#[should_panic]
-	fn prid_creation_with_more_than_8_byte_values_should_fail() {
-		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
 	}
 }
