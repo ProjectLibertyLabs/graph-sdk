@@ -10,7 +10,7 @@ use crate::{
 
 /// Create test data for a single page
 fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
-	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec().iter().cloned().collect();
+	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec();
 	let page = create_page(&ids);
 	(ids, page)
 }

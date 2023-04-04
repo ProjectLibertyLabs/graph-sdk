@@ -183,7 +183,7 @@ impl Graph {
 		page_id: &PageId,
 		connection_id: &DsnpUserId,
 	) -> Result<(), &str> {
-		if let Some(_) = self.find_connection(connection_id) {
+		if self.find_connection(connection_id).is_some() {
 			return Err("Add of duplicate connection in another page detected")
 		}
 
