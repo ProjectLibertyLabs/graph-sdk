@@ -171,6 +171,13 @@ mod graph_tests {
 	}
 
 	#[test]
+	fn add_connection_duplicate_connection_errors() {
+		let mut graph = create_test_graph();
+
+		assert_eq!(graph.add_connection_to_page(&4, &0).is_err(), true);
+	}
+
+	#[test]
 	fn add_connection_to_nonexistent_page_adds_new_page() {
 		let mut graph = create_test_graph();
 		let page_to_add: PageId = 99;

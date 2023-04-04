@@ -164,6 +164,10 @@ impl Graph {
 		page_id: &PageId,
 		connection_id: &DsnpUserId,
 	) -> Result<(), &str> {
+		if let Some(page) = self.find_connection(connection_id) {
+			return Err("Add of duplicate connection in another page detected")
+		}
+
 		if !self.pages.contains_key(page_id) {
 			self.pages.insert(*page_id, GraphPage::new());
 		}
