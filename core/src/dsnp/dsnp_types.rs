@@ -73,7 +73,7 @@ pub struct DsnpUserPrivateGraphChunk {
 
 	/// Days since the Unix Epoch when PRIds were last refreshed for this chunk
 	#[serde(rename = "lastUpdated")]
-	pub last_updated: u32,
+	pub last_updated: u64,
 
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]

@@ -22,7 +22,7 @@
     },
     {
       "name": "lastUpdated",
-      "type": "int",
+      "type": "long",
       "doc": "Days since Unix epoch when PRIds for this chunk were last refreshed"
     },
     {
