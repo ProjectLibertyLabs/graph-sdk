@@ -10,8 +10,7 @@ use crate::{
 
 /// Create test data for a single page
 fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
-	let ids: Vec<DsnpUserId> =
-		vec![1u64, 2u64, 3u64].to_vec().iter().map(|id| DsnpUserId::from(*id)).collect();
+	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec().iter().cloned().collect();
 	let page = create_page(&ids);
 	(ids, page)
 }
@@ -24,8 +23,7 @@ fn create_test_graph() -> Graph {
 	let mut graph = Graph::new();
 	let mut pages = Vec::<GraphPage>::new();
 	for _ in 0..num_pages {
-		let ids: Vec<DsnpUserId> =
-			(curr_id..(curr_id + ids_per_page)).map(|id| DsnpUserId::from(id)).collect();
+		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
 		let page = create_page(&ids);
 		pages.push(page);
 		curr_id += ids_per_page;
@@ -55,7 +53,7 @@ mod page_tests {
 		let mut page = GraphPage::new();
 		let prids: Vec<DsnpPrid> = vec![1, 2, 3, 4].iter().map(|id| DsnpPrid::from(*id)).collect();
 		let connections: Vec<DsnpGraphEdge> =
-			vec![5, 6, 7, 8].iter().map(|id| create_graph_edge(id)).collect();
+			vec![5, 6, 7, 8].iter().map(create_graph_edge).collect();
 
 		page.set_prids(prids.clone());
 		page.set_connections(connections.clone());

@@ -1,9 +1,9 @@
 #![allow(dead_code)] // todo: remove
-use crate::dsnp::{api_types::*, dsnp_types::*};
-use std::{
-	collections::HashMap,
-	time::{SystemTime, UNIX_EPOCH},
+use crate::{
+	dsnp::{api_types::*, dsnp_types::*},
+	util::time::time_in_ksecs,
 };
+use std::collections::HashMap;
 
 /// Graph page structure
 #[derive(Debug, Clone, PartialEq)]
@@ -75,15 +75,8 @@ impl GraphPage {
 			return Err("Add of duplicate connection detected")
 		}
 
-		self.connections.push(DsnpGraphEdge {
-			user_id: *connection_id,
-			since: SystemTime::now()
-				.duration_since(UNIX_EPOCH)
-				.unwrap_or_default()
-				.checked_div(1000)
-				.expect("Divide by zero")
-				.as_secs(),
-		});
+		self.connections
+			.push(DsnpGraphEdge { user_id: *connection_id, since: time_in_ksecs() });
 		Ok(())
 	}
 

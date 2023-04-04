@@ -71,9 +71,9 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
 
-	/// Unix epoch in seconds when the PRIds for this chuck were last refreshed, rounded to the nearest 1000
+	/// Days since the Unix Epoch when PRIds were last refreshed for this chunk
 	#[serde(rename = "lastUpdated")]
-	pub last_updated: u64,
+	pub last_updated: u32,
 
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]

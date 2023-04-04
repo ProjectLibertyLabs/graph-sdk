@@ -46,19 +46,7 @@ pub type SchemaId = u16;
 
 /// A trait defining configurable settings for sdk
 pub trait Config {
-	const PUBLIC_FOLLOW_SCHEMAID: SchemaId;
-	const PRIVATE_FOLLOW_SCHEMAID: SchemaId;
-	const PUBLIC_FRIEND_SCHEMAID: SchemaId;
-	const PRIVATE_FRIEND_SCHEMAID: SchemaId;
-
-	fn schema_for_connection_type(connection_type: ConnectionType) -> SchemaId {
-		match connection_type {
-			ConnectionType::Follow(PrivacyType::Public) => Self::PUBLIC_FOLLOW_SCHEMAID,
-			ConnectionType::Follow(PrivacyType::Private) => Self::PRIVATE_FOLLOW_SCHEMAID,
-			ConnectionType::Friendship(PrivacyType::Public) => Self::PUBLIC_FRIEND_SCHEMAID,
-			ConnectionType::Friendship(PrivacyType::Private) => Self::PRIVATE_FRIEND_SCHEMAID,
-		}
-	}
+	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
 }
 
 /// Encapsulates all the keys and page data that needs to be retrieved from chain
