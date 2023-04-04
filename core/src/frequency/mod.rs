@@ -5,6 +5,7 @@ mod tests;
 
 use crate::dsnp::api_types::Config;
 
+#[allow(dead_code)] // todo: remove
 /// A utility to read/write data from and to Frequency chain specific implementation of DSNP
 pub struct Frequency {
 	config: Box<dyn Config>,

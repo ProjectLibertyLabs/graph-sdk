@@ -27,9 +27,28 @@ pub struct UserGraph {
 }
 
 impl UserGraph {
-	/// Get the user's graph for the specified ConnectionType
-	fn get_graph(&self, connection_type: &ConnectionType) -> Option<&Graph> {
-		self.graphs.get(connection_type)
+	/// Create a new, empty UserGraph
+	pub fn new() -> Self {
+		Self {
+			graphs: HashMap::<ConnectionType, Graph>::from([
+				(ConnectionType::Follow(PrivacyType::Public), Graph::new()),
+				(ConnectionType::Follow(PrivacyType::Private), Graph::new()),
+				(ConnectionType::Friendship(PrivacyType::Public), Graph::new()),
+				(ConnectionType::Friendship(PrivacyType::Private), Graph::new()),
+			]),
+		}
+	}
+
+	/// Getter for the user's graph for the specified ConnectionType
+	pub fn graph(&self, connection_type: &ConnectionType) -> &Graph {
+		self.graphs.get(connection_type).expect("UserGraph local instance is corrupt")
+	}
+
+	/// Mutable getter for the user's graph for the specified ConnectionType
+	pub fn graph_mut(&mut self, connection_type: &ConnectionType) -> &mut Graph {
+		self.graphs
+			.get_mut(connection_type)
+			.expect("UserGraph local instance is corrupt")
 	}
 }
 

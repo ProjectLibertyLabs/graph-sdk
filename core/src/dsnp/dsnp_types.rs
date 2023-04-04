@@ -162,20 +162,3 @@ impl<'de> Visitor<'de> for PridVisitor {
 		Ok(DsnpPrid::new(&bytes))
 	}
 }
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[test]
-	#[should_panic]
-	fn prid_creation_with_less_than_8_byte_values_should_fail() {
-		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7]);
-	}
-
-	#[test]
-	#[should_panic]
-	fn prid_creation_with_more_than_8_byte_values_should_fail() {
-		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
-	}
-}

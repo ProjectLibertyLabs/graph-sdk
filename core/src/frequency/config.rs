@@ -1,3 +1,4 @@
+#![allow(dead_code)] // todo: remove
 use crate::dsnp::api_types::{Config, ConnectionType, PrivacyType, SchemaId};
 use std::collections::hash_map::HashMap;
 
