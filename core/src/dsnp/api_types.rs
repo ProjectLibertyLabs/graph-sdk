@@ -80,7 +80,7 @@ pub struct DsnpKeys<E: EncryptionBehavior> {
 	pub keys: Vec<PublicKey<E>>,
 }
 
-/// Difference kinds of actions that can be applied to the graph
+/// Different kind of actions that can be applied to the graph
 pub enum Action<E: EncryptionBehavior> {
 	/// an action that defines adding a connection in the social graph
 	Connect {
