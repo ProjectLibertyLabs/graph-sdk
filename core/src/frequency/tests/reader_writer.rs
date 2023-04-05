@@ -113,17 +113,6 @@ fn check_average_size_of_graph_page() {
 	let private_serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
 		.expect("serialization should work");
 
-	println!(
-		"public graph: size of {} connections in a page is {}",
-		connections,
-		public_serialized.len()
-	);
-	println!(
-		"private graph: size of {} connections in a page is {}",
-		connections,
-		private_serialized.len()
-	);
-
 	assert_eq!((public_serialized.len() - 1) / page_size + 1, 2);
 	assert_eq!((private_serialized.len() - 1) / page_size + 1, 3);
 }
