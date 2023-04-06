@@ -1,8 +1,11 @@
+use anyhow::{Error as AnyError, Result};
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{cmp, error::Error, fmt};
+
+use super::schema::SchemaHandler;
 
 /// DSNP User Id
 pub type DsnpUserId = u64;
@@ -11,6 +14,7 @@ pub type DsnpUserId = u64;
 const PRID_LEN_IN_BYTES: usize = 8;
 /// Inner Graph type used in both private and public graphs
 pub type DsnpInnerGraph = Vec<DsnpGraphEdge>;
+
 /// `Pseudonymous Relationship Identifier` which allows private connection verification
 /// Wrapping in its own Struct allows easier serialization and deserialization
 #[derive(Debug, Clone, PartialEq)]
@@ -49,6 +53,14 @@ pub struct DsnpUserPublicGraphChunk {
 	pub compressed_public_graph: Vec<u8>,
 }
 
+impl TryFrom<&[u8]> for DsnpUserPublicGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+		SchemaHandler::read_public_graph_chunk(data)
+	}
+}
+
 /// Graph Edge defined in DSNP to store each connection
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub struct DsnpGraphEdge {
@@ -79,6 +91,14 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
 	#[serde(with = "serde_bytes")]
 	pub encrypted_compressed_private_graph: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for DsnpUserPrivateGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+		SchemaHandler::read_private_graph_chunk(data)
+	}
 }
 
 impl DsnpPrid {
