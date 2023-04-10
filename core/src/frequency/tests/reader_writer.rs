@@ -51,7 +51,6 @@ fn private_graph_read_and_write_using_valid_input_should_succeed() {
 			DsnpPrid::new(27737272u64.to_le_bytes().as_slice()),
 			DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 		],
-		last_updated: 1234567,
 	};
 	let key_pair = StackKeyPair::gen();
 
@@ -75,7 +74,6 @@ fn private_graph_read_using_invalid_input_should_fail() {
 			DsnpPrid::new(27737272u64.to_le_bytes().as_slice()),
 			DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 		],
-		last_updated: 1234567,
 	};
 	let key_pair = StackKeyPair::gen();
 
@@ -107,8 +105,7 @@ fn check_average_size_of_graph_page() {
 	let public_serialized =
 		Frequency::write_public_graph(&inner_graph).expect("serialization should work");
 
-	let private_graph =
-		PrivateGraphChunk { inner_graph, key_id: 200, prids, last_updated: 1234567 };
+	let private_graph = PrivateGraphChunk { inner_graph, key_id: 200, prids };
 	let key_pair = StackKeyPair::gen();
 	let private_serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
 		.expect("serialization should work");

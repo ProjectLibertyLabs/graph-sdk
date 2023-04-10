@@ -5,7 +5,10 @@ use serde::{
 };
 use std::{cmp, error::Error, fmt};
 
-use super::schema::SchemaHandler;
+use super::{
+	compression::{CompressionBehavior, DeflateCompression},
+	schema::SchemaHandler,
+};
 
 /// DSNP User Id
 pub type DsnpUserId = u64;
@@ -61,6 +64,15 @@ impl TryFrom<&[u8]> for DsnpUserPublicGraphChunk {
 	}
 }
 
+impl TryFrom<DsnpInnerGraph> for DsnpUserPublicGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(inner_graph: DsnpInnerGraph) -> Result<Self, Self::Error> {
+		let uncompressed_chunk = SchemaHandler::write_inner_graph(&inner_graph)?;
+		Ok(Self { compressed_public_graph: DeflateCompression::compress(&uncompressed_chunk)? })
+	}
+}
+
 /// Graph Edge defined in DSNP to store each connection
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub struct DsnpGraphEdge {
@@ -82,10 +94,6 @@ pub struct DsnpUserPrivateGraphChunk {
 	/// list of `Pseudonymous Relationship Identifier`s associated with this private graph chunk
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
-
-	/// Days since the Unix Epoch when PRIds were last refreshed for this chunk
-	#[serde(rename = "lastUpdated")]
-	pub last_updated: u64,
 
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]

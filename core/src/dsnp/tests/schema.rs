@@ -93,7 +93,6 @@ fn private_graph_chunk_read_and_write_using_valid_input_should_succeed() {
 			DsnpPrid::new(27737272u64.to_le_bytes().as_slice()),
 			DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 		],
-		last_updated: 1234567,
 	};
 
 	let serialized = SchemaHandler::write_private_graph_chunk(&chunk).expect("should serialize");

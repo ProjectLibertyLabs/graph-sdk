@@ -1,11 +1,10 @@
 use crate::dsnp::{
 	api_types::{
-		Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PageId, PrivacyType,
-		PublicKey,
+		Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PrivacyType, PublicKey,
 	},
 	dsnp_types::DsnpUserId,
 	encryption::EncryptionBehavior,
-	graph_page::{GraphPage, UserGraph},
+	graph_page::UserGraph,
 };
 use anyhow::{Error, Result};
 use std::{cmp::min, collections::HashMap};
@@ -31,11 +30,12 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 
 	/// Calculate the necessary page updates for a user's graph, and
 	/// return as a map of pages to be updated and/or removed
-	fn export_user_data(
+	fn export_user_updates(
+		&mut self,
 		user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys<E>>,
-		encryption_key: PublicKey<E>,
-	) -> Result<Option<ExportBundle>>;
+		encryption_key: (u64, &PublicKey<E>),
+	) -> Result<Vec<ExportBundle>>;
 
 	/// Add the connection to the list of pending additions for the user
 	fn add_connection_for_user(user_id: &DsnpUserId, connection: &Connection) -> Result<()>;
@@ -75,7 +75,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<M> {
 			))
 		}
 
-		self.user_map.insert(*user_id, UserGraph::new());
+		self.user_map.insert(*user_id, UserGraph::new(user_id));
 		match self.user_map.get_mut(user_id) {
 			Some(graph) => Ok(graph),
 			None => Err(Error::msg("Unexpected error retrieving user graph")),
@@ -115,12 +115,18 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<M> {
 
 	/// Calculate the necessary page updates for a user's graph, and
 	/// return as a map of pages to be updated and/or removed
-	fn export_user_data(
-		_user_id: &DsnpUserId,
-		_connection_keys: &Vec<DsnpKeys<E>>,
-		_encryption_key: PublicKey<E>,
-	) -> Result<Option<ExportBundle>> {
-		todo!();
+	fn export_user_updates(
+		&mut self,
+		user_id: &DsnpUserId,
+		connection_keys: &Vec<DsnpKeys<E>>,
+		encryption_key: (u64, &PublicKey<E>),
+	) -> Result<Vec<ExportBundle>> {
+		let user_graph = match self.user_map.get_mut(user_id) {
+			None => Err(Error::msg("User not found for graph export")),
+			Some(graph) => Ok(graph),
+		}?;
+
+		user_graph.calculate_updates(connection_keys, encryption_key)
 	}
 
 	/// Add the connection to the list of pending additions for the user

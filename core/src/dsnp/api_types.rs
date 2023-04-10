@@ -1,6 +1,6 @@
 // todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
-use std::{collections::HashMap, fmt::Debug, hash::Hash};
+use std::{fmt::Debug, hash::Hash};
 
 /// Raw page of Graph (or Key) data
 pub struct PageBlob {
@@ -90,7 +90,7 @@ pub struct ExportBundle {
 	pub connection_type: ConnectionType,
 
 	/// Pages to be updated in the graph
-	pub updated_pages: HashMap<PageId, PageBlob>,
+	pub updated_pages: Vec<PageBlob>,
 
 	/// Pages to be removed from the graph
 	pub removed_pages: Vec<PageId>,

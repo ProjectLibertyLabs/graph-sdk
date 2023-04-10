@@ -20,7 +20,7 @@ fn create_test_graph() -> Graph {
 	let num_pages = 5;
 	let ids_per_page = 5;
 	let mut curr_id = 0u64;
-	let mut graph = Graph::new();
+	let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
 	let mut pages = Vec::<GraphPage>::new();
 	for _ in 0..num_pages {
 		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
@@ -43,14 +43,14 @@ mod page_tests {
 
 	#[test]
 	fn new_page() {
-		let page = GraphPage::new();
+		let page = GraphPage::new(PrivacyType::Private, 0);
 
 		assert_eq!(page.is_empty(), true, "Page should be empty");
 	}
 
 	#[test]
 	fn graph_page_getters_setters() {
-		let mut page = GraphPage::new();
+		let mut page = GraphPage::new(PrivacyType::Private, 0);
 		let prids: Vec<DsnpPrid> = vec![1, 2, 3, 4].iter().map(|id| DsnpPrid::from(*id)).collect();
 		let connections: Vec<DsnpGraphEdge> =
 			vec![5, 6, 7, 8].iter().map(create_graph_edge).collect();
@@ -90,7 +90,7 @@ mod page_tests {
 	#[test]
 	fn add_connection_succeeds() {
 		let id: DsnpUserId = 1;
-		let mut page = GraphPage::new();
+		let mut page = GraphPage::new(PrivacyType::Private, 0);
 
 		assert_eq!(page.add_connection(&id).is_ok(), true);
 		assert_eq!(page.contains(&id), true);
@@ -121,7 +121,7 @@ mod graph_tests {
 
 	#[test]
 	fn new_graph_is_empty() {
-		let graph = Graph::new();
+		let graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
 		assert_eq!(graph.pages().is_empty(), true);
 	}
 
@@ -132,7 +132,7 @@ mod graph_tests {
 			let (_, p) = create_test_ids_and_page();
 			pages.insert(i, p);
 		}
-		let mut graph = Graph::new();
+		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
 		graph.set_pages(pages.clone());
 		assert_eq!(pages.len(), graph.pages().len());
 		for i in 0..pages.len() as u16 {
@@ -150,7 +150,7 @@ mod graph_tests {
 	#[test]
 	fn create_page_succeeds() {
 		let (_, page) = create_test_ids_and_page();
-		let mut graph = Graph::new();
+		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
 
 		assert_eq!(graph.create_page(&0, Some(page.clone())).is_ok(), true);
 		assert_eq!(page, *graph.get_page(&0).unwrap());

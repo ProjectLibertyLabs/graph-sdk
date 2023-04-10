@@ -18,7 +18,7 @@ impl From<DsnpUserId> for DsnpPrid {
 }
 
 pub fn create_page(ids: &[DsnpUserId]) -> GraphPage {
-	let mut page = GraphPage::new();
+	let mut page = GraphPage::new(crate::dsnp::api_types::PrivacyType::Private, 0);
 	page.set_connections(ids.iter().map(create_graph_edge).collect());
 	page.set_prids(ids.iter().map(|id| DsnpPrid::from(*id)).collect());
 	page

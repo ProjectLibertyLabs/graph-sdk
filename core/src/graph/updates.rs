@@ -1,6 +1,11 @@
 #![allow(dead_code)] // todo: remove after usage
 use crate::{
-	dsnp::{api_types::ConnectionType, dsnp_types::DsnpUserId},
+	dsnp::{
+		api_types::{ConnectionType, DsnpKeys, ExportBundle, PublicKey},
+		dsnp_types::DsnpUserId,
+		encryption::EncryptionBehavior,
+		graph_page::UserGraph,
+	},
 	graph::updates::UpdateEvent::{Add, Remove},
 };
 use anyhow::{Error, Result};
@@ -12,6 +17,7 @@ pub enum UpdateEvent {
 	Remove { dsnp_user_id: DsnpUserId, connection_type: ConnectionType },
 }
 
+#[derive(Debug, Clone)]
 pub struct UpdateTracker {
 	updates: HashMap<ConnectionType, Vec<UpdateEvent>>,
 }
@@ -42,6 +48,13 @@ impl UpdateTracker {
 		self.updates.iter().any(|(_, v)| !v.is_empty())
 	}
 
+	pub fn get_updates_for_connection_type(
+		&mut self,
+		connection_type: ConnectionType,
+	) -> &Vec<UpdateEvent> {
+		self.updates.entry(connection_type).or_default()
+	}
+
 	fn contains(&self, event: &UpdateEvent) -> bool {
 		match self.updates.get(event.get_connection_type()) {
 			Some(arr) => arr.contains(event),
@@ -67,6 +80,11 @@ impl UpdateTracker {
 			.entry(*event.get_connection_type())
 			.or_default()
 			.push(event.clone());
+	}
+
+	/// Clear out all pending updates
+	fn clear(&mut self) {
+		self.updates.clear()
 	}
 }
 
@@ -101,6 +119,24 @@ impl UpdateEvent {
 			(Add { .. }, Remove { .. }) => Ordering::Greater,
 			_ => a.cmp(b),
 		}
+	}
+}
+
+pub trait UpdateAPI<E: EncryptionBehavior> {
+	fn calculate_updates(
+		&mut self,
+		connection_keys: &Vec<DsnpKeys<E>>,
+		encryption_key: (u64, &PublicKey<E>),
+	) -> Result<Vec<ExportBundle>>;
+}
+
+impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
+	fn calculate_updates(
+		&mut self,
+		connection_keys: &Vec<DsnpKeys<E>>,
+		encryption_key: (u64, &PublicKey<E>),
+	) -> Result<Vec<ExportBundle>> {
+		self.calculate_updates(connection_keys, encryption_key)
 	}
 }
 
