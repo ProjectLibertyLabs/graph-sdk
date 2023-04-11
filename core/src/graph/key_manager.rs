@@ -14,6 +14,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 /// A trait that defines all the functionality that a public key provider need to implement.
 trait PublicKeyProvider {
 	/// imports public keys with their hash and details into the provider
+	/// will overwrite any existing imported keys for the user and remove any new added keys
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
 
 	/// exports added new keys to be submitted to chain
@@ -42,6 +43,7 @@ trait PublicKeyProvider {
 /// Common trait that manages public and private keys for each user
 trait UserKeyProvider {
 	/// imports key pairs into a provider
+	/// will overwrite any existing imported keys for the user
 	fn import_key_pairs(&mut self, pairs: Vec<StackKeyPair>);
 
 	/// returns the dsnp associate and keypair with a certain id
@@ -71,6 +73,9 @@ impl PublicKeyProvider for PublicKeyManager {
 	/// importing dsnp keys as they are retrieved from blockchain
 	/// sorting indices since ids might not be unique but indices definitely should be
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()> {
+		self.dsnp_user_to_keys.remove(&keys.dsnp_user_id);
+		self.new_keys.remove(&keys.dsnp_user_id);
+
 		let mut sorted_keys = keys.keys.clone().to_vec();
 		// sorting by index in ascending mode
 		sorted_keys.sort();
