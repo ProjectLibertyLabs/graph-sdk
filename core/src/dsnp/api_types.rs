@@ -48,7 +48,7 @@ pub enum ConnectionType {
 }
 
 impl ConnectionType {
-	pub fn privacy_type(&self) -> PrivacyType {
+	pub const fn privacy_type(&self) -> PrivacyType {
 		match self {
 			Self::Follow(privacy) | Self::Friendship(privacy) => *privacy,
 		}
@@ -61,12 +61,7 @@ pub type PageId = u16;
 /// Schema ID
 pub type SchemaId = u16;
 
-/// A trait defining configurable settings for sdk
-pub trait Config {
-	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
-}
-
-/// Encapsulates all the keys and page data that needs to be retrieved from chain
+/// Encapsulates all the decryption keys and page data that need to be retrieved from chain
 pub struct ImportBundle<E: EncryptionBehavior> {
 	/// graph owner dsnp user id
 	pub dsnp_user_id: DsnpUserId,
@@ -93,7 +88,7 @@ pub struct ExportBundle {
 	pub updated_pages: Vec<PageBlob>,
 
 	/// Pages to be removed from the graph
-	pub removed_pages: Vec<PageId>,
+	pub removed_pages: Vec<PageBlob>,
 }
 
 /// A connection representation in graph sdk
@@ -147,10 +142,6 @@ pub enum Update {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// schema id of this change, each graph has it's own schema so it depends on the graph type
-		/// which is modified
-		schema_id: SchemaId,
-
 		/// page id associated with changed page
 		page_id: PageId,
 
@@ -165,10 +156,6 @@ pub enum Update {
 	Delete {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
-
-		/// schema id of this change, each graph has it's own schema so it depends on the graph type
-		/// which is modified
-		schema_id: SchemaId,
 
 		/// page id associated with changed page
 		page_id: PageId,

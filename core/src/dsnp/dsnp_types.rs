@@ -20,7 +20,7 @@ pub type DsnpInnerGraph = Vec<DsnpGraphEdge>;
 
 /// `Pseudonymous Relationship Identifier` which allows private connection verification
 /// Wrapping in its own Struct allows easier serialization and deserialization
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DsnpPrid {
 	inner: Vec<u8>,
 }

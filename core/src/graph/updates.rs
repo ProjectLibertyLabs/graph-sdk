@@ -4,9 +4,11 @@ use crate::{
 		api_types::{ConnectionType, DsnpKeys, ExportBundle, PublicKey},
 		dsnp_types::DsnpUserId,
 		encryption::EncryptionBehavior,
-		graph_page::UserGraph,
 	},
-	graph::updates::UpdateEvent::{Add, Remove},
+	graph::{
+		updates::UpdateEvent::{Add, Remove},
+		user::UserGraph,
+	},
 };
 use anyhow::{Error, Result};
 use std::{cmp::Ordering, collections::HashMap};
@@ -17,7 +19,7 @@ pub enum UpdateEvent {
 	Remove { dsnp_user_id: DsnpUserId, connection_type: ConnectionType },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UpdateTracker {
 	updates: HashMap<ConnectionType, Vec<UpdateEvent>>,
 }
@@ -27,18 +29,28 @@ impl UpdateTracker {
 		Self { updates: HashMap::new() }
 	}
 
-	pub fn register(&mut self, events: &[UpdateEvent]) -> Result<()> {
-		if events.iter().any(|e| self.contains(e)) {
+	pub fn register_update(&mut self, event: &UpdateEvent) -> Result<()> {
+		if self.contains(event) {
 			return Err(Error::msg("event exists"))
 		}
 
+		match self.contains_complement(event) {
+			// removing the complement to cancel out a prior update
+			true => self.remove(&event.get_complement()),
+			// adding new update
+			false => self.add(event),
+		}
+
+		Ok(())
+	}
+
+	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> Result<()> {
+		if events.iter().any(|e| self.contains(e)) {
+			return Err(Error::msg("one or more events exist"))
+		}
+
 		for e in events {
-			match self.contains_complement(e) {
-				// removing the complement to cancel out a prior update
-				true => self.remove(&e.get_complement()),
-				// adding new update
-				false => self.add(e),
-			}
+			self.register_update(e)?;
 		}
 
 		Ok(())
@@ -49,20 +61,27 @@ impl UpdateTracker {
 	}
 
 	pub fn get_updates_for_connection_type(
+		&self,
+		connection_type: ConnectionType,
+	) -> Option<&Vec<UpdateEvent>> {
+		self.updates.get(&connection_type)
+	}
+
+	pub fn get_mut_updates_for_connection_type(
 		&mut self,
 		connection_type: ConnectionType,
 	) -> &Vec<UpdateEvent> {
 		self.updates.entry(connection_type).or_default()
 	}
 
-	fn contains(&self, event: &UpdateEvent) -> bool {
+	pub fn contains(&self, event: &UpdateEvent) -> bool {
 		match self.updates.get(event.get_connection_type()) {
 			Some(arr) => arr.contains(event),
 			None => false,
 		}
 	}
 
-	fn contains_complement(&self, event: &UpdateEvent) -> bool {
+	pub fn contains_complement(&self, event: &UpdateEvent) -> bool {
 		self.contains(&event.get_complement())
 	}
 
@@ -141,7 +160,7 @@ impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
 	use super::*;
 	use crate::dsnp::api_types::PrivacyType;
 
@@ -151,12 +170,12 @@ mod tests {
 		let mut tracker = UpdateTracker::new();
 		let event = UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public));
 		tracker
-			.register(&[event.clone()])
+			.register_update(&event.clone())
 			.expect("Should have registered successfully!");
 
 		// act
 		let exists = tracker.contains(&event);
-		let res = tracker.register(&[event]);
+		let res = tracker.register_update(&event);
 
 		// assert
 		assert!(exists);
@@ -171,12 +190,12 @@ mod tests {
 			UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public)),
 			UpdateEvent::create_remove(2, ConnectionType::Follow(PrivacyType::Public)),
 		];
-		tracker.register(&events).expect("Should have registered successfully!");
+		tracker.register_updates(&events).expect("Should have registered successfully!");
 		let complements: Vec<UpdateEvent> =
 			events.as_slice().iter().map(|e| e.get_complement()).collect();
 
 		// act
-		let res = tracker.register(&complements);
+		let res = tracker.register_updates(&complements);
 
 		// assert
 		assert!(res.is_ok());
@@ -200,7 +219,7 @@ mod tests {
 		];
 
 		// act
-		let res = tracker.register(&events);
+		let res = tracker.register_updates(&events);
 
 		// assert
 		assert!(res.is_ok());
