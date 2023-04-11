@@ -1,9 +1,25 @@
 #![allow(dead_code)] // todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
-use std::{fmt::Debug, hash::Hash};
+use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 
 /// Raw page of Graph (or Key) data
-pub type PageBlob = Vec<u8>;
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub struct PageData {
+	/// raw content of page data
+	pub content: Vec<u8>,
+
+	/// hash value of content
+	pub content_hash: PageHash,
+}
+
+#[derive(Clone, PartialEq, Eq, Debug, PartialOrd)]
+pub struct KeyData {
+	/// index of the key stored on chain
+	pub index: u16,
+
+	/// raw content of key data
+	pub content: Vec<u8>,
+}
 
 /// KeyPair used for encryption and PRI calculations
 pub struct KeyPair<E: EncryptionBehavior> {
@@ -44,6 +60,9 @@ pub type PageId = u16;
 /// Schema ID
 pub type SchemaId = u16;
 
+/// Page Hash type
+pub type PageHash = u32;
+
 /// A trait defining configurable settings for sdk
 pub trait Config {
 	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
@@ -57,8 +76,8 @@ pub struct Import<E: EncryptionBehavior> {
 	/// graph keys associated with this graph which is used for encryption and PRI generation
 	pub keys: Vec<KeyPair<E>>,
 
-	/// Raw page data containing the social graph retrieved from chain
-	pub pages: Vec<PageBlob>,
+	/// Page data containing the social graph retrieved from chain
+	pub pages: Vec<PageData>,
 }
 
 /// A connection representation in graph sdk
@@ -72,12 +91,16 @@ pub struct Connection {
 
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
-pub struct DsnpKeys<E: EncryptionBehavior> {
+#[derive(Debug, PartialEq)]
+pub struct DsnpKeys {
 	/// dsnp user id
 	pub dsnp_user_id: DsnpUserId,
 
+	/// content hash of itemized page
+	pub keys_hash: PageHash,
+
 	/// public keys for the dsnp user
-	pub keys: Vec<PublicKey<E>>,
+	pub keys: Vec<KeyData>,
 }
 
 /// Different kind of actions that can be applied to the graph
@@ -107,8 +130,8 @@ pub enum Action<E: EncryptionBehavior> {
 
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
 pub enum Update {
-	/// A `Persist` type is used to upsert a page on the chain with latest changes
-	Persist {
+	/// A `PersistPage` type is used to upsert a page on the chain with latest changes
+	PersistPage {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
@@ -126,8 +149,8 @@ pub enum Update {
 		payload: Vec<u8>,
 	},
 
-	/// A `Delete` type is used to remove a page from the chain
-	Delete {
+	/// A `DeletePage` type is used to remove a page from the chain
+	DeletePage {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
@@ -141,6 +164,21 @@ pub enum Update {
 		/// previous hash value is used to avoid updating a stale state
 		prev_hash: Vec<u8>,
 	},
+
+	/// A `Delete` type is used to remove a page from the chain
+	AddKey {
+		/// owner of the social graph
+		owner_dsnp_user_id: DsnpUserId,
+
+		/// schema id of location for keys
+		schema_id: SchemaId,
+
+		/// previous hash value is used to avoid updating a stale state
+		prev_hash: Vec<u8>,
+
+		/// social graph page data
+		payload: Vec<u8>,
+	},
 }
 
 /// Encapsulates details required to do a key rotation
@@ -153,4 +191,10 @@ pub struct Rotation<E: EncryptionBehavior> {
 
 	/// new key to use for encryption and PRI calculations
 	new_key: KeyPair<E>,
+}
+
+impl Ord for KeyData {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.index.cmp(&other.index)
+	}
 }
