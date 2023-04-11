@@ -25,7 +25,7 @@ impl From<Vec<u8>> for DsnpPrid {
 }
 
 /// Public key defined in DSNP used for encryption/decryption in private graph
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq, PartialOrd)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct DsnpPublicKey {
 	/// Multi-codec public key
 	#[serde(rename = "publicKey")]
@@ -103,6 +103,12 @@ impl<'de> Deserialize<'de> for DsnpPrid {
 		D: Deserializer<'de>,
 	{
 		deserializer.deserialize_byte_buf(PridVisitor)
+	}
+}
+
+impl PartialOrd for DsnpPublicKey {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
 	}
 }
 

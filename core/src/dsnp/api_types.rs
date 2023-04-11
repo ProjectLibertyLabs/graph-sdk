@@ -5,6 +5,9 @@ use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 /// Raw page of Graph (or Key) data
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct PageData {
+	/// Id of the page
+	pub page_id: PageId,
+
 	/// raw content of page data
 	pub content: Vec<u8>,
 
@@ -12,7 +15,7 @@ pub struct PageData {
 	pub content_hash: PageHash,
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, PartialOrd)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct KeyData {
 	/// index of the key stored on chain
 	pub index: u16,
@@ -191,6 +194,12 @@ pub struct Rotation<E: EncryptionBehavior> {
 
 	/// new key to use for encryption and PRI calculations
 	new_key: KeyPair<E>,
+}
+
+impl PartialOrd for KeyData {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
 }
 
 impl Ord for KeyData {

@@ -1,3 +1,4 @@
+#![allow(dead_code)] // todo: remove after usage
 use crate::{
 	dsnp::{
 		api_types::{DsnpKeys, KeyData, PageHash},
@@ -10,40 +11,65 @@ use anyhow::{Error, Result};
 use dryoc::keypair::StackKeyPair;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+/// A trait that defines all the functionality that a public key provider need to implement.
 trait PublicKeyProvider {
+	/// imports public keys with their hash and details into the provider
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
+
+	/// exports added new keys to be submitted to chain
 	fn export_new_keys(&self) -> Result<Vec<DsnpKeys>>;
+
+	/// get imported and new keys. New keys are appended in the end.
 	fn get_all_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey>;
+
+	/// returns a key by its id
 	fn get_key_by_id(&self, dsnp_user_id: DsnpUserId, key_id: u64) -> Option<&DsnpPublicKey>;
+
+	/// returns a key by its public key
 	fn get_key_by_public_key(
 		&self,
 		dsnp_user_id: DsnpUserId,
 		public_key: Vec<u8>,
 	) -> Option<&DsnpPublicKey>;
+
+	/// returns the active key for a a user to used for encryption
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey>;
+
+	/// adds a new public key to the provider
 	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<u64>;
 }
 
+/// Common trait that manages public and private keys for each user
 trait UserKeyProvider {
+	/// imports key pairs into a provider
 	fn import_key_pairs(&mut self, pairs: Vec<StackKeyPair>);
+
+	/// returns the dsnp associate and keypair with a certain id
 	fn get_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)>;
 }
 
 pub struct PublicKeyManager {
 	/// keys are stored sorted by index
 	dsnp_user_to_keys: HashMap<DsnpUserId, (Vec<DsnpPublicKey>, PageHash)>,
+
+	/// stores and keeps track of any new key being added
 	new_keys: HashMap<DsnpUserId, DsnpPublicKey>,
 }
 
 pub struct UserKeyManager {
+	/// keeps a reference to the global instance of public key provider
 	public_key_manager: Rc<RefCell<PublicKeyManager>>,
+
+	/// current user dsnp id that this key manager belongs to
 	dsnp_user_id: DsnpUserId,
+
+	/// key pairs associated with this user
 	keys: Vec<StackKeyPair>,
 }
 
 impl PublicKeyProvider for PublicKeyManager {
 	/// importing dsnp keys as they are retrieved from blockchain
-	/// sorting indices since id's might not be unique but indices definitely should be
+	/// sorting indices since ids might not be unique but indices definitely should be
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()> {
 		let mut sorted_keys = keys.keys.clone().to_vec();
 		// sorting by index in ascending mode
@@ -93,9 +119,7 @@ impl PublicKeyProvider for PublicKeyManager {
 	}
 
 	fn get_key_by_id(&self, dsnp_user_id: DsnpUserId, key_id: u64) -> Option<&DsnpPublicKey> {
-		// What should we do if there are more than one key with the same key_id uploaded?
-		// currently choosing the first one
-		self.get_all_keys(dsnp_user_id).into_iter().find(|k| k.key_id == key_id)
+		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |k| k.key_id == key_id).copied()
 	}
 
 	fn get_key_by_public_key(
@@ -103,11 +127,11 @@ impl PublicKeyProvider for PublicKeyManager {
 		dsnp_user_id: DsnpUserId,
 		public_key: Vec<u8>,
 	) -> Option<&DsnpPublicKey> {
-		self.get_all_keys(dsnp_user_id).into_iter().find(|k| k.key == public_key)
+		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |k| k.key == public_key).copied()
 	}
 
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey> {
-		self.get_all_keys(dsnp_user_id).last().copied()
+		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |_| true).copied()
 	}
 
 	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<u64> {
@@ -134,7 +158,9 @@ impl UserKeyProvider for UserKeyManager {
 		if let Some(dsnp) =
 			self.public_key_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
-			if let Some(pair) = self.keys.iter().find(|&k| k.public_key.to_vec() == dsnp.key) {
+			if let Some(pair) =
+				last_item_selector(self.keys.iter(), |&k| k.public_key.to_vec() == dsnp.key)
+			{
 				return Some((dsnp.clone(), pair.clone()))
 			}
 		}
@@ -166,10 +192,21 @@ impl UserKeyManager {
 	}
 }
 
+/// This is a selector function that tries to get the last item inside an iterator which
+/// satisfies the passed filter
+/// This is mainly used for selecting the last key in the collection as a tie breaker in case there
+/// are some duplicates for any filter like key ids
+fn last_item_selector<'a, I, V: 'a, F>(values: I, filter: F) -> Option<&'a V>
+where
+	I: Iterator<Item = &'a V>,
+	F: FnMut(&&'a V) -> bool,
+{
+	values.filter(filter).last()
+}
+
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use std::borrow::Borrow;
 
 	fn create_dsnp_keys(
 		dsnp_user_id: DsnpUserId,
