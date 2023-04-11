@@ -8,7 +8,7 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use dryoc::keypair::StackKeyPair;
-use std::{cell::RefCell, collections::HashMap, ops::Deref, rc::Rc, sync::RwLock};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 trait PublicKeyProvider {
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
@@ -36,7 +36,7 @@ pub struct PublicKeyManager {
 }
 
 pub struct UserKeyManager {
-	public_key_manager: RwLock<PublicKeyManager>,
+	public_key_manager: Rc<RefCell<PublicKeyManager>>,
 	dsnp_user_id: DsnpUserId,
 	keys: Vec<StackKeyPair>,
 }
@@ -132,7 +132,7 @@ impl UserKeyProvider for UserKeyManager {
 
 	fn get_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)> {
 		if let Some(dsnp) =
-			self.public_key_manager.read().unwrap().get_key_by_id(self.dsnp_user_id, key_id)
+			self.public_key_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
 			if let Some(pair) = self.keys.iter().find(|&k| k.public_key.to_vec() == dsnp.key) {
 				return Some((dsnp.clone(), pair.clone()))
@@ -158,7 +158,10 @@ impl PublicKeyManager {
 }
 
 impl UserKeyManager {
-	pub fn new(public_key_manager: RwLock<PublicKeyManager>, dsnp_user_id: DsnpUserId) -> Self {
+	pub fn new(
+		public_key_manager: Rc<RefCell<PublicKeyManager>>,
+		dsnp_user_id: DsnpUserId,
+	) -> Self {
 		Self { public_key_manager, dsnp_user_id, keys: vec![] }
 	}
 }
@@ -251,31 +254,30 @@ mod tests {
 		assert_eq!(key_manager.get_all_keys(dsnp_user_id).len(), 3);
 	}
 
-	// #[test]
-	// fn user_key_manager_should_import_and_retrieve_keys_as_expected() {
-	// 	// arrange
-	// 	let dsnp_user_id = 2;
-	// 	let mut public_key_manager = PublicKeyManager::new();
-	// 	let mut rc = RwLock::new(&public_key_manager);
-	// 	let mut user_key_manager = UserKeyManager::new(rc.read().unwrap().clone(), dsnp_user_id);
-	// 	let key_pair = StackKeyPair::gen();
-	// 	let keys_hash = 233;
-	// 	let key1 = DsnpPublicKey { key_id: 19, key: key_pair.public_key.to_vec() };
-	// 	let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-	// 	let keys = create_dsnp_keys(
-	// 		dsnp_user_id,
-	// 		keys_hash,
-	// 		vec![
-	// 			KeyData { index: 1, content: serialized1 },
-	// 		],
-	// 	);
-	// 	rc.get_mut().unwrap().import_dsnp_keys(keys).expect("should work");
-	//
-	// 	// act
-	// 	user_key_manager.import_key_pairs(vec![key_pair.clone()]);
-	//
-	// 	// assert
-	// 	let key = user_key_manager.get_key(key1.key_id);
-	// 	assert_eq!(key, Some((&key1, &key_pair)));
-	// }
+	#[test]
+	fn user_key_manager_should_import_and_retrieve_keys_as_expected() {
+		// arrange
+		let dsnp_user_id = 2;
+		let public_key_manager = PublicKeyManager::new();
+		let rc = Rc::new(RefCell::new(public_key_manager));
+		let clone1 = Rc::clone(&rc);
+		let mut user_key_manager = UserKeyManager::new(rc.clone(), dsnp_user_id);
+		let key_pair = StackKeyPair::gen();
+		let keys_hash = 233;
+		let key1 = DsnpPublicKey { key_id: 19, key: key_pair.public_key.to_vec() };
+		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
+		let keys = create_dsnp_keys(
+			dsnp_user_id,
+			keys_hash,
+			vec![KeyData { index: 1, content: serialized1 }],
+		);
+		clone1.borrow_mut().import_dsnp_keys(keys).expect("should work");
+
+		// act
+		user_key_manager.import_key_pairs(vec![key_pair.clone()]);
+
+		// assert
+		let key = user_key_manager.get_key(key1.key_id);
+		assert_eq!(key, Some((key1, key_pair)));
+	}
 }
