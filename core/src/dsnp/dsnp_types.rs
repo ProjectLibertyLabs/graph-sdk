@@ -170,3 +170,20 @@ impl<'de> Visitor<'de> for PridVisitor {
 		Ok(DsnpPrid::new(&bytes))
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn dsnp_public_key_should_be_ordered_by_key_id_asc() {
+		let a = DsnpPublicKey { key_id: 1, key: vec![] };
+		let b = DsnpPublicKey { key_id: 19, key: vec![] };
+		let c = DsnpPublicKey { key_id: 20, key: vec![] };
+		let mut arr = vec![b.clone(), a.clone(), c.clone()];
+
+		arr.sort();
+
+		assert_eq!(arr, vec![a, b, c]);
+	}
+}

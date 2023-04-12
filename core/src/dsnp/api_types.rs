@@ -207,3 +207,20 @@ impl Ord for KeyData {
 		self.index.cmp(&other.index)
 	}
 }
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn key_data_should_be_ordered_by_index_asc() {
+		let a = KeyData { index: 1, content: vec![] };
+		let b = KeyData { index: 19, content: vec![] };
+		let c = KeyData { index: 20, content: vec![] };
+		let mut arr = vec![b.clone(), a.clone(), c.clone()];
+
+		arr.sort();
+
+		assert_eq!(arr, vec![a, b, c]);
+	}
+}

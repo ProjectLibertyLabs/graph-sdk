@@ -222,6 +222,32 @@ mod tests {
 	}
 
 	#[test]
+	fn public_key_manager_import_should_clean_previous_keys() {
+		// arrange
+		let mut key_manager = PublicKeyManager::new();
+		let dsnp_user_id = 23;
+		let key_hash = 128;
+		let key1 = DsnpPublicKey { key_id: 128, key: b"217678127812871812334324".to_vec() };
+		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
+		let old_keys = create_dsnp_keys(
+			dsnp_user_id,
+			key_hash,
+			vec![KeyData { index: 2, content: serialized1 }],
+		);
+		key_manager.import_dsnp_keys(old_keys).expect("should work");
+		key_manager
+			.add_new_key(dsnp_user_id, b"21767812782988871812334324".to_vec())
+			.expect("should add new key");
+
+		// act
+		let _ = key_manager.import_dsnp_keys(create_dsnp_keys(dsnp_user_id, key_hash, vec![]));
+
+		// assert
+		assert_eq!(key_manager.dsnp_user_to_keys.get(&dsnp_user_id), Some(&(Vec::new(), key_hash)));
+		assert_eq!(key_manager.new_keys.get(&dsnp_user_id), None);
+	}
+
+	#[test]
 	fn public_key_manager_should_import_and_retrieve_keys_as_expected() {
 		// arrange
 		let dsnp_user_id = 23;
@@ -297,12 +323,38 @@ mod tests {
 	}
 
 	#[test]
+	fn public_key_manager_get_key_by_id_should_return_last_key_when_duplicate_ids_exists() {
+		// arrange
+		let dsnp_user_id = 2;
+		let key1 = DsnpPublicKey { key_id: 4, key: b"217678127812871812334324".to_vec() };
+		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
+		let key2 = DsnpPublicKey { key_id: 4, key: b"217678127812871812334325".to_vec() };
+		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
+		let keys = create_dsnp_keys(
+			dsnp_user_id,
+			233,
+			vec![
+				KeyData { index: 1, content: serialized1 },
+				KeyData { index: 2, content: serialized2 },
+			],
+		);
+		let mut key_manager = PublicKeyManager::new();
+		key_manager.import_dsnp_keys(keys).expect("should work");
+
+		// act
+		let res = key_manager.get_key_by_id(dsnp_user_id, key1.key_id);
+
+		// assert
+		assert_eq!(res, Some(&key2));
+	}
+
+	#[test]
 	fn user_key_manager_should_import_and_retrieve_keys_as_expected() {
 		// arrange
 		let dsnp_user_id = 2;
 		let public_key_manager = PublicKeyManager::new();
 		let rc = Rc::new(RefCell::new(public_key_manager));
-		let clone1 = Rc::clone(&rc);
+		let mutable_clone = rc.clone();
 		let mut user_key_manager = UserKeyManager::new(rc.clone(), dsnp_user_id);
 		let key_pair = StackKeyPair::gen();
 		let keys_hash = 233;
@@ -313,7 +365,7 @@ mod tests {
 			keys_hash,
 			vec![KeyData { index: 1, content: serialized1 }],
 		);
-		clone1.borrow_mut().import_dsnp_keys(keys).expect("should work");
+		mutable_clone.borrow_mut().import_dsnp_keys(keys).expect("should work");
 
 		// act
 		user_key_manager.import_key_pairs(vec![key_pair.clone()]);
