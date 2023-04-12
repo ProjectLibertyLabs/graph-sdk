@@ -1,4 +1,4 @@
-#![allow(dead_code)] // todo: remove after usage
+// todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
 use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 
@@ -26,6 +26,9 @@ pub struct KeyData {
 
 /// KeyPair used for encryption and PRI calculations
 pub struct KeyPair<E: EncryptionBehavior> {
+	/// Key identifier
+	pub key_id: u64,
+
 	/// Public key
 	pub public_key: E::EncryptionInput,
 
@@ -42,7 +45,7 @@ pub enum PrivacyType {
 	/// publicly accessible graph
 	Public,
 
-	/// only accessible to owner of the graph and whoever it is shared with
+	/// only accessible to owner of the graph and whoever the encryption keys have been shared with
 	Private,
 }
 
@@ -55,6 +58,14 @@ pub enum ConnectionType {
 	/// Friendship is two-way connection type, which means it is stored in both sides and each
 	/// side can revoke the connection for both sides
 	Friendship(PrivacyType),
+}
+
+impl ConnectionType {
+	pub const fn privacy_type(&self) -> PrivacyType {
+		match self {
+			Self::Follow(privacy) | Self::Friendship(privacy) => *privacy,
+		}
+	}
 }
 
 /// Graph page id
@@ -70,17 +81,34 @@ pub type PageHash = u32;
 pub trait Config {
 	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
 }
-
-/// Encapsulates all the keys and page data that needs to be retrieved from chain
-pub struct Import<E: EncryptionBehavior> {
+/// Encapsulates all the decryption keys and page data that need to be retrieved from chain
+pub struct ImportBundle<E: EncryptionBehavior> {
 	/// graph owner dsnp user id
 	pub dsnp_user_id: DsnpUserId,
+
+	/// Connection type of graph being imported
+	pub connection_type: ConnectionType,
 
 	/// graph keys associated with this graph which is used for encryption and PRI generation
 	pub keys: Vec<KeyPair<E>>,
 
 	/// Page data containing the social graph retrieved from chain
 	pub pages: Vec<PageData>,
+}
+
+/// Encapsulates all page updates for a user's graph to be sent to the chain
+pub struct ExportBundle {
+	/// Graph owner DSNP user ID
+	pub dsnp_user_id: DsnpUserId,
+
+	/// Connection type of graph being exported
+	pub connection_type: ConnectionType,
+
+	/// Pages to be updated in the graph
+	pub updated_pages: Vec<PageData>,
+
+	/// Pages to be removed from the graph
+	pub removed_pages: Vec<PageData>,
 }
 
 /// A connection representation in graph sdk
@@ -131,16 +159,25 @@ pub enum Action<E: EncryptionBehavior> {
 	},
 }
 
+impl<E: EncryptionBehavior> Action<E> {
+	pub fn owner_dsnp_user_id(&self) -> DsnpUserId {
+		match *self {
+			Action::Connect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
+			Action::Disconnect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
+		}
+	}
+}
+
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
+#[allow(dead_code)]
 pub enum Update {
 	/// A `PersistPage` type is used to upsert a page on the chain with latest changes
 	PersistPage {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// schema id of this change, each graph has it's own schema so it depends on the graph type
-		/// which is modified
-		schema_id: SchemaId,
+		/// type of the connection
+		connection_type: ConnectionType,
 
 		/// page id associated with changed page
 		page_id: PageId,
@@ -157,9 +194,8 @@ pub enum Update {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// schema id of this change, each graph has it's own schema so it depends on the graph type
-		/// which is modified
-		schema_id: SchemaId,
+		/// type of the connection
+		connection_type: ConnectionType,
 
 		/// page id associated with changed page
 		page_id: PageId,
@@ -173,9 +209,6 @@ pub enum Update {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// schema id of location for keys
-		schema_id: SchemaId,
-
 		/// previous hash value is used to avoid updating a stale state
 		prev_hash: Vec<u8>,
 
@@ -184,6 +217,7 @@ pub enum Update {
 	},
 }
 
+#[allow(dead_code)] // todo: use or remove
 /// Encapsulates details required to do a key rotation
 pub struct Rotation<E: EncryptionBehavior> {
 	/// owner of the social graph

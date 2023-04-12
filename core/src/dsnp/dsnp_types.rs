@@ -1,8 +1,14 @@
+use anyhow::{Error as AnyError, Result};
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
 };
 use std::{cmp, cmp::Ordering, error::Error, fmt};
+
+use super::{
+	compression::{CompressionBehavior, DeflateCompression},
+	schema::SchemaHandler,
+};
 
 /// DSNP User Id
 pub type DsnpUserId = u64;
@@ -11,9 +17,10 @@ pub type DsnpUserId = u64;
 const PRID_LEN_IN_BYTES: usize = 8;
 /// Inner Graph type used in both private and public graphs
 pub type DsnpInnerGraph = Vec<DsnpGraphEdge>;
+
 /// `Pseudonymous Relationship Identifier` which allows private connection verification
 /// Wrapping in its own Struct allows easier serialization and deserialization
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DsnpPrid {
 	inner: Vec<u8>,
 }
@@ -45,6 +52,23 @@ pub struct DsnpUserPublicGraphChunk {
 	pub compressed_public_graph: Vec<u8>,
 }
 
+impl TryFrom<&[u8]> for DsnpUserPublicGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+		SchemaHandler::read_public_graph_chunk(data)
+	}
+}
+
+impl TryFrom<DsnpInnerGraph> for DsnpUserPublicGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(inner_graph: DsnpInnerGraph) -> Result<Self, Self::Error> {
+		let uncompressed_chunk = SchemaHandler::write_inner_graph(&inner_graph)?;
+		Ok(Self { compressed_public_graph: DeflateCompression::compress(&uncompressed_chunk)? })
+	}
+}
+
 /// Graph Edge defined in DSNP to store each connection
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
 pub struct DsnpGraphEdge {
@@ -67,14 +91,18 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "pridList")]
 	pub prids: Vec<DsnpPrid>,
 
-	/// Days since the Unix Epoch when PRIds were last refreshed for this chunk
-	#[serde(rename = "lastUpdated")]
-	pub last_updated: u64,
-
 	/// lib_sodium sealed box
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
 	#[serde(with = "serde_bytes")]
 	pub encrypted_compressed_private_graph: Vec<u8>,
+}
+
+impl TryFrom<&[u8]> for DsnpUserPrivateGraphChunk {
+	type Error = AnyError;
+
+	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+		SchemaHandler::read_private_graph_chunk(data)
+	}
 }
 
 impl DsnpPrid {

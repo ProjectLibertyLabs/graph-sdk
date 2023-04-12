@@ -8,9 +8,6 @@ pub struct PrivateGraphChunk {
 	/// User-Assigned Key Identifier
 	pub prids: Vec<DsnpPrid>,
 
-	/// Days since the Unix Epoch when PRIds for this chunk were last refreshed
-	pub last_updated: u64,
-
 	/// connections
 	pub inner_graph: DsnpInnerGraph,
 }

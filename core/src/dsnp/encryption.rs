@@ -21,6 +21,7 @@ pub trait EncryptionBehavior {
 }
 
 /// XSalsa20Poly1305 encryption algorithm
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct SealBox;
 
 impl EncryptionBehavior for SealBox {
