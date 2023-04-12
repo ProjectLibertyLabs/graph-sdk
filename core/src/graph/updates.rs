@@ -144,7 +144,7 @@ impl UpdateEvent {
 pub trait UpdateAPI<E: EncryptionBehavior> {
 	fn calculate_updates(
 		&mut self,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>>;
 }
@@ -152,10 +152,10 @@ pub trait UpdateAPI<E: EncryptionBehavior> {
 impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
 	fn calculate_updates(
 		&mut self,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>> {
-		self.calculate_updates(connection_keys, encryption_key)
+		self.calculate_updates::<E>(connection_keys, encryption_key)
 	}
 }
 

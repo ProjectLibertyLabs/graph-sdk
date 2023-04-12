@@ -28,11 +28,11 @@ pub struct GraphPage {
 }
 
 /// Conversion for Public Graph
-impl TryFrom<&PageBlob> for GraphPage {
+impl TryFrom<&PageData> for GraphPage {
 	type Error = Error;
-	fn try_from(PageBlob { content_hash, payload, page_id, .. }: &PageBlob) -> Result<Self> {
+	fn try_from(PageData { content_hash, content, page_id, .. }: &PageData) -> Result<Self> {
 		let DsnpUserPublicGraphChunk { compressed_public_graph } =
-			DsnpUserPublicGraphChunk::try_from(payload.as_slice())?;
+			DsnpUserPublicGraphChunk::try_from(content.as_slice())?;
 		let uncompressed_chunk = DeflateCompression::decompress(&compressed_public_graph)?;
 		Ok(Self {
 			page_id: *page_id,
@@ -45,13 +45,13 @@ impl TryFrom<&PageBlob> for GraphPage {
 }
 
 /// Conversion for Private Graph
-impl<E: EncryptionBehavior> TryFrom<(&PageBlob, &Vec<KeyPair<E>>)> for GraphPage {
+impl<E: EncryptionBehavior> TryFrom<(&PageData, &Vec<KeyPair<E>>)> for GraphPage {
 	type Error = Error;
 	fn try_from(
-		(PageBlob { content_hash, payload, page_id, .. }, keys): (&PageBlob, &Vec<KeyPair<E>>),
+		(PageData { content_hash, content, page_id, .. }, keys): (&PageData, &Vec<KeyPair<E>>),
 	) -> Result<Self> {
 		let DsnpUserPrivateGraphChunk { key_id, encrypted_compressed_private_graph, prids } =
-			DsnpUserPrivateGraphChunk::try_from(payload.as_slice())?;
+			DsnpUserPrivateGraphChunk::try_from(content.as_slice())?;
 		let mut decrypted_chunk: Option<Vec<u8>> = None;
 
 		// First try the key that was indicated in the page
@@ -189,14 +189,14 @@ impl GraphPage {
 	/// Refresh PRIds based on latest keys
 	pub fn update_prids<E: EncryptionBehavior>(
 		&mut self,
-		_prid_keys: &Vec<DsnpKeys<E>>,
+		_prid_keys: &Vec<DsnpKeys>,
 	) -> Result<()> {
 		todo!()
 	}
 
 	/// Import another user's private graph without decrypting the page,
 	/// in order to just get the prids. Returns a new page.
-	pub fn new_opaque(blob: &PageBlob) -> Result<Self> {
+	pub fn new_opaque(blob: &PageData) -> Result<Self> {
 		let mut new_page = Self::new(PrivacyType::Private, blob.page_id);
 		new_page.import_opaqe(blob)?;
 		Ok(new_page)
@@ -204,8 +204,8 @@ impl GraphPage {
 
 	/// Import another user's private graph without decrypting the page,
 	/// in order to just get the prids. Overwrites the existing page.
-	pub fn import_opaqe(&mut self, blob: &PageBlob) -> Result<()> {
-		let PageBlob { payload, page_id, content_hash, .. } = blob;
+	pub fn import_opaqe(&mut self, data: &PageData) -> Result<()> {
+		let PageData { content, page_id, content_hash, .. } = data;
 		if self.page_id != *page_id {
 			return Err(Error::msg("Mismatched page_id on import"))
 		}
@@ -214,7 +214,7 @@ impl GraphPage {
 			return Err(Error::msg("Non-private opaque import rejected"))
 		}
 
-		let chunk: DsnpUserPrivateGraphChunk = payload.as_slice().try_into()?;
+		let chunk: DsnpUserPrivateGraphChunk = content.as_slice().try_into()?;
 		self.content_hash = *content_hash;
 		self.prids = chunk.prids;
 		self.connections = Vec::new();
@@ -223,20 +223,20 @@ impl GraphPage {
 
 	// TODO: make trait-based
 	// Convert to a binary payload according to the DSNP Public Graph schema
-	pub fn to_removed_blob(&self) -> PageBlob {
-		PageBlob { content_hash: self.content_hash, page_id: self.page_id, payload: Vec::new() }
+	pub fn to_removed_page_data(&self) -> PageData {
+		PageData { content_hash: self.content_hash, page_id: self.page_id, content: Vec::new() }
 	}
 
 	// TODO: make trait-based
 	// Convert to a binary payload according to the DSNP Public Graph schema
-	pub fn to_public_blob(&self) -> Result<PageBlob> {
+	pub fn to_public_page_data(&self) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Public {
 			return Err(Error::msg("Incompatible privacy type for blob export"))
 		}
 
-		let payload =
+		let content =
 			SchemaHandler::write_public_graph_chunk(&self.connections.clone().try_into()?)?;
-		Ok(PageBlob { content_hash: self.content_hash, page_id: self.page_id, payload })
+		Ok(PageData { content_hash: self.content_hash, page_id: self.page_id, content })
 	}
 
 	// TODO: make trait-based
@@ -244,13 +244,13 @@ impl GraphPage {
 	pub fn to_private_blob<E: EncryptionBehavior>(
 		&mut self,
 		(key_id, key): (u64, &PublicKey<E>),
-		prid_keys: &Vec<DsnpKeys<E>>,
-	) -> Result<PageBlob> {
+		prid_keys: &Vec<DsnpKeys>,
+	) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Private {
 			return Err(Error::msg("Incompatible privacy type for blob export"))
 		}
 
-		self.update_prids(prid_keys)?;
+		self.update_prids::<E>(prid_keys)?;
 
 		let DsnpUserPublicGraphChunk { compressed_public_graph } =
 			self.connections.clone().try_into()?;
@@ -260,10 +260,10 @@ impl GraphPage {
 			encrypted_compressed_private_graph: E::encrypt(&compressed_public_graph, key)?,
 		};
 
-		Ok(PageBlob {
+		Ok(PageData {
 			page_id: self.page_id,
 			content_hash: self.content_hash,
-			payload: SchemaHandler::write_private_graph_chunk(&private_chunk)?,
+			content: SchemaHandler::write_private_graph_chunk(&private_chunk)?,
 		})
 	}
 }
@@ -405,7 +405,7 @@ mod test {
 
 	#[test]
 	fn new_opaque_with_bad_payload_fails() {
-		let blob = PageBlob { content_hash: 0, page_id: 1, payload: Vec::new() };
+		let blob = PageData { content_hash: 0, page_id: 1, content: Vec::new() };
 		assert!(GraphPage::new_opaque(&blob).is_err());
 	}
 }

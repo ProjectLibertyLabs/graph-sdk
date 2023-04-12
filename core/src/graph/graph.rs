@@ -130,7 +130,7 @@ impl Graph {
 		&self,
 		updates: &Vec<UpdateEvent>,
 		dsnp_user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<ExportBundle> {
 		let ids_to_remove: Vec<DsnpUserId> = updates
@@ -226,10 +226,10 @@ impl Graph {
 		}
 
 		// If any pages now empty, add to the remove list
-		let mut removed_pages: Vec<PageBlob> = Vec::new();
+		let mut removed_pages: Vec<PageData> = Vec::new();
 		updated_pages.retain(|_, page| {
 			if page.is_empty() {
-				removed_pages.push(page.to_removed_blob());
+				removed_pages.push(page.to_removed_page_data());
 				return false
 			}
 			true
@@ -239,12 +239,12 @@ impl Graph {
 			updated_pages.insert(last_page.page_id(), *last_page);
 		}
 
-		let updated_blobs: Result<Vec<PageBlob>> = match self.connection_type.privacy_type() {
+		let updated_blobs: Result<Vec<PageData>> = match self.connection_type.privacy_type() {
 			PrivacyType::Public =>
-				updated_pages.values().map(|page| page.to_public_blob()).collect(),
+				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			PrivacyType::Private => updated_pages
 				.iter_mut()
-				.map(|(_, page)| page.to_private_blob(encryption_key, connection_keys))
+				.map(|(_, page)| page.to_private_blob::<E>(encryption_key, connection_keys))
 				.collect(),
 		};
 
@@ -452,7 +452,7 @@ mod test {
 	#[test]
 	fn import_public_gets_correct_data() {
 		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Public));
-		let blob = PageBlob { content_hash: 0, page_id: 0, payload: avro_public_payload() };
+		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
 		let bundle: ImportBundle<SealBox> = ImportBundle {
 			connection_type: ConnectionType::Follow(PrivacyType::Public),
 			dsnp_user_id: 1234,

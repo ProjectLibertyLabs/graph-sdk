@@ -46,7 +46,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 	fn export_user_updates(
 		&mut self,
 		user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>>;
 
@@ -146,7 +146,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	fn export_user_updates(
 		&mut self,
 		user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>> {
 		let user_graph = match self.user_map.get_mut(user_id) {
@@ -154,7 +154,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 			Some(graph) => Ok(graph),
 		}?;
 
-		user_graph.calculate_updates(connection_keys, encryption_key)
+		user_graph.calculate_updates::<E>(connection_keys, encryption_key)
 	}
 
 	/// Apply an action (Connect, Disconnect) to a user's graph

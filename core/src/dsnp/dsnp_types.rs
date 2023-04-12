@@ -3,7 +3,7 @@ use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{cmp, error::Error, fmt};
+use std::{cmp, cmp::Ordering, error::Error, fmt};
 
 use super::{
 	compression::{CompressionBehavior, DeflateCompression},
@@ -32,7 +32,7 @@ impl From<Vec<u8>> for DsnpPrid {
 }
 
 /// Public key defined in DSNP used for encryption/decryption in private graph
-#[derive(Debug, Deserialize, Serialize, Clone, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct DsnpPublicKey {
 	/// Multi-codec public key
 	#[serde(rename = "publicKey")]
@@ -42,10 +42,6 @@ pub struct DsnpPublicKey {
 	/// User-Assigned Key Identifier
 	#[serde(rename = "keyId")]
 	pub key_id: u64,
-
-	/// Unix epoch seconds
-	#[serde(rename = "revokedAsOf")]
-	pub revoked_as_of: u64,
 }
 
 /// Public Graph Chunk defined in DSNP to store compressed public graph
@@ -138,6 +134,18 @@ impl<'de> Deserialize<'de> for DsnpPrid {
 	}
 }
 
+impl PartialOrd for DsnpPublicKey {
+	fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+		Some(self.cmp(other))
+	}
+}
+
+impl Ord for DsnpPublicKey {
+	fn cmp(&self, other: &Self) -> Ordering {
+		self.key_id.cmp(&other.key_id)
+	}
+}
+
 /// Used in deserialization of fixed type
 struct PridVisitor;
 
@@ -188,5 +196,22 @@ impl<'de> Visitor<'de> for PridVisitor {
 		}
 
 		Ok(DsnpPrid::new(&bytes))
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test]
+	fn dsnp_public_key_should_be_ordered_by_key_id_asc() {
+		let a = DsnpPublicKey { key_id: 1, key: vec![] };
+		let b = DsnpPublicKey { key_id: 19, key: vec![] };
+		let c = DsnpPublicKey { key_id: 20, key: vec![] };
+		let mut arr = vec![b.clone(), a.clone(), c.clone()];
+
+		arr.sort();
+
+		assert_eq!(arr, vec![a, b, c]);
 	}
 }

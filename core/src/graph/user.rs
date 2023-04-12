@@ -88,13 +88,13 @@ impl UserGraph {
 	/// Cacluate pending updates
 	pub fn calculate_updates<E: EncryptionBehavior>(
 		&mut self,
-		connection_keys: &Vec<DsnpKeys<E>>,
+		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>> {
 		self.graphs
 			.iter()
 			.map(|(connection_type, graph)| {
-				graph.calculate_updates(
+				graph.calculate_updates::<E>(
 					self.update_tracker.get_mut_updates_for_connection_type(*connection_type),
 					&self.user_id,
 					connection_keys,
