@@ -5,5 +5,3 @@ pub mod encryption;
 mod pseudo_relationship_identifier;
 pub mod reader_writer;
 pub mod schema;
-#[cfg(test)]
-mod tests;

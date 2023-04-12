@@ -376,9 +376,8 @@ macro_rules! iter_graph_connections {
 
 #[cfg(test)]
 mod test {
-	use crate::dsnp::encryption::SealBox;
-
-	use super::{super::test_helpers::*, *};
+	use super::*;
+	use crate::{dsnp::encryption::SealBox, tests::helpers::*};
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 	use std::collections::HashMap;
