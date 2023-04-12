@@ -204,7 +204,7 @@ pub enum Update {
 		prev_hash: Vec<u8>,
 	},
 
-	/// A `Delete` type is used to remove a page from the chain
+	/// A `AddKey` type is used to add a new key to chain
 	AddKey {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
