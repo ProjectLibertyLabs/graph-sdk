@@ -43,7 +43,6 @@ impl DsnpReader for Frequency {
 			prids: chunk.prids,
 			key_id: chunk.key_id,
 			inner_graph: SchemaHandler::read_inner_graph(&decompressed)?,
-			last_updated: chunk.last_updated,
 		})
 	}
 }
@@ -73,7 +72,6 @@ impl DsnpWriter for Frequency {
 			key_id: graph.key_id,
 			prids: graph.prids.to_owned(),
 			encrypted_compressed_private_graph: encrypted_compressed,
-			last_updated: graph.last_updated,
 		})
 	}
 }
