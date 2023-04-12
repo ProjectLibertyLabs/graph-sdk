@@ -61,6 +61,10 @@ pub type PageId = u16;
 /// Schema ID
 pub type SchemaId = u16;
 
+/// A trait defining configurable settings for sdk
+pub trait Config {
+	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
+}
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
 pub struct ImportBundle<E: EncryptionBehavior> {
 	/// graph owner dsnp user id
@@ -135,7 +139,17 @@ pub enum Action<E: EncryptionBehavior> {
 	},
 }
 
+impl<E: EncryptionBehavior> Action<E> {
+	pub fn owner_dsnp_user_id(&self) -> DsnpUserId {
+		match *self {
+			Action::Connect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
+			Action::Disconnect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
+		}
+	}
+}
+
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
+#[allow(dead_code)]
 pub enum Update {
 	/// A `Persist` type is used to upsert a page on the chain with latest changes
 	Persist {
@@ -165,6 +179,7 @@ pub enum Update {
 	},
 }
 
+#[allow(dead_code)] // todo: use or remove
 /// Encapsulates details required to do a key rotation
 pub struct Rotation<E: EncryptionBehavior> {
 	/// owner of the social graph

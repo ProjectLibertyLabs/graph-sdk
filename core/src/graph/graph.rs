@@ -3,10 +3,7 @@ use crate::{
 	graph::updates::UpdateEvent,
 };
 use anyhow::{Error, Result};
-use std::{
-	collections::{HashMap, HashSet},
-	iter::Flatten,
-};
+use std::collections::{HashMap, HashSet};
 
 use super::page::GraphPage;
 use crate::dsnp::encryption::EncryptionBehavior;
@@ -29,7 +26,7 @@ impl Graph {
 
 	/// Get total number of connections in graph
 	pub fn len(&self) -> usize {
-		self.pages.iter().map(|(_, p)| p.connections()).flatten().count()
+		self.pages.values().flat_map(|p| p.connections()).count()
 	}
 
 	/// Getter for Pages in Graph
@@ -44,8 +41,7 @@ impl Graph {
 
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
-		let existing_pages =
-			self.pages.iter().map(|(page_id, _)| *page_id).collect::<HashSet<PageId>>();
+		let existing_pages = self.pages.keys().cloned().collect::<HashSet<PageId>>();
 		for pid in 0..MAX_PAGE_ID {
 			if !existing_pages.contains(&pid) {
 				return Some(pid)
@@ -190,11 +186,8 @@ impl Graph {
 		while let Some(_) = add_iter.clone().peekable().peek() {
 			if current_page.is_none() {
 				let available_page = self.pages.iter().find(|(page_id, page)| {
-					!updated_pages
-						.iter()
-						.map(|(id, _)| id)
-						.collect::<Vec<&PageId>>()
-						.contains(page_id) && !page.is_full(false)
+					!updated_pages.keys().collect::<Vec<&PageId>>().contains(page_id) &&
+						!page.is_full(false)
 				});
 
 				current_page = match available_page {
@@ -234,7 +227,7 @@ impl Graph {
 
 		// If any pages now empty, add to the remove list
 		let mut removed_pages: Vec<PageBlob> = Vec::new();
-		updated_pages.retain(|page_id, page| {
+		updated_pages.retain(|_, page| {
 			if page.is_empty() {
 				removed_pages.push(page.to_removed_blob());
 				return false
@@ -242,14 +235,13 @@ impl Graph {
 			true
 		});
 
-		if current_page.is_some() {
-			let last_page = current_page.unwrap();
+		if let Some(last_page) = current_page {
 			updated_pages.insert(last_page.page_id(), *last_page);
 		}
 
 		let updated_blobs: Result<Vec<PageBlob>> = match self.connection_type.privacy_type() {
 			PrivacyType::Public =>
-				updated_pages.iter().map(|(_, page)| page.to_public_blob()).collect(),
+				updated_pages.values().map(|page| page.to_public_blob()).collect(),
 			PrivacyType::Private => updated_pages
 				.iter_mut()
 				.map(|(_, page)| page.to_private_blob(encryption_key, connection_keys))
@@ -386,7 +378,7 @@ macro_rules! iter_graph_connections {
 mod test {
 	use crate::dsnp::encryption::SealBox;
 
-	use super::{super::helpers::*, *};
+	use super::{super::test_helpers::*, *};
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 	use std::collections::HashMap;

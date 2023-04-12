@@ -107,7 +107,7 @@ impl UserGraph {
 
 #[cfg(test)]
 mod test {
-	use crate::{graph::helpers::create_test_graph, iter_graph_connections};
+	use crate::{graph::test_helpers::create_test_graph, iter_graph_connections};
 
 	use super::*;
 

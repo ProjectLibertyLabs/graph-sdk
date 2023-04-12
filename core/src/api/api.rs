@@ -1,7 +1,7 @@
 use crate::{
 	dsnp::{
 		api_types::{
-			Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PrivacyType,
+			Action, Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PrivacyType,
 			PublicKey,
 		},
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
@@ -50,19 +50,8 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<ExportBundle>>;
 
-	/// Add the connection to the list of pending additions for the user
-	fn add_connection_for_user(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection: &Connection,
-	) -> Result<()>;
-
-	/// Add an indication that the connection is pending removal for the user
-	fn remove_connection_from_user(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection: &Connection,
-	) -> Result<()>;
+	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
+	fn apply_action(&mut self, action: &Action<E>) -> Result<()>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -168,37 +157,24 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 		user_graph.calculate_updates(connection_keys, encryption_key)
 	}
 
-	/// Add the connection to the list of pending additions for the user
-	fn add_connection_for_user(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection: &Connection,
-	) -> Result<()> {
-		let user_graph = match self.user_map.get_mut(user_id) {
-			Some(g) => g,
-			None => return Err(Error::msg("user graph not found in state")),
-		};
+	/// Apply an action (Connect, Disconnect) to a user's graph
+	fn apply_action(&mut self, action: &Action<E>) -> Result<()> {
+		if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
+			let update_event = match action {
+				Action::Connect {
+					connection: Connection { ref dsnp_user_id, ref connection_type },
+					..
+				} => UpdateEvent::create_add(*dsnp_user_id, *connection_type),
+				Action::Disconnect {
+					connection: Connection { ref dsnp_user_id, ref connection_type },
+					..
+				} => UpdateEvent::create_remove(*dsnp_user_id, *connection_type),
+			};
 
-		user_graph.update_tracker.register_update(&UpdateEvent::create_add(
-			connection.dsnp_user_id,
-			connection.connection_type,
-		))
-	}
+			return owner_graph.update_tracker.register_update(&update_event)
+		}
 
-	/// Add an indication that the connection is pending removal for the user
-	fn remove_connection_from_user(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection: &Connection,
-	) -> Result<()> {
-		let graph = match self.user_map.get_mut(user_id) {
-			Some(g) => g,
-			None => return Err(Error::msg("user graph not found in state")),
-		};
-		graph.update_tracker.register_update(&UpdateEvent::create_remove(
-			connection.dsnp_user_id,
-			connection.connection_type,
-		))
+		Err(Error::msg("user graph not found in state"))
 	}
 
 	/// Get a list of all connections of the indicated type for the user
@@ -242,7 +218,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 
 #[cfg(test)]
 mod test {
-	use crate::dsnp::encryption::SealBox;
+	use crate::dsnp::{api_types::Connection, encryption::SealBox};
 
 	use super::*;
 	const TEST_CAPACITY: usize = 10;
@@ -342,54 +318,64 @@ mod test {
 
 	#[test]
 	fn add_duplicate_connection_for_user_errors() {
-		let connection = Connection {
-			connection_type: ConnectionType::Follow(PrivacyType::Private),
-			dsnp_user_id: 1,
+		let owner_dsnp_user_id: DsnpUserId = 0;
+		let action = Action::Connect {
+			owner_dsnp_user_id,
+			connection: Connection {
+				connection_type: ConnectionType::Follow(PrivacyType::Private),
+				dsnp_user_id: 1,
+			},
+			connection_key: None,
 		};
 
 		let mut state: TestGraphState = TestGraphState::new();
 		let _ = state.add_user_graph(&0);
-		assert!(state.add_connection_for_user(&0, &connection).is_ok());
-		assert!(state.add_connection_for_user(&0, &connection).is_err());
+		assert!(state.apply_action(&action).is_ok());
+		assert!(state.apply_action(&action).is_err());
 	}
 
 	#[test]
 	fn add_connection_for_nonexistent_user_errors() {
 		let mut state: TestGraphState = TestGraphState::new();
 		assert!(state
-			.add_connection_for_user(
-				&0,
-				&Connection {
+			.apply_action(&Action::Connect {
+				owner_dsnp_user_id: 0,
+				connection: Connection {
 					dsnp_user_id: 1,
-					connection_type: ConnectionType::Follow(PrivacyType::Private),
+					connection_type: ConnectionType::Follow(PrivacyType::Private)
 				},
-			)
+				connection_key: None
+			})
 			.is_err());
 	}
 
 	#[test]
 	fn remove_connection_for_user_twice_errors() {
-		let connection: Connection = Connection {
-			dsnp_user_id: 1,
-			connection_type: ConnectionType::Follow(PrivacyType::Private),
+		let owner_dsnp_user_id: DsnpUserId = 0;
+		let action = Action::Disconnect {
+			owner_dsnp_user_id,
+			connection: Connection {
+				dsnp_user_id: 1,
+				connection_type: ConnectionType::Follow(PrivacyType::Private),
+			},
 		};
 		let mut state: TestGraphState = TestGraphState::new();
-		let _ = state.add_user_graph(&0);
-		assert!(state.remove_connection_from_user(&0, &connection).is_ok());
-		assert!(state.remove_connection_from_user(&0, &connection).is_err());
+		let _ = state.add_user_graph(&owner_dsnp_user_id);
+		assert!(state.apply_action(&action).is_ok());
+		assert!(state.apply_action(&action).is_err());
 	}
 
 	#[test]
 	fn remove_connection_from_nonexistent_user_errors() {
 		let mut state: TestGraphState = TestGraphState::new();
 		assert!(state
-			.remove_connection_from_user(
-				&0,
-				&Connection {
+			.apply_action(&Action::Disconnect {
+				owner_dsnp_user_id: 0,
+				connection: Connection {
 					dsnp_user_id: 1,
 					connection_type: ConnectionType::Follow(PrivacyType::Private),
 				}
-			)
+			})
 			.is_err());
 	}
 
