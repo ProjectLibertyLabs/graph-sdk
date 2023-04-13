@@ -55,7 +55,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 	) -> Result<Vec<ExportBundle>>;
 
 	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
-	fn apply_action(&mut self, action: &Action<E>) -> Result<()>;
+	fn apply_action(&mut self, action: &Action) -> Result<()>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -181,7 +181,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	}
 
 	/// Apply an action (Connect, Disconnect) to a user's graph
-	fn apply_action(&mut self, action: &Action<E>) -> Result<()> {
+	fn apply_action(&mut self, action: &Action) -> Result<()> {
 		if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
 			let update_event = match action {
 				Action::Connect {
@@ -339,9 +339,12 @@ mod test {
 		// arrange
 		let mut state: TestGraphState = TestGraphState::new();
 		let keypair = StackKeyPair::gen();
-		let input = ImportBundleBuilder::new(123, ConnectionType::Follow(PrivacyType::Public))
-			.with_key_pairs(&vec![keypair])
-			.with_page(1, &vec![2, 3, 4, 5, 6, 7, 8, 9])
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_page(1, &connections)
 			.build();
 
 		// act
@@ -351,8 +354,49 @@ mod test {
 		assert!(res.is_ok());
 
 		let public_manager = state.public_key_manager.borrow();
-		let keys = public_manager.get_all_keys(123);
+		let keys = public_manager.get_all_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
+
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		assert!(res.is_ok());
+		let mapped: Vec<_> = connections
+			.into_iter()
+			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.collect();
+		assert_eq!(res.unwrap(), mapped);
+	}
+
+	#[test]
+	fn import_user_data_should_import_keys_and_data_for_private_follow_graph() {
+		// arrange
+		let mut state: TestGraphState = TestGraphState::new();
+		let keypair = StackKeyPair::gen();
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_encryption_key(keypair)
+			.with_page(1, &connections)
+			.build();
+
+		// act
+		let res = state.import_user_data(input);
+
+		// assert
+		assert!(res.is_ok());
+
+		let public_manager = state.public_key_manager.borrow();
+		let keys = public_manager.get_all_keys(dsnp_user_id);
+		assert_eq!(keys.len(), 1);
+
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		assert!(res.is_ok());
+		let mapped: Vec<_> = connections
+			.into_iter()
+			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.collect();
+		assert_eq!(res.unwrap(), mapped);
 	}
 
 	#[test]
@@ -423,10 +467,43 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn get_connections_for_user_graph() {}
+	fn get_connections_for_user_graph_with_pending_should_include_updates() {
+		// arrange
+		let mut state: TestGraphState = TestGraphState::new();
+		let keypair = StackKeyPair::gen();
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_page(1, &connections)
+			.build();
+		state.import_user_data(input).expect("should work");
+		let actions = vec![
+			Action::Connect {
+				connection: Connection { connection_type, dsnp_user_id: 1 },
+				connection_key: None,
+				owner_dsnp_user_id: dsnp_user_id,
+			},
+			Action::Disconnect {
+				connection: Connection { connection_type, dsnp_user_id: 3 },
+				owner_dsnp_user_id: dsnp_user_id,
+			},
+		];
+		let expected_connections = vec![2, 4, 5, 1];
 
-	#[test]
-	#[ignore = "todo"]
-	fn get_connections_for_user_graph_with_pending() {}
+		// act
+		let res1 = state.apply_action(actions.get(0).unwrap());
+		let res2 = state.apply_action(actions.get(1).unwrap());
+
+		// assert
+		assert!(res1.is_ok());
+		assert!(res2.is_ok());
+
+		let connections_result =
+			state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, true);
+		assert!(connections_result.is_ok());
+		let mapped: Vec<_> = connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
+		assert_eq!(mapped, expected_connections);
+	}
 }

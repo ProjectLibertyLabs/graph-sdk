@@ -242,15 +242,16 @@ impl GraphPage {
 	// TODO: make trait-based
 	/// Convert to an encrypted binary payload according to the DSNP Private Graph schema
 	pub fn to_private_page_data<E: EncryptionBehavior>(
-		&mut self,
+		&self,
 		(key_id, key): (u64, &PublicKey<E>),
-		prid_keys: &Vec<DsnpKeys>,
+		_prid_keys: &Vec<DsnpKeys>,
 	) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Private {
 			return Err(Error::msg("Incompatible privacy type for blob export"))
 		}
 
-		self.update_prids::<E>(prid_keys)?;
+		// TODO should update PRI's before calling this
+		// self.update_prids::<E>(prid_keys)?;
 
 		let DsnpUserPublicGraphChunk { compressed_public_graph } =
 			self.connections.clone().try_into()?;
@@ -342,9 +343,12 @@ mod test {
 
 	#[test]
 	fn is_full_non_aggressive_returns_true_for_full() {
-		let page = create_page(
-			(0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64).collect::<Vec<u64>>().as_slice(),
-		);
+		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64).collect::<Vec<u64>>();
+		let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
+			.with_page(1, &connections)
+			.build();
+
+		let page = pages.first().expect("page should exist");
 		assert_eq!(page.is_full(false), true);
 	}
 

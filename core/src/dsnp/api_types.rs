@@ -1,6 +1,6 @@
 // todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
-use dryoc::keypair::StackKeyPair;
+use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
 use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 
 /// Raw page of Graph (or Key) data
@@ -136,7 +136,7 @@ pub struct DsnpKeys {
 }
 
 /// Different kind of actions that can be applied to the graph
-pub enum Action<E: EncryptionBehavior> {
+pub enum Action {
 	/// an action that defines adding a connection in the social graph
 	Connect {
 		/// owner of the social graph
@@ -147,7 +147,7 @@ pub enum Action<E: EncryptionBehavior> {
 
 		/// public key associated with the user in the connection
 		/// included only if PRId calculation is required
-		connection_key: Option<PublicKey<E>>,
+		connection_key: Option<StackPublicKey>,
 	},
 
 	/// an action that defines removing an existing connection from social graph
@@ -160,7 +160,7 @@ pub enum Action<E: EncryptionBehavior> {
 	},
 }
 
-impl<E: EncryptionBehavior> Action<E> {
+impl Action {
 	pub fn owner_dsnp_user_id(&self) -> DsnpUserId {
 		match *self {
 			Action::Connect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,

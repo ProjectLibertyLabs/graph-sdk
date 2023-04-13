@@ -30,36 +30,31 @@ impl From<DsnpUserId> for DsnpPrid {
 	}
 }
 
-pub fn create_page(ids: &[DsnpUserId]) -> GraphPage {
-	let mut page = GraphPage::new(crate::dsnp::api_types::PrivacyType::Private, 0);
-	page.set_connections(ids.iter().map(create_graph_edge).collect());
-	page.set_prids(ids.iter().map(|id| DsnpPrid::from(*id)).collect());
-	page
-}
-
 /// Create test data for a single page
 pub fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
 	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec();
-	let page = create_page(&ids);
+	let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
+		.with_page(1, &ids)
+		.build();
+	let page = pages.first().expect("page should exist").clone();
 	(ids, page)
 }
 
 /// Create a test instance of a Graph
 pub fn create_test_graph() -> Graph {
+	let mut page_builder = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private));
 	let num_pages = 5;
 	let ids_per_page = 5;
 	let mut curr_id = 0u64;
-	let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
-	let mut pages = Vec::<GraphPage>::new();
-	for _ in 0..num_pages {
+	for i in 0..num_pages {
 		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
-		let page = create_page(&ids);
-		pages.push(page);
+		page_builder = page_builder.with_page(i, &ids);
 		curr_id += ids_per_page;
 	}
 
-	for (i, p) in pages.iter().enumerate() {
-		let _ = graph.create_page(&(i as PageId), Some(p.clone()));
+	let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
+	for p in page_builder.build() {
+		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
 
 	graph
@@ -110,29 +105,13 @@ pub fn avro_public_payload() -> Vec<u8> {
 	general_purpose::STANDARD.decode(b64_payload).unwrap()
 }
 
-pub struct ImportBundleBuilder {
-	dsnp_user_id: DsnpUserId,
-	connection_type: ConnectionType,
+pub struct KeyDataBuilder {
 	key_pairs: Vec<StackKeyPair>,
-	dsnp_keys: DsnpKeys,
-	// pages: Vec<PageData>,
-	pages: HashMap<PageId, Vec<DsnpUserId>>,
 }
 
-impl ImportBundleBuilder {
-	pub fn new(dsnp_user_id: DsnpUserId, connection_type: ConnectionType) -> Self {
-		ImportBundleBuilder {
-			dsnp_user_id,
-			connection_type,
-			key_pairs: vec![],
-			pages: HashMap::new(),
-			dsnp_keys: DsnpKeys { dsnp_user_id, keys_hash: PageHash::default(), keys: vec![] },
-		}
-	}
-
-	pub fn with_page(mut self, page_id: PageId, connections: &[DsnpUserId]) -> Self {
-		self.pages.entry(page_id).or_insert(vec![]).extend_from_slice(connections);
-		self
+impl KeyDataBuilder {
+	pub fn new() -> Self {
+		KeyDataBuilder { key_pairs: vec![] }
 	}
 
 	pub fn with_key_pairs(mut self, key_pairs: &[StackKeyPair]) -> Self {
@@ -140,9 +119,12 @@ impl ImportBundleBuilder {
 		self
 	}
 
-	pub fn build(self) -> ImportBundle {
-		let keys: Vec<KeyData> = self
-			.key_pairs
+	pub fn get_key_pairs(&self) -> &Vec<StackKeyPair> {
+		&self.key_pairs
+	}
+
+	pub fn build(self) -> Vec<KeyData> {
+		self.key_pairs
 			.iter()
 			.enumerate()
 			.map(|(i, pair)| KeyData {
@@ -153,33 +135,121 @@ impl ImportBundleBuilder {
 				})
 				.expect("should serialize"),
 			})
-			.collect();
+			.collect()
+	}
+}
 
-		let pages: Vec<PageData> = self
-			.pages
+pub struct GraphPageBuilder {
+	connection_type: ConnectionType,
+	pages: HashMap<PageId, Vec<DsnpUserId>>,
+}
+
+impl GraphPageBuilder {
+	pub fn new(connection_type: ConnectionType) -> Self {
+		Self { connection_type, pages: HashMap::new() }
+	}
+
+	pub fn with_page(mut self, page_id: PageId, connections: &[DsnpUserId]) -> Self {
+		self.pages.entry(page_id).or_insert(vec![]).extend_from_slice(connections);
+		self
+	}
+
+	pub fn build(self) -> Vec<GraphPage> {
+		self.pages
 			.iter()
 			.map(|(page_id, connections)| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
 				page.set_connections(
 					connections.iter().map(|c| DsnpGraphEdge { user_id: *c, since: 0 }).collect(),
 				);
-
-				match self.connection_type.privacy_type() {
-					PrivacyType::Public => page.to_public_page_data().unwrap(),
-					PrivacyType::Private => {
-						let first_key = self.key_pairs.first().expect("should use keys");
-						page.to_private_page_data::<SealBox>((1, &first_key.public_key), &vec![])
-							.unwrap()
-					},
-				}
+				page
 			})
-			.collect();
+			.collect()
+	}
+}
+
+pub struct PageDataBuilder {
+	connection_type: ConnectionType,
+	page_builder: GraphPageBuilder,
+	key_pair: StackKeyPair,
+}
+
+impl PageDataBuilder {
+	pub fn new(connection_type: ConnectionType) -> Self {
+		Self {
+			connection_type,
+			page_builder: GraphPageBuilder::new(connection_type),
+			key_pair: StackKeyPair::gen(),
+		}
+	}
+
+	pub fn with_page(mut self, page_id: PageId, connections: &[DsnpUserId]) -> Self {
+		self.page_builder = self.page_builder.with_page(page_id, connections);
+		self
+	}
+
+	pub fn with_encryption_key(mut self, key_pair: StackKeyPair) -> Self {
+		self.key_pair = key_pair;
+		self
+	}
+
+	pub fn build(self) -> Vec<PageData> {
+		self.page_builder
+			.build()
+			.iter()
+			.map(|page| match self.connection_type.privacy_type() {
+				PrivacyType::Public =>
+					page.to_public_page_data().expect("should write public page"),
+				PrivacyType::Private => page
+					.to_private_page_data::<SealBox>((1, &self.key_pair.public_key), &vec![])
+					.unwrap(),
+			})
+			.collect()
+	}
+}
+
+pub struct ImportBundleBuilder {
+	dsnp_user_id: DsnpUserId,
+	connection_type: ConnectionType,
+	key_builder: KeyDataBuilder,
+	page_data_builder: PageDataBuilder,
+}
+
+impl ImportBundleBuilder {
+	pub fn new(dsnp_user_id: DsnpUserId, connection_type: ConnectionType) -> Self {
+		ImportBundleBuilder {
+			dsnp_user_id,
+			connection_type,
+			key_builder: KeyDataBuilder::new(),
+			page_data_builder: PageDataBuilder::new(connection_type),
+		}
+	}
+
+	pub fn with_page(mut self, page_id: PageId, connections: &[DsnpUserId]) -> Self {
+		self.page_data_builder = self.page_data_builder.with_page(page_id, connections);
+		self
+	}
+
+	pub fn with_encryption_key(mut self, key_pair: StackKeyPair) -> Self {
+		self.page_data_builder = self.page_data_builder.with_encryption_key(key_pair);
+		self
+	}
+
+	pub fn with_key_pairs(mut self, key_pairs: &[StackKeyPair]) -> Self {
+		self.key_builder = self.key_builder.with_key_pairs(key_pairs);
+		self
+	}
+
+	pub fn build(self) -> ImportBundle {
+		let key_pairs = self.key_builder.get_key_pairs().clone();
+		let pages: Vec<PageData> = self.page_data_builder.build();
+		let keys: Vec<KeyData> = self.key_builder.build();
 
 		ImportBundle {
 			dsnp_keys: DsnpKeys { keys, keys_hash: 232, dsnp_user_id: self.dsnp_user_id },
 			dsnp_user_id: self.dsnp_user_id,
 			connection_type: self.connection_type,
-			key_pairs: self.key_pairs,
+			key_pairs,
 			pages,
 		}
 	}
