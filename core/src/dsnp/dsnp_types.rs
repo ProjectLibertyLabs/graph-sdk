@@ -200,7 +200,7 @@ impl<'de> Visitor<'de> for PridVisitor {
 }
 
 #[cfg(test)]
-mod tests {
+mod test {
 	use super::*;
 
 	#[test]
@@ -213,5 +213,17 @@ mod tests {
 		arr.sort();
 
 		assert_eq!(arr, vec![a, b, c]);
+	}
+
+	#[test]
+	#[should_panic]
+	fn prid_creation_with_less_than_8_byte_values_should_fail() {
+		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7]);
+	}
+
+	#[test]
+	#[should_panic]
+	fn prid_creation_with_more_than_8_byte_values_should_fail() {
+		DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 8, 9]);
 	}
 }

@@ -1,7 +1,7 @@
 #![allow(dead_code)] // todo: remove after usage
 use crate::{
 	dsnp::{
-		api_types::{ConnectionType, DsnpKeys, ExportBundle, PublicKey},
+		api_types::{ConnectionType, DsnpKeys, PublicKey, Update},
 		dsnp_types::DsnpUserId,
 		encryption::EncryptionBehavior,
 	},
@@ -146,7 +146,7 @@ pub trait UpdateAPI<E: EncryptionBehavior> {
 		&mut self,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>>;
+	) -> Result<Vec<Update>>;
 }
 
 impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
@@ -154,7 +154,7 @@ impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
 		&mut self,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>> {
+	) -> Result<Vec<Update>> {
 		self.calculate_updates::<E>(connection_keys, encryption_key)
 	}
 }

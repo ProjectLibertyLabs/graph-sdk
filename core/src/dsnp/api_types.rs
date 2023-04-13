@@ -96,21 +96,6 @@ pub struct ImportBundle<E: EncryptionBehavior> {
 	pub pages: Vec<PageData>,
 }
 
-/// Encapsulates all page updates for a user's graph to be sent to the chain
-pub struct ExportBundle {
-	/// Graph owner DSNP user ID
-	pub dsnp_user_id: DsnpUserId,
-
-	/// Connection type of graph being exported
-	pub connection_type: ConnectionType,
-
-	/// Pages to be updated in the graph
-	pub updated_pages: Vec<PageData>,
-
-	/// Pages to be removed from the graph
-	pub removed_pages: Vec<PageData>,
-}
-
 /// A connection representation in graph sdk
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
@@ -183,7 +168,7 @@ pub enum Update {
 		page_id: PageId,
 
 		/// previous hash value is used to avoid updating a stale state
-		prev_hash: Vec<u8>,
+		prev_hash: PageHash,
 
 		/// social graph page data
 		payload: Vec<u8>,
@@ -201,7 +186,7 @@ pub enum Update {
 		page_id: PageId,
 
 		/// previous hash value is used to avoid updating a stale state
-		prev_hash: Vec<u8>,
+		prev_hash: PageHash,
 	},
 
 	/// A `AddKey` type is used to add a new key to chain
@@ -210,7 +195,7 @@ pub enum Update {
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// previous hash value is used to avoid updating a stale state
-		prev_hash: Vec<u8>,
+		prev_hash: PageHash,
 
 		/// social graph page data
 		payload: Vec<u8>,

@@ -1,7 +1,5 @@
 pub mod config;
 pub mod reader_writer;
-#[cfg(test)]
-mod tests;
 
 use crate::dsnp::api_types::Config;
 
