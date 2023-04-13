@@ -1,5 +1,6 @@
 // todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
+use dryoc::keypair::StackKeyPair;
 use std::{cmp::Ordering, fmt::Debug, hash::Hash};
 
 /// Raw page of Graph (or Key) data
@@ -24,16 +25,13 @@ pub struct KeyData {
 	pub content: Vec<u8>,
 }
 
-/// KeyPair used for encryption and PRI calculations
-pub struct KeyPair<E: EncryptionBehavior> {
+/// A resolved KeyPair used for encryption and PRI calculations
+pub struct ResolvedKeyPair {
 	/// Key identifier
 	pub key_id: u64,
 
 	/// Public key
-	pub public_key: E::EncryptionInput,
-
-	/// Private key
-	pub private_key: E::DecryptionInput,
+	pub key_pair: StackKeyPair,
 }
 
 /// PublicKey type associated in `EncryptionBehavior`
@@ -82,15 +80,18 @@ pub trait Config {
 	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
 }
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
-pub struct ImportBundle<E: EncryptionBehavior> {
+pub struct ImportBundle {
 	/// graph owner dsnp user id
 	pub dsnp_user_id: DsnpUserId,
 
 	/// Connection type of graph being imported
 	pub connection_type: ConnectionType,
 
-	/// graph keys associated with this graph which is used for encryption and PRI generation
-	pub keys: Vec<KeyPair<E>>,
+	/// key pairs associated with this graph which is used for encryption and PRI generation
+	pub key_pairs: Vec<StackKeyPair>,
+
+	/// published dsnp keys associated with this dsnp user
+	pub dsnp_keys: DsnpKeys,
 
 	/// Page data containing the social graph retrieved from chain
 	pub pages: Vec<PageData>,
@@ -219,15 +220,15 @@ pub enum Update {
 
 #[allow(dead_code)] // todo: use or remove
 /// Encapsulates details required to do a key rotation
-pub struct Rotation<E: EncryptionBehavior> {
+pub struct Rotation {
 	/// owner of the social graph
 	owner_dsnp_user_id: DsnpUserId,
 
 	/// previous key used for encryption and PRI calculations
-	prev_key: KeyPair<E>,
+	prev_key: StackKeyPair,
 
 	/// new key to use for encryption and PRI calculations
-	new_key: KeyPair<E>,
+	new_key: StackKeyPair,
 }
 
 impl PartialOrd for KeyData {

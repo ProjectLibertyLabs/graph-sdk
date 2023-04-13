@@ -6,7 +6,7 @@ use anyhow::{Error, Result};
 
 use crate::dsnp::{
 	compression::{CompressionBehavior, DeflateCompression},
-	encryption::EncryptionBehavior,
+	encryption::{EncryptionBehavior, SealBox},
 	schema::SchemaHandler,
 };
 
@@ -45,10 +45,10 @@ impl TryFrom<&PageData> for GraphPage {
 }
 
 /// Conversion for Private Graph
-impl<E: EncryptionBehavior> TryFrom<(&PageData, &Vec<KeyPair<E>>)> for GraphPage {
+impl TryFrom<(&PageData, &Vec<ResolvedKeyPair>)> for GraphPage {
 	type Error = Error;
 	fn try_from(
-		(PageData { content_hash, content, page_id, .. }, keys): (&PageData, &Vec<KeyPair<E>>),
+		(PageData { content_hash, content, page_id, .. }, keys): (&PageData, &Vec<ResolvedKeyPair>),
 	) -> Result<Self> {
 		let DsnpUserPrivateGraphChunk { key_id, encrypted_compressed_private_graph, prids } =
 			DsnpUserPrivateGraphChunk::try_from(content.as_slice())?;
@@ -57,7 +57,7 @@ impl<E: EncryptionBehavior> TryFrom<(&PageData, &Vec<KeyPair<E>>)> for GraphPage
 		// First try the key that was indicated in the page
 		if let Some(indicated_key) = keys.iter().find(|k| k.key_id == key_id) {
 			if let Ok(data) =
-				E::decrypt(&encrypted_compressed_private_graph, &indicated_key.private_key)
+				SealBox::decrypt(&encrypted_compressed_private_graph, &indicated_key.key_pair)
 			{
 				decrypted_chunk = Some(data);
 			}
@@ -66,9 +66,9 @@ impl<E: EncryptionBehavior> TryFrom<(&PageData, &Vec<KeyPair<E>>)> for GraphPage
 		// If we couldn't decrypt with (or find) the indicated key, try all keys
 		decrypted_chunk = match decrypted_chunk {
 			Some(_) => decrypted_chunk,
-			None => keys
-				.iter()
-				.find_map(|k| E::decrypt(&encrypted_compressed_private_graph, &k.private_key).ok()),
+			None => keys.iter().find_map(|k| {
+				SealBox::decrypt(&encrypted_compressed_private_graph, &k.key_pair).ok()
+			}),
 		};
 
 		match decrypted_chunk {
@@ -241,7 +241,7 @@ impl GraphPage {
 
 	// TODO: make trait-based
 	/// Convert to an encrypted binary payload according to the DSNP Private Graph schema
-	pub fn to_private_blob<E: EncryptionBehavior>(
+	pub fn to_private_page_data<E: EncryptionBehavior>(
 		&mut self,
 		(key_id, key): (u64, &PublicKey<E>),
 		prid_keys: &Vec<DsnpKeys>,

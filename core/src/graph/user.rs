@@ -3,25 +3,29 @@ use crate::{
 	graph::updates::UpdateTracker,
 };
 use anyhow::Result;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::dsnp::encryption::EncryptionBehavior;
+use crate::{
+	dsnp::encryption::EncryptionBehavior,
+	graph::key_manager::{PublicKeyManager, UserKeyManager},
+};
 
 use super::graph::Graph;
 
 pub type GraphMap = HashMap<ConnectionType, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct UserGraph {
 	user_id: DsnpUserId,
 	graphs: GraphMap,
-	pub update_tracker: UpdateTracker,
+	user_key_manager: UserKeyManager,
+	update_tracker: UpdateTracker,
 }
 
 impl UserGraph {
 	/// Create a new, empty UserGraph
-	pub fn new(user_id: &DsnpUserId) -> Self {
+	pub fn new(user_id: &DsnpUserId, public_key_manager: Rc<RefCell<PublicKeyManager>>) -> Self {
 		Self {
 			user_id: *user_id,
 			graphs: GraphMap::from([
@@ -42,6 +46,7 @@ impl UserGraph {
 					Graph::new(ConnectionType::Friendship(PrivacyType::Private)),
 				),
 			]),
+			user_key_manager: UserKeyManager::new(*user_id, public_key_manager),
 			update_tracker: UpdateTracker::new(),
 		}
 	}
@@ -52,8 +57,23 @@ impl UserGraph {
 	}
 
 	/// Getter for UpdateTracker
-	pub fn update_tracker(&mut self) -> &mut UpdateTracker {
+	pub fn update_tracker(&self) -> &UpdateTracker {
+		&self.update_tracker
+	}
+
+	/// Getter for UpdateTracker
+	pub fn update_tracker_mut(&mut self) -> &mut UpdateTracker {
 		&mut self.update_tracker
+	}
+
+	/// Getter for UserKeyManager
+	pub fn user_key_manager(&self) -> &UserKeyManager {
+		&self.user_key_manager
+	}
+
+	/// Mutable Getter for UserKeyManager
+	pub fn user_key_manager_mut(&mut self) -> &mut UserKeyManager {
+		&mut self.user_key_manager
 	}
 
 	/// Getter for the user's graph for the specified ConnectionType
@@ -114,7 +134,7 @@ mod test {
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {
 		let user_id = 1;
-		let user_graph = UserGraph::new(&user_id);
+		let user_graph = UserGraph::new(&user_id, Rc::new(RefCell::from(PublicKeyManager::new())));
 
 		assert_eq!(user_graph.user_id, user_id);
 		assert_eq!(
@@ -144,7 +164,7 @@ mod test {
 
 	#[test]
 	fn graph_getter_gets_correct_graph_for_connection_type() {
-		let user_graph = UserGraph::new(&1);
+		let user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				assert_eq!(user_graph.graph(&c).connection_type, c);
@@ -154,7 +174,7 @@ mod test {
 
 	#[test]
 	fn graph_mut_getter_gets_correct_graph_for_connection_type() {
-		let mut user_graph = UserGraph::new(&1);
+		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				assert_eq!(user_graph.graph_mut(&c).connection_type, c);
@@ -164,7 +184,7 @@ mod test {
 
 	#[test]
 	fn graph_setter_overwrites_existing_graph() {
-		let mut user_graph = UserGraph::new(&1);
+		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let mut new_graph = Graph::new(connection_type);
 		assert_eq!(new_graph.add_connection_to_page(&0, &2).is_ok(), true);
@@ -177,7 +197,7 @@ mod test {
 	#[test]
 	fn clear_graph_clears_specific_graph_and_no_others() {
 		let graph = create_test_graph();
-		let mut user_graph = UserGraph::new(&1);
+		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				user_graph.set_graph(&c, graph.clone());
@@ -203,7 +223,7 @@ mod test {
 	#[test]
 	fn clear_all_clears_all_graphs() {
 		let graph = create_test_graph();
-		let mut user_graph = UserGraph::new(&1);
+		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				user_graph.set_graph(&c, graph.clone());

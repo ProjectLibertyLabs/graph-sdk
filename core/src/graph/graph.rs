@@ -57,9 +57,10 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Public Graph
-	pub fn import_public<E: EncryptionBehavior>(
+	pub fn import_public(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
 	) -> Result<()> {
 		if connection_type != self.connection_type {
 			return Err(Error::msg("Incorrect connection type for graph import"))
@@ -81,9 +82,11 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Private Graph
-	pub fn import_private<E: EncryptionBehavior>(
+	pub fn import_private(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, keys, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
+		keys: Vec<ResolvedKeyPair>,
 	) -> Result<()> {
 		if connection_type != self.connection_type {
 			return Err(Error::msg("Incorrect connection type for graph import"))
@@ -92,7 +95,7 @@ impl Graph {
 		let mut page_map = PageMap::new();
 		for page in pages.iter() {
 			match GraphPage::try_from((page, &keys)) {
-				Err(e) => return Err(e),
+				Err(e) => return Err(e.into()),
 				Ok(p) => {
 					page_map.insert(page.page_id, p);
 				},
@@ -106,9 +109,10 @@ impl Graph {
 
 	/// Import bundle of pages as a Private Graph, but without decrypting the encrypted portion
 	/// Useful for importing a foreign user's graph for inspection of PRIds
-	pub fn import_opaque<E: EncryptionBehavior>(
+	pub fn import_opaque(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
 	) -> Result<()> {
 		if connection_type.privacy_type() != PrivacyType::Private ||
 			self.connection_type.privacy_type() != PrivacyType::Private
@@ -244,7 +248,7 @@ impl Graph {
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			PrivacyType::Private => updated_pages
 				.iter_mut()
-				.map(|(_, page)| page.to_private_blob::<E>(encryption_key, connection_keys))
+				.map(|(_, page)| page.to_private_page_data::<E>(encryption_key, connection_keys))
 				.collect(),
 		};
 
@@ -376,8 +380,6 @@ macro_rules! iter_graph_connections {
 
 #[cfg(test)]
 mod test {
-	use crate::dsnp::encryption::SealBox;
-
 	use super::{super::test_helpers::*, *};
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
@@ -453,14 +455,10 @@ mod test {
 	fn import_public_gets_correct_data() {
 		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Public));
 		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
-		let bundle: ImportBundle<SealBox> = ImportBundle {
-			connection_type: ConnectionType::Follow(PrivacyType::Public),
-			dsnp_user_id: 1234,
-			keys: Vec::new(),
-			pages: vec![blob],
-		};
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let pages = vec![blob];
 
-		let _ = graph.import_public(bundle);
+		let _ = graph.import_public(connection_type, pages);
 		assert_eq!(graph.pages.len(), 1);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
