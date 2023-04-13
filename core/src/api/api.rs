@@ -1,8 +1,8 @@
 use crate::{
 	dsnp::{
 		api_types::{
-			Action, Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PrivacyType,
-			PublicKey,
+			Action, Connection, ConnectionType, DsnpKeys, ImportBundle, PrivacyType, PublicKey,
+			Update,
 		},
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 		encryption::EncryptionBehavior,
@@ -48,7 +48,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 		user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>>;
+	) -> Result<Vec<Update>>;
 
 	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
 	fn apply_action(&mut self, action: &Action<E>) -> Result<()>;
@@ -148,7 +148,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 		user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>> {
+	) -> Result<Vec<Update>> {
 		let user_graph = match self.user_map.get_mut(user_id) {
 			None => Err(Error::msg("User not found for graph export")),
 			Some(graph) => Ok(graph),

@@ -132,7 +132,7 @@ impl Graph {
 		dsnp_user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<ExportBundle> {
+	) -> Result<Vec<Update>> {
 		let ids_to_remove: Vec<DsnpUserId> = updates
 			.iter()
 			.filter_map(|event| match event {
@@ -211,17 +211,6 @@ impl Graph {
 				},
 				None => return Err(Error::msg("Graph is full")), // todo: re-calculate updates with agressive fullness determination
 			}
-
-			// if current_page.is_some() {
-			// 	let mut page = current_page.clone().unwrap();
-			// 	page.add_connection(add_iter.next().unwrap())?;
-			// 	if page.is_full(false) {
-			// 		updated_pages.insert(page.page_id(), *page);
-			// 		current_page = None;
-			// 	}
-			// } else {
-			// 	return Err(Error::msg("Graph is full")) // todo: re-calculate updates with agressive fullness determination
-			// };
 		}
 
 		// If any pages now empty, add to the remove list
@@ -247,12 +236,25 @@ impl Graph {
 				.collect(),
 		};
 
-		Ok(ExportBundle {
-			dsnp_user_id: *dsnp_user_id,
+		let mut updates: Vec<Update> = updated_blobs?
+			.iter()
+			.map(|page_data| Update::PersistPage {
+				owner_dsnp_user_id: *dsnp_user_id,
+				connection_type: self.connection_type,
+				page_id: page_data.page_id,
+				prev_hash: page_data.content_hash,
+				payload: page_data.content.clone(),
+			})
+			.collect();
+
+		updates.extend(removed_pages.iter().map(|p| Update::DeletePage {
+			owner_dsnp_user_id: *dsnp_user_id,
 			connection_type: self.connection_type,
-			updated_pages: updated_blobs?,
-			removed_pages,
-		})
+			page_id: p.page_id,
+			prev_hash: p.content_hash,
+		}));
+
+		Ok(updates)
 	}
 
 	/// Create a new Page in the Graph, with the given PageId.
