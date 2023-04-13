@@ -105,31 +105,31 @@ impl UserGraph {
 		self.graphs.iter_mut().for_each(|(_, g)| g.clear());
 	}
 
-	/// Cacluate pending updates
+	/// Cacluate pending updates for all graphs for this user
 	pub fn calculate_updates<E: EncryptionBehavior>(
 		&mut self,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>> {
-		self.graphs
-			.iter()
-			.map(|(connection_type, graph)| {
-				graph.calculate_updates::<E>(
-					self.update_tracker.get_mut_updates_for_connection_type(*connection_type),
-					&self.user_id,
-					connection_keys,
-					encryption_key,
-				)
-			})
-			.collect()
+	) -> Result<Vec<Update>> {
+		let mut result: Vec<Update> = Vec::new();
+		for (connection_type, graph) in self.graphs.iter() {
+			let graph_data = graph.calculate_updates::<E>(
+				self.update_tracker.get_mut_updates_for_connection_type(*connection_type),
+				&self.user_id,
+				connection_keys,
+				encryption_key,
+			)?;
+			result.extend(graph_data.into_iter());
+		}
+
+		Ok(result)
 	}
 }
 
 #[cfg(test)]
 mod test {
-	use crate::{graph::test_helpers::create_test_graph, iter_graph_connections};
-
 	use super::*;
+	use crate::{iter_graph_connections, tests::helpers::*};
 
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {

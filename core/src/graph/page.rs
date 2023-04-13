@@ -271,7 +271,8 @@ impl GraphPage {
 
 #[cfg(test)]
 mod test {
-	use super::{super::test_helpers::*, *};
+	use super::*;
+	use crate::tests::helpers::*;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 

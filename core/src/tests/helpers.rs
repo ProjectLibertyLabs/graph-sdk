@@ -171,7 +171,7 @@ impl GraphPageBuilder {
 pub struct PageDataBuilder {
 	connection_type: ConnectionType,
 	page_builder: GraphPageBuilder,
-	key_pair: StackKeyPair,
+	resolved_key: ResolvedKeyPair,
 }
 
 impl PageDataBuilder {
@@ -179,7 +179,7 @@ impl PageDataBuilder {
 		Self {
 			connection_type,
 			page_builder: GraphPageBuilder::new(connection_type),
-			key_pair: StackKeyPair::gen(),
+			resolved_key: ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 },
 		}
 	}
 
@@ -188,8 +188,8 @@ impl PageDataBuilder {
 		self
 	}
 
-	pub fn with_encryption_key(mut self, key_pair: StackKeyPair) -> Self {
-		self.key_pair = key_pair;
+	pub fn with_encryption_key(mut self, key_bundle: ResolvedKeyPair) -> Self {
+		self.resolved_key = key_bundle;
 		self
 	}
 
@@ -201,7 +201,10 @@ impl PageDataBuilder {
 				PrivacyType::Public =>
 					page.to_public_page_data().expect("should write public page"),
 				PrivacyType::Private => page
-					.to_private_page_data::<SealBox>((1, &self.key_pair.public_key), &vec![])
+					.to_private_page_data::<SealBox>(
+						(self.resolved_key.key_id, &self.resolved_key.key_pair.public_key),
+						&vec![],
+					)
 					.unwrap(),
 			})
 			.collect()
@@ -230,8 +233,8 @@ impl ImportBundleBuilder {
 		self
 	}
 
-	pub fn with_encryption_key(mut self, key_pair: StackKeyPair) -> Self {
-		self.page_data_builder = self.page_data_builder.with_encryption_key(key_pair);
+	pub fn with_encryption_key(mut self, key_bundle: ResolvedKeyPair) -> Self {
+		self.page_data_builder = self.page_data_builder.with_encryption_key(key_bundle);
 		self
 	}
 

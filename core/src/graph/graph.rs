@@ -136,7 +136,7 @@ impl Graph {
 		dsnp_user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<ExportBundle> {
+	) -> Result<Vec<Update>> {
 		let ids_to_remove: Vec<DsnpUserId> = updates
 			.iter()
 			.filter_map(|event| match event {
@@ -179,7 +179,7 @@ impl Graph {
 			if let Some((_page_id, page)) =
 				updated_pages.iter_mut().find(|(_, page)| !page.is_full(false))
 			{
-				let id_to_add = add_iter.next().unwrap();
+				let id_to_add = add_iter.next().unwrap(); // safe to unwrap because we peeked above
 				page.add_connection(id_to_add)?;
 			}
 		}
@@ -190,8 +190,7 @@ impl Graph {
 		while let Some(_) = add_iter.clone().peekable().peek() {
 			if current_page.is_none() {
 				let available_page = self.pages.iter().find(|(page_id, page)| {
-					!updated_pages.keys().collect::<Vec<&PageId>>().contains(page_id) &&
-						!page.is_full(false)
+					!updated_pages.contains_key(page_id) && !page.is_full(false)
 				});
 
 				current_page = match available_page {
@@ -208,7 +207,7 @@ impl Graph {
 
 			match current_page {
 				Some(ref mut page) => {
-					page.add_connection(add_iter.next().unwrap())?;
+					page.add_connection(add_iter.next().unwrap())?; // safe to unwrap because we peeked above
 					if page.is_full(false) {
 						updated_pages.insert(page.page_id(), *page.clone());
 						current_page = None;
@@ -216,17 +215,6 @@ impl Graph {
 				},
 				None => return Err(Error::msg("Graph is full")), // todo: re-calculate updates with agressive fullness determination
 			}
-
-			if current_page.is_some() {
-				let mut page = current_page.clone().unwrap();
-				page.add_connection(add_iter.next().unwrap())?;
-				if page.is_full(false) {
-					updated_pages.insert(page.page_id(), *page);
-					current_page = None;
-				}
-			} else {
-				return Err(Error::msg("Graph is full")) // todo: re-calculate updates with agressive fullness determination
-			};
 		}
 
 		// If any pages now empty, add to the remove list
@@ -252,12 +240,25 @@ impl Graph {
 				.collect(),
 		};
 
-		Ok(ExportBundle {
-			dsnp_user_id: *dsnp_user_id,
+		let mut updates: Vec<Update> = updated_blobs?
+			.iter()
+			.map(|page_data| Update::PersistPage {
+				owner_dsnp_user_id: *dsnp_user_id,
+				connection_type: self.connection_type,
+				page_id: page_data.page_id,
+				prev_hash: page_data.content_hash,
+				payload: page_data.content.clone(),
+			})
+			.collect();
+
+		updates.extend(removed_pages.iter().map(|p| Update::DeletePage {
+			owner_dsnp_user_id: *dsnp_user_id,
 			connection_type: self.connection_type,
-			updated_pages: updated_blobs?,
-			removed_pages,
-		})
+			page_id: p.page_id,
+			prev_hash: p.content_hash,
+		}));
+
+		Ok(updates)
 	}
 
 	/// Create a new Page in the Graph, with the given PageId.
@@ -380,7 +381,12 @@ macro_rules! iter_graph_connections {
 
 #[cfg(test)]
 mod test {
-	use super::{super::test_helpers::*, *};
+	use super::*;
+	use crate::tests::helpers::{
+		avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
+		INNER_TEST_DATA,
+	};
+	use dryoc::keypair::StackKeyPair;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 	use std::collections::HashMap;
@@ -468,8 +474,25 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn import_private_gets_correct_data() {}
+	fn import_private_gets_correct_data() {
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let mut graph = Graph::new(connection_type);
+		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
+		let orig_connections: HashSet<DsnpUserId> =
+			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
+		let pages = PageDataBuilder::new(connection_type)
+			.with_encryption_key(resolved_key.clone())
+			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>())
+			.build();
+
+		let res = graph.import_private(connection_type, pages, vec![resolved_key]);
+
+		assert!(res.is_ok());
+		assert_eq!(graph.pages.len(), 1);
+		let imported_connections: HashSet<DsnpUserId> =
+			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
+		assert_eq!(orig_connections, imported_connections);
+	}
 
 	#[test]
 	#[ignore = "todo"]

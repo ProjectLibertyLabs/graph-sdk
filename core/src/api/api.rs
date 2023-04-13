@@ -1,8 +1,8 @@
 use crate::{
 	dsnp::{
 		api_types::{
-			Action, Connection, ConnectionType, DsnpKeys, ExportBundle, ImportBundle, PrivacyType,
-			PublicKey,
+			Action, Connection, ConnectionType, DsnpKeys, ImportBundle, PrivacyType, PublicKey,
+			Update,
 		},
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 		encryption::EncryptionBehavior,
@@ -52,7 +52,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 		user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>>;
+	) -> Result<Vec<Update>>;
 
 	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
 	fn apply_action(&mut self, action: &Action) -> Result<()>;
@@ -171,7 +171,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 		user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
 		encryption_key: (u64, &PublicKey<E>),
-	) -> Result<Vec<ExportBundle>> {
+	) -> Result<Vec<Update>> {
 		let user_graph = match self.user_map.get_mut(user_id) {
 			None => Err(Error::msg("User not found for graph export")),
 			Some(graph) => Ok(graph),
@@ -242,8 +242,11 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 #[cfg(test)]
 mod test {
 	use crate::{
-		dsnp::{api_types::Connection, encryption::SealBox},
-		graph::test_helpers::ImportBundleBuilder,
+		dsnp::{
+			api_types::{Connection, ResolvedKeyPair},
+			encryption::SealBox,
+		},
+		tests::helpers::ImportBundleBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
 
@@ -370,13 +373,13 @@ mod test {
 	fn import_user_data_should_import_keys_and_data_for_private_follow_graph() {
 		// arrange
 		let mut state: TestGraphState = TestGraphState::new();
-		let keypair = StackKeyPair::gen();
+		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
 		let dsnp_user_id = 123;
 		let connection_type = ConnectionType::Follow(PrivacyType::Private);
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
-			.with_key_pairs(&vec![keypair.clone()])
-			.with_encryption_key(keypair)
+			.with_key_pairs(&vec![resolved_key.key_pair.clone()])
+			.with_encryption_key(resolved_key)
 			.with_page(1, &connections)
 			.build();
 
