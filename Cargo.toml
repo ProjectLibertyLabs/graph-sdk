@@ -1,10 +1,12 @@
 [workspace]
 members = [
     "core",
+    "config"
 ]
 
 default-members = [
-    "core"
+    "core",
+    "config"
 ]
 
 [profile.release]

@@ -1,6 +1,6 @@
 pub mod api;
-mod dsnp;
-mod frequency;
+pub mod dsnp;
+pub mod frequency;
 mod graph;
 #[cfg(test)]
 mod tests;

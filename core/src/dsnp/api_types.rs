@@ -1,7 +1,7 @@
-// todo: remove after usage
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
 use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
-use std::{cmp::Ordering, fmt::Debug, hash::Hash};
+pub use dsnp_graph_config::{ConnectionType, PrivacyType};
+use std::{cmp::Ordering, fmt::Debug};
 
 /// Raw page of Graph (or Key) data
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -37,35 +37,6 @@ pub struct ResolvedKeyPair {
 
 /// PublicKey type associated in `EncryptionBehavior`
 pub type PublicKey<E> = <E as EncryptionBehavior>::EncryptionInput;
-
-/// Privacy Type of the graph
-#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash)]
-pub enum PrivacyType {
-	/// publicly accessible graph
-	Public,
-
-	/// only accessible to owner of the graph and whoever the encryption keys have been shared with
-	Private,
-}
-
-/// Different connection type in social graph
-#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash)]
-pub enum ConnectionType {
-	/// Follow is a one-way connection type, which means it is only stored in follower side
-	Follow(PrivacyType),
-
-	/// Friendship is two-way connection type, which means it is stored in both sides and each
-	/// side can revoke the connection for both sides
-	Friendship(PrivacyType),
-}
-
-impl ConnectionType {
-	pub const fn privacy_type(&self) -> PrivacyType {
-		match self {
-			Self::Follow(privacy) | Self::Friendship(privacy) => *privacy,
-		}
-	}
-}
 
 /// Graph page id
 pub type PageId = u16;

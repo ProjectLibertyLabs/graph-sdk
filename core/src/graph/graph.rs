@@ -181,6 +181,8 @@ impl Graph {
 			{
 				let id_to_add = add_iter.next().unwrap(); // safe to unwrap because we peeked above
 				page.add_connection(id_to_add)?;
+			} else {
+				break
 			}
 		}
 
@@ -382,11 +384,15 @@ macro_rules! iter_graph_connections {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::tests::helpers::{
-		avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
-		INNER_TEST_DATA,
+	use crate::{
+		dsnp::encryption::SealBox,
+		tests::helpers::{
+			avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
+			INNER_TEST_DATA,
+		},
 	};
 	use dryoc::keypair::StackKeyPair;
+	use ntest::*;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 	use std::collections::HashMap;
@@ -602,5 +608,18 @@ mod test {
 			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
 		graph_connections.sort();
 		assert_eq!(test_connections, graph_connections);
+	}
+
+	#[test]
+	#[timeout(5000)] // found an infinite loop bug, so let's make sure this terminates successfully
+	fn calculate_public_updates_succeeds() {
+		let graph = create_test_graph();
+		let updates = vec![UpdateEvent::create_add(1, graph.connection_type)].to_vec();
+		let _ = graph.calculate_updates::<SealBox>(
+			&updates,
+			&0,
+			&Vec::<DsnpKeys>::new(),
+			(0, &<SealBox as EncryptionBehavior>::EncryptionInput::new()),
+		);
 	}
 }

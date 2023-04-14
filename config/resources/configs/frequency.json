@@ -1,0 +1,35 @@
+{
+  "maxGraphPageSizeBytes": 2048,
+  "maxPageId": 16,
+  "maxKeyPageSizeBytes": 1024,
+  "schemaMap": [
+    [
+      {
+        "connectionType": "follow",
+        "privacyType": "public"
+      },
+      1
+    ],
+    [
+      {
+        "connectionType": "follow",
+        "privacyType": "private"
+      },
+      2
+    ],
+    [
+      {
+        "connectionType": "friendship",
+        "privacyType": "public"
+      },
+      3
+    ],
+    [
+      {
+        "connectionType": "friendship",
+        "privacyType": "private"
+      },
+      4
+    ]
+  ]
+}
