@@ -57,9 +57,10 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Public Graph
-	pub fn import_public<E: EncryptionBehavior>(
+	pub fn import_public(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
 	) -> Result<()> {
 		if connection_type != self.connection_type {
 			return Err(Error::msg("Incorrect connection type for graph import"))
@@ -81,9 +82,11 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Private Graph
-	pub fn import_private<E: EncryptionBehavior>(
+	pub fn import_private(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, keys, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
+		keys: Vec<ResolvedKeyPair>,
 	) -> Result<()> {
 		if connection_type != self.connection_type {
 			return Err(Error::msg("Incorrect connection type for graph import"))
@@ -92,7 +95,7 @@ impl Graph {
 		let mut page_map = PageMap::new();
 		for page in pages.iter() {
 			match GraphPage::try_from((page, &keys)) {
-				Err(e) => return Err(e),
+				Err(e) => return Err(e.into()),
 				Ok(p) => {
 					page_map.insert(page.page_id, p);
 				},
@@ -106,9 +109,10 @@ impl Graph {
 
 	/// Import bundle of pages as a Private Graph, but without decrypting the encrypted portion
 	/// Useful for importing a foreign user's graph for inspection of PRIds
-	pub fn import_opaque<E: EncryptionBehavior>(
+	pub fn import_opaque(
 		&mut self,
-		ImportBundle::<E> { connection_type, pages, .. }: ImportBundle<E>,
+		connection_type: ConnectionType,
+		pages: Vec<PageData>,
 	) -> Result<()> {
 		if connection_type.privacy_type() != PrivacyType::Private ||
 			self.connection_type.privacy_type() != PrivacyType::Private
@@ -232,7 +236,7 @@ impl Graph {
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			PrivacyType::Private => updated_pages
 				.iter_mut()
-				.map(|(_, page)| page.to_private_blob::<E>(encryption_key, connection_keys))
+				.map(|(_, page)| page.to_private_page_data::<E>(encryption_key, connection_keys))
 				.collect(),
 		};
 
@@ -378,7 +382,11 @@ macro_rules! iter_graph_connections {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::{dsnp::encryption::SealBox, tests::helpers::*};
+	use crate::tests::helpers::{
+		avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
+		INNER_TEST_DATA,
+	};
+	use dryoc::keypair::StackKeyPair;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 	use std::collections::HashMap;
@@ -453,14 +461,10 @@ mod test {
 	fn import_public_gets_correct_data() {
 		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Public));
 		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
-		let bundle: ImportBundle<SealBox> = ImportBundle {
-			connection_type: ConnectionType::Follow(PrivacyType::Public),
-			dsnp_user_id: 1234,
-			keys: Vec::new(),
-			pages: vec![blob],
-		};
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let pages = vec![blob];
 
-		let _ = graph.import_public(bundle);
+		let _ = graph.import_public(connection_type, pages);
 		assert_eq!(graph.pages.len(), 1);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
@@ -470,8 +474,25 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn import_private_gets_correct_data() {}
+	fn import_private_gets_correct_data() {
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let mut graph = Graph::new(connection_type);
+		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
+		let orig_connections: HashSet<DsnpUserId> =
+			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
+		let pages = PageDataBuilder::new(connection_type)
+			.with_encryption_key(resolved_key.clone())
+			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>())
+			.build();
+
+		let res = graph.import_private(connection_type, pages, vec![resolved_key]);
+
+		assert!(res.is_ok());
+		assert_eq!(graph.pages.len(), 1);
+		let imported_connections: HashSet<DsnpUserId> =
+			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
+		assert_eq!(orig_connections, imported_connections);
+	}
 
 	#[test]
 	#[ignore = "todo"]

@@ -1,7 +1,6 @@
-#![allow(dead_code)] // todo: remove after usage
 use crate::{
 	dsnp::{
-		api_types::{DsnpKeys, KeyData, PageHash},
+		api_types::{DsnpKeys, KeyData, PageHash, ResolvedKeyPair},
 		dsnp_types::{DsnpPublicKey, DsnpUserId},
 		reader_writer::{DsnpReader, DsnpWriter},
 	},
@@ -12,7 +11,7 @@ use dryoc::keypair::StackKeyPair;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// A trait that defines all the functionality that a public key provider need to implement.
-trait PublicKeyProvider {
+pub trait PublicKeyProvider {
 	/// imports public keys with their hash and details into the provider
 	/// will overwrite any existing imported keys for the user and remove any new added keys
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
@@ -41,15 +40,19 @@ trait PublicKeyProvider {
 }
 
 /// Common trait that manages public and private keys for each user
-trait UserKeyProvider {
+pub trait UserKeyProvider {
 	/// imports key pairs into a provider
 	/// will overwrite any existing imported keys for the user
 	fn import_key_pairs(&mut self, pairs: Vec<StackKeyPair>);
 
 	/// returns the dsnp associate and keypair with a certain id
-	fn get_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)>;
+	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)>;
+
+	/// returns the dsnp associate and keypair with all the keys
+	fn get_all_resolved_keys(&self) -> Vec<ResolvedKeyPair>;
 }
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct PublicKeyManager {
 	/// keys are stored sorted by index
 	dsnp_user_to_keys: HashMap<DsnpUserId, (Vec<DsnpPublicKey>, PageHash)>,
@@ -58,6 +61,7 @@ pub struct PublicKeyManager {
 	new_keys: HashMap<DsnpUserId, DsnpPublicKey>,
 }
 
+#[derive(Debug)]
 pub struct UserKeyManager {
 	/// keeps a reference to the global instance of public key provider
 	public_key_manager: Rc<RefCell<PublicKeyManager>>,
@@ -159,7 +163,7 @@ impl UserKeyProvider for UserKeyManager {
 		self.keys.extend_from_slice(&pairs);
 	}
 
-	fn get_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)> {
+	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)> {
 		if let Some(dsnp) =
 			self.public_key_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
@@ -171,10 +175,20 @@ impl UserKeyProvider for UserKeyManager {
 		}
 		None
 	}
+
+	fn get_all_resolved_keys(&self) -> Vec<ResolvedKeyPair> {
+		self.public_key_manager
+			.borrow()
+			.get_all_keys(self.dsnp_user_id)
+			.iter()
+			.filter_map(|dsnp| self.get_resolved_key(dsnp.key_id))
+			.map(|(dsnp, pair)| ResolvedKeyPair { key_id: dsnp.key_id, key_pair: pair.clone() })
+			.collect()
+	}
 }
 
 impl PublicKeyManager {
-	fn new() -> Self {
+	pub fn new() -> Self {
 		Self { new_keys: HashMap::new(), dsnp_user_to_keys: HashMap::new() }
 	}
 
@@ -190,8 +204,8 @@ impl PublicKeyManager {
 
 impl UserKeyManager {
 	pub fn new(
-		public_key_manager: Rc<RefCell<PublicKeyManager>>,
 		dsnp_user_id: DsnpUserId,
+		public_key_manager: Rc<RefCell<PublicKeyManager>>,
 	) -> Self {
 		Self { public_key_manager, dsnp_user_id, keys: vec![] }
 	}
@@ -355,7 +369,7 @@ mod tests {
 		let public_key_manager = PublicKeyManager::new();
 		let rc = Rc::new(RefCell::new(public_key_manager));
 		let mutable_clone = rc.clone();
-		let mut user_key_manager = UserKeyManager::new(rc.clone(), dsnp_user_id);
+		let mut user_key_manager = UserKeyManager::new(dsnp_user_id, rc.clone());
 		let key_pair = StackKeyPair::gen();
 		let keys_hash = 233;
 		let key1 = DsnpPublicKey { key_id: 19, key: key_pair.public_key.to_vec() };
@@ -371,7 +385,10 @@ mod tests {
 		user_key_manager.import_key_pairs(vec![key_pair.clone()]);
 
 		// assert
-		let key = user_key_manager.get_key(key1.key_id);
+		let key = user_key_manager.get_resolved_key(key1.key_id);
 		assert_eq!(key, Some((key1, key_pair)));
+
+		let keys = user_key_manager.get_all_resolved_keys();
+		assert_eq!(keys.len(), 1)
 	}
 }

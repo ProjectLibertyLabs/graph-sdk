@@ -7,19 +7,23 @@ use crate::{
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 		encryption::EncryptionBehavior,
 	},
-	graph::{updates::UpdateEvent, user::UserGraph},
+	graph::{
+		key_manager::{PublicKeyManager, PublicKeyProvider, UserKeyProvider},
+		updates::UpdateEvent,
+		user::UserGraph,
+	},
 	iter_graph_connections,
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Result};
-use std::{cmp::min, collections::HashMap, marker::PhantomData};
+use std::{cell::RefCell, cmp::min, collections::HashMap, marker::PhantomData, rc::Rc};
 
 const MAX_GRAPH_USERS_DEFAULT: usize = 1000;
 
-#[allow(non_snake_case)]
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug)]
 pub struct GraphState<E: EncryptionBehavior, const MAX_USERS: usize = MAX_GRAPH_USERS_DEFAULT> {
-	_encryption: PhantomData<E>,
+	phantom: PhantomData<E>,
+	public_key_manager: Rc<RefCell<PublicKeyManager>>,
 	user_map: HashMap<DsnpUserId, UserGraph>,
 }
 
@@ -39,7 +43,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_user_data(&mut self, payload: ImportBundle<E>) -> Result<()>;
+	fn import_user_data(&mut self, payload: ImportBundle) -> Result<()>;
 
 	/// Calculate the necessary page updates for a user's graph, and
 	/// return as a map of pages to be updated and/or removed
@@ -51,7 +55,7 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 	) -> Result<Vec<Update>>;
 
 	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
-	fn apply_action(&mut self, action: &Action<E>) -> Result<()>;
+	fn apply_action(&mut self, action: &Action) -> Result<()>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -64,14 +68,19 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 
 impl<const MAX_USERS: usize, E: EncryptionBehavior> GraphState<E, MAX_USERS> {
 	pub fn new() -> Self {
-		Self { _encryption: PhantomData, user_map: HashMap::<DsnpUserId, UserGraph>::new() }
+		Self {
+			phantom: PhantomData,
+			user_map: HashMap::<DsnpUserId, UserGraph>::new(),
+			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
+		}
 	}
 
 	pub fn with_capacity(capacity: usize) -> Self {
 		let size = min(capacity, MAX_USERS);
 		Self {
-			_encryption: PhantomData,
+			phantom: PhantomData,
 			user_map: HashMap::<DsnpUserId, UserGraph>::with_capacity(size),
+			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
 		}
 	}
 
@@ -103,7 +112,8 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 			))
 		}
 
-		self.user_map.insert(*user_id, UserGraph::new(user_id));
+		self.user_map
+			.insert(*user_id, UserGraph::new(user_id, self.public_key_manager.clone()));
 		match self.user_map.get_mut(user_id) {
 			Some(graph) => Ok(graph),
 			None => Err(Error::msg("Unexpected error retrieving user graph")),
@@ -118,24 +128,37 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_user_data(&mut self, payload: ImportBundle<E>) -> Result<()> {
-		let user_graph = match self.user_map.get_mut(&payload.dsnp_user_id) {
+	fn import_user_data(
+		&mut self,
+		ImportBundle { connection_type, pages, dsnp_keys, dsnp_user_id, key_pairs }: ImportBundle,
+	) -> Result<()> {
+		self.public_key_manager.borrow_mut().import_dsnp_keys(dsnp_keys)?;
+
+		let user_graph = match self.user_map.get_mut(&dsnp_user_id) {
 			Some(graph) => graph,
-			None => self.add_user_graph(&payload.dsnp_user_id)?,
+			None => self.add_user_graph(&dsnp_user_id)?,
 		};
 
-		let graph = user_graph.graph_mut(&payload.connection_type);
+		let user_key_manager = user_graph.user_key_manager_mut();
+		let include_secret_keys = !key_pairs.is_empty();
+
+		// import key-pairs inside user key manager
+		user_key_manager.import_key_pairs(key_pairs);
+
+		let resolved_keys = match include_secret_keys {
+			true => user_key_manager.get_all_resolved_keys(),
+			false => vec![],
+		};
+
+		let graph = user_graph.graph_mut(&connection_type);
 		graph.clear();
 
-		match payload.connection_type.privacy_type() {
-			PrivacyType::Public => graph.import_public(payload),
-			PrivacyType::Private =>
-			// An import of a private graph with an empty key list is an "opaque" import
-				if payload.keys.is_empty() {
-					graph.import_opaque(payload)
-				} else {
-					graph.import_private(payload)
-				},
+		match (connection_type.privacy_type(), include_secret_keys) {
+			(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
+			(PrivacyType::Private, true) =>
+				graph.import_private(connection_type, pages, resolved_keys),
+			// TODO: import into PRId manager
+			(PrivacyType::Private, false) => graph.import_opaque(connection_type, pages),
 		}?;
 
 		Ok(())
@@ -158,7 +181,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	}
 
 	/// Apply an action (Connect, Disconnect) to a user's graph
-	fn apply_action(&mut self, action: &Action<E>) -> Result<()> {
+	fn apply_action(&mut self, action: &Action) -> Result<()> {
 		if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
 			let update_event = match action {
 				Action::Connect {
@@ -171,7 +194,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 				} => UpdateEvent::create_remove(*dsnp_user_id, *connection_type),
 			};
 
-			return owner_graph.update_tracker.register_update(&update_event)
+			return owner_graph.update_tracker_mut().register_update(&update_event)
 		}
 
 		Err(Error::msg("user graph not found in state"))
@@ -194,7 +217,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 
 		if include_pending {
 			user_graph
-				.update_tracker
+				.update_tracker()
 				.get_updates_for_connection_type(*connection_type)
 				.unwrap_or(&Vec::<UpdateEvent>::new())
 				.iter()
@@ -218,7 +241,14 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 
 #[cfg(test)]
 mod test {
-	use crate::dsnp::{api_types::Connection, encryption::SealBox};
+	use crate::{
+		dsnp::{
+			api_types::{Connection, ResolvedKeyPair},
+			encryption::SealBox,
+		},
+		tests::helpers::ImportBundleBuilder,
+	};
+	use dryoc::keypair::StackKeyPair;
 
 	use super::*;
 	const TEST_CAPACITY: usize = 10;
@@ -303,14 +333,74 @@ mod test {
 		let mut state: TestGraphState = TestGraphState::new();
 		let _ = state.add_user_graph(&0);
 		let _ = state.add_user_graph(&1);
-		let state_copy = state.clone();
 		state.remove_user_graph(&99);
-		assert_eq!(state, state_copy);
+		assert_eq!(state.user_map.len(), 2);
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn import_user_data() {}
+	fn import_user_data_should_import_keys_and_data_for_public_follow_graph() {
+		// arrange
+		let mut state: TestGraphState = TestGraphState::new();
+		let keypair = StackKeyPair::gen();
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_page(1, &connections)
+			.build();
+
+		// act
+		let res = state.import_user_data(input);
+
+		// assert
+		assert!(res.is_ok());
+
+		let public_manager = state.public_key_manager.borrow();
+		let keys = public_manager.get_all_keys(dsnp_user_id);
+		assert_eq!(keys.len(), 1);
+
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		assert!(res.is_ok());
+		let mapped: Vec<_> = connections
+			.into_iter()
+			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.collect();
+		assert_eq!(res.unwrap(), mapped);
+	}
+
+	#[test]
+	fn import_user_data_should_import_keys_and_data_for_private_follow_graph() {
+		// arrange
+		let mut state: TestGraphState = TestGraphState::new();
+		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![resolved_key.key_pair.clone()])
+			.with_encryption_key(resolved_key)
+			.with_page(1, &connections)
+			.build();
+
+		// act
+		let res = state.import_user_data(input);
+
+		// assert
+		assert!(res.is_ok());
+
+		let public_manager = state.public_key_manager.borrow();
+		let keys = public_manager.get_all_keys(dsnp_user_id);
+		assert_eq!(keys.len(), 1);
+
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		assert!(res.is_ok());
+		let mapped: Vec<_> = connections
+			.into_iter()
+			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.collect();
+		assert_eq!(res.unwrap(), mapped);
+	}
 
 	#[test]
 	#[ignore = "todo"]
@@ -380,10 +470,43 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn get_connections_for_user_graph() {}
+	fn get_connections_for_user_graph_with_pending_should_include_updates() {
+		// arrange
+		let mut state: TestGraphState = TestGraphState::new();
+		let keypair = StackKeyPair::gen();
+		let dsnp_user_id = 123;
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let connections = vec![2, 3, 4, 5];
+		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_page(1, &connections)
+			.build();
+		state.import_user_data(input).expect("should work");
+		let actions = vec![
+			Action::Connect {
+				connection: Connection { connection_type, dsnp_user_id: 1 },
+				connection_key: None,
+				owner_dsnp_user_id: dsnp_user_id,
+			},
+			Action::Disconnect {
+				connection: Connection { connection_type, dsnp_user_id: 3 },
+				owner_dsnp_user_id: dsnp_user_id,
+			},
+		];
+		let expected_connections = vec![2, 4, 5, 1];
 
-	#[test]
-	#[ignore = "todo"]
-	fn get_connections_for_user_graph_with_pending() {}
+		// act
+		let res1 = state.apply_action(actions.get(0).unwrap());
+		let res2 = state.apply_action(actions.get(1).unwrap());
+
+		// assert
+		assert!(res1.is_ok());
+		assert!(res2.is_ok());
+
+		let connections_result =
+			state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, true);
+		assert!(connections_result.is_ok());
+		let mapped: Vec<_> = connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
+		assert_eq!(mapped, expected_connections);
+	}
 }
