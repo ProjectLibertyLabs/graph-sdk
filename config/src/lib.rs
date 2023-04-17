@@ -106,9 +106,9 @@ mod test {
 	fn config_import_success() -> Result<(), serde_json::Error> {
 		let parsed_config: Config = MAINNET_CONFIG.try_into()?;
 		let config = Config {
-			max_graph_page_size_bytes: 2048,
+			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
-			max_key_page_size_bytes: 1024,
+			max_key_page_size_bytes: 65536,
 			schema_map: HashMap::from([
 				(ConnectionType::Follow(PrivacyType::Public), 1),
 				(ConnectionType::Follow(PrivacyType::Private), 2),
