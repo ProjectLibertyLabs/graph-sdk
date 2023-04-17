@@ -374,16 +374,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "dsnp-graph-samples"
-version = "0.1.0"
-dependencies = [
- "dryoc",
- "dsnp-graph-config",
- "dsnp-graph-core",
- "serde_json",
-]
-
-[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
