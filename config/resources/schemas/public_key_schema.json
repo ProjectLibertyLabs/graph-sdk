@@ -7,11 +7,6 @@
       "name": "publicKey",
       "doc": "Multicodec public key",
       "type": "bytes"
-    },
-    {
-      "name": "keyId",
-      "type": "long",
-      "doc": "User-Assigned Key Identifier"
     }
   ]
 }
