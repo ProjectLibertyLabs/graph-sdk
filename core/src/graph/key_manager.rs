@@ -334,7 +334,7 @@ mod tests {
 				keys_hash,
 				dsnp_user_id,
 				keys: vec![KeyData {
-					index: 0,
+					index: expected_added_key.key_id.unwrap() as u16,
 					content: Frequency::write_public_key(&expected_added_key)
 						.expect("should write")
 				}]
