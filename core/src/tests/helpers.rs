@@ -130,7 +130,7 @@ impl KeyDataBuilder {
 			.map(|(i, pair)| KeyData {
 				index: i as u16,
 				content: Frequency::write_public_key(&DsnpPublicKey {
-					key_id: i as u64,
+					key_id: Some(i as u64),
 					key: pair.public_key.to_vec(),
 				})
 				.expect("should serialize"),

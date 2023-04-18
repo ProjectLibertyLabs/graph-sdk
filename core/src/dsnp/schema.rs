@@ -69,7 +69,7 @@ mod test {
 
 	#[test]
 	fn public_key_read_and_write_using_valid_input_should_succeed() {
-		let key = DsnpPublicKey { key_id: 128, key: b"217678127812871812334324".to_vec() };
+		let key = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
 
 		let serialized = SchemaHandler::write_public_key(&key).expect("should serialize");
 		let deserialized = SchemaHandler::read_public_key(&serialized).expect("should deserialize");
@@ -79,7 +79,7 @@ mod test {
 
 	#[test]
 	fn public_key_read_using_invalid_input_should_fail() {
-		let key = DsnpPublicKey { key_id: 128, key: b"217678127812871812334324".to_vec() };
+		let key = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
 
 		let mut serialized = SchemaHandler::write_public_key(&key).expect("should serialize");
 		serialized[0] = serialized[0].saturating_add(1); // corrupting the input

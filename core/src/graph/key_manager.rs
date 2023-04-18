@@ -36,7 +36,7 @@ pub trait PublicKeyProvider {
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey>;
 
 	/// adds a new public key to the provider
-	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<u64>;
+	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
 }
 
 /// Common trait that manages public and private keys for each user
@@ -86,8 +86,10 @@ impl PublicKeyProvider for PublicKeyManager {
 
 		let mut dsnp_keys = vec![];
 		for key in sorted_keys {
-			let k = Frequency::read_public_key(&key.content)
+			let mut k = Frequency::read_public_key(&key.content)
 				.map_err(|e| Error::msg(format!("failed to deserialize key {:?}", e)))?;
+			// key id is the itemized index of the key stored in Frequency
+			k.key_id = Some(key.index.into());
 			dsnp_keys.push(k);
 		}
 
@@ -103,8 +105,8 @@ impl PublicKeyProvider for PublicKeyManager {
 				keys: vec![KeyData {
 					content: Frequency::write_public_key(&key)
 						.map_err(|e| Error::msg(format!("failed to serialize key {:?}", e)))?,
-					// this is not important since it's not being used for writing on chain
-					index: u16::default(),
+					// all new keys are assigned a new id so we can unwrap here
+					index: key.key_id.unwrap() as u16,
 				}],
 				keys_hash: self
 					.dsnp_user_to_keys
@@ -128,7 +130,11 @@ impl PublicKeyProvider for PublicKeyManager {
 	}
 
 	fn get_key_by_id(&self, dsnp_user_id: DsnpUserId, key_id: u64) -> Option<&DsnpPublicKey> {
-		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |k| k.key_id == key_id).copied()
+		// get the first key by that id as specified in the spec
+		self.get_all_keys(dsnp_user_id)
+			.iter()
+			.find(|k| k.key_id == Some(key_id))
+			.copied()
 	}
 
 	fn get_key_by_public_key(
@@ -136,15 +142,24 @@ impl PublicKeyProvider for PublicKeyManager {
 		dsnp_user_id: DsnpUserId,
 		public_key: Vec<u8>,
 	) -> Option<&DsnpPublicKey> {
-		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |k| k.key == public_key).copied()
+		// get the first key by that public key as specified in the spec
+		self.get_all_keys(dsnp_user_id).iter().find(|k| k.key == public_key).copied()
 	}
 
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey> {
-		last_item_selector(self.get_all_keys(dsnp_user_id).iter(), |_| true).copied()
+		let last_key = self.get_all_keys(dsnp_user_id).last().cloned();
+		if let Some(k) = last_key {
+			if let Some(key_id) = k.key_id {
+				// get the first key published by that key_id
+				return self.get_key_by_id(dsnp_user_id, key_id)
+			}
+		}
+		last_key
 	}
 
-	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<u64> {
-		let new_key = DsnpPublicKey { key_id: self.get_next_key_id(dsnp_user_id), key: public_key };
+	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()> {
+		let new_key =
+			DsnpPublicKey { key: public_key, key_id: Some(self.get_next_key_id(dsnp_user_id)) };
 
 		// making sure it is serializable before adding
 		let _ = Frequency::write_public_key(&new_key)
@@ -153,7 +168,7 @@ impl PublicKeyProvider for PublicKeyManager {
 		// only one new key is allowed to be added to a dsnp_user_id at a time
 		self.new_keys.insert(dsnp_user_id, new_key.clone());
 
-		Ok(new_key.key_id)
+		Ok(())
 	}
 }
 
@@ -167,9 +182,7 @@ impl UserKeyProvider for UserKeyManager {
 		if let Some(dsnp) =
 			self.public_key_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
-			if let Some(pair) =
-				last_item_selector(self.keys.iter(), |&k| k.public_key.to_vec() == dsnp.key)
-			{
+			if let Some(pair) = self.keys.iter().find(|&k| k.public_key.to_vec() == dsnp.key) {
 				return Some((dsnp.clone(), pair.clone()))
 			}
 		}
@@ -181,8 +194,14 @@ impl UserKeyProvider for UserKeyManager {
 			.borrow()
 			.get_all_keys(self.dsnp_user_id)
 			.iter()
-			.filter_map(|dsnp| self.get_resolved_key(dsnp.key_id))
-			.map(|(dsnp, pair)| ResolvedKeyPair { key_id: dsnp.key_id, key_pair: pair.clone() })
+			.filter_map(|dsnp| match dsnp.key_id {
+				Some(ind) => self.get_resolved_key(ind),
+				None => None,
+			})
+			.map(|(dsnp, pair)| ResolvedKeyPair {
+				key_id: dsnp.key_id.unwrap(),
+				key_pair: pair.clone(),
+			})
 			.collect()
 	}
 }
@@ -195,7 +214,7 @@ impl PublicKeyManager {
 	fn get_next_key_id(&self, dsnp_user_id: DsnpUserId) -> u64 {
 		self.get_all_keys(dsnp_user_id)
 			.iter()
-			.map(|key| key.key_id)
+			.filter_map(|key| key.key_id)
 			.max()
 			.unwrap_or(u64::default()) +
 			1
@@ -209,18 +228,6 @@ impl UserKeyManager {
 	) -> Self {
 		Self { public_key_manager, dsnp_user_id, keys: vec![] }
 	}
-}
-
-/// This is a selector function that tries to get the last item inside an iterator which
-/// satisfies the passed filter
-/// This is mainly used for selecting the last key in the collection as a tie breaker in case there
-/// are some duplicates for any filter like key ids
-fn last_item_selector<'a, I, V: 'a, F>(values: I, filter: F) -> Option<&'a V>
-where
-	I: Iterator<Item = &'a V>,
-	F: FnMut(&&'a V) -> bool,
-{
-	values.filter(filter).last()
 }
 
 #[cfg(test)]
@@ -241,7 +248,7 @@ mod tests {
 		let mut key_manager = PublicKeyManager::new();
 		let dsnp_user_id = 23;
 		let key_hash = 128;
-		let key1 = DsnpPublicKey { key_id: 128, key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: Some(128), key: b"217678127812871812334324".to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let old_keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -265,9 +272,9 @@ mod tests {
 	fn public_key_manager_should_import_and_retrieve_keys_as_expected() {
 		// arrange
 		let dsnp_user_id = 23;
-		let key1 = DsnpPublicKey { key_id: 128, key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: Some(2), key: b"217678127812871812334324".to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: 1, key: b"217678127812871812334325".to_vec() };
+		let key2 = DsnpPublicKey { key_id: Some(1), key: b"217678127812871812334325".to_vec() };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -285,7 +292,7 @@ mod tests {
 		// assert
 		assert!(res.is_ok());
 		assert_eq!(key_manager.get_key_by_id(dsnp_user_id, 1), Some(&key2));
-		assert_eq!(key_manager.get_key_by_id(dsnp_user_id, 128), Some(&key1));
+		assert_eq!(key_manager.get_key_by_id(dsnp_user_id, 2), Some(&key1));
 		assert_eq!(key_manager.get_key_by_public_key(dsnp_user_id, key1.key.clone()), Some(&key1));
 		assert_eq!(key_manager.get_key_by_public_key(dsnp_user_id, key2.key.clone()), Some(&key2));
 		assert_eq!(key_manager.get_active_key(dsnp_user_id), Some(&key1));
@@ -296,9 +303,9 @@ mod tests {
 		// arrange
 		let dsnp_user_id = 2;
 		let keys_hash = 233;
-		let key1 = DsnpPublicKey { key_id: 19, key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: 4, key: b"217678127812871812334325".to_vec() };
+		let key2 = DsnpPublicKey { key_id: None, key: b"217678127812871812334325".to_vec() };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -309,7 +316,7 @@ mod tests {
 			],
 		);
 		let new_public_key = b"726871hsjgdjsa727821712812".to_vec();
-		let expected_added_key = DsnpPublicKey { key_id: 20, key: new_public_key.clone() };
+		let expected_added_key = DsnpPublicKey { key_id: Some(3), key: new_public_key.clone() };
 		let mut key_manager = PublicKeyManager::new();
 		key_manager.import_dsnp_keys(keys).expect("should work");
 
@@ -327,7 +334,7 @@ mod tests {
 				keys_hash,
 				dsnp_user_id,
 				keys: vec![KeyData {
-					index: 0,
+					index: expected_added_key.key_id.unwrap() as u16,
 					content: Frequency::write_public_key(&expected_added_key)
 						.expect("should write")
 				}]
@@ -337,29 +344,30 @@ mod tests {
 	}
 
 	#[test]
-	fn public_key_manager_get_key_by_id_should_return_last_key_when_duplicate_ids_exists() {
+	fn public_key_manager_get_key_by_id_should_return_first_key_when_duplicate_ids_exists() {
 		// arrange
 		let dsnp_user_id = 2;
-		let key1 = DsnpPublicKey { key_id: 4, key: b"217678127812871812334324".to_vec() };
+		let id = 4;
+		let key1 = DsnpPublicKey { key_id: Some(id), key: b"217678127812871812334324".to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: 4, key: b"217678127812871812334325".to_vec() };
+		let key2 = DsnpPublicKey { key_id: None, key: b"217678127812871812334325".to_vec() };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
 			233,
 			vec![
-				KeyData { index: 1, content: serialized1 },
-				KeyData { index: 2, content: serialized2 },
+				KeyData { index: id as u16, content: serialized1 },
+				KeyData { index: id as u16, content: serialized2 },
 			],
 		);
 		let mut key_manager = PublicKeyManager::new();
 		key_manager.import_dsnp_keys(keys).expect("should work");
 
 		// act
-		let res = key_manager.get_key_by_id(dsnp_user_id, key1.key_id);
+		let res = key_manager.get_key_by_id(dsnp_user_id, id.into());
 
 		// assert
-		assert_eq!(res, Some(&key2));
+		assert_eq!(res, Some(&key1));
 	}
 
 	#[test]
@@ -372,12 +380,13 @@ mod tests {
 		let mut user_key_manager = UserKeyManager::new(dsnp_user_id, rc.clone());
 		let key_pair = StackKeyPair::gen();
 		let keys_hash = 233;
-		let key1 = DsnpPublicKey { key_id: 19, key: key_pair.public_key.to_vec() };
+		let id1 = 1;
+		let key1 = DsnpPublicKey { key_id: Some(id1), key: key_pair.public_key.to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
 			keys_hash,
-			vec![KeyData { index: 1, content: serialized1 }],
+			vec![KeyData { index: id1 as u16, content: serialized1 }],
 		);
 		mutable_clone.borrow_mut().import_dsnp_keys(keys).expect("should work");
 
@@ -385,7 +394,7 @@ mod tests {
 		user_key_manager.import_key_pairs(vec![key_pair.clone()]);
 
 		// assert
-		let key = user_key_manager.get_resolved_key(key1.key_id);
+		let key = user_key_manager.get_resolved_key(id1);
 		assert_eq!(key, Some((key1, key_pair)));
 
 		let keys = user_key_manager.get_all_resolved_keys();

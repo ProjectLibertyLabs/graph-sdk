@@ -39,9 +39,11 @@ pub struct DsnpPublicKey {
 	#[serde(with = "serde_bytes")]
 	pub key: Vec<u8>,
 
-	/// User-Assigned Key Identifier
-	#[serde(rename = "keyId")]
-	pub key_id: u64,
+	/// User-Assigned Key Identifier which in Frequency it is itemized index from Stateful storage
+	/// This is not being serialized or deserialized directly and is only used to eliminate adding
+	/// a new type for keys that encapsulates keys and their ids.
+	#[serde(skip)]
+	pub key_id: Option<u64>,
 }
 
 /// Public Graph Chunk defined in DSNP to store compressed public graph
@@ -205,9 +207,9 @@ mod test {
 
 	#[test]
 	fn dsnp_public_key_should_be_ordered_by_key_id_asc() {
-		let a = DsnpPublicKey { key_id: 1, key: vec![] };
-		let b = DsnpPublicKey { key_id: 19, key: vec![] };
-		let c = DsnpPublicKey { key_id: 20, key: vec![] };
+		let a = DsnpPublicKey { key_id: Some(1), key: vec![] };
+		let b = DsnpPublicKey { key_id: Some(19), key: vec![] };
+		let c = DsnpPublicKey { key_id: Some(20), key: vec![] };
 		let mut arr = vec![b.clone(), a.clone(), c.clone()];
 
 		arr.sort();
