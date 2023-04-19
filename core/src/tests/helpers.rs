@@ -19,6 +19,7 @@ use crate::{
 };
 use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
+use dsnp_graph_config::{Environment, SchemaId};
 
 pub fn create_graph_edge(id: &DsnpUserId) -> DsnpGraphEdge {
 	DsnpGraphEdge { user_id: *id, since: time_in_ksecs() }
@@ -52,7 +53,12 @@ pub fn create_test_graph() -> Graph {
 		curr_id += ids_per_page;
 	}
 
-	let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
+	let env = Environment::Mainnet;
+	let schema_id = env
+		.get_config()
+		.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+		.expect("should exist");
+	let mut graph = Graph::new(env, schema_id);
 	for p in page_builder.build() {
 		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
@@ -212,17 +218,21 @@ impl PageDataBuilder {
 }
 
 pub struct ImportBundleBuilder {
+	env: Environment,
 	dsnp_user_id: DsnpUserId,
-	connection_type: ConnectionType,
+	schema_id: SchemaId,
 	key_builder: KeyDataBuilder,
 	page_data_builder: PageDataBuilder,
 }
 
 impl ImportBundleBuilder {
-	pub fn new(dsnp_user_id: DsnpUserId, connection_type: ConnectionType) -> Self {
+	pub fn new(env: Environment, dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
+		let connection_type =
+			env.get_config().get_connection_type_from_schema_id(schema_id).unwrap();
 		ImportBundleBuilder {
+			env,
 			dsnp_user_id,
-			connection_type,
+			schema_id,
 			key_builder: KeyDataBuilder::new(),
 			page_data_builder: PageDataBuilder::new(connection_type),
 		}
@@ -251,7 +261,7 @@ impl ImportBundleBuilder {
 		ImportBundle {
 			dsnp_keys: DsnpKeys { keys, keys_hash: 232, dsnp_user_id: self.dsnp_user_id },
 			dsnp_user_id: self.dsnp_user_id,
-			connection_type: self.connection_type,
+			schema_id: self.schema_id,
 			key_pairs,
 			pages,
 		}

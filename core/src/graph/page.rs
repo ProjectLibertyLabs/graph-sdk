@@ -3,6 +3,7 @@ use crate::{
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Result};
+use dsnp_graph_config::DsnpVersionConfig;
 
 use crate::dsnp::{
 	compression::{CompressionBehavior, DeflateCompression},
@@ -45,10 +46,14 @@ impl TryFrom<&PageData> for GraphPage {
 }
 
 /// Conversion for Private Graph
-impl TryFrom<(&PageData, &Vec<ResolvedKeyPair>)> for GraphPage {
+impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPage {
 	type Error = Error;
 	fn try_from(
-		(PageData { content_hash, content, page_id, .. }, keys): (&PageData, &Vec<ResolvedKeyPair>),
+		(PageData { content_hash, content, page_id, .. }, _dsnp_config, keys): (
+			&PageData,
+			&DsnpVersionConfig,
+			&Vec<ResolvedKeyPair>,
+		),
 	) -> Result<Self> {
 		let DsnpUserPrivateGraphChunk { key_id, encrypted_compressed_private_graph, prids } =
 			DsnpUserPrivateGraphChunk::try_from(content.as_slice())?;
@@ -56,6 +61,7 @@ impl TryFrom<(&PageData, &Vec<ResolvedKeyPair>)> for GraphPage {
 
 		// First try the key that was indicated in the page
 		if let Some(indicated_key) = keys.iter().find(|k| k.key_id == key_id) {
+			// TODO: instead of SealBox should use dsnp_config to determine which algorithm to use
 			if let Ok(data) =
 				SealBox::decrypt(&encrypted_compressed_private_graph, &indicated_key.key_pair)
 			{

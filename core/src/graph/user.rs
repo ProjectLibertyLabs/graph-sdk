@@ -3,6 +3,7 @@ use crate::{
 	graph::updates::UpdateTracker,
 };
 use anyhow::Result;
+use dsnp_graph_config::{Environment, SchemaId};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
@@ -12,7 +13,7 @@ use crate::{
 
 use super::graph::Graph;
 
-pub type GraphMap = HashMap<ConnectionType, Graph>;
+pub type GraphMap = HashMap<SchemaId, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
 #[derive(Debug)]
@@ -25,27 +26,21 @@ pub struct UserGraph {
 
 impl UserGraph {
 	/// Create a new, empty UserGraph
-	pub fn new(user_id: &DsnpUserId, public_key_manager: Rc<RefCell<PublicKeyManager>>) -> Self {
+	pub fn new(
+		user_id: &DsnpUserId,
+		environment: &Environment,
+		public_key_manager: Rc<RefCell<PublicKeyManager>>,
+	) -> Self {
+		let graphs: GraphMap = environment
+			.get_config()
+			.schema_map
+			.keys()
+			.map(|schema_id| (*schema_id, Graph::new(environment.clone(), *schema_id)))
+			.collect();
+
 		Self {
 			user_id: *user_id,
-			graphs: GraphMap::from([
-				(
-					ConnectionType::Follow(PrivacyType::Public),
-					Graph::new(ConnectionType::Follow(PrivacyType::Public)),
-				),
-				(
-					ConnectionType::Follow(PrivacyType::Private),
-					Graph::new(ConnectionType::Follow(PrivacyType::Private)),
-				),
-				(
-					ConnectionType::Friendship(PrivacyType::Public),
-					Graph::new(ConnectionType::Friendship(PrivacyType::Public)),
-				),
-				(
-					ConnectionType::Friendship(PrivacyType::Private),
-					Graph::new(ConnectionType::Friendship(PrivacyType::Private)),
-				),
-			]),
+			graphs,
 			user_key_manager: UserKeyManager::new(*user_id, public_key_manager),
 			update_tracker: UpdateTracker::new(),
 		}
@@ -77,25 +72,23 @@ impl UserGraph {
 	}
 
 	/// Getter for the user's graph for the specified ConnectionType
-	pub fn graph(&self, connection_type: &ConnectionType) -> &Graph {
-		self.graphs.get(connection_type).expect("UserGraph local instance is corrupt")
+	pub fn graph(&self, schema_id: &SchemaId) -> &Graph {
+		self.graphs.get(schema_id).expect("UserGraph local instance is corrupt")
 	}
 
 	/// Mutable getter for the user's graph for the specified ConnectionType
-	pub fn graph_mut(&mut self, connection_type: &ConnectionType) -> &mut Graph {
-		self.graphs
-			.get_mut(connection_type)
-			.expect("UserGraph local instance is corrupt")
+	pub fn graph_mut(&mut self, schema_id: &SchemaId) -> &mut Graph {
+		self.graphs.get_mut(schema_id).expect("UserGraph local instance is corrupt")
 	}
 
 	/// Setter for the specified graph connection type
-	pub fn set_graph(&mut self, connection_type: &ConnectionType, graph: Graph) {
-		self.graphs.insert(*connection_type, graph);
+	pub fn set_graph(&mut self, schema_id: &SchemaId, graph: Graph) {
+		self.graphs.insert(*schema_id, graph);
 	}
 
 	/// Clear the specified graph type for this user
-	pub fn clear_graph(&mut self, connection_type: &ConnectionType) {
-		if let Some(g) = self.graphs.get_mut(connection_type) {
+	pub fn clear_graph(&mut self, schema_id: &SchemaId) {
+		if let Some(g) = self.graphs.get_mut(schema_id) {
 			g.clear();
 		}
 	}
@@ -112,9 +105,9 @@ impl UserGraph {
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
-		for (connection_type, graph) in self.graphs.iter() {
+		for (schema_id, graph) in self.graphs.iter() {
 			let graph_data = graph.calculate_updates::<E>(
-				self.update_tracker.get_mut_updates_for_connection_type(*connection_type),
+				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
 				&self.user_id,
 				connection_keys,
 				encryption_key,
@@ -134,27 +127,31 @@ mod test {
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {
 		let user_id = 1;
-		let user_graph = UserGraph::new(&user_id, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let env = Environment::Mainnet;
+		let user_graph =
+			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 
 		assert_eq!(user_graph.user_id, user_id);
-		assert_eq!(
-			user_graph.graphs.contains_key(&ConnectionType::Follow(PrivacyType::Public)),
-			true
-		);
-		assert_eq!(
-			user_graph.graphs.contains_key(&ConnectionType::Follow(PrivacyType::Private)),
-			true
-		);
-		assert_eq!(
-			user_graph.graphs.contains_key(&ConnectionType::Friendship(PrivacyType::Public)),
-			true
-		);
-		assert_eq!(
-			user_graph
-				.graphs
-				.contains_key(&ConnectionType::Friendship(PrivacyType::Private)),
-			true
-		);
+		let follow_public_schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
+			.expect("should exist");
+		assert_eq!(user_graph.graphs.contains_key(&follow_public_schema_id), true);
+		let follow_private_schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		assert_eq!(user_graph.graphs.contains_key(&follow_private_schema_id), true);
+		let friendship_public_schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Public))
+			.expect("should exist");
+		assert_eq!(user_graph.graphs.contains_key(&friendship_public_schema_id), true);
+		let friendship_private_schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
+			.expect("should exist");
+		assert_eq!(user_graph.graphs.contains_key(&friendship_private_schema_id), true);
 
 		for graph in user_graph.graphs.values() {
 			let graph_len = iter_graph_connections!(graph).len();
@@ -164,43 +161,60 @@ mod test {
 
 	#[test]
 	fn graph_getter_gets_correct_graph_for_connection_type() {
-		let user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let env = Environment::Mainnet;
+		let user_graph = UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				assert_eq!(user_graph.graph(&c).connection_type, c);
+				let schema_id =
+					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+				assert_eq!(user_graph.graph(&schema_id).get_connection_type(), c);
 			}
 		}
 	}
 
 	#[test]
 	fn graph_mut_getter_gets_correct_graph_for_connection_type() {
-		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let env = Environment::Mainnet;
+		let mut user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				assert_eq!(user_graph.graph_mut(&c).connection_type, c);
+				let schema_id =
+					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+				assert_eq!(user_graph.graph_mut(&schema_id).get_connection_type(), c);
 			}
 		}
 	}
 
 	#[test]
 	fn graph_setter_overwrites_existing_graph() {
-		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let env = Environment::Mainnet;
+		let mut user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
-		let mut new_graph = Graph::new(connection_type);
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut new_graph = Graph::new(env, schema_id);
 		assert_eq!(new_graph.add_connection_to_page(&0, &2).is_ok(), true);
 
-		assert_ne!(*user_graph.graph(&connection_type), new_graph);
-		user_graph.set_graph(&connection_type, new_graph.clone());
-		assert_eq!(*user_graph.graph(&connection_type), new_graph);
+		assert_ne!(*user_graph.graph(&schema_id), new_graph);
+		user_graph.set_graph(&schema_id, new_graph.clone());
+		assert_eq!(*user_graph.graph(&schema_id), new_graph);
 	}
 
 	#[test]
 	fn clear_graph_clears_specific_graph_and_no_others() {
+		let env = Environment::Mainnet;
 		let graph = create_test_graph();
-		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let mut user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				user_graph.set_graph(&c, graph.clone());
+				let schema_id =
+					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+				user_graph.set_graph(&schema_id, graph.clone());
 			}
 		}
 
@@ -209,10 +223,14 @@ mod test {
 		}
 
 		let connection_type_to_clear = ConnectionType::Follow(PrivacyType::Public);
-		user_graph.clear_graph(&connection_type_to_clear);
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type_to_clear)
+			.expect("should exist");
+		user_graph.clear_graph(&schema_id);
 
-		for (conn_type, g) in user_graph.graphs {
-			if conn_type == connection_type_to_clear {
+		for (schema_id_to_clear, g) in user_graph.graphs {
+			if schema_id_to_clear == schema_id {
 				assert_eq!(g.len(), 0);
 			} else {
 				assert_eq!(g.len(), 25);
@@ -222,11 +240,15 @@ mod test {
 
 	#[test]
 	fn clear_all_clears_all_graphs() {
+		let env = Environment::Mainnet;
 		let graph = create_test_graph();
-		let mut user_graph = UserGraph::new(&1, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let mut user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				user_graph.set_graph(&c, graph.clone());
+				let schema_id =
+					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+				user_graph.set_graph(&schema_id, graph.clone());
 			}
 		}
 

@@ -1,15 +1,15 @@
+mod builder;
+
 use apache_avro::Schema;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::hash_map::HashMap;
 
-pub const MAINNET_CONFIG: &str = include_str!("../resources/configs/frequency.json");
-pub const ROCOCO_CONFIG: &str = include_str!("../resources/configs/frequency-rococo.json");
-
 pub type SchemaId = u16;
 
 lazy_static! {
+	// Schemas
 	pub static ref PUBLIC_KEY_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/public_key_schema.json")).unwrap();
 	pub static ref PUBLIC_GRAPH_CHUNK_SCHEMA: Schema =
@@ -20,6 +20,12 @@ lazy_static! {
 	pub static ref PRIVATE_GRAPH_CHUNK_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/user_private_graph_chunk.json"))
 			.unwrap();
+
+	// Configurations
+	pub static ref MAINNET_CONFIG: Config = include_str!("../resources/configs/frequency.json")
+		.try_into().unwrap();
+	pub static ref ROCOCO_CONFIG: Config = include_str!("../resources/configs/frequency-rococo.json")
+		.try_into().unwrap();
 }
 
 /// Privacy Type of the graph
@@ -57,6 +63,50 @@ impl ConnectionType {
 	}
 }
 
+#[derive(Clone, PartialEq, Eq, Debug)]
+pub enum Environment {
+	Mainnet,
+	Rococo,
+	Dev(Config),
+}
+
+impl Environment {
+	pub fn get_config(&self) -> &Config {
+		match self {
+			Environment::Mainnet => &MAINNET_CONFIG,
+			Environment::Rococo => &ROCOCO_CONFIG,
+			Environment::Dev(cfg) => &cfg,
+		}
+	}
+}
+
+#[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+pub struct SchemaConfig {
+	pub dsnp_version: String,
+	pub connection_type: ConnectionType,
+}
+
+#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+pub enum EncryptionAlgorithm {
+	#[serde(rename = "xSalsa20Poly1305")]
+	XSalsa20Poly1305,
+}
+
+#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+pub enum KeyType {
+	#[serde(rename = "x25519")]
+	X25519,
+}
+
+#[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+pub struct DsnpVersionConfig {
+	#[serde(rename = "encryptionAlgo")]
+	pub encryption_algo: EncryptionAlgorithm,
+
+	#[serde(rename = "keyType")]
+	pub key_type: KeyType,
+}
+
 #[serde_as]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Config {
@@ -71,13 +121,56 @@ pub struct Config {
 
 	#[serde(rename = "schemaMap")]
 	#[serde_as(as = "Vec<(_, _)>")]
-	pub schema_map: HashMap<ConnectionType, SchemaId>,
+	pub schema_map: HashMap<SchemaId, SchemaConfig>,
+
+	#[serde(rename = "dsnpVersionMap")]
+	#[serde_as(as = "Vec<(_, _)>")]
+	pub dsnp_version_map: HashMap<String, DsnpVersionConfig>,
 }
 
 impl TryFrom<&str> for Config {
 	type Error = serde_json::Error;
 	fn try_from(s: &str) -> Result<Self, Self::Error> {
 		serde_json::from_str(s)
+	}
+}
+
+impl Config {
+	pub fn get_dsnp_config_from_schema_id(
+		&self,
+		schema_id: SchemaId,
+	) -> Option<(String, DsnpVersionConfig)> {
+		if let Some(schema_config) = self.schema_map.get(&schema_id) {
+			if let Some(dsnp_config) = self.dsnp_version_map.get(&schema_config.dsnp_version) {
+				return Some((schema_config.dsnp_version.clone(), dsnp_config.clone()))
+			}
+		}
+		None
+	}
+
+	pub fn get_connection_type_from_schema_id(
+		&self,
+		schema_id: SchemaId,
+	) -> Option<ConnectionType> {
+		if let Some(schema_config) = self.schema_map.get(&schema_id) {
+			return Some(schema_config.connection_type)
+		}
+		None
+	}
+
+	pub fn get_schema_id_from_connection_type(
+		&self,
+		connection_type: ConnectionType,
+	) -> Option<SchemaId> {
+		self.schema_map
+			.iter()
+			.filter_map(|(k, v)| {
+				if v.connection_type == connection_type {
+					return Some(*k)
+				}
+				None
+			})
+			.next()
 	}
 }
 
@@ -104,20 +197,50 @@ mod test {
 
 	#[test]
 	fn config_import_success() -> Result<(), serde_json::Error> {
-		let parsed_config: Config = MAINNET_CONFIG.try_into()?;
-		let config = Config {
+		let expected_config = Config {
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
+			dsnp_version_map: HashMap::from([(
+				"1.0".to_string(),
+				DsnpVersionConfig {
+					encryption_algo: EncryptionAlgorithm::XSalsa20Poly1305,
+					key_type: KeyType::X25519,
+				},
+			)]),
 			schema_map: HashMap::from([
-				(ConnectionType::Follow(PrivacyType::Public), 1),
-				(ConnectionType::Follow(PrivacyType::Private), 2),
-				(ConnectionType::Friendship(PrivacyType::Public), 3),
-				(ConnectionType::Friendship(PrivacyType::Private), 4),
+				(
+					1,
+					SchemaConfig {
+						dsnp_version: "1.0".to_string(),
+						connection_type: ConnectionType::Follow(PrivacyType::Public),
+					},
+				),
+				(
+					2,
+					SchemaConfig {
+						dsnp_version: "1.0".to_string(),
+						connection_type: ConnectionType::Follow(PrivacyType::Private),
+					},
+				),
+				(
+					3,
+					SchemaConfig {
+						dsnp_version: "1.0".to_string(),
+						connection_type: ConnectionType::Friendship(PrivacyType::Public),
+					},
+				),
+				(
+					4,
+					SchemaConfig {
+						dsnp_version: "1.0".to_string(),
+						connection_type: ConnectionType::Friendship(PrivacyType::Private),
+					},
+				),
 			]),
 		};
 
-		assert_eq!(parsed_config, config);
+		assert_eq!(MAINNET_CONFIG.clone(), expected_config);
 		Ok(())
 	}
 
@@ -132,6 +255,13 @@ mod test {
 		let _ = PUBLIC_GRAPH_SCHEMA;
 		let _ = PUBLIC_KEY_SCHEMA;
 		let _ = PRIVATE_GRAPH_CHUNK_SCHEMA;
+		Ok(())
+	}
+
+	#[test]
+	fn lazy_static_configs_are_valid() -> Result<(), apache_avro::Error> {
+		let _ = MAINNET_CONFIG;
+		let _ = ROCOCO_CONFIG;
 		Ok(())
 	}
 }

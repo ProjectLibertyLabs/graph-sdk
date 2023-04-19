@@ -1,7 +1,7 @@
 #![allow(dead_code)] // todo: remove after usage
 use crate::{
 	dsnp::{
-		api_types::{ConnectionType, DsnpKeys, PublicKey, Update},
+		api_types::{DsnpKeys, PublicKey, Update},
 		dsnp_types::DsnpUserId,
 		encryption::EncryptionBehavior,
 	},
@@ -11,17 +11,18 @@ use crate::{
 	},
 };
 use anyhow::{Error, Result};
+use dsnp_graph_config::SchemaId;
 use std::{cmp::Ordering, collections::HashMap};
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
-	Add { dsnp_user_id: DsnpUserId, connection_type: ConnectionType },
-	Remove { dsnp_user_id: DsnpUserId, connection_type: ConnectionType },
+	Add { dsnp_user_id: DsnpUserId, schema_id: SchemaId },
+	Remove { dsnp_user_id: DsnpUserId, schema_id: SchemaId },
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UpdateTracker {
-	updates: HashMap<ConnectionType, Vec<UpdateEvent>>,
+	updates: HashMap<SchemaId, Vec<UpdateEvent>>,
 }
 
 impl UpdateTracker {
@@ -60,22 +61,16 @@ impl UpdateTracker {
 		self.updates.iter().any(|(_, v)| !v.is_empty())
 	}
 
-	pub fn get_updates_for_connection_type(
-		&self,
-		connection_type: ConnectionType,
-	) -> Option<&Vec<UpdateEvent>> {
-		self.updates.get(&connection_type)
+	pub fn get_updates_for_schema_id(&self, schema_id: SchemaId) -> Option<&Vec<UpdateEvent>> {
+		self.updates.get(&schema_id)
 	}
 
-	pub fn get_mut_updates_for_connection_type(
-		&mut self,
-		connection_type: ConnectionType,
-	) -> &Vec<UpdateEvent> {
-		self.updates.entry(connection_type).or_default()
+	pub fn get_mut_updates_for_schema_id(&mut self, schema_id: SchemaId) -> &Vec<UpdateEvent> {
+		self.updates.entry(schema_id).or_default()
 	}
 
 	pub fn contains(&self, event: &UpdateEvent) -> bool {
-		match self.updates.get(event.get_connection_type()) {
+		match self.updates.get(event.get_schema_id()) {
 			Some(arr) => arr.contains(event),
 			None => false,
 		}
@@ -86,19 +81,16 @@ impl UpdateTracker {
 	}
 
 	fn remove(&mut self, event: &UpdateEvent) {
-		if let Some(arr) = self.updates.get_mut(event.get_connection_type()) {
+		if let Some(arr) = self.updates.get_mut(event.get_schema_id()) {
 			arr.retain(|e| e.ne(event));
 			if arr.is_empty() {
-				self.updates.remove(event.get_connection_type());
+				self.updates.remove(event.get_schema_id());
 			}
 		}
 	}
 
 	fn add(&mut self, event: &UpdateEvent) {
-		self.updates
-			.entry(*event.get_connection_type())
-			.or_default()
-			.push(event.clone());
+		self.updates.entry(*event.get_schema_id()).or_default().push(event.clone());
 	}
 
 	/// Clear out all pending updates
@@ -108,27 +100,27 @@ impl UpdateTracker {
 }
 
 impl UpdateEvent {
-	pub fn create_add(dsnp_user_id: DsnpUserId, connection_type: ConnectionType) -> Self {
-		UpdateEvent::Add { dsnp_user_id, connection_type }
+	pub fn create_add(dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
+		UpdateEvent::Add { dsnp_user_id, schema_id }
 	}
 
-	pub fn create_remove(dsnp_user_id: DsnpUserId, connection_type: ConnectionType) -> Self {
-		UpdateEvent::Remove { dsnp_user_id, connection_type }
+	pub fn create_remove(dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
+		UpdateEvent::Remove { dsnp_user_id, schema_id }
 	}
 
 	pub fn get_complement(&self) -> Self {
 		match self {
-			Add { dsnp_user_id, connection_type } =>
-				Remove { dsnp_user_id: *dsnp_user_id, connection_type: *connection_type },
-			Remove { dsnp_user_id, connection_type } =>
-				Add { dsnp_user_id: *dsnp_user_id, connection_type: *connection_type },
+			Add { dsnp_user_id, schema_id } =>
+				Remove { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
+			Remove { dsnp_user_id, schema_id } =>
+				Add { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
 		}
 	}
 
-	pub fn get_connection_type(&self) -> &ConnectionType {
+	pub fn get_schema_id(&self) -> &SchemaId {
 		match self {
-			Add { connection_type, .. } => connection_type,
-			Remove { connection_type, .. } => connection_type,
+			Add { schema_id, .. } => schema_id,
+			Remove { schema_id, .. } => schema_id,
 		}
 	}
 
@@ -162,13 +154,13 @@ impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::dsnp::api_types::PrivacyType;
 
 	#[test]
 	fn tracker_register_should_return_error_for_duplicate_events() {
 		// arrange
 		let mut tracker = UpdateTracker::new();
-		let event = UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public));
+		let schema_id = 4;
+		let event = UpdateEvent::create_add(1, schema_id);
 		tracker
 			.register_update(&event.clone())
 			.expect("Should have registered successfully!");
@@ -186,10 +178,9 @@ mod test {
 	fn tracker_register_should_remove_complement_events() {
 		// arrange
 		let mut tracker = UpdateTracker::new();
-		let events = vec![
-			UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public)),
-			UpdateEvent::create_remove(2, ConnectionType::Follow(PrivacyType::Public)),
-		];
+		let schema_id = 4;
+		let events =
+			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
 		tracker.register_updates(&events).expect("Should have registered successfully!");
 		let complements: Vec<UpdateEvent> =
 			events.as_slice().iter().map(|e| e.get_complement()).collect();
@@ -207,15 +198,14 @@ mod test {
 	fn tracker_register_should_work_as_expected() {
 		// arrange
 		let mut tracker = UpdateTracker::new();
+		let schema_1 = 4;
+		let schema_2 = 5;
+
 		let events = vec![
-			UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public)),
-			UpdateEvent::create_remove(2, ConnectionType::Follow(PrivacyType::Public)),
-			UpdateEvent::create_add(3, ConnectionType::Follow(PrivacyType::Private)),
-			UpdateEvent::create_remove(4, ConnectionType::Follow(PrivacyType::Private)),
-			UpdateEvent::create_add(5, ConnectionType::Friendship(PrivacyType::Public)),
-			UpdateEvent::create_remove(6, ConnectionType::Friendship(PrivacyType::Public)),
-			UpdateEvent::create_add(7, ConnectionType::Friendship(PrivacyType::Private)),
-			UpdateEvent::create_remove(8, ConnectionType::Friendship(PrivacyType::Private)),
+			UpdateEvent::create_add(1, schema_1),
+			UpdateEvent::create_remove(2, schema_1),
+			UpdateEvent::create_add(3, schema_2),
+			UpdateEvent::create_remove(4, schema_2),
 		];
 
 		// act
@@ -224,21 +214,11 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		let public_follow =
-			tracker.updates.get(&ConnectionType::Follow(PrivacyType::Public)).unwrap();
-		assert_eq!(public_follow.as_slice(), &events[..2]);
+		let schema_1_events = tracker.updates.get(&schema_1).unwrap();
+		assert_eq!(schema_1_events.as_slice(), &events[..2]);
 
-		let private_follow =
-			tracker.updates.get(&ConnectionType::Follow(PrivacyType::Private)).unwrap();
-		assert_eq!(private_follow.as_slice(), &events[2..4]);
-
-		let public_friendship =
-			tracker.updates.get(&ConnectionType::Friendship(PrivacyType::Public)).unwrap();
-		assert_eq!(public_friendship.as_slice(), &events[4..6]);
-
-		let private_friendship =
-			tracker.updates.get(&ConnectionType::Friendship(PrivacyType::Private)).unwrap();
-		assert_eq!(private_friendship.as_slice(), &events[6..8]);
+		let schema_2_events = tracker.updates.get(&schema_2).unwrap();
+		assert_eq!(schema_2_events.as_slice(), &events[2..4]);
 
 		assert!(tracker.has_updates());
 	}
@@ -246,10 +226,9 @@ mod test {
 	#[test]
 	fn tracker_event_sorter_should_prioritize_removes() {
 		// arrange
-		let mut events = vec![
-			UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public)),
-			UpdateEvent::create_remove(2, ConnectionType::Follow(PrivacyType::Public)),
-		];
+		let schema_id = 4;
+		let mut events =
+			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
 
 		// act
 		events.sort_by(UpdateEvent::type_ordering);
@@ -257,10 +236,7 @@ mod test {
 		// assert
 		assert_eq!(
 			events,
-			vec![
-				UpdateEvent::create_remove(2, ConnectionType::Follow(PrivacyType::Public)),
-				UpdateEvent::create_add(1, ConnectionType::Follow(PrivacyType::Public)),
-			]
+			vec![UpdateEvent::create_remove(2, schema_id), UpdateEvent::create_add(1, schema_id),]
 		)
 	}
 }

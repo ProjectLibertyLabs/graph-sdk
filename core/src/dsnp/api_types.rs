@@ -1,5 +1,6 @@
 use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
 use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
+use dsnp_graph_config::SchemaId;
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
 use std::{cmp::Ordering, fmt::Debug};
 
@@ -41,9 +42,6 @@ pub type PublicKey<E> = <E as EncryptionBehavior>::EncryptionInput;
 /// Graph page id
 pub type PageId = u16;
 
-/// Schema ID
-pub type SchemaId = u16;
-
 /// Page Hash type
 pub type PageHash = u32;
 
@@ -56,8 +54,8 @@ pub struct ImportBundle {
 	/// graph owner dsnp user id
 	pub dsnp_user_id: DsnpUserId,
 
-	/// Connection type of graph being imported
-	pub connection_type: ConnectionType,
+	/// Schema id of imported data
+	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
 	pub key_pairs: Vec<StackKeyPair>,
@@ -74,8 +72,8 @@ pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
 	pub dsnp_user_id: DsnpUserId,
 
-	/// connection type
-	pub connection_type: ConnectionType,
+	/// Schema id of imported data
+	pub schema_id: SchemaId,
 }
 
 /// Encapsulates a dsnp user and their associated graph public keys
@@ -134,8 +132,8 @@ pub enum Update {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// type of the connection
-		connection_type: ConnectionType,
+		/// Schema id of imported data
+		schema_id: SchemaId,
 
 		/// page id associated with changed page
 		page_id: PageId,
@@ -152,8 +150,8 @@ pub enum Update {
 		/// owner of the social graph
 		owner_dsnp_user_id: DsnpUserId,
 
-		/// type of the connection
-		connection_type: ConnectionType,
+		/// Schema id of removed data
+		schema_id: SchemaId,
 
 		/// page id associated with changed page
 		page_id: PageId,
