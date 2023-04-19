@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use crate::{DsnpVersionConfig, SchemaConfig, SchemaId};
+use crate::{Config, DsnpVersionConfig, SchemaConfig, SchemaId};
 use std::collections::HashMap;
 
 pub struct ConfigBuilder {
@@ -44,5 +44,15 @@ impl ConfigBuilder {
 	pub fn with_dsnp_version(mut self, dsnp_version: String, config: DsnpVersionConfig) -> Self {
 		self.dsnp_version_map.insert(dsnp_version, config);
 		self
+	}
+
+	pub fn build(self) -> Config {
+		Config {
+			schema_map: self.schema_map,
+			dsnp_version_map: self.dsnp_version_map,
+			max_page_id: self.max_page_id,
+			max_key_page_size_bytes: self.max_key_page_size_bytes,
+			max_graph_page_size_bytes: self.max_graph_page_size_bytes,
+		}
 	}
 }
