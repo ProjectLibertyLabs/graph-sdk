@@ -1,9 +1,6 @@
 use crate::{
 	dsnp::{
-		api_types::{
-			Action, Connection, ConnectionType, DsnpKeys, ImportBundle, PrivacyType, PublicKey,
-			Update,
-		},
+		api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, PublicKey, Update},
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 		encryption::EncryptionBehavior,
 	},
@@ -16,6 +13,7 @@ use crate::{
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Result};
+use dsnp_graph_config::{Environment, SchemaId};
 use std::{cell::RefCell, cmp::min, collections::HashMap, marker::PhantomData, rc::Rc};
 
 const MAX_GRAPH_USERS_DEFAULT: usize = 1000;
@@ -23,6 +21,7 @@ const MAX_GRAPH_USERS_DEFAULT: usize = 1000;
 #[derive(Debug)]
 pub struct GraphState<E: EncryptionBehavior, const MAX_USERS: usize = MAX_GRAPH_USERS_DEFAULT> {
 	phantom: PhantomData<E>,
+	environment: Environment,
 	public_key_manager: Rc<RefCell<PublicKeyManager>>,
 	user_map: HashMap<DsnpUserId, UserGraph>,
 }
@@ -61,24 +60,26 @@ pub trait GraphAPI<E: EncryptionBehavior> {
 	fn get_connections_for_user_graph(
 		&self,
 		user_id: &DsnpUserId,
-		connection_type: &ConnectionType,
+		schema_id: &SchemaId,
 		include_pending: bool,
 	) -> Result<Vec<DsnpGraphEdge>>;
 }
 
 impl<const MAX_USERS: usize, E: EncryptionBehavior> GraphState<E, MAX_USERS> {
-	pub fn new() -> Self {
+	pub fn new(environment: Environment) -> Self {
 		Self {
 			phantom: PhantomData,
+			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::new(),
 			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
 		}
 	}
 
-	pub fn with_capacity(capacity: usize) -> Self {
+	pub fn with_capacity(environment: Environment, capacity: usize) -> Self {
 		let size = min(capacity, MAX_USERS);
 		Self {
 			phantom: PhantomData,
+			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::with_capacity(size),
 			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
 		}
@@ -112,8 +113,10 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 			))
 		}
 
-		self.user_map
-			.insert(*user_id, UserGraph::new(user_id, self.public_key_manager.clone()));
+		self.user_map.insert(
+			*user_id,
+			UserGraph::new(user_id, &self.environment, self.public_key_manager.clone()),
+		);
 		match self.user_map.get_mut(user_id) {
 			Some(graph) => Ok(graph),
 			None => Err(Error::msg("Unexpected error retrieving user graph")),
@@ -130,8 +133,16 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	/// but pending updates will be preserved.
 	fn import_user_data(
 		&mut self,
-		ImportBundle { connection_type, pages, dsnp_keys, dsnp_user_id, key_pairs }: ImportBundle,
+		ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs }: ImportBundle,
 	) -> Result<()> {
+		let config = self.environment.get_config();
+		// todo use
+		// let dsnp_config = config
+		// 	.get_dsnp_config_from_schema_id(schema_id)
+		// 	.ok_or(Error::msg("Invalid schema id for environment!"))?;
+		let connection_type = config
+			.get_connection_type_from_schema_id(schema_id)
+			.ok_or(Error::msg("Invalid schema id for environment!"))?;
 		self.public_key_manager.borrow_mut().import_dsnp_keys(dsnp_keys)?;
 
 		let user_graph = match self.user_map.get_mut(&dsnp_user_id) {
@@ -150,7 +161,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 			false => vec![],
 		};
 
-		let graph = user_graph.graph_mut(&connection_type);
+		let graph = user_graph.graph_mut(&schema_id);
 		graph.clear();
 
 		match (connection_type.privacy_type(), include_secret_keys) {
@@ -185,13 +196,13 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 		if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
 			let update_event = match action {
 				Action::Connect {
-					connection: Connection { ref dsnp_user_id, ref connection_type },
+					connection: Connection { ref dsnp_user_id, ref schema_id },
 					..
-				} => UpdateEvent::create_add(*dsnp_user_id, *connection_type),
+				} => UpdateEvent::create_add(*dsnp_user_id, *schema_id),
 				Action::Disconnect {
-					connection: Connection { ref dsnp_user_id, ref connection_type },
+					connection: Connection { ref dsnp_user_id, ref schema_id },
 					..
-				} => UpdateEvent::create_remove(*dsnp_user_id, *connection_type),
+				} => UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
 			};
 
 			return owner_graph.update_tracker_mut().register_update(&update_event)
@@ -204,7 +215,7 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 	fn get_connections_for_user_graph(
 		&self,
 		user_id: &DsnpUserId,
-		connection_type: &ConnectionType,
+		schema_id: &SchemaId,
 		include_pending: bool,
 	) -> Result<Vec<DsnpGraphEdge>> {
 		let user_graph = match self.user_map.get(user_id) {
@@ -212,13 +223,13 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 			None => return Err(Error::msg("user not present in graph state")),
 		};
 
-		let graph = user_graph.graph(connection_type);
+		let graph = user_graph.graph(&schema_id);
 		let mut connections: Vec<DsnpGraphEdge> = iter_graph_connections!(graph).cloned().collect();
 
 		if include_pending {
 			user_graph
 				.update_tracker()
-				.get_updates_for_connection_type(*connection_type)
+				.get_updates_for_schema_id(*schema_id)
 				.unwrap_or(&Vec::<UpdateEvent>::new())
 				.iter()
 				.cloned()

@@ -3,6 +3,7 @@ use crate::{
 	graph::updates::UpdateTracker,
 };
 use anyhow::Result;
+use dsnp_graph_config::{Environment, SchemaId};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
@@ -12,7 +13,7 @@ use crate::{
 
 use super::graph::Graph;
 
-pub type GraphMap = HashMap<ConnectionType, Graph>;
+pub type GraphMap = HashMap<SchemaId, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
 #[derive(Debug)]
@@ -25,27 +26,21 @@ pub struct UserGraph {
 
 impl UserGraph {
 	/// Create a new, empty UserGraph
-	pub fn new(user_id: &DsnpUserId, public_key_manager: Rc<RefCell<PublicKeyManager>>) -> Self {
+	pub fn new(
+		user_id: &DsnpUserId,
+		environment: &Environment,
+		public_key_manager: Rc<RefCell<PublicKeyManager>>,
+	) -> Self {
+		let graphs: GraphMap = environment
+			.get_config()
+			.schema_map
+			.iter()
+			.map(|(schema_id, _)| (*schema_id, Graph::new(environment.clone(), *schema_id)))
+			.collect();
+
 		Self {
 			user_id: *user_id,
-			graphs: GraphMap::from([
-				(
-					ConnectionType::Follow(PrivacyType::Public),
-					Graph::new(ConnectionType::Follow(PrivacyType::Public)),
-				),
-				(
-					ConnectionType::Follow(PrivacyType::Private),
-					Graph::new(ConnectionType::Follow(PrivacyType::Private)),
-				),
-				(
-					ConnectionType::Friendship(PrivacyType::Public),
-					Graph::new(ConnectionType::Friendship(PrivacyType::Public)),
-				),
-				(
-					ConnectionType::Friendship(PrivacyType::Private),
-					Graph::new(ConnectionType::Friendship(PrivacyType::Private)),
-				),
-			]),
+			graphs,
 			user_key_manager: UserKeyManager::new(*user_id, public_key_manager),
 			update_tracker: UpdateTracker::new(),
 		}
@@ -77,25 +72,23 @@ impl UserGraph {
 	}
 
 	/// Getter for the user's graph for the specified ConnectionType
-	pub fn graph(&self, connection_type: &ConnectionType) -> &Graph {
-		self.graphs.get(connection_type).expect("UserGraph local instance is corrupt")
+	pub fn graph(&self, schema_id: &SchemaId) -> &Graph {
+		self.graphs.get(schema_id).expect("UserGraph local instance is corrupt")
 	}
 
 	/// Mutable getter for the user's graph for the specified ConnectionType
-	pub fn graph_mut(&mut self, connection_type: &ConnectionType) -> &mut Graph {
-		self.graphs
-			.get_mut(connection_type)
-			.expect("UserGraph local instance is corrupt")
+	pub fn graph_mut(&mut self, schema_id: &SchemaId) -> &mut Graph {
+		self.graphs.get_mut(schema_id).expect("UserGraph local instance is corrupt")
 	}
 
 	/// Setter for the specified graph connection type
-	pub fn set_graph(&mut self, connection_type: &ConnectionType, graph: Graph) {
-		self.graphs.insert(*connection_type, graph);
+	pub fn set_graph(&mut self, schema_id: &SchemaId, graph: Graph) {
+		self.graphs.insert(*schema_id, graph);
 	}
 
 	/// Clear the specified graph type for this user
-	pub fn clear_graph(&mut self, connection_type: &ConnectionType) {
-		if let Some(g) = self.graphs.get_mut(connection_type) {
+	pub fn clear_graph(&mut self, schema_id: &SchemaId) {
+		if let Some(g) = self.graphs.get_mut(schema_id) {
 			g.clear();
 		}
 	}
@@ -112,9 +105,9 @@ impl UserGraph {
 		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
-		for (connection_type, graph) in self.graphs.iter() {
+		for (schema_id, graph) in self.graphs.iter() {
 			let graph_data = graph.calculate_updates::<E>(
-				self.update_tracker.get_mut_updates_for_connection_type(*connection_type),
+				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
 				&self.user_id,
 				connection_keys,
 				encryption_key,

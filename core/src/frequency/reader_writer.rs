@@ -14,13 +14,13 @@ use crate::{
 use anyhow::Result;
 
 /// DsnpBase implementation for Frequency
-impl DsnpBase for Frequency {
+impl DsnpBase for Frequency<'_> {
 	/// using SealBox for encryption and decryption
 	type Encryption = SealBox;
 }
 
 /// implementing DsnpReader for Frequency
-impl DsnpReader for Frequency {
+impl DsnpReader for Frequency<'_> {
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
@@ -48,7 +48,7 @@ impl DsnpReader for Frequency {
 }
 
 /// implementing DsnpWriter for Frequency
-impl DsnpWriter for Frequency {
+impl DsnpWriter for Frequency<'_> {
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
 		SchemaHandler::write_public_key(key)
 	}

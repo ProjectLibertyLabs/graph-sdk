@@ -4,20 +4,20 @@ use dsnp_graph_config::{Config, MAINNET_CONFIG, ROCOCO_CONFIG};
 
 #[allow(dead_code)] // todo: remove
 /// A utility to read/write data from and to Frequency chain specific implementation of DSNP
-pub struct Frequency {
-	config: Config,
+pub struct Frequency<'a> {
+	config: &'a Config,
 }
 
-impl Frequency {
-	pub fn init(config: Config) -> Self {
+impl<'a> Frequency<'a> {
+	pub fn init(config: &'a Config) -> Self {
 		Frequency { config }
 	}
 
 	pub fn with_mainnet() -> Result<Self, ()> {
-		Ok(Self::init(MAINNET_CONFIG.try_into().map_err(|_| ())?))
+		Ok(Self::init(&MAINNET_CONFIG))
 	}
 
 	pub fn with_rococo() -> Result<Self, ()> {
-		Ok(Self::init(ROCOCO_CONFIG.try_into().map_err(|_| ())?))
+		Ok(Self::init(&ROCOCO_CONFIG))
 	}
 }

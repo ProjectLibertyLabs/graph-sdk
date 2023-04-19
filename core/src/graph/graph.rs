@@ -3,6 +3,7 @@ use crate::{
 	graph::updates::UpdateEvent,
 };
 use anyhow::{Error, Result};
+use dsnp_graph_config::{Environment, SchemaId};
 use std::collections::{HashMap, HashSet};
 
 use super::page::GraphPage;
@@ -14,14 +15,15 @@ pub const MAX_PAGE_ID: PageId = 16; // todo: move this to config
 /// Graph structure to hold pages of connections of a single type
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Graph {
-	pub connection_type: ConnectionType,
+	environment: Environment,
+	schema_id: SchemaId,
 	pages: PageMap,
 }
 
 impl Graph {
 	/// Create a new, empty Graph
-	pub fn new(connection_type: ConnectionType) -> Self {
-		Self { connection_type, pages: PageMap::new() }
+	pub fn new(environment: Environment, schema_id: SchemaId) -> Self {
+		Self { environment, schema_id, pages: PageMap::new() }
 	}
 
 	/// Get total number of connections in graph
@@ -56,13 +58,20 @@ impl Graph {
 		self.pages.clear();
 	}
 
+	pub fn get_connection_type(&self) -> ConnectionType {
+		self.environment
+			.get_config()
+			.get_connection_type_from_schema_id(self.schema_id)
+			.expect("Connection type should exist!")
+	}
+
 	/// Import bundle of pages as a Public Graph
 	pub fn import_public(
 		&mut self,
 		connection_type: ConnectionType,
 		pages: Vec<PageData>,
 	) -> Result<()> {
-		if connection_type != self.connection_type {
+		if connection_type != self.get_connection_type() {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
 
@@ -88,13 +97,19 @@ impl Graph {
 		pages: Vec<PageData>,
 		keys: Vec<ResolvedKeyPair>,
 	) -> Result<()> {
-		if connection_type != self.connection_type {
+		if connection_type != self.get_connection_type() {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
 
+		let dsnp_config = self
+			.environment
+			.get_config()
+			.get_dsnp_config_from_schema_id(self.schema_id)
+			.expect("DsnpConfig should exist!")
+			.1;
 		let mut page_map = PageMap::new();
 		for page in pages.iter() {
-			match GraphPage::try_from((page, &keys)) {
+			match GraphPage::try_from((page, &dsnp_config, &keys)) {
 				Err(e) => return Err(e.into()),
 				Ok(p) => {
 					page_map.insert(page.page_id, p);
@@ -115,7 +130,7 @@ impl Graph {
 		pages: Vec<PageData>,
 	) -> Result<()> {
 		if connection_type.privacy_type() != PrivacyType::Private ||
-			self.connection_type.privacy_type() != PrivacyType::Private
+			self.get_connection_type().privacy_type() != PrivacyType::Private
 		{
 			return Err(Error::msg("Invalid privacy type for opaque Private graph import"))
 		}
@@ -199,7 +214,7 @@ impl Graph {
 					Some((_page_id, page)) => Some(Box::new(page.clone())),
 					None => match self.get_next_available_page_id() {
 						Some(next_page_id) => Some(Box::new(GraphPage::new(
-							self.connection_type.privacy_type(),
+							self.get_connection_type().privacy_type(),
 							next_page_id,
 						))),
 						None => None,
@@ -233,7 +248,7 @@ impl Graph {
 			updated_pages.insert(last_page.page_id(), *last_page);
 		}
 
-		let updated_blobs: Result<Vec<PageData>> = match self.connection_type.privacy_type() {
+		let updated_blobs: Result<Vec<PageData>> = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public =>
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			PrivacyType::Private => updated_pages
@@ -246,7 +261,7 @@ impl Graph {
 			.iter()
 			.map(|page_data| Update::PersistPage {
 				owner_dsnp_user_id: *dsnp_user_id,
-				connection_type: self.connection_type,
+				schema_id: self.schema_id,
 				page_id: page_data.page_id,
 				prev_hash: page_data.content_hash,
 				payload: page_data.content.clone(),
@@ -255,7 +270,7 @@ impl Graph {
 
 		updates.extend(removed_pages.iter().map(|p| Update::DeletePage {
 			owner_dsnp_user_id: *dsnp_user_id,
-			connection_type: self.connection_type,
+			schema_id: self.schema_id,
 			page_id: p.page_id,
 			prev_hash: p.content_hash,
 		}));
@@ -281,7 +296,7 @@ impl Graph {
 			*page_id,
 			match page {
 				Some(page) => page,
-				None => GraphPage::new(self.connection_type.privacy_type(), *page_id),
+				None => GraphPage::new(self.get_connection_type().privacy_type(), *page_id),
 			},
 		);
 		Ok(self
@@ -341,8 +356,10 @@ impl Graph {
 		}
 
 		if !self.pages.contains_key(page_id) {
-			self.pages
-				.insert(*page_id, GraphPage::new(self.connection_type.privacy_type(), *page_id));
+			self.pages.insert(
+				*page_id,
+				GraphPage::new(self.get_connection_type().privacy_type(), *page_id),
+			);
 		}
 		let page = self.get_page_mut(page_id).expect("Unable to retrieve page");
 		page.add_connection(connection_id)

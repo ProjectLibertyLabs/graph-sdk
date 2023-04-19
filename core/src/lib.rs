@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod api;
 pub mod dsnp;
 pub mod frequency;

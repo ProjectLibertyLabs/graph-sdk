@@ -4,32 +4,53 @@
   "maxKeyPageSizeBytes": 65536,
   "schemaMap": [
     [
-      {
-        "connectionType": "follow",
-        "privacyType": "public"
-      },
-      1
+      1,
+      [
+        "1.0",
+        {
+          "connectionType": "follow",
+          "privacyType": "public"
+        }
+      ]
     ],
     [
-      {
-        "connectionType": "follow",
-        "privacyType": "private"
-      },
-      2
+      2,
+      [
+        "1.0",
+        {
+          "connectionType": "follow",
+          "privacyType": "private"
+        }
+      ]
     ],
     [
-      {
-        "connectionType": "friendship",
-        "privacyType": "public"
-      },
-      3
+      3,
+      [
+        "1.0",
+        {
+          "connectionType": "friendship",
+          "privacyType": "public"
+        }
+      ]
     ],
     [
+      4,
+      [
+        "1.0",
+        {
+          "connectionType": "friendship",
+          "privacyType": "private"
+        }
+      ]
+    ]
+  ],
+  "dsnpVersionMap": [
+    [
+      "1.0",
       {
-        "connectionType": "friendship",
-        "privacyType": "private"
-      },
-      4
+        "encryptionAlgo": "xSalsa20Poly1305",
+        "keyType": "x25519"
+      }
     ]
   ]
 }
