@@ -260,6 +260,7 @@ mod test {
 		tests::helpers::ImportBundleBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::ConnectionType;
 
 	use super::*;
 	const TEST_CAPACITY: usize = 10;
@@ -269,38 +270,40 @@ mod test {
 	#[test]
 	fn new_graph_state_with_capacity_sets_initial_hash_map_capacity() {
 		let capacity: usize = 5;
-		let new_state = TestGraphState::<TEST_CAPACITY>::with_capacity(capacity);
+		let new_state =
+			TestGraphState::<TEST_CAPACITY>::with_capacity(Environment::Mainnet, capacity);
 		assert!(new_state.user_map.capacity() >= capacity);
 	}
 
 	#[test]
 	fn new_graph_state_with_capacity_caps_initial_hash_map_capacity() {
-		let new_state = TestGraphState::<TEST_CAPACITY>::with_capacity(TEST_CAPACITY * 2);
+		let new_state =
+			TestGraphState::<TEST_CAPACITY>::with_capacity(Environment::Mainnet, TEST_CAPACITY * 2);
 		assert!(new_state.user_map.capacity() >= TEST_CAPACITY);
 	}
 
 	#[test]
 	fn graph_state_capacity() {
-		let state: TestGraphState = TestGraphState::new();
+		let state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		assert_eq!(state.capacity(), TEST_CAPACITY);
 	}
 
 	#[test]
 	fn graph_contains_false() {
-		let state: TestGraphState = TestGraphState::new();
+		let state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		assert!(!state.contains_user(&0));
 	}
 
 	#[test]
 	fn graph_contains_true() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		assert!(state.contains_user(&0));
 	}
 
 	#[test]
 	fn graph_len() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		assert_eq!(state.len(), 1);
 		let _ = state.add_user_graph(&1);
@@ -309,20 +312,20 @@ mod test {
 
 	#[test]
 	fn add_user_errors_if_graph_state_full() {
-		let mut state = TestGraphState::<1>::new();
+		let mut state = TestGraphState::<1>::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		assert!(state.add_user_graph(&1).is_err());
 	}
 
 	#[test]
 	fn add_duplicate_user_errors() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		assert!(state.add_user_graph(&0).is_err());
 	}
 	#[test]
 	fn add_user_success() -> Result<()> {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 
 		state.add_user_graph(&0)?;
 		Ok(())
@@ -330,7 +333,7 @@ mod test {
 
 	#[test]
 	fn remove_user_success() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		let _ = state.add_user_graph(&1);
 		state.remove_user_graph(&0);
@@ -341,7 +344,7 @@ mod test {
 
 	#[test]
 	fn remove_nonexistent_user_noop() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(Environment::Mainnet);
 		let _ = state.add_user_graph(&0);
 		let _ = state.add_user_graph(&1);
 		state.remove_user_graph(&99);
@@ -351,12 +354,16 @@ mod test {
 	#[test]
 	fn import_user_data_should_import_keys_and_data_for_public_follow_graph() {
 		// arrange
-		let mut state: TestGraphState = TestGraphState::new();
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env.clone());
 		let keypair = StackKeyPair::gen();
 		let dsnp_user_id = 123;
-		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let connections = vec![2, 3, 4, 5];
-		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections)
 			.build();
@@ -371,7 +378,7 @@ mod test {
 		let keys = public_manager.get_all_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
-		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
 		assert!(res.is_ok());
 		let mapped: Vec<_> = connections
 			.into_iter()
@@ -383,12 +390,16 @@ mod test {
 	#[test]
 	fn import_user_data_should_import_keys_and_data_for_private_follow_graph() {
 		// arrange
-		let mut state: TestGraphState = TestGraphState::new();
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env.clone());
 		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
 		let dsnp_user_id = 123;
-		let connection_type = ConnectionType::Follow(PrivacyType::Private);
 		let connections = vec![2, 3, 4, 5];
-		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![resolved_key.key_pair.clone()])
 			.with_encryption_key(resolved_key)
 			.with_page(1, &connections)
@@ -404,7 +415,7 @@ mod test {
 		let keys = public_manager.get_all_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
-		let res = state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, false);
+		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
 		assert!(res.is_ok());
 		let mapped: Vec<_> = connections
 			.into_iter()
@@ -420,16 +431,18 @@ mod test {
 	#[test]
 	fn add_duplicate_connection_for_user_errors() {
 		let owner_dsnp_user_id: DsnpUserId = 0;
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
 		let action = Action::Connect {
 			owner_dsnp_user_id,
-			connection: Connection {
-				connection_type: ConnectionType::Follow(PrivacyType::Private),
-				dsnp_user_id: 1,
-			},
+			connection: Connection { schema_id, dsnp_user_id: 1 },
 			connection_key: None,
 		};
 
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(env);
 		let _ = state.add_user_graph(&0);
 		assert!(state.apply_action(&action).is_ok());
 		assert!(state.apply_action(&action).is_err());
@@ -437,14 +450,16 @@ mod test {
 
 	#[test]
 	fn add_connection_for_nonexistent_user_errors() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env);
 		assert!(state
 			.apply_action(&Action::Connect {
 				owner_dsnp_user_id: 0,
-				connection: Connection {
-					dsnp_user_id: 1,
-					connection_type: ConnectionType::Follow(PrivacyType::Private)
-				},
+				connection: Connection { dsnp_user_id: 1, schema_id },
 				connection_key: None
 			})
 			.is_err());
@@ -452,15 +467,17 @@ mod test {
 
 	#[test]
 	fn remove_connection_for_user_twice_errors() {
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
 		let owner_dsnp_user_id: DsnpUserId = 0;
 		let action = Action::Disconnect {
 			owner_dsnp_user_id,
-			connection: Connection {
-				dsnp_user_id: 1,
-				connection_type: ConnectionType::Follow(PrivacyType::Private),
-			},
+			connection: Connection { dsnp_user_id: 1, schema_id },
 		};
-		let mut state: TestGraphState = TestGraphState::new();
+		let mut state: TestGraphState = TestGraphState::new(env);
 		let _ = state.add_user_graph(&owner_dsnp_user_id);
 		assert!(state.apply_action(&action).is_ok());
 		assert!(state.apply_action(&action).is_err());
@@ -468,14 +485,16 @@ mod test {
 
 	#[test]
 	fn remove_connection_from_nonexistent_user_errors() {
-		let mut state: TestGraphState = TestGraphState::new();
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env);
 		assert!(state
 			.apply_action(&Action::Disconnect {
 				owner_dsnp_user_id: 0,
-				connection: Connection {
-					dsnp_user_id: 1,
-					connection_type: ConnectionType::Follow(PrivacyType::Private),
-				}
+				connection: Connection { dsnp_user_id: 1, schema_id }
 			})
 			.is_err());
 	}
@@ -483,24 +502,28 @@ mod test {
 	#[test]
 	fn get_connections_for_user_graph_with_pending_should_include_updates() {
 		// arrange
-		let mut state: TestGraphState = TestGraphState::new();
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env.clone());
 		let keypair = StackKeyPair::gen();
 		let dsnp_user_id = 123;
-		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let connections = vec![2, 3, 4, 5];
-		let input = ImportBundleBuilder::new(dsnp_user_id, connection_type)
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections)
 			.build();
 		state.import_user_data(input).expect("should work");
 		let actions = vec![
 			Action::Connect {
-				connection: Connection { connection_type, dsnp_user_id: 1 },
+				connection: Connection { schema_id, dsnp_user_id: 1 },
 				connection_key: None,
 				owner_dsnp_user_id: dsnp_user_id,
 			},
 			Action::Disconnect {
-				connection: Connection { connection_type, dsnp_user_id: 3 },
+				connection: Connection { schema_id, dsnp_user_id: 3 },
 				owner_dsnp_user_id: dsnp_user_id,
 			},
 		];
@@ -515,7 +538,7 @@ mod test {
 		assert!(res2.is_ok());
 
 		let connections_result =
-			state.get_connections_for_user_graph(&dsnp_user_id, &connection_type, true);
+			state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true);
 		assert!(connections_result.is_ok());
 		let mapped: Vec<_> = connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
 		assert_eq!(mapped, expected_connections);

@@ -416,7 +416,12 @@ mod test {
 
 	#[test]
 	fn new_graph_is_empty() {
-		let graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let graph = Graph::new(env, schema_id);
 		assert_eq!(graph.pages().is_empty(), true);
 	}
 
@@ -428,12 +433,17 @@ mod test {
 
 	#[test]
 	fn page_setter_sets_pages() {
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
 		let mut pages = HashMap::<PageId, GraphPage>::new();
 		for i in 0..=1 {
 			let (_, p) = create_test_ids_and_page();
 			pages.insert(i, p);
 		}
-		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
+		let mut graph = Graph::new(env, schema_id);
 		graph.set_pages(pages.clone());
 		assert_eq!(pages.len(), graph.pages().len());
 		for i in 0..pages.len() as u16 {
@@ -443,13 +453,19 @@ mod test {
 
 	#[test]
 	fn get_next_available_page_id_returns_none_for_full_graph() {
+		let environment = Environment::Mainnet;
 		const CONN_TYPE: ConnectionType = ConnectionType::Follow(PrivacyType::Public);
 		const PRIV_TYPE: PrivacyType = CONN_TYPE.privacy_type();
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(CONN_TYPE)
+			.expect("should exist");
 		let pages: HashMap<PageId, GraphPage> = (0..MAX_PAGE_ID)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		let graph = Graph {
-			connection_type: CONN_TYPE, // doesn't matter which type
+			environment,
+			schema_id, // doesn't matter which type
 			pages,
 		};
 
@@ -458,14 +474,20 @@ mod test {
 
 	#[test]
 	fn get_next_available_page_id_returns_correct_value() {
+		let environment = Environment::Mainnet;
 		const CONN_TYPE: ConnectionType = ConnectionType::Follow(PrivacyType::Public);
 		const PRIV_TYPE: PrivacyType = CONN_TYPE.privacy_type();
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(CONN_TYPE)
+			.expect("should exist");
 		let mut pages: HashMap<PageId, GraphPage> = (0..MAX_PAGE_ID)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		pages.remove(&8);
 		let graph = Graph {
-			connection_type: CONN_TYPE, // doesn't matter which type
+			environment,
+			schema_id, // doesn't matter which type
 			pages,
 		};
 
@@ -482,9 +504,14 @@ mod test {
 
 	#[test]
 	fn import_public_gets_correct_data() {
-		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Public));
-		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
+		let environment = Environment::Mainnet;
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut graph = Graph::new(environment, schema_id);
+		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
 		let pages = vec![blob];
 
 		let _ = graph.import_public(connection_type, pages);
@@ -499,7 +526,12 @@ mod test {
 	#[test]
 	fn import_private_gets_correct_data() {
 		let connection_type = ConnectionType::Follow(PrivacyType::Private);
-		let mut graph = Graph::new(connection_type);
+		let environment = Environment::Mainnet;
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut graph = Graph::new(environment, schema_id);
 		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
@@ -530,8 +562,13 @@ mod test {
 
 	#[test]
 	fn create_page_succeeds() {
+		let environment = Environment::Mainnet;
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
 		let (_, page) = create_test_ids_and_page();
-		let mut graph = Graph::new(ConnectionType::Follow(PrivacyType::Private));
+		let mut graph = Graph::new(environment, schema_id);
 
 		assert_eq!(graph.create_page(&0, Some(page.clone())).is_ok(), true);
 		assert_eq!(page, *graph.get_page(&0).unwrap());
@@ -631,7 +668,7 @@ mod test {
 	#[timeout(5000)] // found an infinite loop bug, so let's make sure this terminates successfully
 	fn calculate_public_updates_succeeds() {
 		let graph = create_test_graph();
-		let updates = vec![UpdateEvent::create_add(1, graph.connection_type)].to_vec();
+		let updates = vec![UpdateEvent::create_add(1, graph.schema_id)].to_vec();
 		let _ = graph.calculate_updates::<SealBox>(
 			&updates,
 			&0,

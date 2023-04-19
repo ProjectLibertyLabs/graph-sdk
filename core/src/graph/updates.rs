@@ -154,7 +154,6 @@ impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::dsnp::api_types::PrivacyType;
 
 	#[test]
 	fn tracker_register_should_return_error_for_duplicate_events() {
@@ -180,10 +179,8 @@ mod test {
 		// arrange
 		let mut tracker = UpdateTracker::new();
 		let schema_id = 4;
-		let events = vec![
-			UpdateEvent::create_add(1, schema_id),
-			UpdateEvent::create_remove(2, schema_id),
-		];
+		let events =
+			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
 		tracker.register_updates(&events).expect("Should have registered successfully!");
 		let complements: Vec<UpdateEvent> =
 			events.as_slice().iter().map(|e| e.get_complement()).collect();
@@ -217,13 +214,11 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		let schema_1_events =
-			tracker.updates.get(&schema_1).unwrap();
+		let schema_1_events = tracker.updates.get(&schema_1).unwrap();
 		assert_eq!(schema_1_events.as_slice(), &events[..2]);
 
-		let schema_2_events =
-			tracker.updates.get(&schema_2).unwrap();
-		assert_eq!(private_follow.as_slice(), &events[2..4]);
+		let schema_2_events = tracker.updates.get(&schema_2).unwrap();
+		assert_eq!(schema_2_events.as_slice(), &events[2..4]);
 
 		assert!(tracker.has_updates());
 	}
@@ -232,10 +227,8 @@ mod test {
 	fn tracker_event_sorter_should_prioritize_removes() {
 		// arrange
 		let schema_id = 4;
-		let mut events = vec![
-			UpdateEvent::create_add(1, schema_id),
-			UpdateEvent::create_remove(2, schema_id),
-		];
+		let mut events =
+			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
 
 		// act
 		events.sort_by(UpdateEvent::type_ordering);
@@ -243,10 +236,7 @@ mod test {
 		// assert
 		assert_eq!(
 			events,
-			vec![
-				UpdateEvent::create_remove(2, schema_id),
-				UpdateEvent::create_add(1, schema_id),
-			]
+			vec![UpdateEvent::create_remove(2, schema_id), UpdateEvent::create_add(1, schema_id),]
 		)
 	}
 }

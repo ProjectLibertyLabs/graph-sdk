@@ -1,3 +1,5 @@
+mod builder;
+
 use apache_avro::Schema;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -61,10 +63,11 @@ impl ConnectionType {
 	}
 }
 
-#[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Environment {
 	Mainnet,
 	Rococo,
+	Dev(Config),
 }
 
 impl Environment {
@@ -72,6 +75,7 @@ impl Environment {
 		match self {
 			Environment::Mainnet => &MAINNET_CONFIG,
 			Environment::Rococo => &ROCOCO_CONFIG,
+			Environment::Dev(cfg) => &cfg,
 		}
 	}
 }
@@ -152,6 +156,21 @@ impl Config {
 			return Some(schema_config.connection_type)
 		}
 		None
+	}
+
+	pub fn get_schema_id_from_connection_type(
+		&self,
+		connection_type: ConnectionType,
+	) -> Option<SchemaId> {
+		self.schema_map
+			.iter()
+			.filter_map(|(k, v)| {
+				if v.connection_type == connection_type {
+					return Some(*k)
+				}
+				None
+			})
+			.next()
 	}
 }
 
