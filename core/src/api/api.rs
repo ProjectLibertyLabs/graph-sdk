@@ -6,6 +6,7 @@ use crate::{
 	},
 	graph::{
 		key_manager::{PublicKeyManager, PublicKeyProvider, UserKeyProvider},
+		pri_manager::{PriManager, PriProvider},
 		updates::UpdateEvent,
 		user::UserGraph,
 	},
@@ -23,6 +24,7 @@ pub struct GraphState<E: EncryptionBehavior, const MAX_USERS: usize = MAX_GRAPH_
 	phantom: PhantomData<E>,
 	environment: Environment,
 	public_key_manager: Rc<RefCell<PublicKeyManager>>,
+	pri_manager: Rc<RefCell<PriManager>>,
 	user_map: HashMap<DsnpUserId, UserGraph>,
 }
 
@@ -72,6 +74,7 @@ impl<const MAX_USERS: usize, E: EncryptionBehavior> GraphState<E, MAX_USERS> {
 			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::new(),
 			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
+			pri_manager: Rc::new(RefCell::from(PriManager::new())),
 		}
 	}
 
@@ -82,6 +85,7 @@ impl<const MAX_USERS: usize, E: EncryptionBehavior> GraphState<E, MAX_USERS> {
 			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::with_capacity(size),
 			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
+			pri_manager: Rc::new(RefCell::from(PriManager::new())),
 		}
 	}
 
@@ -166,10 +170,12 @@ impl<E: EncryptionBehavior, const M: usize> GraphAPI<E> for GraphState<E, M> {
 
 		match (connection_type.privacy_type(), include_secret_keys) {
 			(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
-			(PrivacyType::Private, true) =>
-				graph.import_private(connection_type, pages, resolved_keys),
-			// TODO: import into PRId manager
-			(PrivacyType::Private, false) => graph.import_opaque(connection_type, pages),
+			(PrivacyType::Private, true) => {
+				graph.import_private(connection_type, &pages, resolved_keys)?;
+				self.pri_manager.borrow_mut().import_pri(dsnp_user_id, &pages)
+			},
+			(PrivacyType::Private, false) =>
+				self.pri_manager.borrow_mut().import_pri(dsnp_user_id, &pages),
 		}?;
 
 		Ok(())
@@ -255,6 +261,7 @@ mod test {
 	use crate::{
 		dsnp::{
 			api_types::{Connection, ResolvedKeyPair},
+			dsnp_types::DsnpPrid,
 			encryption::SealBox,
 		},
 		tests::helpers::ImportBundleBuilder,
@@ -365,7 +372,7 @@ mod test {
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections)
+			.with_page(1, &connections, &vec![])
 			.build();
 
 		// act
@@ -402,7 +409,7 @@ mod test {
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![resolved_key.key_pair.clone()])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections)
+			.with_page(1, &connections, &vec![])
 			.build();
 
 		// act
@@ -422,6 +429,40 @@ mod test {
 			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
 			.collect();
 		assert_eq!(res.unwrap(), mapped);
+	}
+
+	#[test]
+	fn import_user_data_should_without_private_keys_should_add_prids_for_private_friendship_graph()
+	{
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
+			.expect("should exist");
+		let mut state: TestGraphState = TestGraphState::new(env.clone());
+		let dsnp_user_id = 123;
+		let connections = vec![2, 3, 4, 5];
+		let prids = vec![
+			DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 4]),
+			DsnpPrid::new(&[10, 2, 3, 4, 5, 6, 7, 4]),
+			DsnpPrid::new(&[8, 2, 0, 4, 5, 6, 7, 4]),
+			DsnpPrid::new(&[3, 2, 3, 4, 4, 6, 1, 4]),
+		];
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_page(1, &connections, &prids)
+			.build();
+
+		// act
+		let res = state.import_user_data(input);
+
+		// assert
+		assert!(res.is_ok());
+
+		let manager = state.pri_manager.borrow();
+		for p in prids {
+			assert!(manager.contains(dsnp_user_id, p));
+		}
 	}
 
 	#[test]
@@ -513,7 +554,7 @@ mod test {
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections)
+			.with_page(1, &connections, &vec![])
 			.build();
 		state.import_user_data(input).expect("should work");
 		let actions = vec![

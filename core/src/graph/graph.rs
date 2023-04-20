@@ -94,7 +94,7 @@ impl Graph {
 	pub fn import_private(
 		&mut self,
 		connection_type: ConnectionType,
-		pages: Vec<PageData>,
+		pages: &[PageData],
 		keys: Vec<ResolvedKeyPair>,
 	) -> Result<()> {
 		if connection_type != self.get_connection_type() {
@@ -115,29 +115,6 @@ impl Graph {
 					page_map.insert(page.page_id, p);
 				},
 			};
-		}
-
-		self.set_pages(page_map);
-
-		Ok(())
-	}
-
-	/// Import bundle of pages as a Private Graph, but without decrypting the encrypted portion
-	/// Useful for importing a foreign user's graph for inspection of PRIds
-	pub fn import_opaque(
-		&mut self,
-		connection_type: ConnectionType,
-		pages: Vec<PageData>,
-	) -> Result<()> {
-		if connection_type.privacy_type() != PrivacyType::Private ||
-			self.get_connection_type().privacy_type() != PrivacyType::Private
-		{
-			return Err(Error::msg("Invalid privacy type for opaque Private graph import"))
-		}
-
-		let mut page_map = PageMap::new();
-		for page in pages.iter() {
-			page_map.insert(page.page_id, GraphPage::new_opaque(page)?);
 		}
 
 		self.set_pages(page_map);
@@ -537,10 +514,10 @@ mod test {
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let pages = PageDataBuilder::new(connection_type)
 			.with_encryption_key(resolved_key.clone())
-			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>())
+			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![])
 			.build();
 
-		let res = graph.import_private(connection_type, pages, vec![resolved_key]);
+		let res = graph.import_private(connection_type, &pages, vec![resolved_key]);
 
 		assert!(res.is_ok());
 		assert_eq!(graph.pages.len(), 1);
@@ -548,10 +525,6 @@ mod test {
 			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
 		assert_eq!(orig_connections, imported_connections);
 	}
-
-	#[test]
-	#[ignore = "todo"]
-	fn import_opaque_gets_correct_data() {}
 
 	#[test]
 	fn create_page_with_existing_pageid_fails() {

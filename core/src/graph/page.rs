@@ -200,33 +200,6 @@ impl GraphPage {
 		todo!()
 	}
 
-	/// Import another user's private graph without decrypting the page,
-	/// in order to just get the prids. Returns a new page.
-	pub fn new_opaque(blob: &PageData) -> Result<Self> {
-		let mut new_page = Self::new(PrivacyType::Private, blob.page_id);
-		new_page.import_opaqe(blob)?;
-		Ok(new_page)
-	}
-
-	/// Import another user's private graph without decrypting the page,
-	/// in order to just get the prids. Overwrites the existing page.
-	pub fn import_opaqe(&mut self, data: &PageData) -> Result<()> {
-		let PageData { content, page_id, content_hash, .. } = data;
-		if self.page_id != *page_id {
-			return Err(Error::msg("Mismatched page_id on import"))
-		}
-
-		if self.privacy_type != PrivacyType::Private {
-			return Err(Error::msg("Non-private opaque import rejected"))
-		}
-
-		let chunk: DsnpUserPrivateGraphChunk = content.as_slice().try_into()?;
-		self.content_hash = *content_hash;
-		self.prids = chunk.prids;
-		self.connections = Vec::new();
-		Ok(())
-	}
-
 	// TODO: make trait-based
 	// Convert to a binary payload according to the DSNP Public Graph schema
 	pub fn to_removed_page_data(&self) -> PageData {
@@ -352,7 +325,7 @@ mod test {
 	fn is_full_non_aggressive_returns_true_for_full() {
 		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64).collect::<Vec<u64>>();
 		let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
-			.with_page(1, &connections)
+			.with_page(1, &connections, &vec![])
 			.build();
 
 		let page = pages.first().expect("page should exist");
@@ -413,10 +386,4 @@ mod test {
 	#[test]
 	#[ignore = "todo"]
 	fn update_prids_with_bad_key_fails() {}
-
-	#[test]
-	fn new_opaque_with_bad_payload_fails() {
-		let blob = PageData { content_hash: 0, page_id: 1, content: Vec::new() };
-		assert!(GraphPage::new_opaque(&blob).is_err());
-	}
 }
