@@ -1,5 +1,5 @@
 use crate::{
-	dsnp::{api_types::*, dsnp_types::*},
+	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::updates::UpdateEvent,
 };
 use anyhow::{Error, Result};
@@ -7,10 +7,8 @@ use dsnp_graph_config::{Environment, SchemaId};
 use std::collections::{HashMap, HashSet};
 
 use super::page::GraphPage;
-use crate::dsnp::encryption::EncryptionBehavior;
 
 pub type PageMap = HashMap<PageId, GraphPage>;
-pub const MAX_PAGE_ID: PageId = 16; // todo: move this to config
 
 /// Graph structure to hold pages of connections of a single type
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -44,7 +42,7 @@ impl Graph {
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
 		let existing_pages = self.pages.keys().cloned().collect::<HashSet<PageId>>();
-		for pid in 0..MAX_PAGE_ID {
+		for pid in 0..(self.environment.get_config().max_page_id as PageId) {
 			if !existing_pages.contains(&pid) {
 				return Some(pid)
 			}
@@ -93,6 +91,7 @@ impl Graph {
 	/// Import bundle of pages as a Private Graph
 	pub fn import_private(
 		&mut self,
+		dsnp_version_config: &DsnpVersionConfig,
 		connection_type: ConnectionType,
 		pages: &[PageData],
 		keys: Vec<ResolvedKeyPair>,
@@ -101,15 +100,9 @@ impl Graph {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
 
-		let dsnp_config = self
-			.environment
-			.get_config()
-			.get_dsnp_config_from_schema_id(self.schema_id)
-			.expect("DsnpConfig should exist!")
-			.1;
 		let mut page_map = PageMap::new();
 		for page in pages.iter() {
-			match GraphPage::try_from((page, &dsnp_config, &keys)) {
+			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(e.into()),
 				Ok(p) => {
 					page_map.insert(page.page_id, p);
@@ -122,12 +115,13 @@ impl Graph {
 		Ok(())
 	}
 
-	pub fn calculate_updates<E: EncryptionBehavior>(
+	pub fn calculate_updates(
 		&self,
+		dsnp_version_config: &DsnpVersionConfig,
 		updates: &Vec<UpdateEvent>,
 		dsnp_user_id: &DsnpUserId,
 		connection_keys: &Vec<DsnpKeys>,
-		encryption_key: (u64, &PublicKey<E>),
+		encryption_key: &ResolvedKeyPair,
 	) -> Result<Vec<Update>> {
 		let ids_to_remove: Vec<DsnpUserId> = updates
 			.iter()
@@ -230,7 +224,9 @@ impl Graph {
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			PrivacyType::Private => updated_pages
 				.iter_mut()
-				.map(|(_, page)| page.to_private_page_data::<E>(encryption_key, connection_keys))
+				.map(|(_, page)| {
+					page.to_private_page_data(dsnp_version_config, encryption_key, connection_keys)
+				})
 				.collect(),
 		};
 
@@ -379,13 +375,14 @@ macro_rules! iter_graph_connections {
 mod test {
 	use super::*;
 	use crate::{
-		dsnp::encryption::SealBox,
+		dsnp::dsnp_configs::KeyPairType,
 		tests::helpers::{
 			avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
 			INNER_TEST_DATA,
 		},
 	};
 	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::DsnpVersion;
 	use ntest::*;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
@@ -437,7 +434,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(CONN_TYPE)
 			.expect("should exist");
-		let pages: HashMap<PageId, GraphPage> = (0..MAX_PAGE_ID)
+		let pages: HashMap<PageId, GraphPage> = (0..environment.get_config().max_page_id as PageId)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		let graph = Graph {
@@ -458,7 +455,8 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(CONN_TYPE)
 			.expect("should exist");
-		let mut pages: HashMap<PageId, GraphPage> = (0..MAX_PAGE_ID)
+		let mut pages: HashMap<PageId, GraphPage> = (0..environment.get_config().max_page_id
+			as PageId)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		pages.remove(&8);
@@ -509,7 +507,9 @@ mod test {
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
 		let mut graph = Graph::new(environment, schema_id);
-		let resolved_key = ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 };
+		let resolved_key =
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::gen()), key_id: 1 };
+		let dsnp_config = DsnpVersionConfig::new(DsnpVersion::Version1_0);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let pages = PageDataBuilder::new(connection_type)
@@ -517,7 +517,7 @@ mod test {
 			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![])
 			.build();
 
-		let res = graph.import_private(connection_type, &pages, vec![resolved_key]);
+		let res = graph.import_private(&dsnp_config, connection_type, &pages, vec![resolved_key]);
 
 		assert!(res.is_ok());
 		assert_eq!(graph.pages.len(), 1);
@@ -642,11 +642,12 @@ mod test {
 	fn calculate_public_updates_succeeds() {
 		let graph = create_test_graph();
 		let updates = vec![UpdateEvent::create_add(1, graph.schema_id)].to_vec();
-		let _ = graph.calculate_updates::<SealBox>(
+		let _ = graph.calculate_updates(
+			&DsnpVersionConfig::new(DsnpVersion::Version1_0),
 			&updates,
 			&0,
 			&Vec::<DsnpKeys>::new(),
-			(0, &<SealBox as EncryptionBehavior>::EncryptionInput::new()),
+			&ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::new()), key_id: 1 },
 		);
 	}
 }

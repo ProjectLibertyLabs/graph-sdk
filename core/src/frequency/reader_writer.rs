@@ -2,10 +2,11 @@ use super::*;
 use crate::{
 	dsnp::{
 		compression::{CompressionBehavior, DeflateCompression},
+		dsnp_configs::{DsnpVersionConfig, PublicKeyType, SecretKeyType},
 		dsnp_types::{
 			DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
 		},
-		encryption::{EncryptionBehavior, SealBox},
+		encryption::SealBox,
 		reader_writer::{DsnpBase, DsnpReader, DsnpWriter},
 		schema::SchemaHandler,
 	},
@@ -33,11 +34,13 @@ impl DsnpReader for Frequency<'_> {
 
 	fn read_private_graph(
 		data: &[u8],
-		decryption_input: &<Self::Encryption as EncryptionBehavior>::DecryptionInput,
+		decryption_input: &SecretKeyType,
 	) -> Result<PrivateGraphChunk> {
 		let chunk = SchemaHandler::read_private_graph_chunk(data)?;
-		let decrypted_compressed =
-			Self::Encryption::decrypt(&chunk.encrypted_compressed_private_graph, decryption_input)?;
+		let dsnp_version: DsnpVersionConfig = decryption_input.into();
+		let decrypted_compressed = dsnp_version
+			.get_algorithm()
+			.decrypt(&chunk.encrypted_compressed_private_graph, decryption_input)?;
 		let decompressed = DeflateCompression::decompress(&decrypted_compressed)?;
 		Ok(PrivateGraphChunk {
 			prids: chunk.prids,
@@ -63,11 +66,13 @@ impl DsnpWriter for Frequency<'_> {
 
 	fn write_private_graph(
 		graph: &PrivateGraphChunk,
-		encryption_input: &<Self::Encryption as EncryptionBehavior>::EncryptionInput,
+		encryption_input: &PublicKeyType,
 	) -> Result<Vec<u8>> {
+		let dsnp_version: DsnpVersionConfig = encryption_input.into();
 		let inner_serialized = SchemaHandler::write_inner_graph(&graph.inner_graph)?;
 		let compressed_inner = DeflateCompression::compress(&inner_serialized)?;
-		let encrypted_compressed = Self::Encryption::encrypt(&compressed_inner, encryption_input)?;
+		let encrypted_compressed =
+			dsnp_version.get_algorithm().encrypt(&compressed_inner, encryption_input)?;
 		SchemaHandler::write_private_graph_chunk(&DsnpUserPrivateGraphChunk {
 			key_id: graph.key_id,
 			prids: graph.prids.to_owned(),
@@ -80,7 +85,10 @@ impl DsnpWriter for Frequency<'_> {
 mod test {
 	use super::*;
 	use crate::{
-		dsnp::dsnp_types::{DsnpGraphEdge, DsnpInnerGraph, DsnpPrid},
+		dsnp::{
+			dsnp_configs::KeyPairType,
+			dsnp_types::{DsnpGraphEdge, DsnpInnerGraph, DsnpPrid},
+		},
 		frequency::Frequency,
 		types::PrivateGraphChunk,
 	};
@@ -130,11 +138,11 @@ mod test {
 				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 			],
 		};
-		let key_pair = StackKeyPair::gen();
+		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
-		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
+		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.clone().into())
 			.expect("serialization should work");
-		let deserialized = Frequency::read_private_graph(&serialized, &key_pair)
+		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into())
 			.expect("deserialization should work");
 
 		assert_eq!(deserialized, private_graph);
@@ -153,12 +161,13 @@ mod test {
 				DsnpPrid::new(17237271u64.to_le_bytes().as_slice()),
 			],
 		};
-		let key_pair = StackKeyPair::gen();
+		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
-		let mut serialized = Frequency::write_private_graph(&private_graph, &key_pair.public_key)
-			.expect("serialization should work");
+		let mut serialized =
+			Frequency::write_private_graph(&private_graph, &key_pair.clone().into())
+				.expect("serialization should work");
 		serialized.pop(); // corrupting the input
-		let deserialized = Frequency::read_private_graph(&serialized, &key_pair);
+		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into());
 
 		assert!(deserialized.is_err());
 	}
@@ -184,10 +193,9 @@ mod test {
 			Frequency::write_public_graph(&inner_graph).expect("serialization should work");
 
 		let private_graph = PrivateGraphChunk { inner_graph, key_id: 200, prids };
-		let key_pair = StackKeyPair::gen();
-		let private_serialized =
-			Frequency::write_private_graph(&private_graph, &key_pair.public_key)
-				.expect("serialization should work");
+		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let private_serialized = Frequency::write_private_graph(&private_graph, &key_pair.into())
+			.expect("serialization should work");
 
 		assert_eq!((public_serialized.len() - 1) / page_size + 1, 2);
 		assert_eq!((private_serialized.len() - 1) / page_size + 1, 3);

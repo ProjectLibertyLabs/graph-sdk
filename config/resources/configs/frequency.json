@@ -1,4 +1,5 @@
 {
+  "sdkMaxUsersGraphSize" : 1000,
   "maxGraphPageSizeBytes": 1024,
   "maxPageId": 16,
   "maxKeyPageSizeBytes": 65536,
@@ -44,13 +45,7 @@
       ]
     ]
   ],
-  "dsnpVersionMap": [
-    [
-      "1.0",
-      {
-        "encryptionAlgo": "xSalsa20Poly1305",
-        "keyType": "x25519"
-      }
-    ]
+  "dsnpVersions": [
+      "1.0"
   ]
 }

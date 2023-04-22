@@ -1,13 +1,13 @@
 use crate::{
 	dsnp::{
 		api_types::{DsnpKeys, KeyData, PageHash, ResolvedKeyPair},
+		dsnp_configs::KeyPairType,
 		dsnp_types::{DsnpPublicKey, DsnpUserId},
 		reader_writer::{DsnpReader, DsnpWriter},
 	},
 	frequency::Frequency,
 };
 use anyhow::{Error, Result};
-use dryoc::keypair::StackKeyPair;
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 /// A trait that defines all the functionality that a public key provider need to implement.
@@ -15,6 +15,9 @@ pub trait PublicKeyProvider {
 	/// imports public keys with their hash and details into the provider
 	/// will overwrite any existing imported keys for the user and remove any new added keys
 	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
+
+	/// adds a new public key to the provider
+	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
 
 	/// exports added new keys to be submitted to chain
 	fn export_new_keys(&self) -> Result<Vec<DsnpKeys>>;
@@ -34,22 +37,25 @@ pub trait PublicKeyProvider {
 
 	/// returns the active key for a a user to used for encryption
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey>;
-
-	/// adds a new public key to the provider
-	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
 }
 
 /// Common trait that manages public and private keys for each user
 pub trait UserKeyProvider {
 	/// imports key pairs into a provider
 	/// will overwrite any existing imported keys for the user
-	fn import_key_pairs(&mut self, pairs: Vec<StackKeyPair>);
+	fn import_key_pairs(&mut self, pairs: Vec<KeyPairType>);
 
 	/// returns the dsnp associate and keypair with a certain id
-	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)>;
+	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, KeyPairType)>;
 
 	/// returns the dsnp associate and keypair with all the keys
 	fn get_all_resolved_keys(&self) -> Vec<ResolvedKeyPair>;
+
+	/// returns the active key for a a user to used for encryption
+	fn get_resolved_active_key(
+		&self,
+		dsnp_user_id: DsnpUserId,
+	) -> Option<(DsnpPublicKey, KeyPairType)>;
 }
 
 #[derive(Debug, Eq, PartialEq)]
@@ -70,7 +76,7 @@ pub struct UserKeyManager {
 	dsnp_user_id: DsnpUserId,
 
 	/// key pairs associated with this user
-	keys: Vec<StackKeyPair>,
+	keys: Vec<KeyPairType>,
 }
 
 impl PublicKeyProvider for PublicKeyManager {
@@ -173,16 +179,16 @@ impl PublicKeyProvider for PublicKeyManager {
 }
 
 impl UserKeyProvider for UserKeyManager {
-	fn import_key_pairs(&mut self, pairs: Vec<StackKeyPair>) {
+	fn import_key_pairs(&mut self, pairs: Vec<KeyPairType>) {
 		self.keys.clear();
 		self.keys.extend_from_slice(&pairs);
 	}
 
-	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, StackKeyPair)> {
+	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, KeyPairType)> {
 		if let Some(dsnp) =
 			self.public_key_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
-			if let Some(pair) = self.keys.iter().find(|&k| k.public_key.to_vec() == dsnp.key) {
+			if let Some(pair) = self.keys.iter().find(|&k| k.get_public_key_raw() == dsnp.key) {
 				return Some((dsnp.clone(), pair.clone()))
 			}
 		}
@@ -203,6 +209,19 @@ impl UserKeyProvider for UserKeyManager {
 				key_pair: pair.clone(),
 			})
 			.collect()
+	}
+
+	fn get_resolved_active_key(
+		&self,
+		dsnp_user_id: DsnpUserId,
+	) -> Option<(DsnpPublicKey, KeyPairType)> {
+		if let Some(key) = self.public_key_manager.borrow().get_active_key(dsnp_user_id) {
+			// can unwrap here since public key returns all keys with their ids
+			if let Some(res) = self.get_resolved_key(key.key_id.unwrap()) {
+				return Some(res)
+			}
+		}
+		None
 	}
 }
 
@@ -233,6 +252,7 @@ impl UserKeyManager {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use dryoc::keypair::StackKeyPair;
 
 	fn create_dsnp_keys(
 		dsnp_user_id: DsnpUserId,
@@ -378,10 +398,10 @@ mod tests {
 		let rc = Rc::new(RefCell::new(public_key_manager));
 		let mutable_clone = rc.clone();
 		let mut user_key_manager = UserKeyManager::new(dsnp_user_id, rc.clone());
-		let key_pair = StackKeyPair::gen();
+		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 		let keys_hash = 233;
 		let id1 = 1;
-		let key1 = DsnpPublicKey { key_id: Some(id1), key: key_pair.public_key.to_vec() };
+		let key1 = DsnpPublicKey { key_id: Some(id1), key: key_pair.get_public_key_raw() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,

@@ -1,4 +1,4 @@
-use crate::dsnp::{dsnp_types::DsnpUserId, encryption::EncryptionBehavior};
+use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
 use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
 use dsnp_graph_config::SchemaId;
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
@@ -33,11 +33,8 @@ pub struct ResolvedKeyPair {
 	pub key_id: u64,
 
 	/// Public key
-	pub key_pair: StackKeyPair,
+	pub key_pair: KeyPairType,
 }
-
-/// PublicKey type associated in `EncryptionBehavior`
-pub type PublicKey<E> = <E as EncryptionBehavior>::EncryptionInput;
 
 /// Graph page id
 pub type PageId = u16;
@@ -45,10 +42,6 @@ pub type PageId = u16;
 /// Page Hash type
 pub type PageHash = u32;
 
-/// A trait defining configurable settings for sdk
-pub trait Config {
-	fn schema_for_connection_type(&self, connection_type: ConnectionType) -> SchemaId;
-}
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
 pub struct ImportBundle {
 	/// graph owner dsnp user id
@@ -58,7 +51,7 @@ pub struct ImportBundle {
 	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
-	pub key_pairs: Vec<StackKeyPair>,
+	pub key_pairs: Vec<KeyPairType>,
 
 	/// published dsnp keys associated with this dsnp user
 	pub dsnp_keys: DsnpKeys,

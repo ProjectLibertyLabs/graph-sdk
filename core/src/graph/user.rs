@@ -2,13 +2,13 @@ use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	graph::updates::UpdateTracker,
 };
-use anyhow::Result;
+use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 use crate::{
-	dsnp::encryption::EncryptionBehavior,
-	graph::key_manager::{PublicKeyManager, UserKeyManager},
+	dsnp::dsnp_configs::DsnpVersionConfig,
+	graph::key_manager::{PublicKeyManager, UserKeyManager, UserKeyProvider},
 };
 
 use super::graph::Graph;
@@ -98,19 +98,24 @@ impl UserGraph {
 		self.graphs.iter_mut().for_each(|(_, g)| g.clear());
 	}
 
-	/// Cacluate pending updates for all graphs for this user
-	pub fn calculate_updates<E: EncryptionBehavior>(
+	/// Calculate pending updates for all graphs for this user
+	pub fn calculate_updates(
 		&mut self,
+		dsnp_version_config: &DsnpVersionConfig,
 		connection_keys: &Vec<DsnpKeys>,
-		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
+		let (public_key, keypair) = self
+			.user_key_manager
+			.get_resolved_active_key(self.user_id)
+			.ok_or(Error::msg("No resolved active key found!"))?;
 		for (schema_id, graph) in self.graphs.iter() {
-			let graph_data = graph.calculate_updates::<E>(
+			let graph_data = graph.calculate_updates(
+				dsnp_version_config,
 				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
 				&self.user_id,
 				connection_keys,
-				encryption_key,
+				&ResolvedKeyPair { key_id: public_key.key_id.unwrap(), key_pair: keypair.clone() },
 			)?;
 			result.extend(graph_data.into_iter());
 		}

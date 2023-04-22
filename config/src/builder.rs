@@ -1,24 +1,31 @@
 #![allow(dead_code)]
-use crate::{Config, DsnpVersionConfig, SchemaConfig, SchemaId};
+use crate::{Config, DsnpVersion, SchemaConfig, SchemaId};
 use std::collections::HashMap;
 
 pub struct ConfigBuilder {
+	sdk_max_users_graph_size: u32,
 	max_graph_page_size_bytes: u32,
 	max_page_id: u32,
 	max_key_page_size_bytes: u32,
 	schema_map: HashMap<SchemaId, SchemaConfig>,
-	dsnp_version_map: HashMap<String, DsnpVersionConfig>,
+	dsnp_versions: Vec<DsnpVersion>,
 }
 
 impl ConfigBuilder {
 	pub fn new() -> Self {
 		Self {
-			dsnp_version_map: HashMap::new(),
 			schema_map: HashMap::new(),
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
+			sdk_max_users_graph_size: 1000,
+			dsnp_versions: vec![],
 		}
+	}
+
+	pub fn with_sdk_max_users_graph_size(mut self, sdk_max_users_graph_size: u32) -> Self {
+		self.sdk_max_users_graph_size = sdk_max_users_graph_size;
+		self
 	}
 
 	pub fn with_max_page_id(mut self, max_page_id: u32) -> Self {
@@ -41,18 +48,14 @@ impl ConfigBuilder {
 		self
 	}
 
-	pub fn with_dsnp_version(mut self, dsnp_version: String, config: DsnpVersionConfig) -> Self {
-		self.dsnp_version_map.insert(dsnp_version, config);
-		self
-	}
-
 	pub fn build(self) -> Config {
 		Config {
+			sdk_max_users_graph_size: self.sdk_max_users_graph_size,
 			schema_map: self.schema_map,
-			dsnp_version_map: self.dsnp_version_map,
 			max_page_id: self.max_page_id,
 			max_key_page_size_bytes: self.max_key_page_size_bytes,
 			max_graph_page_size_bytes: self.max_graph_page_size_bytes,
+			dsnp_versions: self.dsnp_versions,
 		}
 	}
 }

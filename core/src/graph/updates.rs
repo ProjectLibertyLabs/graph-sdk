@@ -1,9 +1,8 @@
-#![allow(dead_code)] // todo: remove after usage
 use crate::{
 	dsnp::{
-		api_types::{DsnpKeys, PublicKey, Update},
+		api_types::{DsnpKeys, Update},
+		dsnp_configs::DsnpVersionConfig,
 		dsnp_types::DsnpUserId,
-		encryption::EncryptionBehavior,
 	},
 	graph::{
 		updates::UpdateEvent::{Add, Remove},
@@ -12,7 +11,10 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::SchemaId;
-use std::{cmp::Ordering, collections::HashMap};
+use std::{
+	cmp::Ordering,
+	collections::{HashMap, HashSet},
+};
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
@@ -65,6 +67,10 @@ impl UpdateTracker {
 		self.updates.get(&schema_id)
 	}
 
+	pub fn get_updated_schema_ids(&self) -> HashSet<SchemaId> {
+		self.updates.keys().copied().collect()
+	}
+
 	pub fn get_mut_updates_for_schema_id(&mut self, schema_id: SchemaId) -> &Vec<UpdateEvent> {
 		self.updates.entry(schema_id).or_default()
 	}
@@ -91,11 +97,6 @@ impl UpdateTracker {
 
 	fn add(&mut self, event: &UpdateEvent) {
 		self.updates.entry(*event.get_schema_id()).or_default().push(event.clone());
-	}
-
-	/// Clear out all pending updates
-	fn clear(&mut self) {
-		self.updates.clear()
 	}
 }
 
@@ -133,21 +134,21 @@ impl UpdateEvent {
 	}
 }
 
-pub trait UpdateAPI<E: EncryptionBehavior> {
+pub trait UpdateAPI {
 	fn calculate_updates(
 		&mut self,
+		dsnp_version_config: &DsnpVersionConfig,
 		connection_keys: &Vec<DsnpKeys>,
-		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<Update>>;
 }
 
-impl<E: EncryptionBehavior> UpdateAPI<E> for UserGraph {
+impl UpdateAPI for UserGraph {
 	fn calculate_updates(
 		&mut self,
+		dsnp_version_config: &DsnpVersionConfig,
 		connection_keys: &Vec<DsnpKeys>,
-		encryption_key: (u64, &PublicKey<E>),
 	) -> Result<Vec<Update>> {
-		self.calculate_updates::<E>(connection_keys, encryption_key)
+		self.calculate_updates(dsnp_version_config, connection_keys)
 	}
 }
 
