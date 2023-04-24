@@ -3,18 +3,19 @@ use crate::{
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Result};
-use dsnp_graph_config::DsnpVersionConfig;
+use std::borrow::Borrow;
 
 use crate::dsnp::{
 	compression::{CompressionBehavior, DeflateCompression},
-	encryption::{EncryptionBehavior, SealBox},
+	dsnp_configs::DsnpVersionConfig,
+	encryption::EncryptionBehavior,
 	schema::SchemaHandler,
 };
 
 const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
 
 /// Graph page structure
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GraphPage {
 	/// Page ID
 	page_id: PageId,
@@ -49,7 +50,7 @@ impl TryFrom<&PageData> for GraphPage {
 impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPage {
 	type Error = Error;
 	fn try_from(
-		(PageData { content_hash, content, page_id, .. }, _dsnp_config, keys): (
+		(PageData { content_hash, content, page_id, .. }, dsnp_version_config, keys): (
 			&PageData,
 			&DsnpVersionConfig,
 			&Vec<ResolvedKeyPair>,
@@ -59,12 +60,13 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 			DsnpUserPrivateGraphChunk::try_from(content.as_slice())?;
 		let mut decrypted_chunk: Option<Vec<u8>> = None;
 
+		let algorithm = dsnp_version_config.get_algorithm();
 		// First try the key that was indicated in the page
 		if let Some(indicated_key) = keys.iter().find(|k| k.key_id == key_id) {
-			// TODO: instead of SealBox should use dsnp_config to determine which algorithm to use
-			if let Ok(data) =
-				SealBox::decrypt(&encrypted_compressed_private_graph, &indicated_key.key_pair)
-			{
+			if let Ok(data) = algorithm.decrypt(
+				&encrypted_compressed_private_graph,
+				&indicated_key.key_pair.clone().into(),
+			) {
 				decrypted_chunk = Some(data);
 			}
 		}
@@ -73,7 +75,9 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 		decrypted_chunk = match decrypted_chunk {
 			Some(_) => decrypted_chunk,
 			None => keys.iter().find_map(|k| {
-				SealBox::decrypt(&encrypted_compressed_private_graph, &k.key_pair).ok()
+				algorithm
+					.decrypt(&encrypted_compressed_private_graph, &k.key_pair.clone().into())
+					.ok()
 			}),
 		};
 
@@ -220,9 +224,10 @@ impl GraphPage {
 
 	// TODO: make trait-based
 	/// Convert to an encrypted binary payload according to the DSNP Private Graph schema
-	pub fn to_private_page_data<E: EncryptionBehavior>(
+	pub fn to_private_page_data(
 		&self,
-		(key_id, key): (u64, &PublicKey<E>),
+		dsnp_version_config: &DsnpVersionConfig,
+		key: &ResolvedKeyPair,
 		_prid_keys: &Vec<DsnpKeys>,
 	) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Private {
@@ -235,9 +240,11 @@ impl GraphPage {
 		let DsnpUserPublicGraphChunk { compressed_public_graph } =
 			self.connections.clone().try_into()?;
 		let private_chunk = DsnpUserPrivateGraphChunk {
-			key_id,
+			key_id: key.clone().key_id,
 			prids: self.prids.clone(),
-			encrypted_compressed_private_graph: E::encrypt(&compressed_public_graph, key)?,
+			encrypted_compressed_private_graph: dsnp_version_config
+				.get_algorithm()
+				.encrypt(&compressed_public_graph, &key.key_pair.borrow().into())?,
 		};
 
 		Ok(PageData {

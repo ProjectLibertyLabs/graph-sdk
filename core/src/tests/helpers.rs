@@ -5,16 +5,18 @@ use crate::{
 		api_types::*,
 		compression::{CompressionBehavior, DeflateCompression},
 		dsnp_types::*,
-		encryption::EncryptionBehavior,
 		schema::SchemaHandler,
 	},
 	graph::{graph::Graph, page::GraphPage},
 	util::time::time_in_ksecs,
 };
-use std::collections::BTreeMap;
+use std::{borrow::Borrow, collections::BTreeMap};
 
 use crate::{
-	dsnp::{encryption::SealBox, reader_writer::DsnpWriter},
+	dsnp::{
+		dsnp_configs::{DsnpVersionConfig, KeyPairType},
+		reader_writer::DsnpWriter,
+	},
 	frequency::Frequency,
 };
 use base64::{engine::general_purpose, Engine as _};
@@ -101,10 +103,6 @@ pub fn avro_compressed_inner_payload() -> Vec<u8> {
 	DeflateCompression::compress(&avro_inner_payload()).unwrap()
 }
 
-pub fn avro_encrypted_inner_payload<E: EncryptionBehavior>(public_key: &PublicKey<E>) -> Vec<u8> {
-	E::encrypt(&avro_compressed_inner_payload(), public_key).unwrap()
-}
-
 pub fn avro_public_payload() -> Vec<u8> {
 	// encoded payload below matches INNER_TEST_DATA wrapped in a DsnpUserPublicGraphChunk
 	let b64_payload = b"pgcBzgEx/jCCv5qI9dnF9HuKt5ehpIu9oPMB/tu5s5vfzIy5AeSzkPbhxrHDxwHI34PCjpnEyG6Mmuif0KXShBfE097BnvW1zaAB8oiR7eG3vbIghI2fqMqbjuVG6qenkePs34JZiqzL4ID1i+L5AaSxqMC18rubqwHujK/o49Hd2j++/ffo9trdouoBtJOqm+HU5shImNSa0YPLxrgpkpSO0LrD1dt+1sXbuu6CtscO0qTT8MvA0/ajAeCfzLnu8u7KvwHEjYKAqYr72sYB6s+E8YzZh9814L3XoMmllIXpAYKdopun8/bzff7A7c6rp4rh9QHKsuywn+yQmY8B4ofHusqzi4YCjOOaubTCr8I3iIWopJOhm8SkAa7mwYvh7N3MwwGendqh1ODk2ckB0vON46mUv/GaAeSP9/jzt/m28AGG1cW9wfDkm/4BnpatwvWIvcIr0JXk1u+8pJCAAbjgu5yH7Y2fxQGw+sfMpeqx3SSS18zMsNuRm+kByomanO3z66TmAYjRyo6Wg/z+mgHu3a/C3ZX3pByCs5anuIr0nVOg9e+RmpeDgeYBhvLL78fysfRGuoD9xr26osbSAc7T0Nal0rqdiQGmnPCu+pvBtpUBAA==";
@@ -112,7 +110,7 @@ pub fn avro_public_payload() -> Vec<u8> {
 }
 
 pub struct KeyDataBuilder {
-	key_pairs: Vec<StackKeyPair>,
+	key_pairs: Vec<KeyPairType>,
 }
 
 impl KeyDataBuilder {
@@ -120,12 +118,12 @@ impl KeyDataBuilder {
 		KeyDataBuilder { key_pairs: vec![] }
 	}
 
-	pub fn with_key_pairs(mut self, key_pairs: &[StackKeyPair]) -> Self {
+	pub fn with_key_pairs(mut self, key_pairs: &[KeyPairType]) -> Self {
 		self.key_pairs.extend_from_slice(key_pairs);
 		self
 	}
 
-	pub fn get_key_pairs(&self) -> &Vec<StackKeyPair> {
+	pub fn get_key_pairs(&self) -> &Vec<KeyPairType> {
 		&self.key_pairs
 	}
 
@@ -137,7 +135,7 @@ impl KeyDataBuilder {
 				index: i as u16,
 				content: Frequency::write_public_key(&DsnpPublicKey {
 					key_id: Some(i as u64),
-					key: pair.public_key.to_vec(),
+					key: pair.get_public_key_raw(),
 				})
 				.expect("should serialize"),
 			})
@@ -196,7 +194,10 @@ impl PageDataBuilder {
 		Self {
 			connection_type,
 			page_builder: GraphPageBuilder::new(connection_type),
-			resolved_key: ResolvedKeyPair { key_pair: StackKeyPair::gen(), key_id: 1 },
+			resolved_key: ResolvedKeyPair {
+				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
+				key_id: 1,
+			},
 		}
 	}
 
@@ -216,18 +217,15 @@ impl PageDataBuilder {
 	}
 
 	pub fn build(self) -> Vec<PageData> {
+		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
 		self.page_builder
 			.build()
 			.iter()
 			.map(|page| match self.connection_type.privacy_type() {
 				PrivacyType::Public =>
 					page.to_public_page_data().expect("should write public page"),
-				PrivacyType::Private => page
-					.to_private_page_data::<SealBox>(
-						(self.resolved_key.key_id, &self.resolved_key.key_pair.public_key),
-						&vec![],
-					)
-					.unwrap(),
+				PrivacyType::Private =>
+					page.to_private_page_data(&dsnp_config, &self.resolved_key, &vec![]).unwrap(),
 			})
 			.collect()
 	}
@@ -269,7 +267,7 @@ impl ImportBundleBuilder {
 		self
 	}
 
-	pub fn with_key_pairs(mut self, key_pairs: &[StackKeyPair]) -> Self {
+	pub fn with_key_pairs(mut self, key_pairs: &[KeyPairType]) -> Self {
 		self.key_builder = self.key_builder.with_key_pairs(key_pairs);
 		self
 	}

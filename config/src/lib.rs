@@ -1,4 +1,4 @@
-mod builder;
+pub mod builder;
 
 use apache_avro::Schema;
 use lazy_static::lazy_static;
@@ -80,36 +80,24 @@ impl Environment {
 	}
 }
 
+#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
+pub enum DsnpVersion {
+	#[serde(rename = "1.0")]
+	Version1_0,
+}
+
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct SchemaConfig {
-	pub dsnp_version: String,
+	pub dsnp_version: DsnpVersion,
 	pub connection_type: ConnectionType,
-}
-
-#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
-pub enum EncryptionAlgorithm {
-	#[serde(rename = "xSalsa20Poly1305")]
-	XSalsa20Poly1305,
-}
-
-#[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
-pub enum KeyType {
-	#[serde(rename = "x25519")]
-	X25519,
-}
-
-#[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
-pub struct DsnpVersionConfig {
-	#[serde(rename = "encryptionAlgo")]
-	pub encryption_algo: EncryptionAlgorithm,
-
-	#[serde(rename = "keyType")]
-	pub key_type: KeyType,
 }
 
 #[serde_as]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Config {
+	#[serde(rename = "sdkMaxUsersGraphSize")]
+	pub sdk_max_users_graph_size: u32,
+
 	#[serde(rename = "maxGraphPageSizeBytes")]
 	pub max_graph_page_size_bytes: u32,
 
@@ -123,9 +111,8 @@ pub struct Config {
 	#[serde_as(as = "Vec<(_, _)>")]
 	pub schema_map: HashMap<SchemaId, SchemaConfig>,
 
-	#[serde(rename = "dsnpVersionMap")]
-	#[serde_as(as = "Vec<(_, _)>")]
-	pub dsnp_version_map: HashMap<String, DsnpVersionConfig>,
+	#[serde(rename = "dsnpVersions")]
+	pub dsnp_versions: Vec<DsnpVersion>,
 }
 
 impl TryFrom<&str> for Config {
@@ -136,14 +123,9 @@ impl TryFrom<&str> for Config {
 }
 
 impl Config {
-	pub fn get_dsnp_config_from_schema_id(
-		&self,
-		schema_id: SchemaId,
-	) -> Option<(String, DsnpVersionConfig)> {
+	pub fn get_dsnp_version_from_schema_id(&self, schema_id: SchemaId) -> Option<DsnpVersion> {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
-			if let Some(dsnp_config) = self.dsnp_version_map.get(&schema_config.dsnp_version) {
-				return Some((schema_config.dsnp_version.clone(), dsnp_config.clone()))
-			}
+			return Some(schema_config.dsnp_version)
 		}
 		None
 	}
@@ -198,42 +180,37 @@ mod test {
 	#[test]
 	fn config_import_success() -> Result<(), serde_json::Error> {
 		let expected_config = Config {
+			sdk_max_users_graph_size: 1000,
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
-			dsnp_version_map: HashMap::from([(
-				"1.0".to_string(),
-				DsnpVersionConfig {
-					encryption_algo: EncryptionAlgorithm::XSalsa20Poly1305,
-					key_type: KeyType::X25519,
-				},
-			)]),
+			dsnp_versions: vec![DsnpVersion::Version1_0],
 			schema_map: HashMap::from([
 				(
 					1,
 					SchemaConfig {
-						dsnp_version: "1.0".to_string(),
+						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Follow(PrivacyType::Public),
 					},
 				),
 				(
 					2,
 					SchemaConfig {
-						dsnp_version: "1.0".to_string(),
+						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Follow(PrivacyType::Private),
 					},
 				),
 				(
 					3,
 					SchemaConfig {
-						dsnp_version: "1.0".to_string(),
+						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Friendship(PrivacyType::Public),
 					},
 				),
 				(
 					4,
 					SchemaConfig {
-						dsnp_version: "1.0".to_string(),
+						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Friendship(PrivacyType::Private),
 					},
 				),

@@ -1,5 +1,6 @@
 use crate::{
 	dsnp::{
+		dsnp_configs::{PublicKeyType, SecretKeyType},
 		dsnp_types::{DsnpInnerGraph, DsnpPublicKey},
 		encryption::EncryptionBehavior,
 	},
@@ -21,7 +22,7 @@ pub trait DsnpReader: DsnpBase {
 	/// reading private graph from binary
 	fn read_private_graph(
 		data: &[u8],
-		decryption_input: &<Self::Encryption as EncryptionBehavior>::DecryptionInput,
+		decryption_input: &SecretKeyType,
 	) -> Result<PrivateGraphChunk>;
 }
 
@@ -34,6 +35,6 @@ pub trait DsnpWriter: DsnpBase {
 	/// write private graph to binary
 	fn write_private_graph(
 		graph: &PrivateGraphChunk,
-		encryption_input: &<Self::Encryption as EncryptionBehavior>::EncryptionInput,
+		encryption_input: &PublicKeyType,
 	) -> Result<Vec<u8>>;
 }
