@@ -208,6 +208,7 @@ impl GraphAPI for GraphState {
 		let related_dsnp_configs: HashSet<DsnpVersionConfig> =
 			schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
 
+		// we are checking user existence on previous lines so we can unwrap safely here
 		let user_graph = self.user_map.get_mut(user_id).unwrap();
 		let mut result = vec![];
 		for dsnp_config in related_dsnp_configs.iter() {

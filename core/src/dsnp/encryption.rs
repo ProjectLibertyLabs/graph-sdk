@@ -55,6 +55,7 @@ mod test {
 	use super::*;
 	use crate::dsnp::dsnp_configs::KeyPairType;
 	use dryoc::keypair::StackKeyPair;
+	use std::borrow::Borrow;
 
 	#[test]
 	fn sealbox_should_encrypt_and_decrypt_successfully() {
@@ -64,7 +65,7 @@ mod test {
 		];
 
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
-		let encrypted = SealBox.encrypt(&plain_data, &key_pair.clone().into()).unwrap();
+		let encrypted = SealBox.encrypt(&plain_data, &key_pair.borrow().into()).unwrap();
 		let decrypted = SealBox.decrypt(&encrypted, &key_pair.into()).unwrap();
 
 		assert_eq!(decrypted, plain_data);
@@ -75,7 +76,7 @@ mod test {
 		let plain_data = vec![83, 98, 0, 10, 234, 88, 23, 54, 23, 23, 109, 198, 111, 70, 2, 89];
 
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::from_seed(&[0, 1, 2, 3, 4]));
-		let mut encrypted = SealBox.encrypt(&plain_data, &key_pair.clone().into()).unwrap();
+		let mut encrypted = SealBox.encrypt(&plain_data, &key_pair.borrow().into()).unwrap();
 		encrypted[1] = encrypted[1].saturating_add(1); // corrupting data
 		let decrypted = SealBox.decrypt(&encrypted, &key_pair.into());
 

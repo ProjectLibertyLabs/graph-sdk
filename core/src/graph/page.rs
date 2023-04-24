@@ -3,6 +3,7 @@ use crate::{
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Result};
+use std::borrow::Borrow;
 
 use crate::dsnp::{
 	compression::{CompressionBehavior, DeflateCompression},
@@ -14,7 +15,7 @@ use crate::dsnp::{
 const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
 
 /// Graph page structure
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GraphPage {
 	/// Page ID
 	page_id: PageId,
@@ -243,7 +244,7 @@ impl GraphPage {
 			prids: self.prids.clone(),
 			encrypted_compressed_private_graph: dsnp_version_config
 				.get_algorithm()
-				.encrypt(&compressed_public_graph, &key.key_pair.clone().into())?,
+				.encrypt(&compressed_public_graph, &key.key_pair.borrow().into())?,
 		};
 
 		Ok(PageData {

@@ -94,6 +94,7 @@ mod test {
 	};
 	use dryoc::keypair::StackKeyPair;
 	use rand::Rng;
+	use std::borrow::Borrow;
 
 	#[test]
 	fn public_graph_read_and_write_using_valid_input_should_succeed() {
@@ -140,7 +141,7 @@ mod test {
 		};
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
-		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.clone().into())
+		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
 			.expect("serialization should work");
 		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into())
 			.expect("deserialization should work");
@@ -164,7 +165,7 @@ mod test {
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
 		let mut serialized =
-			Frequency::write_private_graph(&private_graph, &key_pair.clone().into())
+			Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
 				.expect("serialization should work");
 		serialized.pop(); // corrupting the input
 		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into());
@@ -194,8 +195,9 @@ mod test {
 
 		let private_graph = PrivateGraphChunk { inner_graph, key_id: 200, prids };
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
-		let private_serialized = Frequency::write_private_graph(&private_graph, &key_pair.into())
-			.expect("serialization should work");
+		let private_serialized =
+			Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
+				.expect("serialization should work");
 
 		assert_eq!((public_serialized.len() - 1) / page_size + 1, 2);
 		assert_eq!((private_serialized.len() - 1) / page_size + 1, 3);

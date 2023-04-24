@@ -27,7 +27,7 @@ pub struct KeyData {
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct ResolvedKeyPair {
 	/// Key identifier
 	pub key_id: u64,

@@ -11,7 +11,7 @@ use super::page::GraphPage;
 pub type PageMap = HashMap<PageId, GraphPage>;
 
 /// Graph structure to hold pages of connections of a single type
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Graph {
 	environment: Environment,
 	schema_id: SchemaId,

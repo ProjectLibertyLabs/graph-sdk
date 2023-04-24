@@ -415,9 +415,12 @@ mod tests {
 
 		// assert
 		let key = user_key_manager.get_resolved_key(id1);
-		assert_eq!(key, Some((key1, key_pair)));
+		assert_eq!(key, Some((key1.clone(), key_pair.clone())));
 
 		let keys = user_key_manager.get_all_resolved_keys();
-		assert_eq!(keys.len(), 1)
+		assert_eq!(keys.len(), 1);
+
+		let resolved_active = user_key_manager.get_resolved_active_key(dsnp_user_id);
+		assert_eq!(resolved_active, Some((key1, key_pair)));
 	}
 }

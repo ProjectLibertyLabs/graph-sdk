@@ -31,12 +31,14 @@ pub enum SecretKeyType {
 }
 
 impl DsnpVersionConfig {
+	/// creates a new `DsnpVersionConfig` based on the version enum
 	pub fn new(version: DsnpVersion) -> Self {
 		match version {
 			DsnpVersion::Version1_0 => DsnpVersionConfig::Version1_0 { algorithm: SealBox },
 		}
 	}
 
+	/// returns the encryption/description algorithm associated with dsnp version
 	pub fn get_algorithm(&self) -> Box<dyn EncryptionBehavior> {
 		match self {
 			DsnpVersionConfig::Version1_0 { algorithm } => Box::new(algorithm.clone()),
@@ -45,6 +47,7 @@ impl DsnpVersionConfig {
 }
 
 impl KeyPairType {
+	/// returns raw bytes of the public key for specified dsnp version
 	pub fn get_public_key_raw(&self) -> Vec<u8> {
 		match self {
 			KeyPairType::Version1_0(k) => k.public_key.to_vec(),
@@ -52,7 +55,8 @@ impl KeyPairType {
 	}
 }
 
-impl Into<PublicKeyType> for &KeyPairType {
+/// converts a reference of `KeyPairType` into a `PublicKeyType`
+impl Into<PublicKeyType> for &'_ KeyPairType {
 	fn into(self) -> PublicKeyType {
 		match self {
 			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.clone().public_key),
@@ -60,6 +64,7 @@ impl Into<PublicKeyType> for &KeyPairType {
 	}
 }
 
+/// converts a `KeyPairType` into a `SecretKeyType`
 impl Into<SecretKeyType> for KeyPairType {
 	fn into(self) -> SecretKeyType {
 		match self {
@@ -68,14 +73,7 @@ impl Into<SecretKeyType> for KeyPairType {
 	}
 }
 
-impl Into<PublicKeyType> for KeyPairType {
-	fn into(self) -> PublicKeyType {
-		match self {
-			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.public_key),
-		}
-	}
-}
-
+/// converts a `SecretKeyType` into a `DsnpVersionConfig`
 impl Into<DsnpVersionConfig> for &SecretKeyType {
 	fn into(self) -> DsnpVersionConfig {
 		match self {
@@ -84,6 +82,7 @@ impl Into<DsnpVersionConfig> for &SecretKeyType {
 	}
 }
 
+/// converts a `KeyPairType` into a `DsnpVersionConfig`
 impl Into<DsnpVersionConfig> for &KeyPairType {
 	fn into(self) -> DsnpVersionConfig {
 		match self {
@@ -92,6 +91,7 @@ impl Into<DsnpVersionConfig> for &KeyPairType {
 	}
 }
 
+/// converts a `PublicKeyType` into a `DsnpVersionConfig`
 impl Into<DsnpVersionConfig> for &PublicKeyType {
 	fn into(self) -> DsnpVersionConfig {
 		match self {
@@ -100,6 +100,7 @@ impl Into<DsnpVersionConfig> for &PublicKeyType {
 	}
 }
 
+/// converts a `PublicKeyType` into a `Vec<u8>`
 impl Into<Vec<u8>> for PublicKeyType {
 	fn into(self) -> Vec<u8> {
 		match self {
