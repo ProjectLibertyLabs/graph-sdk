@@ -234,9 +234,9 @@ impl GraphAPI for GraphState {
 				};
 
 				owner_graph.update_tracker_mut().register_update(&update_event)?;
+			} else {
+				return Err(Error::msg("user graph not found in state"))
 			}
-
-			return Err(Error::msg("user graph not found in state"))
 		}
 		Ok(())
 	}
@@ -283,10 +283,9 @@ impl GraphAPI for GraphState {
 		let all_connections: HashSet<DsnpUserId> = self
 			.user_map
 			.values()
-			.map(|user_graph| {
+			.flat_map(|user_graph| {
 				user_graph.get_all_connections_of(ConnectionType::Friendship(PrivacyType::Private))
 			})
-			.flatten()
 			.collect();
 		self.public_key_manager
 			.deref()
@@ -309,14 +308,14 @@ impl GraphState {
 mod test {
 	use crate::{
 		dsnp::{
-			api_types::{Connection, ResolvedKeyPair},
+			api_types::{Connection, GraphKeyPair, ResolvedKeyPair},
 			dsnp_configs::KeyPairType,
 			dsnp_types::DsnpPrid,
 		},
 		tests::helpers::ImportBundleBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType};
+	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, GraphKeyType};
 
 	use super::*;
 
@@ -422,7 +421,12 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
-		let keypair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let key_pair_raw = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -431,7 +435,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(input);
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -458,18 +462,24 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
 		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::gen()), key_id: 1 };
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_key_pairs(&vec![resolved_key.clone().key_pair])
+			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
 			.with_page(1, &connections, &vec![])
 			.build();
 
 		// act
-		let res = state.import_users_data(input);
+		let res = dbg!(state.import_users_data(vec![input]));
 
 		// assert
 		assert!(res.is_ok());
@@ -510,7 +520,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(input);
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -541,7 +551,7 @@ mod test {
 
 		let mut state = GraphState::new(env);
 		let _ = state.add_user_graph(&0);
-		assert!(state.apply_actions(&vec![action]).is_ok());
+		assert!(state.apply_actions(&vec![action.clone()]).is_ok());
 		assert!(state.apply_actions(&vec![action]).is_err());
 	}
 
@@ -554,11 +564,11 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env);
 		assert!(state
-			.apply_actions(&Action::Connect {
+			.apply_actions(&vec![Action::Connect {
 				owner_dsnp_user_id: 0,
 				connection: Connection { dsnp_user_id: 1, schema_id },
 				connection_key: None
-			})
+			}])
 			.is_err());
 	}
 
@@ -570,14 +580,16 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
 		let owner_dsnp_user_id: DsnpUserId = 0;
-		let action = Action::Disconnect {
+		let disconnect_action = Action::Disconnect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 1, schema_id },
 		};
 		let mut state = GraphState::new(env);
-		let _ = state.add_users_graph(&owner_dsnp_user_id);
-		assert!(state.apply_actions(&vec![action]).is_ok());
-		assert!(state.apply_actions(&vec![action]).is_err());
+		let _ = state.add_user_graph(&owner_dsnp_user_id);
+
+		// act
+		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
+		assert!(state.apply_actions(&vec![disconnect_action]).is_err());
 	}
 
 	#[test]
@@ -589,10 +601,10 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env);
 		assert!(state
-			.apply_actions(&Action::Disconnect {
+			.apply_actions(&vec![Action::Disconnect {
 				owner_dsnp_user_id: 0,
 				connection: Connection { dsnp_user_id: 1, schema_id }
-			})
+			}])
 			.is_err());
 	}
 
@@ -605,14 +617,19 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
-		let keypair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let key_pair_raw = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![])
 			.build();
-		state.import_users_data(input).expect("should work");
+		state.import_users_data(vec![input]).expect("should work");
 		let actions = vec![
 			Action::Connect {
 				connection: Connection { schema_id, dsnp_user_id: 1 },
@@ -627,8 +644,10 @@ mod test {
 		let expected_connections = vec![2, 4, 5, 1];
 
 		// act
-		let res1 = state.apply_actions(actions.get(0).unwrap());
-		let res2 = state.apply_actions(actions.get(1).unwrap());
+		let action1 = &actions[0..1];
+		let action2 = &actions[1..2];
+		let res1 = state.apply_actions(action1);
+		let res2 = state.apply_actions(action2);
 
 		// assert
 		assert!(res1.is_ok());

@@ -270,8 +270,8 @@ impl UserKeyManager {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::dsnp::dsnp_configs::SecretKeyType;
-	use dryoc::{keypair::StackKeyPair, kx::SecretKey};
+	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::GraphKeyType;
 
 	fn create_dsnp_keys(
 		dsnp_user_id: DsnpUserId,
@@ -294,13 +294,13 @@ mod tests {
 			key_hash,
 			vec![KeyData { index: 2, content: serialized1 }],
 		);
-		key_manager.import_dsnp_keys(old_keys).expect("should work");
+		key_manager.import_dsnp_keys(&old_keys).expect("should work");
 		key_manager
 			.add_new_key(dsnp_user_id, b"21767812782988871812334324".to_vec())
 			.expect("should add new key");
 
 		// act
-		let _ = key_manager.import_dsnp_keys(create_dsnp_keys(dsnp_user_id, key_hash, vec![]));
+		let _ = key_manager.import_dsnp_keys(&create_dsnp_keys(dsnp_user_id, key_hash, vec![]));
 
 		// assert
 		assert_eq!(key_manager.dsnp_user_to_keys.get(&dsnp_user_id), Some(&(Vec::new(), key_hash)));
@@ -326,7 +326,7 @@ mod tests {
 		let mut key_manager = PublicKeyManager::new();
 
 		// act
-		let res = key_manager.import_dsnp_keys(keys);
+		let res = key_manager.import_dsnp_keys(&keys);
 
 		// assert
 		assert!(res.is_ok());
@@ -357,7 +357,7 @@ mod tests {
 		let new_public_key = b"726871hsjgdjsa727821712812".to_vec();
 		let expected_added_key = DsnpPublicKey { key_id: Some(3), key: new_public_key.clone() };
 		let mut key_manager = PublicKeyManager::new();
-		key_manager.import_dsnp_keys(keys).expect("should work");
+		key_manager.import_dsnp_keys(&keys).expect("should work");
 
 		// act
 		let res = key_manager.add_new_key(dsnp_user_id, new_public_key.clone());
@@ -400,7 +400,7 @@ mod tests {
 			],
 		);
 		let mut key_manager = PublicKeyManager::new();
-		key_manager.import_dsnp_keys(keys).expect("should work");
+		key_manager.import_dsnp_keys(&keys).expect("should work");
 
 		// act
 		let res = key_manager.get_key_by_id(dsnp_user_id, id.into());
@@ -417,29 +417,36 @@ mod tests {
 		let rc = Rc::new(RefCell::new(public_key_manager));
 		let mutable_clone = rc.clone();
 		let mut user_key_manager = UserKeyManager::new(dsnp_user_id, rc.clone());
-		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let key_pair_raw = StackKeyPair::gen();
+		let key_pair_type = KeyPairType::Version1_0(key_pair_raw.clone());
+		let key_pair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let keys_hash = 233;
 		let id1 = 1;
-		let key1 = DsnpPublicKey { key_id: Some(id1), key: key_pair.get_public_key_raw() };
+		let key1 = DsnpPublicKey { key_id: Some(id1), key: key_pair.clone().public_key };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
 			keys_hash,
 			vec![KeyData { index: id1 as u16, content: serialized1 }],
 		);
-		mutable_clone.borrow_mut().import_dsnp_keys(keys).expect("should work");
+		mutable_clone.borrow_mut().import_dsnp_keys(&keys).expect("should work");
 
 		// act
-		user_key_manager.import_key_pairs(vec![key_pair.clone()]);
+		let res = user_key_manager.import_key_pairs(vec![key_pair.clone()]);
 
 		// assert
+		assert!(res.is_ok());
 		let key = user_key_manager.get_resolved_key(id1);
-		assert_eq!(key, Some((key1.clone(), key_pair.clone())));
+		assert_eq!(key, Some((key1.clone(), key_pair_type.clone())));
 
 		let keys = user_key_manager.get_all_resolved_keys();
 		assert_eq!(keys.len(), 1);
 
 		let resolved_active = user_key_manager.get_resolved_active_key(dsnp_user_id);
-		assert_eq!(resolved_active, Some((key1, key_pair)));
+		assert_eq!(resolved_active, Some((key1, key_pair_type)));
 	}
 }

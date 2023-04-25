@@ -133,8 +133,7 @@ impl UserGraph {
 			.graphs
 			.values()
 			.filter(|graph| graph.get_connection_type() == connection_type)
-			.map(|graph| graph.pages().values().map(|p| p.connections()))
-			.flatten()
+			.flat_map(|graph| graph.pages().values().map(|p| p.connections()))
 			.flatten()
 			.map(|c| c.user_id)
 			.collect();

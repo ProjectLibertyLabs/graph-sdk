@@ -1,5 +1,7 @@
-use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
-use dryoc::keypair::PublicKey as StackPublicKey;
+use crate::dsnp::{
+	dsnp_configs::{KeyPairType, PublicKeyType},
+	dsnp_types::DsnpUserId,
+};
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
 use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
@@ -74,6 +76,7 @@ pub struct ImportBundle {
 }
 
 /// A connection representation in graph sdk
+#[derive(Debug, Clone)]
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
 	pub dsnp_user_id: DsnpUserId,
@@ -97,6 +100,7 @@ pub struct DsnpKeys {
 }
 
 /// Different kind of actions that can be applied to the graph
+#[derive(Debug, Clone)]
 pub enum Action {
 	/// an action that defines adding a connection in the social graph
 	Connect {
@@ -108,7 +112,7 @@ pub enum Action {
 
 		/// public key associated with the user in the connection
 		/// included only if PRId calculation is required
-		connection_key: Option<StackPublicKey>,
+		connection_key: Option<PublicKeyType>,
 	},
 
 	/// an action that defines removing an existing connection from social graph

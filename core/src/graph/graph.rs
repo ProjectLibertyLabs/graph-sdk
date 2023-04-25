@@ -646,7 +646,7 @@ mod test {
 			&DsnpVersionConfig::new(DsnpVersion::Version1_0),
 			&updates,
 			&0,
-			&Vec::<DsnpKeys>::new(),
+			&Vec::<DsnpPrid>::new(),
 			&ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::new()), key_id: 1 },
 		);
 	}
