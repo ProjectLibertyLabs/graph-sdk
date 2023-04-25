@@ -228,7 +228,7 @@ impl GraphPage {
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 		key: &ResolvedKeyPair,
-		_prid_keys: &Vec<DsnpKeys>,
+		_prids: &Vec<DsnpPrid>,
 	) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Private {
 			return Err(Error::msg("Incompatible privacy type for blob export"))

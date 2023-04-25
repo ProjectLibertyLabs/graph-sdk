@@ -1,7 +1,7 @@
 use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
-use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
-use dsnp_graph_config::SchemaId;
+use dryoc::keypair::PublicKey as StackPublicKey;
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
+use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
 
 /// Raw page of Graph (or Key) data
@@ -24,6 +24,19 @@ pub struct KeyData {
 
 	/// raw content of key data
 	pub content: Vec<u8>,
+}
+
+/// Key Pair wrapper
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct GraphKeyPair {
+	/// key pair type
+	pub key_type: GraphKeyType,
+
+	/// public key raw
+	pub public_key: Vec<u8>,
+
+	/// secret key raw
+	pub secret_key: Vec<u8>,
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
@@ -51,7 +64,7 @@ pub struct ImportBundle {
 	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
-	pub key_pairs: Vec<KeyPairType>,
+	pub key_pairs: Vec<GraphKeyPair>,
 
 	/// published dsnp keys associated with this dsnp user
 	pub dsnp_keys: DsnpKeys,
@@ -173,10 +186,10 @@ pub struct Rotation {
 	owner_dsnp_user_id: DsnpUserId,
 
 	/// previous key used for encryption and PRI calculations
-	prev_key: StackKeyPair,
+	prev_key: GraphKeyPair,
 
 	/// new key to use for encryption and PRI calculations
-	new_key: StackKeyPair,
+	new_key: GraphKeyPair,
 }
 
 impl PartialOrd for KeyData {

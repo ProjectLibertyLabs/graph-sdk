@@ -4,7 +4,11 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+	cell::RefCell,
+	collections::{HashMap, HashSet},
+	rc::Rc,
+};
 
 use crate::{
 	dsnp::dsnp_configs::DsnpVersionConfig,
@@ -102,25 +106,40 @@ impl UserGraph {
 	pub fn calculate_updates(
 		&mut self,
 		dsnp_version_config: &DsnpVersionConfig,
-		connection_keys: &Vec<DsnpKeys>,
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
 		let (public_key, keypair) = self
 			.user_key_manager
 			.get_resolved_active_key(self.user_id)
 			.ok_or(Error::msg("No resolved active key found!"))?;
+		// TODO: calculate PRIds
+		let prids = vec![];
 		for (schema_id, graph) in self.graphs.iter() {
 			let graph_data = graph.calculate_updates(
 				dsnp_version_config,
 				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
 				&self.user_id,
-				connection_keys,
+				&prids,
 				&ResolvedKeyPair { key_id: public_key.key_id.unwrap(), key_pair: keypair.clone() },
 			)?;
 			result.extend(graph_data.into_iter());
 		}
 
 		Ok(result)
+	}
+
+	pub fn get_all_connections_of(&self, connection_type: ConnectionType) -> Vec<DsnpUserId> {
+		let result: HashSet<DsnpUserId> = self
+			.graphs
+			.values()
+			.filter(|graph| graph.get_connection_type() == connection_type)
+			.map(|graph| graph.pages().values().map(|p| p.connections()))
+			.flatten()
+			.flatten()
+			.map(|c| c.user_id)
+			.collect();
+
+		result.into_iter().collect()
 	}
 }
 

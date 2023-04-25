@@ -1,6 +1,6 @@
 use crate::{
 	dsnp::{
-		api_types::{DsnpKeys, KeyData, PageHash, ResolvedKeyPair},
+		api_types::{DsnpKeys, GraphKeyPair, KeyData, PageHash, ResolvedKeyPair},
 		dsnp_configs::KeyPairType,
 		dsnp_types::{DsnpPublicKey, DsnpUserId},
 		reader_writer::{DsnpReader, DsnpWriter},
@@ -14,7 +14,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 pub trait PublicKeyProvider {
 	/// imports public keys with their hash and details into the provider
 	/// will overwrite any existing imported keys for the user and remove any new added keys
-	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()>;
+	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> Result<()>;
 
 	/// adds a new public key to the provider
 	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
@@ -37,13 +37,16 @@ pub trait PublicKeyProvider {
 
 	/// returns the active key for a a user to used for encryption
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey>;
+
+	/// returns users that don't have any imported keys
+	fn filter_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId>;
 }
 
 /// Common trait that manages public and private keys for each user
 pub trait UserKeyProvider {
 	/// imports key pairs into a provider
 	/// will overwrite any existing imported keys for the user
-	fn import_key_pairs(&mut self, pairs: Vec<KeyPairType>);
+	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> Result<()>;
 
 	/// returns the dsnp associate and keypair with a certain id
 	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, KeyPairType)>;
@@ -82,7 +85,7 @@ pub struct UserKeyManager {
 impl PublicKeyProvider for PublicKeyManager {
 	/// importing dsnp keys as they are retrieved from blockchain
 	/// sorting indices since ids might not be unique but indices definitely should be
-	fn import_dsnp_keys(&mut self, keys: DsnpKeys) -> Result<()> {
+	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> Result<()> {
 		self.dsnp_user_to_keys.remove(&keys.dsnp_user_id);
 		self.new_keys.remove(&keys.dsnp_user_id);
 
@@ -176,12 +179,27 @@ impl PublicKeyProvider for PublicKeyManager {
 
 		Ok(())
 	}
+
+	fn filter_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId> {
+		dsnp_user_ids
+			.iter()
+			.copied()
+			.filter(|u| self.dsnp_user_to_keys.get(u).is_none())
+			.collect()
+	}
 }
 
 impl UserKeyProvider for UserKeyManager {
-	fn import_key_pairs(&mut self, pairs: Vec<KeyPairType>) {
+	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> Result<()> {
+		let mut mapped_keys = vec![];
+		for p in pairs {
+			mapped_keys.push(p.try_into()?);
+		}
+
 		self.keys.clear();
-		self.keys.extend_from_slice(&pairs);
+		self.keys.extend_from_slice(&mapped_keys);
+
+		Ok(())
 	}
 
 	fn get_resolved_key(&self, key_id: u64) -> Option<(DsnpPublicKey, KeyPairType)> {
@@ -252,7 +270,8 @@ impl UserKeyManager {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use dryoc::keypair::StackKeyPair;
+	use crate::dsnp::dsnp_configs::SecretKeyType;
+	use dryoc::{keypair::StackKeyPair, kx::SecretKey};
 
 	fn create_dsnp_keys(
 		dsnp_user_id: DsnpUserId,

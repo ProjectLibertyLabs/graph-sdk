@@ -1,6 +1,10 @@
-use crate::dsnp::encryption::{EncryptionBehavior, SealBox};
-use dryoc::keypair::{PublicKey, StackKeyPair};
-use dsnp_graph_config::DsnpVersion;
+use crate::dsnp::{
+	api_types::GraphKeyPair,
+	encryption::{EncryptionBehavior, SealBox},
+};
+use anyhow::Error;
+use dryoc::keypair::{PublicKey, SecretKey, StackKeyPair};
+use dsnp_graph_config::{DsnpVersion, GraphKeyType};
 
 /// Dsnp versions hardcoded configuration
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
@@ -105,6 +109,22 @@ impl Into<Vec<u8>> for PublicKeyType {
 	fn into(self) -> Vec<u8> {
 		match self {
 			PublicKeyType::Version1_0(k) => k.to_vec(),
+		}
+	}
+}
+
+/// converts a `GraphKeyType` into a `KeyPairType`
+impl TryInto<KeyPairType> for GraphKeyPair {
+	type Error = anyhow::Error;
+
+	fn try_into(self) -> Result<KeyPairType, Self::Error> {
+		match self.key_type {
+			GraphKeyType::X25519 => {
+				let secret_key = SecretKey::try_from(&self.secret_key[..])
+					.map_err(|_| Error::msg("invalid secret key"))?;
+				let pair = StackKeyPair::from_secret_key(secret_key);
+				Ok(KeyPairType::Version1_0(pair))
+			},
 		}
 	}
 }
