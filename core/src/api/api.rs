@@ -44,16 +44,16 @@ pub trait GraphAPI {
 	/// Remove the user graph from an SDK instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId);
 
-	/// Import raw data retrieved from the blockchain into a user graph.
-	/// Will overwrite any existing graph data for the user,
+	/// Import raw data retrieved from the blockchain into users graph.
+	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
 	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()>;
 
-	/// Calculate the necessary page updates for a user's graph using the active encryption key, and
-	/// return a list of updates
+	/// Calculate the necessary page updates for all imported users and graph using their active
+	/// encryption key and return a list of updates
 	fn export_updates(&mut self) -> Result<Vec<Update>>;
 
-	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
+	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
 
 	/// Get a list of all connections of the indicated type for the user
@@ -191,8 +191,8 @@ impl GraphAPI for GraphState {
 		Ok(())
 	}
 
-	/// Calculate the necessary page updates for a user's graph, and
-	/// return as a map of pages to be updated and/or removed
+	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
+	/// be updated and/or removed
 	// TODO: should make it transactional
 	fn export_updates(&mut self) -> Result<Vec<Update>> {
 		let mut result = vec![];
@@ -217,7 +217,7 @@ impl GraphAPI for GraphState {
 		Ok(result)
 	}
 
-	/// Apply an action (Connect, Disconnect) to a user's graph
+	/// Apply actions (Connect, Disconnect) to imported users graph
 	// TODO: should become transactional
 	fn apply_actions(&mut self, actions: &[Action]) -> Result<()> {
 		for action in actions {
@@ -479,7 +479,7 @@ mod test {
 			.build();
 
 		// act
-		let res = dbg!(state.import_users_data(vec![input]));
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -529,6 +529,44 @@ mod test {
 		for p in prids {
 			assert!(manager.contains(dsnp_user_id, p));
 		}
+	}
+
+	#[test]
+	fn import_user_data_with_wrong_key_should_fail_for_private_follow_graph() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
+		let resolved_key =
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
+		let dsnp_user_id = 123;
+		let connections = vec![2, 3, 4, 5];
+		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.with_page(1, &connections, &vec![])
+			.build();
+		let wrong_key_pair = StackKeyPair::gen();
+		input.key_pairs = vec![GraphKeyPair {
+			secret_key: wrong_key_pair.secret_key.to_vec(),
+			public_key: wrong_key_pair.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		}];
+
+		// act
+		let res = state.import_users_data(vec![input]);
+
+		// assert
+		assert!(res.is_err());
 	}
 
 	#[test]
