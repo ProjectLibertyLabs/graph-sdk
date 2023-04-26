@@ -39,7 +39,7 @@ pub trait PublicKeyProvider {
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey>;
 
 	/// returns users that don't have any imported keys
-	fn filter_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId>;
+	fn find_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId>;
 }
 
 /// Common trait that manages public and private keys for each user
@@ -180,7 +180,7 @@ impl PublicKeyProvider for PublicKeyManager {
 		Ok(())
 	}
 
-	fn filter_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId> {
+	fn find_users_without_keys(&self, dsnp_user_ids: Vec<DsnpUserId>) -> Vec<DsnpUserId> {
 		dsnp_user_ids
 			.iter()
 			.copied()

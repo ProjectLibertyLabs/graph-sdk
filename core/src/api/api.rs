@@ -290,7 +290,7 @@ impl GraphAPI for GraphState {
 		self.public_key_manager
 			.deref()
 			.borrow()
-			.filter_users_without_keys(all_connections.into_iter().collect())
+			.find_users_without_keys(all_connections.into_iter().collect())
 	}
 }
 
