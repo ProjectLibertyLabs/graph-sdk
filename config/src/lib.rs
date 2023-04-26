@@ -63,6 +63,13 @@ impl ConnectionType {
 	}
 }
 
+/// Graph Key type
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum GraphKeyType {
+	X25519 = 0,
+}
+
+/// Different environments supported by graph sdk
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Environment {
 	Mainnet,

@@ -1,6 +1,6 @@
 use crate::{
 	dsnp::{
-		api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
+		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
 		dsnp_configs::DsnpVersionConfig,
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 	},
@@ -14,7 +14,7 @@ use crate::{
 	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Ok, Result};
-use dsnp_graph_config::{Environment, SchemaId};
+use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
 use std::{
 	cell::RefCell,
 	cmp::min,
@@ -44,21 +44,17 @@ pub trait GraphAPI {
 	/// Remove the user graph from an SDK instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId);
 
-	/// Import raw data retrieved from the blockchain into a user graph.
-	/// Will overwrite any existing graph data for the user,
+	/// Import raw data retrieved from the blockchain into users graph.
+	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
-	fn import_user_data(&mut self, payload: ImportBundle) -> Result<()>;
+	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()>;
 
-	/// Calculate the necessary page updates for a user's graph using the active encryption key, and
-	/// return as a map of pages to be updated and/or removed
-	fn export_user_updates(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys>,
-	) -> Result<Vec<Update>>;
+	/// Calculate the necessary page updates for all imported users and graph using their active
+	/// encryption key and return a list of updates
+	fn export_updates(&mut self) -> Result<Vec<Update>>;
 
-	/// Apply an Action (Connect or Disconnect) to the list of pending actions for a user's graph
-	fn apply_action(&mut self, action: &Action) -> Result<()>;
+	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
+	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -67,6 +63,9 @@ pub trait GraphAPI {
 		schema_id: &SchemaId,
 		include_pending: bool,
 	) -> Result<Vec<DsnpGraphEdge>>;
+
+	/// return a list dsnp user ids that require keys
+	fn get_connections_without_keys(&self) -> Vec<DsnpUserId>;
 }
 
 impl GraphState {
@@ -135,107 +134,111 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_user_data(
-		&mut self,
-		ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs }: ImportBundle,
-	) -> Result<()> {
-		let dsnp_config = self
-			.get_dsnp_config(schema_id)
-			.ok_or(Error::msg("Invalid schema id for environment!"))?;
-		let config = self.environment.get_config();
-		let connection_type = config
-			.get_connection_type_from_schema_id(schema_id)
-			.ok_or(Error::msg("Invalid schema id for environment!"))?;
-		self.public_key_manager
-			.deref()
-			.borrow_mut()
-			.deref_mut()
-			.import_dsnp_keys(dsnp_keys)?;
-
-		let user_graph = match self.user_map.get_mut(&dsnp_user_id) {
-			Some(graph) => graph,
-			None => self.add_user_graph(&dsnp_user_id)?,
-		};
-
-		let user_key_manager = user_graph.user_key_manager_mut();
-		let include_secret_keys = !key_pairs.is_empty();
-
-		// import key-pairs inside user key manager
-		user_key_manager.import_key_pairs(key_pairs);
-
-		let resolved_keys = match include_secret_keys {
-			true => user_key_manager.get_all_resolved_keys(),
-			false => vec![],
-		};
-
-		let graph = user_graph.graph_mut(&schema_id);
-		graph.clear();
-
-		match (connection_type.privacy_type(), include_secret_keys) {
-			(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
-			(PrivacyType::Private, true) => {
-				graph.import_private(&dsnp_config, connection_type, &pages, resolved_keys)?;
-				self.pri_manager
-					.deref()
-					.borrow_mut()
-					.deref_mut()
-					.import_pri(dsnp_user_id, &pages)
-			},
-			(PrivacyType::Private, false) => self
-				.pri_manager
+	// TODO: should make it transactional
+	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()> {
+		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
+			let dsnp_config = self
+				.get_dsnp_config(schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+			let config = self.environment.get_config();
+			let connection_type = config
+				.get_connection_type_from_schema_id(schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+			self.public_key_manager
 				.deref()
 				.borrow_mut()
 				.deref_mut()
-				.import_pri(dsnp_user_id, &pages),
-		}?;
+				.import_dsnp_keys(&dsnp_keys)?;
+
+			let user_graph = match self.user_map.get_mut(&dsnp_user_id) {
+				Some(graph) => graph,
+				None => self.add_user_graph(&dsnp_user_id)?,
+			};
+
+			let user_key_manager = user_graph.user_key_manager_mut();
+			let include_secret_keys = !key_pairs.is_empty();
+
+			// import key-pairs inside user key manager
+			user_key_manager.import_key_pairs(key_pairs)?;
+
+			let resolved_keys = match include_secret_keys {
+				true => user_key_manager.get_all_resolved_keys(),
+				false => vec![],
+			};
+
+			let graph = user_graph.graph_mut(&schema_id);
+			graph.clear();
+
+			match (connection_type.privacy_type(), include_secret_keys) {
+				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
+				(PrivacyType::Private, true) => {
+					graph.import_private(&dsnp_config, connection_type, &pages, resolved_keys)?;
+					self.pri_manager
+						.deref()
+						.borrow_mut()
+						.deref_mut()
+						.import_pri(dsnp_user_id, &pages)
+				},
+				(PrivacyType::Private, false) => self
+					.pri_manager
+					.deref()
+					.borrow_mut()
+					.deref_mut()
+					.import_pri(dsnp_user_id, &pages),
+			}?;
+		}
 
 		Ok(())
 	}
 
-	/// Calculate the necessary page updates for a user's graph, and
-	/// return as a map of pages to be updated and/or removed
-	fn export_user_updates(
-		&mut self,
-		user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys>,
-	) -> Result<Vec<Update>> {
-		let schemas = self
-			.user_map
-			.get(user_id)
-			.ok_or(Error::msg("User not found for graph export"))?
-			.update_tracker()
-			.get_updated_schema_ids();
-		let related_dsnp_configs: HashSet<DsnpVersionConfig> =
-			schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
-
-		// we are checking user existence on previous lines so we can unwrap safely here
-		let user_graph = self.user_map.get_mut(user_id).unwrap();
+	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
+	/// be updated and/or removed
+	// TODO: should make it transactional
+	fn export_updates(&mut self) -> Result<Vec<Update>> {
 		let mut result = vec![];
-		for dsnp_config in related_dsnp_configs.iter() {
-			let updates = user_graph.calculate_updates(dsnp_config, connection_keys)?;
-			result.extend(updates);
+		let keys: Vec<_> = self.user_map.keys().copied().collect();
+		for user_id in keys {
+			let schemas = self
+				.user_map
+				.get(&user_id)
+				.ok_or(Error::msg("User not found for graph export"))?
+				.update_tracker()
+				.get_updated_schema_ids();
+			let related_dsnp_configs: HashSet<DsnpVersionConfig> =
+				schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
+
+			// we are checking user existence on previous lines so we can unwrap safely here
+			let user_graph = self.user_map.get_mut(&user_id).unwrap();
+			for dsnp_config in related_dsnp_configs.iter() {
+				let updates = user_graph.calculate_updates(dsnp_config)?;
+				result.extend(updates);
+			}
 		}
 		Ok(result)
 	}
 
-	/// Apply an action (Connect, Disconnect) to a user's graph
-	fn apply_action(&mut self, action: &Action) -> Result<()> {
-		if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
-			let update_event = match action {
-				Action::Connect {
-					connection: Connection { ref dsnp_user_id, ref schema_id },
-					..
-				} => UpdateEvent::create_add(*dsnp_user_id, *schema_id),
-				Action::Disconnect {
-					connection: Connection { ref dsnp_user_id, ref schema_id },
-					..
-				} => UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
-			};
+	/// Apply actions (Connect, Disconnect) to imported users graph
+	// TODO: should become transactional
+	fn apply_actions(&mut self, actions: &[Action]) -> Result<()> {
+		for action in actions {
+			if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
+				let update_event = match action {
+					Action::Connect {
+						connection: Connection { ref dsnp_user_id, ref schema_id },
+						..
+					} => UpdateEvent::create_add(*dsnp_user_id, *schema_id),
+					Action::Disconnect {
+						connection: Connection { ref dsnp_user_id, ref schema_id },
+						..
+					} => UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
+				};
 
-			return owner_graph.update_tracker_mut().register_update(&update_event)
+				owner_graph.update_tracker_mut().register_update(&update_event)?;
+			} else {
+				return Err(Error::msg("user graph not found in state"))
+			}
 		}
-
-		Err(Error::msg("user graph not found in state"))
+		Ok(())
 	}
 
 	/// Get a list of all connections of the indicated type for the user
@@ -275,6 +278,20 @@ impl GraphAPI for GraphState {
 
 		Ok(connections)
 	}
+
+	fn get_connections_without_keys(&self) -> Vec<DsnpUserId> {
+		let all_connections: HashSet<DsnpUserId> = self
+			.user_map
+			.values()
+			.flat_map(|user_graph| {
+				user_graph.get_all_connections_of(ConnectionType::Friendship(PrivacyType::Private))
+			})
+			.collect();
+		self.public_key_manager
+			.deref()
+			.borrow()
+			.find_users_without_keys(all_connections.into_iter().collect())
+	}
 }
 
 impl GraphState {
@@ -291,14 +308,14 @@ impl GraphState {
 mod test {
 	use crate::{
 		dsnp::{
-			api_types::{Connection, ResolvedKeyPair},
+			api_types::{Connection, GraphKeyPair, ResolvedKeyPair},
 			dsnp_configs::KeyPairType,
 			dsnp_types::DsnpPrid,
 		},
 		tests::helpers::ImportBundleBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType};
+	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, GraphKeyType};
 
 	use super::*;
 
@@ -404,7 +421,12 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
-		let keypair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let key_pair_raw = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -413,7 +435,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_user_data(input);
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -440,18 +462,24 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
 		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::gen()), key_id: 1 };
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_key_pairs(&vec![resolved_key.clone().key_pair])
+			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
 			.with_page(1, &connections, &vec![])
 			.build();
 
 		// act
-		let res = state.import_user_data(input);
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -492,7 +520,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_user_data(input);
+		let res = state.import_users_data(vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -501,6 +529,44 @@ mod test {
 		for p in prids {
 			assert!(manager.contains(dsnp_user_id, p));
 		}
+	}
+
+	#[test]
+	fn import_user_data_with_wrong_key_should_fail_for_private_follow_graph() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
+		let resolved_key =
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
+		let dsnp_user_id = 123;
+		let connections = vec![2, 3, 4, 5];
+		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.with_page(1, &connections, &vec![])
+			.build();
+		let wrong_key_pair = StackKeyPair::gen();
+		input.key_pairs = vec![GraphKeyPair {
+			secret_key: wrong_key_pair.secret_key.to_vec(),
+			public_key: wrong_key_pair.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		}];
+
+		// act
+		let res = state.import_users_data(vec![input]);
+
+		// assert
+		assert!(res.is_err());
 	}
 
 	#[test]
@@ -523,8 +589,8 @@ mod test {
 
 		let mut state = GraphState::new(env);
 		let _ = state.add_user_graph(&0);
-		assert!(state.apply_action(&action).is_ok());
-		assert!(state.apply_action(&action).is_err());
+		assert!(state.apply_actions(&vec![action.clone()]).is_ok());
+		assert!(state.apply_actions(&vec![action]).is_err());
 	}
 
 	#[test]
@@ -536,11 +602,11 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env);
 		assert!(state
-			.apply_action(&Action::Connect {
+			.apply_actions(&vec![Action::Connect {
 				owner_dsnp_user_id: 0,
 				connection: Connection { dsnp_user_id: 1, schema_id },
 				connection_key: None
-			})
+			}])
 			.is_err());
 	}
 
@@ -552,14 +618,16 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
 		let owner_dsnp_user_id: DsnpUserId = 0;
-		let action = Action::Disconnect {
+		let disconnect_action = Action::Disconnect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 1, schema_id },
 		};
 		let mut state = GraphState::new(env);
 		let _ = state.add_user_graph(&owner_dsnp_user_id);
-		assert!(state.apply_action(&action).is_ok());
-		assert!(state.apply_action(&action).is_err());
+
+		// act
+		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
+		assert!(state.apply_actions(&vec![disconnect_action]).is_err());
 	}
 
 	#[test]
@@ -571,10 +639,10 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env);
 		assert!(state
-			.apply_action(&Action::Disconnect {
+			.apply_actions(&vec![Action::Disconnect {
 				owner_dsnp_user_id: 0,
 				connection: Connection { dsnp_user_id: 1, schema_id }
-			})
+			}])
 			.is_err());
 	}
 
@@ -587,14 +655,19 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
-		let keypair = KeyPairType::Version1_0(StackKeyPair::gen());
+		let key_pair_raw = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let dsnp_user_id = 123;
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![])
 			.build();
-		state.import_user_data(input).expect("should work");
+		state.import_users_data(vec![input]).expect("should work");
 		let actions = vec![
 			Action::Connect {
 				connection: Connection { schema_id, dsnp_user_id: 1 },
@@ -609,8 +682,10 @@ mod test {
 		let expected_connections = vec![2, 4, 5, 1];
 
 		// act
-		let res1 = state.apply_action(actions.get(0).unwrap());
-		let res2 = state.apply_action(actions.get(1).unwrap());
+		let action1 = &actions[0..1];
+		let action2 = &actions[1..2];
+		let res1 = state.apply_actions(action1);
+		let res2 = state.apply_actions(action2);
 
 		// assert
 		assert!(res1.is_ok());

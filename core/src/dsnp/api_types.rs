@@ -1,7 +1,9 @@
-use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
-use dryoc::keypair::{PublicKey as StackPublicKey, StackKeyPair};
-use dsnp_graph_config::SchemaId;
+use crate::dsnp::{
+	dsnp_configs::{KeyPairType, PublicKeyType},
+	dsnp_types::DsnpUserId,
+};
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
+use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
 
 /// Raw page of Graph (or Key) data
@@ -24,6 +26,19 @@ pub struct KeyData {
 
 	/// raw content of key data
 	pub content: Vec<u8>,
+}
+
+/// Key Pair wrapper
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct GraphKeyPair {
+	/// key pair type
+	pub key_type: GraphKeyType,
+
+	/// public key raw
+	pub public_key: Vec<u8>,
+
+	/// secret key raw
+	pub secret_key: Vec<u8>,
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
@@ -51,7 +66,7 @@ pub struct ImportBundle {
 	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
-	pub key_pairs: Vec<KeyPairType>,
+	pub key_pairs: Vec<GraphKeyPair>,
 
 	/// published dsnp keys associated with this dsnp user
 	pub dsnp_keys: DsnpKeys,
@@ -61,6 +76,7 @@ pub struct ImportBundle {
 }
 
 /// A connection representation in graph sdk
+#[derive(Debug, Clone)]
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
 	pub dsnp_user_id: DsnpUserId,
@@ -84,6 +100,7 @@ pub struct DsnpKeys {
 }
 
 /// Different kind of actions that can be applied to the graph
+#[derive(Debug, Clone)]
 pub enum Action {
 	/// an action that defines adding a connection in the social graph
 	Connect {
@@ -95,7 +112,7 @@ pub enum Action {
 
 		/// public key associated with the user in the connection
 		/// included only if PRId calculation is required
-		connection_key: Option<StackPublicKey>,
+		connection_key: Option<PublicKeyType>,
 	},
 
 	/// an action that defines removing an existing connection from social graph
@@ -173,10 +190,10 @@ pub struct Rotation {
 	owner_dsnp_user_id: DsnpUserId,
 
 	/// previous key used for encryption and PRI calculations
-	prev_key: StackKeyPair,
+	prev_key: GraphKeyPair,
 
 	/// new key to use for encryption and PRI calculations
-	new_key: StackKeyPair,
+	new_key: GraphKeyPair,
 }
 
 impl PartialOrd for KeyData {

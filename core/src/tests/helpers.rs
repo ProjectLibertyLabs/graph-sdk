@@ -110,7 +110,7 @@ pub fn avro_public_payload() -> Vec<u8> {
 }
 
 pub struct KeyDataBuilder {
-	key_pairs: Vec<KeyPairType>,
+	key_pairs: Vec<GraphKeyPair>,
 }
 
 impl KeyDataBuilder {
@@ -118,12 +118,12 @@ impl KeyDataBuilder {
 		KeyDataBuilder { key_pairs: vec![] }
 	}
 
-	pub fn with_key_pairs(mut self, key_pairs: &[KeyPairType]) -> Self {
+	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
 		self.key_pairs.extend_from_slice(key_pairs);
 		self
 	}
 
-	pub fn get_key_pairs(&self) -> &Vec<KeyPairType> {
+	pub fn get_key_pairs(&self) -> &Vec<GraphKeyPair> {
 		&self.key_pairs
 	}
 
@@ -135,7 +135,7 @@ impl KeyDataBuilder {
 				index: i as u16,
 				content: Frequency::write_public_key(&DsnpPublicKey {
 					key_id: Some(i as u64),
-					key: pair.get_public_key_raw(),
+					key: pair.public_key.to_vec(),
 				})
 				.expect("should serialize"),
 			})
@@ -267,7 +267,7 @@ impl ImportBundleBuilder {
 		self
 	}
 
-	pub fn with_key_pairs(mut self, key_pairs: &[KeyPairType]) -> Self {
+	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
 		self.key_builder = self.key_builder.with_key_pairs(key_pairs);
 		self
 	}

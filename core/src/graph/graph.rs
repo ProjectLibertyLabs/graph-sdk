@@ -120,7 +120,7 @@ impl Graph {
 		dsnp_version_config: &DsnpVersionConfig,
 		updates: &Vec<UpdateEvent>,
 		dsnp_user_id: &DsnpUserId,
-		connection_keys: &Vec<DsnpKeys>,
+		prids: &Vec<DsnpPrid>,
 		encryption_key: &ResolvedKeyPair,
 	) -> Result<Vec<Update>> {
 		let ids_to_remove: Vec<DsnpUserId> = updates
@@ -225,7 +225,7 @@ impl Graph {
 			PrivacyType::Private => updated_pages
 				.iter_mut()
 				.map(|(_, page)| {
-					page.to_private_page_data(dsnp_version_config, encryption_key, connection_keys)
+					page.to_private_page_data(dsnp_version_config, encryption_key, prids)
 				})
 				.collect(),
 		};
@@ -646,7 +646,7 @@ mod test {
 			&DsnpVersionConfig::new(DsnpVersion::Version1_0),
 			&updates,
 			&0,
-			&Vec::<DsnpKeys>::new(),
+			&Vec::<DsnpPrid>::new(),
 			&ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::new()), key_id: 1 },
 		);
 	}

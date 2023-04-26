@@ -1,9 +1,5 @@
 use crate::{
-	dsnp::{
-		api_types::{DsnpKeys, Update},
-		dsnp_configs::DsnpVersionConfig,
-		dsnp_types::DsnpUserId,
-	},
+	dsnp::{api_types::Update, dsnp_configs::DsnpVersionConfig, dsnp_types::DsnpUserId},
 	graph::{
 		updates::UpdateEvent::{Add, Remove},
 		user::UserGraph,
@@ -135,20 +131,16 @@ impl UpdateEvent {
 }
 
 pub trait UpdateAPI {
-	fn calculate_updates(
-		&mut self,
-		dsnp_version_config: &DsnpVersionConfig,
-		connection_keys: &Vec<DsnpKeys>,
-	) -> Result<Vec<Update>>;
+	fn calculate_updates(&mut self, dsnp_version_config: &DsnpVersionConfig)
+		-> Result<Vec<Update>>;
 }
 
 impl UpdateAPI for UserGraph {
 	fn calculate_updates(
 		&mut self,
 		dsnp_version_config: &DsnpVersionConfig,
-		connection_keys: &Vec<DsnpKeys>,
 	) -> Result<Vec<Update>> {
-		self.calculate_updates(dsnp_version_config, connection_keys)
+		self.calculate_updates(dsnp_version_config)
 	}
 }
 
