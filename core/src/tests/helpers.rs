@@ -10,7 +10,7 @@ use crate::{
 	graph::{graph::Graph, page::GraphPage},
 	util::time::time_in_ksecs,
 };
-use std::{borrow::Borrow, collections::BTreeMap};
+use std::{borrow::Borrow, cell::RefCell, collections::BTreeMap, rc::Rc};
 
 use crate::{
 	dsnp::{
@@ -18,6 +18,7 @@ use crate::{
 		reader_writer::DsnpWriter,
 	},
 	frequency::Frequency,
+	graph::{key_manager::UserKeyManager, shared_state_manager::SharedStateManager},
 };
 use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
@@ -48,6 +49,7 @@ pub fn create_test_graph() -> Graph {
 	let mut page_builder = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private));
 	let num_pages = 5;
 	let ids_per_page = 5;
+	let user_id = 3;
 	let mut curr_id = 0u64;
 	for i in 0..num_pages {
 		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
@@ -60,7 +62,15 @@ pub fn create_test_graph() -> Graph {
 		.get_config()
 		.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 		.expect("should exist");
-	let mut graph = Graph::new(env, schema_id);
+	let mut graph = Graph::new(
+		env,
+		user_id,
+		schema_id,
+		Rc::new(RefCell::from(UserKeyManager::new(
+			user_id,
+			Rc::new(RefCell::from(SharedStateManager::new())),
+		))),
+	);
 	for p in page_builder.build() {
 		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
@@ -225,7 +235,7 @@ impl PageDataBuilder {
 				PrivacyType::Public =>
 					page.to_public_page_data().expect("should write public page"),
 				PrivacyType::Private =>
-					page.to_private_page_data(&dsnp_config, &self.resolved_key, &vec![]).unwrap(),
+					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
 			})
 			.collect()
 	}

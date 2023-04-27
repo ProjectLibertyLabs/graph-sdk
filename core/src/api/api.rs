@@ -5,8 +5,8 @@ use crate::{
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 	},
 	graph::{
-		key_manager::{PublicKeyManager, PublicKeyProvider, UserKeyProvider},
-		pri_manager::{PriManager, PriProvider},
+		key_manager::UserKeyProvider,
+		shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
 		updates::UpdateEvent,
 		user::UserGraph,
 	},
@@ -26,8 +26,7 @@ use std::{
 #[derive(Debug)]
 pub struct GraphState {
 	environment: Environment,
-	public_key_manager: Rc<RefCell<PublicKeyManager>>,
-	pri_manager: Rc<RefCell<PriManager>>,
+	shared_state_manager: Rc<RefCell<SharedStateManager>>,
 	user_map: HashMap<DsnpUserId, UserGraph>,
 }
 
@@ -73,8 +72,7 @@ impl GraphState {
 		Self {
 			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::new(),
-			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
-			pri_manager: Rc::new(RefCell::from(PriManager::new())),
+			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
 		}
 	}
 
@@ -83,8 +81,7 @@ impl GraphState {
 		Self {
 			environment,
 			user_map: HashMap::<DsnpUserId, UserGraph>::with_capacity(size),
-			public_key_manager: Rc::new(RefCell::from(PublicKeyManager::new())),
-			pri_manager: Rc::new(RefCell::from(PriManager::new())),
+			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
 		}
 	}
 
@@ -118,7 +115,7 @@ impl GraphAPI for GraphState {
 
 		self.user_map.insert(
 			*user_id,
-			UserGraph::new(user_id, &self.environment, self.public_key_manager.clone()),
+			UserGraph::new(user_id, &self.environment, self.shared_state_manager.clone()),
 		);
 		match self.user_map.get_mut(user_id) {
 			Some(graph) => Ok(graph),
@@ -144,7 +141,7 @@ impl GraphAPI for GraphState {
 			let connection_type = config
 				.get_connection_type_from_schema_id(schema_id)
 				.ok_or(Error::msg("Invalid schema id for environment!"))?;
-			self.public_key_manager
+			self.shared_state_manager
 				.deref()
 				.borrow_mut()
 				.deref_mut()
@@ -155,15 +152,12 @@ impl GraphAPI for GraphState {
 				None => self.add_user_graph(&dsnp_user_id)?,
 			};
 
-			let user_key_manager = user_graph.user_key_manager_mut();
 			let include_secret_keys = !key_pairs.is_empty();
+			{
+				let mut user_key_manager = user_graph.user_key_manager.borrow_mut();
 
-			// import key-pairs inside user key manager
-			user_key_manager.import_key_pairs(key_pairs)?;
-
-			let resolved_keys = match include_secret_keys {
-				true => user_key_manager.get_all_resolved_keys(),
-				false => vec![],
+				// import key-pairs inside user key manager
+				user_key_manager.deref_mut().import_key_pairs(key_pairs)?;
 			};
 
 			let graph = user_graph.graph_mut(&schema_id);
@@ -172,15 +166,15 @@ impl GraphAPI for GraphState {
 			match (connection_type.privacy_type(), include_secret_keys) {
 				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
 				(PrivacyType::Private, true) => {
-					graph.import_private(&dsnp_config, connection_type, &pages, resolved_keys)?;
-					self.pri_manager
+					graph.import_private(&dsnp_config, connection_type, &pages)?;
+					self.shared_state_manager
 						.deref()
 						.borrow_mut()
 						.deref_mut()
 						.import_pri(dsnp_user_id, &pages)
 				},
 				(PrivacyType::Private, false) => self
-					.pri_manager
+					.shared_state_manager
 					.deref()
 					.borrow_mut()
 					.deref_mut()
@@ -287,7 +281,7 @@ impl GraphAPI for GraphState {
 				user_graph.get_all_connections_of(ConnectionType::Friendship(PrivacyType::Private))
 			})
 			.collect();
-		self.public_key_manager
+		self.shared_state_manager
 			.deref()
 			.borrow()
 			.find_users_without_keys(all_connections.into_iter().collect())
@@ -440,7 +434,7 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		let public_manager = state.public_key_manager.borrow();
+		let public_manager = state.shared_state_manager.borrow();
 		let keys = public_manager.get_all_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
@@ -484,7 +478,7 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		let public_manager = state.public_key_manager.borrow();
+		let public_manager = state.shared_state_manager.borrow();
 		let keys = public_manager.get_all_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
@@ -525,7 +519,7 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		let manager = state.pri_manager.borrow();
+		let manager = state.shared_state_manager.borrow();
 		for p in prids {
 			assert!(manager.contains(dsnp_user_id, p));
 		}

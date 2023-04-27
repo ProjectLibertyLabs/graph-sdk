@@ -8,7 +8,6 @@ use std::borrow::Borrow;
 use crate::dsnp::{
 	compression::{CompressionBehavior, DeflateCompression},
 	dsnp_configs::DsnpVersionConfig,
-	encryption::EncryptionBehavior,
 	schema::SchemaHandler,
 };
 
@@ -196,12 +195,13 @@ impl GraphPage {
 		self.connections.retain(|c| !ids.contains(&c.user_id));
 	}
 
-	/// Refresh PRIds based on latest keys
-	pub fn update_prids<E: EncryptionBehavior>(
-		&mut self,
-		_prid_keys: &Vec<DsnpKeys>,
-	) -> Result<()> {
-		todo!()
+	/// Refresh PRIds based on latest
+	pub fn update_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
+		if self.connections.len() != prids.len() {
+			return Err(Error::msg("prids len should be equal to connections len"))
+		}
+		self.prids = prids;
+		Ok(())
 	}
 
 	// TODO: make trait-based
@@ -228,14 +228,10 @@ impl GraphPage {
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 		key: &ResolvedKeyPair,
-		_prids: &Vec<DsnpPrid>,
 	) -> Result<PageData> {
 		if self.privacy_type != PrivacyType::Private {
 			return Err(Error::msg("Incompatible privacy type for blob export"))
 		}
-
-		// TODO should update PRI's before calling this
-		// self.update_prids::<E>(prid_keys)?;
 
 		let DsnpUserPublicGraphChunk { compressed_public_graph } =
 			self.connections.clone().try_into()?;

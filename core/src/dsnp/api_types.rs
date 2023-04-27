@@ -42,7 +42,7 @@ pub struct GraphKeyPair {
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedKeyPair {
 	/// Key identifier
 	pub key_id: u64,
