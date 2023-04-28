@@ -1,7 +1,4 @@
-use crate::dsnp::{
-	dsnp_configs::{KeyPairType, PublicKeyType},
-	dsnp_types::DsnpUserId,
-};
+use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
 use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
@@ -109,10 +106,6 @@ pub enum Action {
 
 		/// connection details
 		connection: Connection,
-
-		/// public key associated with the user in the connection
-		/// included only if PRId calculation is required
-		connection_key: Option<PublicKeyType>,
 	},
 
 	/// an action that defines removing an existing connection from social graph

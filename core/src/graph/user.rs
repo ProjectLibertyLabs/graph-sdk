@@ -12,7 +12,10 @@ use std::{
 
 use crate::{
 	dsnp::dsnp_configs::DsnpVersionConfig,
-	graph::{key_manager::UserKeyManager, shared_state_manager::SharedStateManager},
+	graph::{
+		key_manager::UserKeyManager, shared_state_manager::SharedStateManager, updates::UpdateEvent,
+	},
+	util::time::time_in_ksecs,
 };
 
 use super::graph::Graph;
@@ -110,17 +113,60 @@ impl UserGraph {
 		Ok(result)
 	}
 
-	pub fn get_all_connections_of(&self, connection_type: ConnectionType) -> Vec<DsnpUserId> {
-		let result: HashSet<DsnpUserId> = self
+	pub fn graph_has_connection(
+		&self,
+		schema_id: SchemaId,
+		dsnp_user_id: DsnpUserId,
+		include_pending: bool,
+	) -> bool {
+		let add_event = &UpdateEvent::Add { schema_id, dsnp_user_id };
+
+		let graph_connection_exists = self.graph(&schema_id).has_connection(&dsnp_user_id);
+		let add_update_exists = include_pending && self.update_tracker.contains(add_event);
+		let remove_update_exists =
+			include_pending && self.update_tracker.contains_complement(add_event);
+
+		(graph_connection_exists && !remove_update_exists) ||
+			(!graph_connection_exists && add_update_exists)
+	}
+
+	pub fn get_all_connections_of(
+		&self,
+		schema_id: SchemaId,
+		apply_pending: bool,
+	) -> Vec<DsnpGraphEdge> {
+		let mut connections: HashSet<DsnpGraphEdge> = self
 			.graphs
 			.values()
-			.filter(|graph| graph.get_connection_type() == connection_type)
+			.filter(|graph| graph.get_schema_id() == schema_id)
 			.flat_map(|graph| graph.pages().values().map(|p| p.connections()))
 			.flatten()
-			.map(|c| c.user_id)
+			.copied()
 			.collect();
 
-		result.into_iter().collect()
+		if apply_pending {
+			self.update_tracker
+				.get_updates_for_schema_id(schema_id)
+				.unwrap_or(&Vec::<UpdateEvent>::new())
+				.iter()
+				.cloned()
+				.for_each(|event| match event {
+					UpdateEvent::Add { dsnp_user_id, .. } => {
+						connections.insert(DsnpGraphEdge {
+							user_id: dsnp_user_id,
+							since: time_in_ksecs(),
+						});
+					},
+					UpdateEvent::Remove { dsnp_user_id, .. } => {
+						connections.remove(&DsnpGraphEdge {
+							user_id: dsnp_user_id,
+							since: time_in_ksecs(),
+						});
+					},
+				});
+		}
+
+		connections.into_iter().collect()
 	}
 }
 

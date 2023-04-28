@@ -270,7 +270,11 @@ impl SharedStateManager {
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::tests::helpers::PageDataBuilder;
+	use crate::{
+		dsnp::{api_types::ResolvedKeyPair, dsnp_configs::KeyPairType},
+		tests::helpers::PageDataBuilder,
+	};
+	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{ConnectionType::Friendship, PrivacyType};
 
 	fn create_dsnp_keys(
@@ -282,15 +286,20 @@ mod tests {
 	}
 
 	#[test]
-	fn pri_manager_import_should_store_prids_as_expected() {
+	fn pri_provider_import_should_store_prids_as_expected() {
 		// arrange
 		let mut manager = SharedStateManager::new();
 		let prid_1 = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
 		let prid_2 = DsnpPrid::new(&[10u8, 20, 3, 4, 5, 6, 7, 8]);
 		let non_existing_prid = DsnpPrid::new(&[2u8, 20, 3, 4, 5, 6, 7, 8]);
+		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
 			.with_page(1, &vec![1], &vec![prid_1.clone()])
 			.with_page(2, &vec![2], &vec![prid_2.clone()])
+			.with_encryption_key(ResolvedKeyPair {
+				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
+				key_id,
+			})
 			.build();
 		let dsnp_user_id = 23;
 		let non_existing_user_id = 10;
@@ -302,7 +311,7 @@ mod tests {
 		assert!(res.is_ok());
 		assert_eq!(
 			manager.dsnp_user_to_pris.get(&dsnp_user_id),
-			Some(&vec![(prid_1.clone(), 0), (prid_2.clone(), 0)])
+			Some(&vec![(prid_1.clone(), key_id), (prid_2.clone(), key_id)])
 		);
 		assert_eq!(manager.dsnp_user_to_pris.get(&non_existing_user_id), None);
 		assert!(manager.contains(dsnp_user_id, prid_1));
@@ -311,18 +320,27 @@ mod tests {
 	}
 
 	#[test]
-	fn pri_manager_import_should_replace_previous_prids() {
+	fn pri_provider_import_should_replace_previous_prids() {
 		// arrange
 		let mut manager = SharedStateManager::new();
 		let old_prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
+		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
 			.with_page(1, &vec![1], &vec![old_prid])
+			.with_encryption_key(ResolvedKeyPair {
+				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
+				key_id,
+			})
 			.build();
 		let dsnp_user_id = 23;
 		manager.import_pri(dsnp_user_id, &pages).expect("should work");
 		let new_prid = DsnpPrid::new(&[10u8, 20, 30, 40, 50, 60, 70, 80]);
 		let new_pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
 			.with_page(1, &vec![1], &vec![new_prid.clone()])
+			.with_encryption_key(ResolvedKeyPair {
+				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
+				key_id,
+			})
 			.build();
 
 		// act
@@ -330,7 +348,7 @@ mod tests {
 
 		// assert
 		assert!(res.is_ok());
-		assert_eq!(manager.dsnp_user_to_pris.get(&dsnp_user_id), Some(&vec![(new_prid, 0)]));
+		assert_eq!(manager.dsnp_user_to_pris.get(&dsnp_user_id), Some(&vec![(new_prid, key_id)]));
 	}
 
 	#[test]

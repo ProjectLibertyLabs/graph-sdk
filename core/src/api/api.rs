@@ -10,15 +10,13 @@ use crate::{
 		updates::UpdateEvent,
 		user::UserGraph,
 	},
-	iter_graph_connections,
-	util::time::time_in_ksecs,
 };
 use anyhow::{Error, Ok, Result};
 use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
 use std::{
 	cell::RefCell,
 	cmp::min,
-	collections::{HashMap, HashSet},
+	collections::{hash_map::Entry, HashMap, HashSet},
 	ops::{Deref, DerefMut},
 	rc::Rc,
 };
@@ -32,13 +30,10 @@ pub struct GraphState {
 
 pub trait GraphAPI {
 	/// Check if graph state contains a user
-	fn contains_user(&self, user_id: &DsnpUserId) -> bool;
+	fn contains_user_graph(&self, user_id: &DsnpUserId) -> bool;
 
 	/// Return number of users in the current graph state
 	fn len(&self) -> usize;
-
-	/// Create a new, empty user graph
-	fn add_user_graph(&mut self, user_id: &DsnpUserId) -> Result<&mut UserGraph>;
 
 	/// Remove the user graph from an SDK instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId);
@@ -64,7 +59,7 @@ pub trait GraphAPI {
 	) -> Result<Vec<DsnpGraphEdge>>;
 
 	/// return a list dsnp user ids that require keys
-	fn get_connections_without_keys(&self) -> Vec<DsnpUserId>;
+	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>>;
 }
 
 impl GraphState {
@@ -92,35 +87,13 @@ impl GraphState {
 
 impl GraphAPI for GraphState {
 	/// Check if graph state contains a user
-	fn contains_user(&self, user_id: &DsnpUserId) -> bool {
+	fn contains_user_graph(&self, user_id: &DsnpUserId) -> bool {
 		self.user_map.contains_key(user_id)
 	}
 
 	/// Return number of users in the current graph state
 	fn len(&self) -> usize {
 		self.user_map.len()
-	}
-
-	/// Create a new, empty user graph
-	fn add_user_graph(&mut self, user_id: &DsnpUserId) -> Result<&mut UserGraph> {
-		if self.user_map.len() >= self.environment.get_config().sdk_max_users_graph_size as usize {
-			return Err(Error::msg("GraphState instance full"))
-		}
-
-		if self.user_map.contains_key(user_id) {
-			return Err(Error::msg(
-				"Detected attempt to create a duplicate UserGraph instance for a user",
-			))
-		}
-
-		self.user_map.insert(
-			*user_id,
-			UserGraph::new(user_id, &self.environment, self.shared_state_manager.clone()),
-		);
-		match self.user_map.get_mut(user_id) {
-			Some(graph) => Ok(graph),
-			None => Err(Error::msg("Unexpected error retrieving user graph")),
-		}
 	}
 
 	/// Remove the user graph from an instance
@@ -147,10 +120,7 @@ impl GraphAPI for GraphState {
 				.deref_mut()
 				.import_dsnp_keys(&dsnp_keys)?;
 
-			let user_graph = match self.user_map.get_mut(&dsnp_user_id) {
-				Some(graph) => graph,
-				None => self.add_user_graph(&dsnp_user_id)?,
-			};
+			let user_graph = self.get_or_create_user_graph(dsnp_user_id)?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
@@ -215,22 +185,37 @@ impl GraphAPI for GraphState {
 	// TODO: should become transactional
 	fn apply_actions(&mut self, actions: &[Action]) -> Result<()> {
 		for action in actions {
-			if let Some(owner_graph) = self.user_map.get_mut(&action.owner_dsnp_user_id()) {
-				let update_event = match action {
-					Action::Connect {
-						connection: Connection { ref dsnp_user_id, ref schema_id },
-						..
-					} => UpdateEvent::create_add(*dsnp_user_id, *schema_id),
-					Action::Disconnect {
-						connection: Connection { ref dsnp_user_id, ref schema_id },
-						..
-					} => UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
-				};
+			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
+			let update_event = match action {
+				Action::Connect {
+					connection: Connection { ref dsnp_user_id, ref schema_id },
+					..
+				} => {
+					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						return Err(Error::msg(format!(
+							"Connection from {} to {} already exists!",
+							action.owner_dsnp_user_id(),
+							dsnp_user_id
+						)))
+					}
+					UpdateEvent::create_add(*dsnp_user_id, *schema_id)
+				},
+				Action::Disconnect {
+					connection: Connection { ref dsnp_user_id, ref schema_id },
+					..
+				} => {
+					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						return Err(Error::msg(format!(
+							"Connection from {} to {} does not exists to be disconnected!",
+							action.owner_dsnp_user_id(),
+							dsnp_user_id
+						)))
+					}
+					UpdateEvent::create_remove(*dsnp_user_id, *schema_id)
+				},
+			};
 
-				owner_graph.update_tracker_mut().register_update(&update_event)?;
-			} else {
-				return Err(Error::msg("user graph not found in state"))
-			}
+			owner_graph.update_tracker_mut().register_update(&update_event)?;
 		}
 		Ok(())
 	}
@@ -247,44 +232,28 @@ impl GraphAPI for GraphState {
 			None => return Err(Error::msg("user not present in graph state")),
 		};
 
-		let graph = user_graph.graph(&schema_id);
-		let mut connections: Vec<DsnpGraphEdge> = iter_graph_connections!(graph).cloned().collect();
-
-		if include_pending {
-			user_graph
-				.update_tracker()
-				.get_updates_for_schema_id(*schema_id)
-				.unwrap_or(&Vec::<UpdateEvent>::new())
-				.iter()
-				.cloned()
-				.for_each(|event| match event {
-					UpdateEvent::Add { dsnp_user_id, .. } =>
-						if !connections.iter().map(|c| c.user_id).any(|id| id == dsnp_user_id) {
-							connections.push(DsnpGraphEdge {
-								user_id: dsnp_user_id,
-								since: time_in_ksecs(),
-							})
-						},
-					UpdateEvent::Remove { dsnp_user_id, .. } =>
-						connections.retain(|c| c.user_id != dsnp_user_id),
-				});
-		}
-
-		Ok(connections)
+		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
 	}
 
-	fn get_connections_without_keys(&self) -> Vec<DsnpUserId> {
-		let all_connections: HashSet<DsnpUserId> = self
+	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>> {
+		let private_friendship_schema_id = self
+			.environment
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
+			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
+		let all_connections: HashSet<_> = self
 			.user_map
 			.values()
 			.flat_map(|user_graph| {
-				user_graph.get_all_connections_of(ConnectionType::Friendship(PrivacyType::Private))
+				user_graph.get_all_connections_of(private_friendship_schema_id, true)
 			})
+			.map(|edge| edge.user_id)
 			.collect();
-		self.shared_state_manager
+		Ok(self
+			.shared_state_manager
 			.deref()
 			.borrow()
-			.find_users_without_keys(all_connections.into_iter().collect())
+			.find_users_without_keys(all_connections.into_iter().collect()))
 	}
 }
 
@@ -295,6 +264,25 @@ impl GraphState {
 			return Some(DsnpVersionConfig::new(dsnp_version))
 		}
 		None
+	}
+
+	/// Gets an existing or creates a new UserGraph
+	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
+		let is_full =
+			self.user_map.len() >= self.environment.get_config().sdk_max_users_graph_size as usize;
+		match self.user_map.entry(dsnp_user_id) {
+			Entry::Occupied(o) => Ok(o.into_mut()),
+			Entry::Vacant(v) => {
+				if is_full {
+					return Err(Error::msg("GraphState instance full"))
+				}
+				Ok(v.insert(UserGraph::new(
+					&dsnp_user_id,
+					&self.environment,
+					self.shared_state_manager.clone(),
+				)))
+			},
+		}
 	}
 }
 
@@ -346,22 +334,22 @@ mod test {
 	#[test]
 	fn graph_contains_false() {
 		let state = GraphState::new(Environment::Mainnet);
-		assert!(!state.contains_user(&0));
+		assert!(!state.contains_user_graph(&0));
 	}
 
 	#[test]
 	fn graph_contains_true() {
 		let mut state = GraphState::new(Environment::Mainnet);
-		let _ = state.add_user_graph(&0);
-		assert!(state.contains_user(&0));
+		let _ = state.get_or_create_user_graph(0);
+		assert!(state.contains_user_graph(&0));
 	}
 
 	#[test]
 	fn graph_len() {
 		let mut state = GraphState::new(Environment::Mainnet);
-		let _ = state.add_user_graph(&0);
+		let _ = state.get_or_create_user_graph(0);
 		assert_eq!(state.len(), 1);
-		let _ = state.add_user_graph(&1);
+		let _ = state.get_or_create_user_graph(1);
 		assert_eq!(state.len(), 2);
 	}
 
@@ -369,39 +357,33 @@ mod test {
 	fn add_user_errors_if_graph_state_full() {
 		let env = Environment::Dev(ConfigBuilder::new().with_sdk_max_users_graph_size(1).build());
 		let mut state = GraphState::new(env);
-		let _ = state.add_user_graph(&0);
-		assert!(state.add_user_graph(&1).is_err());
+		let _ = state.get_or_create_user_graph(0);
+		assert!(state.get_or_create_user_graph(1).is_err());
 	}
 
 	#[test]
-	fn add_duplicate_user_errors() {
+	fn add_user_success() {
 		let mut state = GraphState::new(Environment::Mainnet);
-		let _ = state.add_user_graph(&0);
-		assert!(state.add_user_graph(&0).is_err());
-	}
-	#[test]
-	fn add_user_success() -> Result<()> {
-		let mut state = GraphState::new(Environment::Mainnet);
-		state.add_user_graph(&0)?;
-		Ok(())
+		let res = state.get_or_create_user_graph(0);
+		assert!(res.is_ok());
 	}
 
 	#[test]
 	fn remove_user_success() {
 		let mut state = GraphState::new(Environment::Mainnet);
-		let _ = state.add_user_graph(&0);
-		let _ = state.add_user_graph(&1);
+		let _ = state.get_or_create_user_graph(0);
+		let _ = state.get_or_create_user_graph(1);
 		state.remove_user_graph(&0);
 		assert_eq!(state.len(), 1);
-		assert!(!state.contains_user(&0));
-		assert!(state.contains_user(&1));
+		assert!(!state.contains_user_graph(&0));
+		assert!(state.contains_user_graph(&1));
 	}
 
 	#[test]
 	fn remove_nonexistent_user_noop() {
 		let mut state = GraphState::new(Environment::Mainnet);
-		let _ = state.add_user_graph(&0);
-		let _ = state.add_user_graph(&1);
+		let _ = state.get_or_create_user_graph(0);
+		let _ = state.get_or_create_user_graph(1);
 		state.remove_user_graph(&99);
 		assert_eq!(state.user_map.len(), 2);
 	}
@@ -440,11 +422,12 @@ mod test {
 
 		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
 		assert!(res.is_ok());
-		let mapped: Vec<_> = connections
+		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
+		let mapped: HashSet<_> = connections
 			.into_iter()
 			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
 			.collect();
-		assert_eq!(res.unwrap(), mapped);
+		assert_eq!(res_set, mapped);
 	}
 
 	#[test]
@@ -484,11 +467,12 @@ mod test {
 
 		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
 		assert!(res.is_ok());
-		let mapped: Vec<_> = connections
+		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
+		let mapped: HashSet<_> = connections
 			.into_iter()
 			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
 			.collect();
-		assert_eq!(res.unwrap(), mapped);
+		assert_eq!(res_set, mapped);
 	}
 
 	#[test]
@@ -578,30 +562,11 @@ mod test {
 		let action = Action::Connect {
 			owner_dsnp_user_id,
 			connection: Connection { schema_id, dsnp_user_id: 1 },
-			connection_key: None,
 		};
 
 		let mut state = GraphState::new(env);
-		let _ = state.add_user_graph(&0);
 		assert!(state.apply_actions(&vec![action.clone()]).is_ok());
 		assert!(state.apply_actions(&vec![action]).is_err());
-	}
-
-	#[test]
-	fn add_connection_for_nonexistent_user_errors() {
-		let env = Environment::Mainnet;
-		let schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
-			.expect("should exist");
-		let mut state = GraphState::new(env);
-		assert!(state
-			.apply_actions(&vec![Action::Connect {
-				owner_dsnp_user_id: 0,
-				connection: Connection { dsnp_user_id: 1, schema_id },
-				connection_key: None
-			}])
-			.is_err());
 	}
 
 	#[test]
@@ -612,12 +577,16 @@ mod test {
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
 		let owner_dsnp_user_id: DsnpUserId = 0;
+		let connect_action = Action::Connect {
+			owner_dsnp_user_id,
+			connection: Connection { dsnp_user_id: 1, schema_id },
+		};
 		let disconnect_action = Action::Disconnect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 1, schema_id },
 		};
 		let mut state = GraphState::new(env);
-		let _ = state.add_user_graph(&owner_dsnp_user_id);
+		assert!(state.apply_actions(&vec![connect_action]).is_ok());
 
 		// act
 		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
@@ -665,7 +634,6 @@ mod test {
 		let actions = vec![
 			Action::Connect {
 				connection: Connection { schema_id, dsnp_user_id: 1 },
-				connection_key: None,
 				owner_dsnp_user_id: dsnp_user_id,
 			},
 			Action::Disconnect {

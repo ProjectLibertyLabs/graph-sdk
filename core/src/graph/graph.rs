@@ -88,6 +88,10 @@ impl Graph {
 			.expect("Connection type should exist!")
 	}
 
+	pub fn get_schema_id(&self) -> SchemaId {
+		self.schema_id
+	}
+
 	/// Import bundle of pages as a Public Graph
 	pub fn import_public(
 		&mut self,
@@ -431,14 +435,14 @@ mod test {
 	use super::*;
 	use crate::{
 		dsnp::dsnp_configs::KeyPairType,
-		graph::shared_state_manager::SharedStateManager,
+		graph::shared_state_manager::{PublicKeyProvider, SharedStateManager},
 		tests::helpers::{
-			avro_public_payload, create_test_graph, create_test_ids_and_page, PageDataBuilder,
-			INNER_TEST_DATA,
+			avro_public_payload, create_test_graph, create_test_ids_and_page, KeyDataBuilder,
+			PageDataBuilder, INNER_TEST_DATA,
 		},
 	};
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::DsnpVersion;
+	use dsnp_graph_config::{DsnpVersion, GraphKeyType};
 	use ntest::*;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
@@ -594,7 +598,7 @@ mod test {
 	}
 
 	#[test]
-	fn import_private_gets_correct_data() {
+	fn import_private_follow_gets_correct_data() {
 		let connection_type = ConnectionType::Follow(PrivacyType::Private);
 		let user_id = 3;
 		let environment = Environment::Mainnet;
@@ -602,17 +606,14 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
-		let mut graph = Graph::new(
-			environment,
-			user_id,
-			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
-				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
-			))),
-		);
+		let shared_state_manager = Rc::new(RefCell::from(SharedStateManager::new()));
+		let user_key_manager =
+			Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state_manager.clone())));
+
+		let mut graph = Graph::new(environment, user_id, schema_id, user_key_manager.clone());
+		let raw_key_pair = StackKeyPair::gen();
 		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(StackKeyPair::gen()), key_id: 1 };
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(raw_key_pair.clone()), key_id: 1 };
 		let dsnp_config = DsnpVersionConfig::new(DsnpVersion::Version1_0);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
@@ -620,7 +621,24 @@ mod test {
 			.with_encryption_key(resolved_key.clone())
 			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![])
 			.build();
-
+		let graph_key_pair = GraphKeyPair {
+			key_type: GraphKeyType::X25519,
+			secret_key: raw_key_pair.secret_key.to_vec(),
+			public_key: raw_key_pair.public_key.to_vec(),
+		};
+		let dsnp_keys = DsnpKeys {
+			keys: KeyDataBuilder::new().with_key_pairs(&vec![graph_key_pair.clone()]).build(),
+			dsnp_user_id: user_id,
+			keys_hash: 0,
+		};
+		shared_state_manager
+			.borrow_mut()
+			.import_dsnp_keys(&dsnp_keys)
+			.expect("should succeed");
+		user_key_manager
+			.borrow_mut()
+			.import_key_pairs(vec![graph_key_pair])
+			.expect("should succeed");
 		let res = graph.import_private(&dsnp_config, connection_type, &pages);
 
 		assert!(res.is_ok());
