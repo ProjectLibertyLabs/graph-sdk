@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	graph::updates::UpdateTracker,

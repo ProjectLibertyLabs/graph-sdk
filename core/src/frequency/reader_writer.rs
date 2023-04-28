@@ -6,22 +6,15 @@ use crate::{
 		dsnp_types::{
 			DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
 		},
-		encryption::SealBox,
-		reader_writer::{DsnpBase, DsnpReader, DsnpWriter},
+		reader_writer::{DsnpReader, DsnpWriter},
 		schema::SchemaHandler,
 	},
 	types::PrivateGraphChunk,
 };
 use anyhow::Result;
 
-/// DsnpBase implementation for Frequency
-impl DsnpBase for Frequency<'_> {
-	/// using SealBox for encryption and decryption
-	type Encryption = SealBox;
-}
-
 /// implementing DsnpReader for Frequency
-impl DsnpReader for Frequency<'_> {
+impl DsnpReader for Frequency {
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
@@ -51,7 +44,7 @@ impl DsnpReader for Frequency<'_> {
 }
 
 /// implementing DsnpWriter for Frequency
-impl DsnpWriter for Frequency<'_> {
+impl DsnpWriter for Frequency {
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
 		SchemaHandler::write_public_key(key)
 	}
@@ -89,6 +82,7 @@ mod test {
 		dsnp::{
 			dsnp_configs::KeyPairType,
 			dsnp_types::{DsnpGraphEdge, DsnpInnerGraph, DsnpPrid},
+			encryption::SealBox,
 		},
 		frequency::Frequency,
 		types::PrivateGraphChunk,

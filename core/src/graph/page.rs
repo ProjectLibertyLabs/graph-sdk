@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	util::time::time_in_ksecs,

@@ -128,7 +128,6 @@ impl Action {
 }
 
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
-#[allow(dead_code)]
 pub enum Update {
 	/// A `PersistPage` type is used to upsert a page on the chain with latest changes
 	PersistPage {
