@@ -18,7 +18,11 @@ use crate::{
 		reader_writer::DsnpWriter,
 	},
 	frequency::Frequency,
-	graph::{key_manager::UserKeyManager, shared_state_manager::SharedStateManager},
+	graph::{
+		key_manager::UserKeyManager,
+		page::{PrivatePageDataProvider, PublicPageDataProvider},
+		shared_state_manager::SharedStateManager,
+	},
 };
 use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
@@ -185,7 +189,7 @@ impl GraphPageBuilder {
 					connections.iter().map(|c| DsnpGraphEdge { user_id: *c, since: 0 }).collect(),
 				);
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
-					page.set_prids(prids.clone());
+					page.set_prids(prids.clone()).expect("should set");
 				}
 				page
 			})

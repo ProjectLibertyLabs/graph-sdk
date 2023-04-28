@@ -5,13 +5,36 @@ use crate::{
 use anyhow::{Error, Result};
 use std::borrow::Borrow;
 
-use crate::dsnp::{
-	compression::{CompressionBehavior, DeflateCompression},
-	dsnp_configs::DsnpVersionConfig,
-	schema::SchemaHandler,
+use crate::{
+	dsnp::{
+		dsnp_configs::DsnpVersionConfig,
+		reader_writer::{DsnpReader, DsnpWriter},
+		schema::SchemaHandler,
+	},
+	frequency::Frequency,
+	types::PrivateGraphChunk,
 };
 
 const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
+
+/// A traits that returns a removed page binary payload according to the DSNP Graph schema
+pub trait RemovedPageDataProvider {
+	fn to_removed_page_data(&self) -> PageData;
+}
+
+/// A traits that returns a public page binary payload according to the DSNP Public Graph schema
+pub trait PublicPageDataProvider {
+	fn to_public_page_data(&self) -> Result<PageData>;
+}
+
+/// A traits that returns a private page binary payload according to the DSNP Private Graph schema
+pub trait PrivatePageDataProvider {
+	fn to_private_page_data(
+		&self,
+		dsnp_version_config: &DsnpVersionConfig,
+		key: &ResolvedKeyPair,
+	) -> Result<PageData>;
+}
 
 /// Graph page structure
 #[derive(Debug, Clone, PartialEq)]
@@ -31,16 +54,13 @@ pub struct GraphPage {
 /// Conversion for Public Graph
 impl TryFrom<&PageData> for GraphPage {
 	type Error = Error;
-	fn try_from(PageData { content_hash, content, page_id, .. }: &PageData) -> Result<Self> {
-		let DsnpUserPublicGraphChunk { compressed_public_graph } =
-			DsnpUserPublicGraphChunk::try_from(content.as_slice())?;
-		let uncompressed_chunk = DeflateCompression::decompress(&compressed_public_graph)?;
+	fn try_from(PageData { content_hash, content, page_id }: &PageData) -> Result<Self> {
 		Ok(Self {
 			page_id: *page_id,
 			privacy_type: PrivacyType::Public,
 			content_hash: *content_hash,
 			prids: Vec::new(),
-			connections: SchemaHandler::read_inner_graph(&uncompressed_chunk)?,
+			connections: Frequency::read_public_graph(&content)?,
 		})
 	}
 }
@@ -49,61 +69,97 @@ impl TryFrom<&PageData> for GraphPage {
 impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPage {
 	type Error = Error;
 	fn try_from(
-		(PageData { content_hash, content, page_id, .. }, dsnp_version_config, keys): (
+		(PageData { content_hash, content, page_id }, dsnp_version_config, keys): (
 			&PageData,
 			&DsnpVersionConfig,
 			&Vec<ResolvedKeyPair>,
 		),
 	) -> Result<Self> {
-		let DsnpUserPrivateGraphChunk { key_id, encrypted_compressed_private_graph, prids } =
-			DsnpUserPrivateGraphChunk::try_from(content.as_slice())?;
-		let mut decrypted_chunk: Option<Vec<u8>> = None;
+		let mut private_graph_chunk: Option<PrivateGraphChunk> = None;
 
-		let algorithm = dsnp_version_config.get_algorithm();
+		// read key_id from page
+		let DsnpUserPrivateGraphChunk { key_id, .. } =
+			SchemaHandler::read_private_graph_chunk(&content)?;
+
 		// First try the key that was indicated in the page
 		if let Some(indicated_key) = keys.iter().find(|k| k.key_id == key_id) {
-			if let Ok(data) = algorithm.decrypt(
-				&encrypted_compressed_private_graph,
-				&indicated_key.key_pair.clone().into(),
-			) {
-				decrypted_chunk = Some(data);
+			let secret_key = indicated_key.key_pair.clone().into();
+			if let Ok(chunk) =
+				Frequency::read_private_graph(&content, &dsnp_version_config, &secret_key)
+			{
+				private_graph_chunk = Some(chunk);
 			}
 		}
 
-		// If we couldn't decrypt with (or find) the indicated key, try all keys
-		decrypted_chunk = match decrypted_chunk {
-			Some(_) => decrypted_chunk,
-			None => keys.iter().find_map(|k| {
-				algorithm
-					.decrypt(&encrypted_compressed_private_graph, &k.key_pair.clone().into())
-					.ok()
-			}),
-		};
+		if private_graph_chunk.is_none() {
+			// could not decrypt using the indicated key id ,let try with other keys
+			for other_key in keys.iter().filter(|k| k.key_id != key_id) {
+				let secret_key = other_key.key_pair.clone().into();
+				if let Ok(chunk) =
+					Frequency::read_private_graph(&content, &dsnp_version_config, &secret_key)
+				{
+					private_graph_chunk = Some(chunk);
+					break
+				}
+			}
+		}
 
-		match decrypted_chunk {
+		match private_graph_chunk {
 			None => Err(Error::msg("Unable to decrypt private graph chunk with any existing keys")),
-			Some(data) => {
-				let uncompressed_chunk = DeflateCompression::decompress(&data)?;
-				let connections = SchemaHandler::read_inner_graph(&uncompressed_chunk)?;
-
-				Ok(GraphPage {
-					page_id: *page_id,
-					privacy_type: PrivacyType::Private,
-					content_hash: *content_hash,
-					prids,
-					connections,
-				})
-			},
+			Some(chunk) => Ok(GraphPage {
+				page_id: *page_id,
+				privacy_type: PrivacyType::Private,
+				content_hash: *content_hash,
+				prids: chunk.prids,
+				connections: chunk.inner_graph,
+			}),
 		}
 	}
 }
 
-impl TryFrom<GraphPage> for DsnpUserPublicGraphChunk {
-	type Error = Error;
-	fn try_from(data: GraphPage) -> Result<Self, Self::Error> {
-		let uncompressed_public_graph = SchemaHandler::write_inner_graph(&data.connections)?;
-		let compressed_public_graph = DeflateCompression::compress(&uncompressed_public_graph)?;
-		Ok(Self { compressed_public_graph })
+impl RemovedPageDataProvider for GraphPage {
+	fn to_removed_page_data(&self) -> PageData {
+		PageData { content_hash: self.content_hash, page_id: self.page_id, content: Vec::new() }
+	}
+}
+
+impl PublicPageDataProvider for GraphPage {
+	fn to_public_page_data(&self) -> Result<PageData> {
+		if self.privacy_type != PrivacyType::Public {
+			return Err(Error::msg("Incompatible privacy type for blob export"))
+		}
+
+		Ok(PageData {
+			content_hash: self.content_hash,
+			page_id: self.page_id,
+			content: Frequency::write_public_graph(self.connections())?,
+		})
+	}
+}
+
+impl PrivatePageDataProvider for GraphPage {
+	fn to_private_page_data(
+		&self,
+		dsnp_version_config: &DsnpVersionConfig,
+		key: &ResolvedKeyPair,
+	) -> Result<PageData> {
+		if self.privacy_type != PrivacyType::Private {
+			return Err(Error::msg("Incompatible privacy type for blob export"))
+		}
+
+		Ok(PageData {
+			page_id: self.page_id,
+			content_hash: self.content_hash,
+			content: Frequency::write_private_graph(
+				&PrivateGraphChunk {
+					prids: self.prids.clone(),
+					inner_graph: self.connections.clone(),
+					key_id: key.clone().key_id,
+				},
+				dsnp_version_config,
+				&key.key_pair.borrow().into(),
+			)?,
+		})
 	}
 }
 
@@ -129,11 +185,6 @@ impl GraphPage {
 		&self.connections
 	}
 
-	/// Setter for the prids in the page
-	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) {
-		self.prids = prids;
-	}
-
 	/// Setter for the connections in the page
 	pub fn set_connections(&mut self, connections: Vec<DsnpGraphEdge>) {
 		self.connections = connections
@@ -149,6 +200,7 @@ impl GraphPage {
 		self.connections.iter().any(|c| c.user_id == *connection_id)
 	}
 
+	/// Checks if any of the users contains in this pages connections
 	pub fn contains_any(&self, connections: &Vec<DsnpUserId>) -> bool {
 		self.connections.iter().map(|c| c.user_id).any(|id| connections.contains(&id))
 	}
@@ -158,9 +210,9 @@ impl GraphPage {
 		self.connections.is_empty()
 	}
 
-	// Determine if page is full
-	// 	aggressive:false -> use a simple heuristic based on the number of connections
-	//  aggressive:true  -> do actual compression to determine resulting actual page size
+	/// Determine if page is full
+	///  aggressive:false -> use a simple heuristic based on the number of connections
+	///  aggressive:true  -> do actual compression to determine resulting actual page size
 	pub fn is_full(&self, aggressive: bool) -> bool {
 		if !aggressive {
 			return self.connections.len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
@@ -190,64 +242,18 @@ impl GraphPage {
 		Ok(())
 	}
 
-	// Remove all connections in the list from the page. It is not an error if none of the connections are present.
+	/// Remove all connections in the list from the page. It is not an error if none of the connections are present.
 	pub fn remove_connections(&mut self, ids: &Vec<DsnpUserId>) {
 		self.connections.retain(|c| !ids.contains(&c.user_id));
 	}
 
 	/// Refresh PRIds based on latest
-	pub fn update_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
+	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
 		if self.connections.len() != prids.len() {
 			return Err(Error::msg("prids len should be equal to connections len"))
 		}
 		self.prids = prids;
 		Ok(())
-	}
-
-	// TODO: make trait-based
-	// Convert to a binary payload according to the DSNP Public Graph schema
-	pub fn to_removed_page_data(&self) -> PageData {
-		PageData { content_hash: self.content_hash, page_id: self.page_id, content: Vec::new() }
-	}
-
-	// TODO: make trait-based
-	// Convert to a binary payload according to the DSNP Public Graph schema
-	pub fn to_public_page_data(&self) -> Result<PageData> {
-		if self.privacy_type != PrivacyType::Public {
-			return Err(Error::msg("Incompatible privacy type for blob export"))
-		}
-
-		let content =
-			SchemaHandler::write_public_graph_chunk(&self.connections.clone().try_into()?)?;
-		Ok(PageData { content_hash: self.content_hash, page_id: self.page_id, content })
-	}
-
-	// TODO: make trait-based
-	/// Convert to an encrypted binary payload according to the DSNP Private Graph schema
-	pub fn to_private_page_data(
-		&self,
-		dsnp_version_config: &DsnpVersionConfig,
-		key: &ResolvedKeyPair,
-	) -> Result<PageData> {
-		if self.privacy_type != PrivacyType::Private {
-			return Err(Error::msg("Incompatible privacy type for blob export"))
-		}
-
-		let DsnpUserPublicGraphChunk { compressed_public_graph } =
-			self.connections.clone().try_into()?;
-		let private_chunk = DsnpUserPrivateGraphChunk {
-			key_id: key.clone().key_id,
-			prids: self.prids.clone(),
-			encrypted_compressed_private_graph: dsnp_version_config
-				.get_algorithm()
-				.encrypt(&compressed_public_graph, &key.key_pair.borrow().into())?,
-		};
-
-		Ok(PageData {
-			page_id: self.page_id,
-			content_hash: self.content_hash,
-			content: SchemaHandler::write_private_graph_chunk(&private_chunk)?,
-		})
 	}
 }
 
@@ -272,8 +278,8 @@ mod test {
 		let connections: Vec<DsnpGraphEdge> =
 			vec![5, 6, 7, 8].iter().map(create_graph_edge).collect();
 
-		page.set_prids(prids.clone());
 		page.set_connections(connections.clone());
+		assert!(page.set_prids(prids.clone()).is_ok());
 		assert_eq!(&prids, page.prids());
 		assert_eq!(&connections, page.connections());
 		assert_eq!(0, page.page_id());
@@ -387,6 +393,17 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn update_prids_with_bad_key_fails() {}
+	fn update_prids_with_wrong_size_should_fail() {
+		// arrange
+		let (ids, mut page) = create_test_ids_and_page();
+		let mut prids: Vec<DsnpPrid> =
+			ids.iter().map(|id| DsnpPrid::new(&id.to_le_bytes())).collect();
+		prids.remove(0); // making prids size different than connection size
+
+		// act
+		let res = page.set_prids(prids);
+
+		// assert
+		assert!(res.is_err())
+	}
 }

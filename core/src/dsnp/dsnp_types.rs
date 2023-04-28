@@ -1,4 +1,4 @@
-use anyhow::{Error as AnyError, Result};
+use anyhow::Result;
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
@@ -9,11 +9,6 @@ use std::{
 	error::Error,
 	fmt,
 	hash::{Hash, Hasher},
-};
-
-use super::{
-	compression::{CompressionBehavior, DeflateCompression},
-	schema::SchemaHandler,
 };
 
 /// DSNP User Id
@@ -60,23 +55,6 @@ pub struct DsnpUserPublicGraphChunk {
 	pub compressed_public_graph: Vec<u8>,
 }
 
-impl TryFrom<&[u8]> for DsnpUserPublicGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		SchemaHandler::read_public_graph_chunk(data)
-	}
-}
-
-impl TryFrom<DsnpInnerGraph> for DsnpUserPublicGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(inner_graph: DsnpInnerGraph) -> Result<Self, Self::Error> {
-		let uncompressed_chunk = SchemaHandler::write_inner_graph(&inner_graph)?;
-		Ok(Self { compressed_public_graph: DeflateCompression::compress(&uncompressed_chunk)? })
-	}
-}
-
 /// Graph Edge defined in DSNP to store each connection
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct DsnpGraphEdge {
@@ -117,14 +95,6 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
 	#[serde(with = "serde_bytes")]
 	pub encrypted_compressed_private_graph: Vec<u8>,
-}
-
-impl TryFrom<&[u8]> for DsnpUserPrivateGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		SchemaHandler::read_private_graph_chunk(data)
-	}
 }
 
 impl DsnpPrid {

@@ -641,7 +641,7 @@ mod test {
 				owner_dsnp_user_id: dsnp_user_id,
 			},
 		];
-		let expected_connections = vec![2, 4, 5, 1];
+		let expected_connections = HashSet::from([2, 4, 5, 1]);
 
 		// act
 		let action1 = &actions[0..1];
@@ -656,7 +656,8 @@ mod test {
 		let connections_result =
 			state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true);
 		assert!(connections_result.is_ok());
-		let mapped: Vec<_> = connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
+		let mapped: HashSet<_> =
+			connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
 		assert_eq!(mapped, expected_connections);
 	}
 }

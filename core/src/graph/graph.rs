@@ -2,6 +2,7 @@ use crate::{
 	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::{
 		key_manager::{ConnectionVerifier, UserKeyManager, UserKeyProvider},
+		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
 		shared_state_manager::PriProvider,
 		updates::UpdateEvent,
 	},
@@ -283,7 +284,7 @@ impl Graph {
 							)
 						})
 						.collect();
-					updated_page.set_prids(prid_result?);
+					updated_page.set_prids(prid_result?)?;
 					updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
 				})
 				.collect(),
