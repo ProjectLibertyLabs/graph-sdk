@@ -1,5 +1,7 @@
-#![allow(dead_code)] // todo: remove after usage
-use crate::dsnp::dsnp_types::{DsnpPrid, DsnpUserId};
+use crate::dsnp::{
+	dsnp_configs::{PublicKeyType, SecretKeyType},
+	dsnp_types::{DsnpPrid, DsnpUserId},
+};
 use anyhow::{Error, Result};
 use dryoc::{
 	classic::{
@@ -8,7 +10,6 @@ use dryoc::{
 	},
 	constants::CRYPTO_SECRETBOX_MACBYTES,
 	kdf::{Key, StackKdf},
-	keypair::{PublicKey, SecretKey},
 	types::ByteArray,
 };
 use std::ops::Deref;
@@ -25,16 +26,16 @@ pub trait PridProvider {
 	fn create_prid(
 		a: DsnpUserId,
 		b: DsnpUserId,
-		a_secret_key: &SecretKey,
-		b_public_key: &PublicKey,
+		a_secret_key: &SecretKeyType,
+		b_public_key: &PublicKeyType,
 	) -> Result<Self::DsnpPrid>;
 
 	/// creates shared context from A -> B
 	fn create_shared_context(
 		b: DsnpUserId,
-		a_secret_key: &SecretKey,
-		b_public_key: &PublicKey,
-	) -> Result<SecretKey>;
+		a_secret_key: &SecretKeyType,
+		b_public_key: &PublicKeyType,
+	) -> Result<Key>;
 }
 
 impl PridProvider for DsnpPrid {
@@ -43,8 +44,8 @@ impl PridProvider for DsnpPrid {
 	fn create_prid(
 		a: DsnpUserId,
 		b: DsnpUserId,
-		a_secret_key: &SecretKey,
-		b_public_key: &PublicKey,
+		a_secret_key: &SecretKeyType,
+		b_public_key: &PublicKeyType,
 	) -> Result<Self::DsnpPrid> {
 		let id_a = a.to_le_bytes();
 		let id_b = b.to_le_bytes();
@@ -70,12 +71,17 @@ impl PridProvider for DsnpPrid {
 
 	fn create_shared_context(
 		b: DsnpUserId,
-		a_secret_key: &SecretKey,
-		b_public_key: &PublicKey,
+		a_secret_key: &SecretKeyType,
+		b_public_key: &PublicKeyType,
 	) -> Result<Key> {
 		// calculate shared secret
-		let root_shared =
-			Zeroizing::new(crypto_box_beforenm(b_public_key.as_array(), a_secret_key.as_array()));
+		let root_shared = match (a_secret_key, b_public_key) {
+			(SecretKeyType::Version1_0(a_pair), PublicKeyType::Version1_0(b_public)) =>
+				Zeroizing::new(crypto_box_beforenm(
+					b_public.as_array(),
+					a_pair.secret_key.as_array(),
+				)),
+		};
 
 		// // derive a new key form pri context
 		let kdf =
@@ -105,12 +111,20 @@ mod test {
 		let key_pair_a = StackKeyPair::gen();
 		let key_pair_b = StackKeyPair::gen();
 
-		let pri_a_to_b =
-			DsnpPrid::create_prid(a, b, &key_pair_a.secret_key, &key_pair_b.public_key)
-				.expect("should create pri");
-		let pri_a_to_b_2 =
-			DsnpPrid::create_prid(a, b, &key_pair_b.secret_key, &key_pair_a.public_key)
-				.expect("should create pri");
+		let pri_a_to_b = DsnpPrid::create_prid(
+			a,
+			b,
+			&SecretKeyType::Version1_0(key_pair_a.clone()),
+			&PublicKeyType::Version1_0(key_pair_b.clone().public_key),
+		)
+		.expect("should create pri");
+		let pri_a_to_b_2 = DsnpPrid::create_prid(
+			a,
+			b,
+			&SecretKeyType::Version1_0(key_pair_b),
+			&PublicKeyType::Version1_0(key_pair_a.public_key),
+		)
+		.expect("should create pri");
 
 		assert_eq!(pri_a_to_b, pri_a_to_b_2);
 	}
@@ -158,15 +172,33 @@ mod test {
 				.as_array(),
 		);
 
-		let pri_alice_to_bob = DsnpPrid::create_prid(alice, bob, &&alice_secret, &bob_public)
-			.expect("should create pri");
-		let ctx_alice_to_bob = DsnpPrid::create_shared_context(bob, &&alice_secret, &bob_public)
-			.expect("should create ctx");
+		let pri_alice_to_bob = DsnpPrid::create_prid(
+			alice,
+			bob,
+			&SecretKeyType::Version1_0(StackKeyPair::from_secret_key(alice_secret.clone())),
+			&PublicKeyType::Version1_0(bob_public.clone()),
+		)
+		.expect("should create pri");
+		let ctx_alice_to_bob = DsnpPrid::create_shared_context(
+			bob,
+			&&SecretKeyType::Version1_0(StackKeyPair::from_secret_key(alice_secret)),
+			&PublicKeyType::Version1_0(bob_public),
+		)
+		.expect("should create ctx");
 
-		let pri_bob_to_alice = DsnpPrid::create_prid(bob, alice, &bob_secret, &alice_public)
-			.expect("should create pri");
-		let ctx_bob_to_alice = DsnpPrid::create_shared_context(alice, &&bob_secret, &alice_public)
-			.expect("should create ctx");
+		let pri_bob_to_alice = DsnpPrid::create_prid(
+			bob,
+			alice,
+			&SecretKeyType::Version1_0(StackKeyPair::from_secret_key(bob_secret.clone())),
+			&PublicKeyType::Version1_0(alice_public.clone()),
+		)
+		.expect("should create pri");
+		let ctx_bob_to_alice = DsnpPrid::create_shared_context(
+			alice,
+			&SecretKeyType::Version1_0(StackKeyPair::from_secret_key(bob_secret)),
+			&PublicKeyType::Version1_0(alice_public),
+		)
+		.expect("should create ctx");
 
 		assert_eq!(pri_alice_to_bob, expected_alice_to_bob);
 		assert_eq!(ctx_alice_to_bob, expected_ctx_alice_to_bob);

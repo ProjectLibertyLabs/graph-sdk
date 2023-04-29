@@ -6,22 +6,15 @@ use crate::{
 		dsnp_types::{
 			DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
 		},
-		encryption::SealBox,
-		reader_writer::{DsnpBase, DsnpReader, DsnpWriter},
+		reader_writer::{DsnpReader, DsnpWriter},
 		schema::SchemaHandler,
 	},
 	types::PrivateGraphChunk,
 };
 use anyhow::Result;
 
-/// DsnpBase implementation for Frequency
-impl DsnpBase for Frequency<'_> {
-	/// using SealBox for encryption and decryption
-	type Encryption = SealBox;
-}
-
 /// implementing DsnpReader for Frequency
-impl DsnpReader for Frequency<'_> {
+impl DsnpReader for Frequency {
 	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
@@ -34,11 +27,11 @@ impl DsnpReader for Frequency<'_> {
 
 	fn read_private_graph(
 		data: &[u8],
+		dsnp_version_config: &DsnpVersionConfig,
 		decryption_input: &SecretKeyType,
 	) -> Result<PrivateGraphChunk> {
 		let chunk = SchemaHandler::read_private_graph_chunk(data)?;
-		let dsnp_version: DsnpVersionConfig = decryption_input.into();
-		let decrypted_compressed = dsnp_version
+		let decrypted_compressed = dsnp_version_config
 			.get_algorithm()
 			.decrypt(&chunk.encrypted_compressed_private_graph, decryption_input)?;
 		let decompressed = DeflateCompression::decompress(&decrypted_compressed)?;
@@ -51,7 +44,7 @@ impl DsnpReader for Frequency<'_> {
 }
 
 /// implementing DsnpWriter for Frequency
-impl DsnpWriter for Frequency<'_> {
+impl DsnpWriter for Frequency {
 	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
 		SchemaHandler::write_public_key(key)
 	}
@@ -66,13 +59,14 @@ impl DsnpWriter for Frequency<'_> {
 
 	fn write_private_graph(
 		graph: &PrivateGraphChunk,
+		dsnp_version_config: &DsnpVersionConfig,
 		encryption_input: &PublicKeyType,
 	) -> Result<Vec<u8>> {
-		let dsnp_version: DsnpVersionConfig = encryption_input.into();
 		let inner_serialized = SchemaHandler::write_inner_graph(&graph.inner_graph)?;
 		let compressed_inner = DeflateCompression::compress(&inner_serialized)?;
-		let encrypted_compressed =
-			dsnp_version.get_algorithm().encrypt(&compressed_inner, encryption_input)?;
+		let encrypted_compressed = dsnp_version_config
+			.get_algorithm()
+			.encrypt(&compressed_inner, encryption_input)?;
 		SchemaHandler::write_private_graph_chunk(&DsnpUserPrivateGraphChunk {
 			key_id: graph.key_id,
 			prids: graph.prids.to_owned(),
@@ -88,6 +82,7 @@ mod test {
 		dsnp::{
 			dsnp_configs::KeyPairType,
 			dsnp_types::{DsnpGraphEdge, DsnpInnerGraph, DsnpPrid},
+			encryption::SealBox,
 		},
 		frequency::Frequency,
 		types::PrivateGraphChunk,
@@ -141,10 +136,18 @@ mod test {
 		};
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
-		let serialized = Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
-			.expect("serialization should work");
-		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into())
-			.expect("deserialization should work");
+		let serialized = Frequency::write_private_graph(
+			&private_graph,
+			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
+			&key_pair.borrow().into(),
+		)
+		.expect("serialization should work");
+		let deserialized = Frequency::read_private_graph(
+			&serialized,
+			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
+			&key_pair.into(),
+		)
+		.expect("deserialization should work");
 
 		assert_eq!(deserialized, private_graph);
 	}
@@ -164,11 +167,18 @@ mod test {
 		};
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
 
-		let mut serialized =
-			Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
-				.expect("serialization should work");
+		let mut serialized = Frequency::write_private_graph(
+			&private_graph,
+			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
+			&key_pair.borrow().into(),
+		)
+		.expect("serialization should work");
 		serialized.pop(); // corrupting the input
-		let deserialized = Frequency::read_private_graph(&serialized, &key_pair.into());
+		let deserialized = Frequency::read_private_graph(
+			&serialized,
+			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
+			&key_pair.into(),
+		);
 
 		assert!(deserialized.is_err());
 	}
@@ -195,9 +205,12 @@ mod test {
 
 		let private_graph = PrivateGraphChunk { inner_graph, key_id: 200, prids };
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::gen());
-		let private_serialized =
-			Frequency::write_private_graph(&private_graph, &key_pair.borrow().into())
-				.expect("serialization should work");
+		let private_serialized = Frequency::write_private_graph(
+			&private_graph,
+			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
+			&key_pair.borrow().into(),
+		)
+		.expect("serialization should work");
 
 		assert_eq!((public_serialized.len() - 1) / page_size + 1, 2);
 		assert_eq!((private_serialized.len() - 1) / page_size + 1, 3);

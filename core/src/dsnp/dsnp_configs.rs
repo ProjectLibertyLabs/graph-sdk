@@ -1,5 +1,6 @@
 use crate::dsnp::{
 	api_types::GraphKeyPair,
+	dsnp_types::DsnpPublicKey,
 	encryption::{EncryptionBehavior, SealBox},
 };
 use anyhow::Error;
@@ -101,6 +102,16 @@ impl Into<DsnpVersionConfig> for &PublicKeyType {
 		match self {
 			PublicKeyType::Version1_0(_) => DsnpVersionConfig::new(DsnpVersion::Version1_0),
 		}
+	}
+}
+
+impl TryInto<PublicKeyType> for &'_ DsnpPublicKey {
+	type Error = anyhow::Error;
+
+	fn try_into(self) -> Result<PublicKeyType, Self::Error> {
+		let public_key =
+			PublicKey::try_from(&self.key[..]).map_err(|_| Error::msg("invalid public key"))?;
+		Ok(PublicKeyType::Version1_0(public_key))
 	}
 }
 

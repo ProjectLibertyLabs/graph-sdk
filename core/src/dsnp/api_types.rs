@@ -1,7 +1,4 @@
-use crate::dsnp::{
-	dsnp_configs::{KeyPairType, PublicKeyType},
-	dsnp_types::DsnpUserId,
-};
+use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
 pub use dsnp_graph_config::{ConnectionType, PrivacyType};
 use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
@@ -42,7 +39,7 @@ pub struct GraphKeyPair {
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct ResolvedKeyPair {
 	/// Key identifier
 	pub key_id: u64,
@@ -109,10 +106,6 @@ pub enum Action {
 
 		/// connection details
 		connection: Connection,
-
-		/// public key associated with the user in the connection
-		/// included only if PRId calculation is required
-		connection_key: Option<PublicKeyType>,
 	},
 
 	/// an action that defines removing an existing connection from social graph
@@ -135,7 +128,6 @@ impl Action {
 }
 
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
-#[allow(dead_code)]
 pub enum Update {
 	/// A `PersistPage` type is used to upsert a page on the chain with latest changes
 	PersistPage {

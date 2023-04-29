@@ -1,8 +1,9 @@
+#![allow(dead_code)]
 use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	graph::updates::UpdateTracker,
 };
-use anyhow::{Error, Result};
+use anyhow::Result;
 use dsnp_graph_config::{Environment, SchemaId};
 use std::{
 	cell::RefCell,
@@ -12,7 +13,10 @@ use std::{
 
 use crate::{
 	dsnp::dsnp_configs::DsnpVersionConfig,
-	graph::key_manager::{PublicKeyManager, UserKeyManager, UserKeyProvider},
+	graph::{
+		key_manager::UserKeyManager, shared_state_manager::SharedStateManager, updates::UpdateEvent,
+	},
+	util::time::time_in_ksecs,
 };
 
 use super::graph::Graph;
@@ -22,10 +26,9 @@ pub type GraphMap = HashMap<SchemaId, Graph>;
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
 #[derive(Debug)]
 pub struct UserGraph {
-	user_id: DsnpUserId,
 	graphs: GraphMap,
-	user_key_manager: UserKeyManager,
 	update_tracker: UpdateTracker,
+	pub user_key_manager: Rc<RefCell<UserKeyManager>>,
 }
 
 impl UserGraph {
@@ -33,21 +36,23 @@ impl UserGraph {
 	pub fn new(
 		user_id: &DsnpUserId,
 		environment: &Environment,
-		public_key_manager: Rc<RefCell<PublicKeyManager>>,
+		shared_state_manager: Rc<RefCell<SharedStateManager>>,
 	) -> Self {
+		let user_key_manager =
+			Rc::new(RefCell::new(UserKeyManager::new(*user_id, shared_state_manager)));
 		let graphs: GraphMap = environment
 			.get_config()
 			.schema_map
 			.keys()
-			.map(|schema_id| (*schema_id, Graph::new(environment.clone(), *schema_id)))
+			.map(|schema_id| {
+				(
+					*schema_id,
+					Graph::new(environment.clone(), *user_id, *schema_id, user_key_manager.clone()),
+				)
+			})
 			.collect();
 
-		Self {
-			user_id: *user_id,
-			graphs,
-			user_key_manager: UserKeyManager::new(*user_id, public_key_manager),
-			update_tracker: UpdateTracker::new(),
-		}
+		Self { graphs, user_key_manager, update_tracker: UpdateTracker::new() }
 	}
 
 	/// Getter for map of graphs
@@ -63,16 +68,6 @@ impl UserGraph {
 	/// Getter for UpdateTracker
 	pub fn update_tracker_mut(&mut self) -> &mut UpdateTracker {
 		&mut self.update_tracker
-	}
-
-	/// Getter for UserKeyManager
-	pub fn user_key_manager(&self) -> &UserKeyManager {
-		&self.user_key_manager
-	}
-
-	/// Mutable Getter for UserKeyManager
-	pub fn user_key_manager_mut(&mut self) -> &mut UserKeyManager {
-		&mut self.user_key_manager
 	}
 
 	/// Getter for the user's graph for the specified ConnectionType
@@ -108,19 +103,10 @@ impl UserGraph {
 		dsnp_version_config: &DsnpVersionConfig,
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
-		let (public_key, keypair) = self
-			.user_key_manager
-			.get_resolved_active_key(self.user_id)
-			.ok_or(Error::msg("No resolved active key found!"))?;
-		// TODO: calculate PRIds
-		let prids = vec![];
 		for (schema_id, graph) in self.graphs.iter() {
 			let graph_data = graph.calculate_updates(
 				dsnp_version_config,
 				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
-				&self.user_id,
-				&prids,
-				&ResolvedKeyPair { key_id: public_key.key_id.unwrap(), key_pair: keypair.clone() },
 			)?;
 			result.extend(graph_data.into_iter());
 		}
@@ -128,17 +114,60 @@ impl UserGraph {
 		Ok(result)
 	}
 
-	pub fn get_all_connections_of(&self, connection_type: ConnectionType) -> Vec<DsnpUserId> {
-		let result: HashSet<DsnpUserId> = self
+	pub fn graph_has_connection(
+		&self,
+		schema_id: SchemaId,
+		dsnp_user_id: DsnpUserId,
+		include_pending: bool,
+	) -> bool {
+		let add_event = &UpdateEvent::Add { schema_id, dsnp_user_id };
+
+		let graph_connection_exists = self.graph(&schema_id).has_connection(&dsnp_user_id);
+		let add_update_exists = include_pending && self.update_tracker.contains(add_event);
+		let remove_update_exists =
+			include_pending && self.update_tracker.contains_complement(add_event);
+
+		(graph_connection_exists && !remove_update_exists) ||
+			(!graph_connection_exists && add_update_exists)
+	}
+
+	pub fn get_all_connections_of(
+		&self,
+		schema_id: SchemaId,
+		apply_pending: bool,
+	) -> Vec<DsnpGraphEdge> {
+		let mut connections: HashSet<DsnpGraphEdge> = self
 			.graphs
 			.values()
-			.filter(|graph| graph.get_connection_type() == connection_type)
+			.filter(|graph| graph.get_schema_id() == schema_id)
 			.flat_map(|graph| graph.pages().values().map(|p| p.connections()))
 			.flatten()
-			.map(|c| c.user_id)
+			.copied()
 			.collect();
 
-		result.into_iter().collect()
+		if apply_pending {
+			self.update_tracker
+				.get_updates_for_schema_id(schema_id)
+				.unwrap_or(&Vec::<UpdateEvent>::new())
+				.iter()
+				.cloned()
+				.for_each(|event| match event {
+					UpdateEvent::Add { dsnp_user_id, .. } => {
+						connections.insert(DsnpGraphEdge {
+							user_id: dsnp_user_id,
+							since: time_in_ksecs(),
+						});
+					},
+					UpdateEvent::Remove { dsnp_user_id, .. } => {
+						connections.remove(&DsnpGraphEdge {
+							user_id: dsnp_user_id,
+							since: time_in_ksecs(),
+						});
+					},
+				});
+		}
+
+		connections.into_iter().collect()
 	}
 }
 
@@ -152,9 +181,8 @@ mod test {
 		let user_id = 1;
 		let env = Environment::Mainnet;
 		let user_graph =
-			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 
-		assert_eq!(user_graph.user_id, user_id);
 		let follow_public_schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
@@ -185,7 +213,8 @@ mod test {
 	#[test]
 	fn graph_getter_gets_correct_graph_for_connection_type() {
 		let env = Environment::Mainnet;
-		let user_graph = UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+		let user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -199,7 +228,7 @@ mod test {
 	fn graph_mut_getter_gets_correct_graph_for_connection_type() {
 		let env = Environment::Mainnet;
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -212,14 +241,23 @@ mod test {
 	#[test]
 	fn graph_setter_overwrites_existing_graph() {
 		let env = Environment::Mainnet;
+		let user_id = 1;
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
-		let mut new_graph = Graph::new(env, schema_id);
+		let mut new_graph = Graph::new(
+			env,
+			user_id,
+			schema_id,
+			Rc::new(RefCell::from(UserKeyManager::new(
+				user_id,
+				Rc::new(RefCell::from(SharedStateManager::new())),
+			))),
+		);
 		assert_eq!(new_graph.add_connection_to_page(&0, &2).is_ok(), true);
 
 		assert_ne!(*user_graph.graph(&schema_id), new_graph);
@@ -232,7 +270,7 @@ mod test {
 		let env = Environment::Mainnet;
 		let graph = create_test_graph();
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -266,7 +304,7 @@ mod test {
 		let env = Environment::Mainnet;
 		let graph = create_test_graph();
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(PublicKeyManager::new())));
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =

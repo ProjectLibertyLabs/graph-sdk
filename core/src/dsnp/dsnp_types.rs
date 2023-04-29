@@ -1,13 +1,14 @@
-use anyhow::{Error as AnyError, Result};
+use anyhow::Result;
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
 };
-use std::{cmp, cmp::Ordering, error::Error, fmt};
-
-use super::{
-	compression::{CompressionBehavior, DeflateCompression},
-	schema::SchemaHandler,
+use std::{
+	cmp,
+	cmp::Ordering,
+	error::Error,
+	fmt,
+	hash::{Hash, Hasher},
 };
 
 /// DSNP User Id
@@ -54,25 +55,8 @@ pub struct DsnpUserPublicGraphChunk {
 	pub compressed_public_graph: Vec<u8>,
 }
 
-impl TryFrom<&[u8]> for DsnpUserPublicGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		SchemaHandler::read_public_graph_chunk(data)
-	}
-}
-
-impl TryFrom<DsnpInnerGraph> for DsnpUserPublicGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(inner_graph: DsnpInnerGraph) -> Result<Self, Self::Error> {
-		let uncompressed_chunk = SchemaHandler::write_inner_graph(&inner_graph)?;
-		Ok(Self { compressed_public_graph: DeflateCompression::compress(&uncompressed_chunk)? })
-	}
-}
-
 /// Graph Edge defined in DSNP to store each connection
-#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship
 	#[serde(rename = "userId")]
@@ -80,6 +64,20 @@ pub struct DsnpGraphEdge {
 
 	/// Unix epoch in seconds when this relationship was originally established rounded to the nearest 1000
 	pub since: u64,
+}
+
+impl PartialEq for DsnpGraphEdge {
+	fn eq(&self, other: &Self) -> bool {
+		self.user_id == other.user_id
+	}
+}
+
+impl Eq for DsnpGraphEdge {}
+
+impl Hash for DsnpGraphEdge {
+	fn hash<H: Hasher>(&self, state: &mut H) {
+		self.user_id.hash(state);
+	}
 }
 
 /// Private Graph Chunk defined in DSNP to store compressed and encrypted private graph
@@ -97,14 +95,6 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
 	#[serde(with = "serde_bytes")]
 	pub encrypted_compressed_private_graph: Vec<u8>,
-}
-
-impl TryFrom<&[u8]> for DsnpUserPrivateGraphChunk {
-	type Error = AnyError;
-
-	fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
-		SchemaHandler::read_private_graph_chunk(data)
-	}
 }
 
 impl DsnpPrid {
