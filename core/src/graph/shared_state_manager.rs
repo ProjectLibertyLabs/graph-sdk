@@ -265,6 +265,35 @@ impl SharedStateManager {
 			.unwrap_or(u64::default()) +
 			1
 	}
+
+	#[cfg(test)]
+	pub fn import_keys_test(
+		&mut self,
+		dsnp_user_id: DsnpUserId,
+		keys: &[DsnpPublicKey],
+		hash: u32,
+	) -> Result<()> {
+		self.dsnp_user_to_keys.remove(&dsnp_user_id);
+		self.new_keys.remove(&dsnp_user_id);
+
+		let dsnp_keys = keys.to_vec();
+		self.dsnp_user_to_keys.insert(dsnp_user_id, (dsnp_keys, hash));
+		Ok(())
+	}
+
+	#[cfg(test)]
+	pub fn import_prids_test(
+		&mut self,
+		dsnp_user_id: DsnpUserId,
+		prids: &[DsnpPrid],
+		key_id: u64,
+	) -> Result<()> {
+		self.dsnp_user_to_pris.remove(&dsnp_user_id);
+
+		let mapped: Vec<_> = prids.iter().map(|p| (p.clone(), key_id)).collect();
+		self.dsnp_user_to_pris.insert(dsnp_user_id, mapped);
+		Ok(())
+	}
 }
 
 #[cfg(test)]
@@ -294,8 +323,8 @@ mod tests {
 		let non_existing_prid = DsnpPrid::new(&[2u8, 20, 3, 4, 5, 6, 7, 8]);
 		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![prid_1.clone()])
-			.with_page(2, &vec![2], &vec![prid_2.clone()])
+			.with_page(1, &vec![1], &vec![prid_1.clone()], 0)
+			.with_page(2, &vec![2], &vec![prid_2.clone()], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,
@@ -326,7 +355,7 @@ mod tests {
 		let old_prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
 		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![old_prid])
+			.with_page(1, &vec![1], &vec![old_prid], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,
@@ -336,7 +365,7 @@ mod tests {
 		manager.import_pri(dsnp_user_id, &pages).expect("should work");
 		let new_prid = DsnpPrid::new(&[10u8, 20, 30, 40, 50, 60, 70, 80]);
 		let new_pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![new_prid.clone()])
+			.with_page(1, &vec![1], &vec![new_prid.clone()], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,
