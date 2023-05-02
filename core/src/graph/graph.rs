@@ -275,33 +275,8 @@ impl Graph {
 				updated_pages
 					.iter_mut()
 					.map(|(_, page)| {
-						// verify connection existence based on prid
 						let mut updated_page = page.clone();
-						for c in updated_page
-							.connections()
-							.clone()
-							.iter()
-							.filter(|c| !ids_to_add.contains(&c.user_id))
-						{
-							if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
-								// connection is removed from the other side
-								updated_page.remove_connection(&c.user_id)?;
-							}
-						}
-
-						// calculating updated prids
-						let prid_result: Result<Vec<_>> = updated_page
-							.connections()
-							.iter()
-							.map(|c| {
-								self.user_key_manager.borrow().calculate_prid(
-									self.user_id,
-									c.user_id,
-									encryption_key.key_pair.clone().into(),
-								)
-							})
-							.collect();
-						updated_page.set_prids(prid_result?)?;
+						self.apply_prids(&mut updated_page, &ids_to_add, &encryption_key)?;
 						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
 					})
 					.collect()
@@ -433,6 +408,41 @@ impl Graph {
 
 		// Return Ok if no-op/connection not found
 		Ok(None)
+	}
+
+	/// verifies prids for friendship from other party and calculates for own side
+	fn apply_prids(
+		&self,
+		updated_page: &mut GraphPage,
+		ids_to_add: &Vec<DsnpUserId>,
+		encryption_key: &ResolvedKeyPair,
+	) -> Result<()> {
+		// verify connection existence based on prid
+		for c in updated_page
+			.connections()
+			.clone()
+			.iter()
+			.filter(|c| !ids_to_add.contains(&c.user_id))
+		{
+			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
+				// connection is removed from the other side
+				updated_page.remove_connection(&c.user_id)?;
+			}
+		}
+
+		// calculating updated prids
+		let prid_result: Result<Vec<_>> = updated_page
+			.connections()
+			.iter()
+			.map(|c| {
+				self.user_key_manager.borrow().calculate_prid(
+					self.user_id,
+					c.user_id,
+					encryption_key.key_pair.clone().into(),
+				)
+			})
+			.collect();
+		updated_page.set_prids(prid_result?)
 	}
 }
 
@@ -1103,9 +1113,8 @@ mod test {
 		];
 
 		// act
-		let updates = dbg!(
-			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates)
-		);
+		let updates =
+			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
 
 		// assert
 		assert!(updates.is_ok());
