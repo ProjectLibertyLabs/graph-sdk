@@ -2,9 +2,8 @@
 use crate::{
 	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::{
-		key_manager::{ConnectionVerifier, UserKeyManager, UserKeyProvider},
+		key_manager::UserKeyManagerBase,
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
-		shared_state_manager::PriProvider,
 		updates::UpdateEvent,
 	},
 };
@@ -28,7 +27,7 @@ pub struct Graph {
 	user_id: DsnpUserId,
 	schema_id: SchemaId,
 	pages: PageMap,
-	user_key_manager: Rc<RefCell<UserKeyManager>>,
+	user_key_manager: Rc<RefCell<dyn UserKeyManagerBase>>,
 }
 
 impl PartialEq for Graph {
@@ -42,12 +41,15 @@ impl PartialEq for Graph {
 
 impl Graph {
 	/// Create a new, empty Graph
-	pub fn new(
+	pub fn new<E>(
 		environment: Environment,
 		user_id: DsnpUserId,
 		schema_id: SchemaId,
-		user_key_manager: Rc<RefCell<UserKeyManager>>,
-	) -> Self {
+		user_key_manager: Rc<RefCell<E>>,
+	) -> Self
+	where
+		E: UserKeyManagerBase + 'static,
+	{
 		Self { environment, user_id, schema_id, pages: PageMap::new(), user_key_manager }
 	}
 
@@ -410,6 +412,23 @@ impl Graph {
 		Ok(None)
 	}
 
+	/// returns one sided friendship connections
+	pub fn get_one_sided_friendships(&self) -> Result<Vec<DsnpGraphEdge>> {
+		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
+			return Err(Error::msg(
+				"Calling get_all_one_sided_friendships in non private friendship graph!",
+			))
+		}
+
+		let mut result = vec![];
+		for c in self.pages().values().flat_map(|g| g.connections()) {
+			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
+				result.push(*c)
+			}
+		}
+		Ok(result)
+	}
+
 	/// verifies prids for friendship from other party and calculates for own side
 	fn apply_prids(
 		&self,
@@ -417,6 +436,10 @@ impl Graph {
 		ids_to_add: &Vec<DsnpUserId>,
 		encryption_key: &ResolvedKeyPair,
 	) -> Result<()> {
+		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
+			return Err(Error::msg("Calling apply_prids in non private friendship graph!"))
+		}
+
 		// verify connection existence based on prid
 		for c in updated_page
 			.connections()
@@ -468,12 +491,16 @@ mod test {
 			pseudo_relationship_identifier::PridProvider,
 		},
 		graph::{
+			key_manager::{UserKeyManager, UserKeyProvider},
 			page::APPROX_MAX_CONNECTIONS_PER_PAGE,
 			shared_state_manager::{PublicKeyProvider, SharedStateManager},
 		},
-		tests::helpers::{
-			avro_public_payload, create_test_graph, create_test_ids_and_page, GraphPageBuilder,
-			KeyDataBuilder, PageDataBuilder, INNER_TEST_DATA,
+		tests::{
+			helpers::{
+				avro_public_payload, create_test_graph, create_test_ids_and_page, GraphPageBuilder,
+				KeyDataBuilder, PageDataBuilder, INNER_TEST_DATA,
+			},
+			mocks::MockUserKeyManager,
 		},
 	};
 	use dryoc::keypair::StackKeyPair;
@@ -1137,5 +1164,109 @@ mod test {
 
 		let removed_connection_2 = graph.find_connection(&removed_friend_user_id);
 		assert!(removed_connection_2.is_none());
+	}
+
+	#[test]
+	fn get_one_sided_friendships_should_return_expected_connections() {
+		// arrange
+		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut key_manager = MockUserKeyManager::new();
+		let ids: Vec<DsnpUserId> = (1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).collect();
+		let verifications: Vec<_> = ids.iter().map(|id| (*id, Some(true))).collect();
+		key_manager.register_verifications(&verifications);
+		// register one sided connections
+		key_manager.register_verifications(&vec![(1, Some(false)), (2, Some(false))]);
+		let mut graph = Graph::new(env, 1000, schema_id, Rc::new(RefCell::from(key_manager)));
+		for p in GraphPageBuilder::new(connection_type)
+			.with_page(1, &ids, &vec![DsnpPrid::new(&[0, 1, 2, 3, 4, 5, 6, 7]); ids.len()], 0)
+			.build()
+		{
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+
+		// act
+		let one_sided = graph.get_one_sided_friendships();
+
+		// assert
+		assert!(one_sided.is_ok());
+		let one_sided = one_sided.unwrap();
+		assert_eq!(
+			one_sided,
+			vec![DsnpGraphEdge { user_id: 1, since: 0 }, DsnpGraphEdge { user_id: 2, since: 0 }]
+		);
+	}
+
+	#[test]
+	fn private_friendship_functions_should_fail_for_non_private_friendship_graphs() {
+		let env = Environment::Mainnet;
+		let failures = vec![
+			ConnectionType::Friendship(PrivacyType::Public),
+			ConnectionType::Follow(PrivacyType::Private),
+			ConnectionType::Follow(PrivacyType::Public),
+		];
+
+		for connection_type in failures {
+			// arrange
+			let schema_id = env
+				.get_config()
+				.get_schema_id_from_connection_type(connection_type)
+				.expect("should exist");
+			let graph = Graph::new(
+				env.clone(),
+				1000,
+				schema_id,
+				Rc::new(RefCell::from(MockUserKeyManager::new())),
+			);
+
+			// act
+			let one_sided = graph.get_one_sided_friendships();
+			let prids = graph.apply_prids(
+				&mut GraphPage::new(connection_type.privacy_type(), 1),
+				&vec![],
+				&ResolvedKeyPair {
+					key_id: 1,
+					key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
+				},
+			);
+
+			// assert
+			assert!(one_sided.is_err());
+			assert!(prids.is_err());
+		}
+	}
+
+	#[test]
+	fn get_one_sided_friendships_with_key_related_errors_should_fail() {
+		// arrange
+		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut key_manager = MockUserKeyManager::new();
+		let ids: Vec<DsnpUserId> = (1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).collect();
+		let verifications: Vec<_> = ids.iter().map(|id| (*id, Some(true))).collect();
+		key_manager.register_verifications(&verifications);
+		// register failure
+		key_manager.register_verifications(&vec![(2, None)]);
+		let mut graph = Graph::new(env, 1000, schema_id, Rc::new(RefCell::from(key_manager)));
+		for p in GraphPageBuilder::new(connection_type)
+			.with_page(1, &ids, &vec![DsnpPrid::new(&[0, 1, 2, 3, 4, 5, 6, 7]); ids.len()], 0)
+			.build()
+		{
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+
+		// act
+		let one_sided = graph.get_one_sided_friendships();
+
+		// assert
+		assert!(one_sided.is_err());
 	}
 }
