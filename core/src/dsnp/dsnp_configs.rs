@@ -58,6 +58,14 @@ impl KeyPairType {
 			KeyPairType::Version1_0(k) => k.public_key.to_vec(),
 		}
 	}
+
+	#[cfg(test)]
+	/// returns raw bytes of the secret key for specified dsnp version
+	pub fn get_secret_key_raw(&self) -> Vec<u8> {
+		match self {
+			KeyPairType::Version1_0(k) => k.secret_key.to_vec(),
+		}
+	}
 }
 
 /// converts a reference of `KeyPairType` into a `PublicKeyType`

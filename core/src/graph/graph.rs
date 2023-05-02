@@ -12,7 +12,7 @@ use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
 use std::{
 	cell::RefCell,
-	collections::{HashMap, HashSet},
+	collections::{BTreeMap, HashMap, HashSet},
 	ops::Deref,
 	rc::Rc,
 };
@@ -151,11 +151,11 @@ impl Graph {
 		dsnp_version_config: &DsnpVersionConfig,
 		updates: &Vec<UpdateEvent>,
 	) -> Result<Vec<Update>> {
-		let encryption_key = self
-			.user_key_manager
-			.borrow()
-			.get_resolved_active_key(self.user_id)
-			.ok_or(Error::msg("No resolved active key found!"))?;
+		let encryption_key = match self.get_connection_type().privacy_type() {
+			PrivacyType::Public => None,
+			PrivacyType::Private =>
+				self.user_key_manager.borrow().get_resolved_active_key(self.user_id),
+		};
 
 		let ids_to_remove: Vec<DsnpUserId> = updates
 			.iter()
@@ -178,7 +178,8 @@ impl Graph {
 		// the number of pages to update.
 		let pages_with_removals = self.find_connections(&ids_to_remove);
 
-		let mut updated_pages: PageMap = self
+		// using tree-map to keep the order of pages consistent in update process
+		let mut updated_pages: BTreeMap<PageId, GraphPage> = self
 			.pages
 			.iter()
 			.filter_map(|(page_id, page)| {
@@ -257,38 +258,29 @@ impl Graph {
 			ConnectionType::Follow(PrivacyType::Public) |
 			ConnectionType::Friendship(PrivacyType::Public) =>
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
-			ConnectionType::Follow(PrivacyType::Private) => updated_pages
-				.iter_mut()
-				.map(|(_, page)| page.to_private_page_data(dsnp_version_config, &encryption_key))
-				.collect(),
-			ConnectionType::Friendship(PrivacyType::Private) => updated_pages
-				.iter_mut()
-				.map(|(_, page)| {
-					// verify connection existence based on prid
-					let mut updated_page = page.clone();
-					for c in updated_page.connections().clone() {
-						if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
-							// connection is removed from the other side
-							updated_page.remove_connection(&c.user_id)?;
-						}
-					}
-
-					// calculating updated prids
-					let prid_result: Result<Vec<_>> = updated_page
-						.connections()
-						.iter()
-						.map(|c| {
-							self.user_key_manager.borrow().calculate_prid(
-								self.user_id,
-								c.user_id,
-								encryption_key.key_pair.clone().into(),
-							)
-						})
-						.collect();
-					updated_page.set_prids(prid_result?)?;
-					updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
-				})
-				.collect(),
+			ConnectionType::Follow(PrivacyType::Private) => {
+				let encryption_key =
+					encryption_key.ok_or(Error::msg("No resolved active key found!"))?;
+				updated_pages
+					.iter_mut()
+					.map(|(_, page)| {
+						page.clear_prids();
+						page.to_private_page_data(dsnp_version_config, &encryption_key)
+					})
+					.collect()
+			},
+			ConnectionType::Friendship(PrivacyType::Private) => {
+				let encryption_key =
+					encryption_key.ok_or(Error::msg("No resolved active key found!"))?;
+				updated_pages
+					.iter_mut()
+					.map(|(_, page)| {
+						let mut updated_page = page.clone();
+						self.apply_prids(&mut updated_page, &ids_to_add, &encryption_key)?;
+						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
+					})
+					.collect()
+			},
 		};
 
 		let mut updates: Vec<Update> = updated_blobs?
@@ -417,6 +409,41 @@ impl Graph {
 		// Return Ok if no-op/connection not found
 		Ok(None)
 	}
+
+	/// verifies prids for friendship from other party and calculates for own side
+	fn apply_prids(
+		&self,
+		updated_page: &mut GraphPage,
+		ids_to_add: &Vec<DsnpUserId>,
+		encryption_key: &ResolvedKeyPair,
+	) -> Result<()> {
+		// verify connection existence based on prid
+		for c in updated_page
+			.connections()
+			.clone()
+			.iter()
+			.filter(|c| !ids_to_add.contains(&c.user_id))
+		{
+			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
+				// connection is removed from the other side
+				updated_page.remove_connection(&c.user_id)?;
+			}
+		}
+
+		// calculating updated prids
+		let prid_result: Result<Vec<_>> = updated_page
+			.connections()
+			.iter()
+			.map(|c| {
+				self.user_key_manager.borrow().calculate_prid(
+					self.user_id,
+					c.user_id,
+					encryption_key.key_pair.clone().into(),
+				)
+			})
+			.collect();
+		updated_page.set_prids(prid_result?)
+	}
 }
 
 /// Macro to get an iterator to all connections across all GraphPages
@@ -436,11 +463,17 @@ macro_rules! iter_graph_connections {
 mod test {
 	use super::*;
 	use crate::{
-		dsnp::dsnp_configs::KeyPairType,
-		graph::shared_state_manager::{PublicKeyProvider, SharedStateManager},
+		dsnp::{
+			dsnp_configs::{KeyPairType, PublicKeyType},
+			pseudo_relationship_identifier::PridProvider,
+		},
+		graph::{
+			page::APPROX_MAX_CONNECTIONS_PER_PAGE,
+			shared_state_manager::{PublicKeyProvider, SharedStateManager},
+		},
 		tests::helpers::{
-			avro_public_payload, create_test_graph, create_test_ids_and_page, KeyDataBuilder,
-			PageDataBuilder, INNER_TEST_DATA,
+			avro_public_payload, create_test_graph, create_test_ids_and_page, GraphPageBuilder,
+			KeyDataBuilder, PageDataBuilder, INNER_TEST_DATA,
 		},
 	};
 	use dryoc::keypair::StackKeyPair;
@@ -621,7 +654,7 @@ mod test {
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let pages = PageDataBuilder::new(connection_type)
 			.with_encryption_key(resolved_key.clone())
-			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![])
+			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![], 0)
 			.build();
 		let graph_key_pair = GraphKeyPair {
 			key_type: GraphKeyType::X25519,
@@ -770,11 +803,339 @@ mod test {
 		assert_eq!(test_connections, graph_connections);
 	}
 
+	fn updates_to_page(updates: &[Update]) -> Vec<PageData> {
+		updates
+			.iter()
+			.filter_map(|u| match u {
+				Update::PersistPage { page_id, payload, .. } =>
+					Some(PageData { page_id: *page_id, content_hash: 0, content: payload.clone() }),
+				_ => None,
+			})
+			.collect()
+	}
+
 	#[test]
-	#[timeout(5000)] // found an infinite loop bug, so let's make sure this terminates successfully
-	fn calculate_public_updates_succeeds() {
-		let graph = create_test_graph();
-		let updates = vec![UpdateEvent::create_add(1, graph.schema_id)].to_vec();
-		let _ = graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+	#[timeout(5000)] // let's make sure this terminates successfully
+	fn calculate_updates_public_existing_pages_succeeds() {
+		// arrange
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let ids_per_page = 5;
+		let user_id = 3;
+		let mut curr_id = 1u64;
+		let mut page_builder = GraphPageBuilder::new(connection_type);
+		for i in 0..5 {
+			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			page_builder = page_builder.with_page(i, &ids, &vec![], 0);
+			curr_id += ids_per_page;
+		}
+
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut graph = Graph::new(
+			env,
+			user_id,
+			schema_id,
+			Rc::new(RefCell::from(UserKeyManager::new(
+				user_id,
+				Rc::new(RefCell::from(SharedStateManager::new())),
+			))),
+		);
+		for p in page_builder.build() {
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+		let updates = vec![
+			UpdateEvent::create_remove(1, graph.schema_id),
+			UpdateEvent::create_remove(1 + ids_per_page * 2, graph.schema_id),
+			UpdateEvent::create_add(curr_id + 1, graph.schema_id),
+			UpdateEvent::create_add(curr_id + 2, graph.schema_id),
+		];
+
+		// act
+		let updates =
+			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+
+		assert_eq!(updates.len(), 2);
+		graph
+			.import_public(connection_type, updates_to_page(&updates))
+			.expect("should import");
+
+		let removed_connection_1 = graph.find_connection(&1);
+		let removed_connection_2 = graph.find_connection(&(1 + ids_per_page * 2));
+		assert!(removed_connection_1.is_none());
+		assert!(removed_connection_2.is_none());
+
+		let added_connection_1 = graph.find_connection(&(curr_id + 1));
+		let added_connection_2 = graph.find_connection(&(curr_id + 2));
+		assert_eq!(added_connection_1, Some(0));
+		assert_eq!(added_connection_2, Some(0));
+	}
+
+	#[test]
+	#[timeout(5000)] // let's make sure this terminates successfully
+	fn calculate_updates_public_adding_new_page_should_succeed() {
+		// arrange
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let ids_per_page = APPROX_MAX_CONNECTIONS_PER_PAGE as u64;
+		let user_id = 3;
+		let mut curr_id = 1u64;
+		let mut page_builder = GraphPageBuilder::new(connection_type);
+		for i in 0..2 {
+			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			page_builder = page_builder.with_page(i, &ids, &vec![], 0);
+			curr_id += ids_per_page;
+		}
+
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let mut graph = Graph::new(
+			env,
+			user_id,
+			schema_id,
+			Rc::new(RefCell::from(UserKeyManager::new(
+				user_id,
+				Rc::new(RefCell::from(SharedStateManager::new())),
+			))),
+		);
+		for p in page_builder.build() {
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+		let updates = vec![
+			UpdateEvent::create_add(curr_id + 1, graph.schema_id),
+			UpdateEvent::create_add(curr_id + 2, graph.schema_id),
+		];
+
+		// act
+		let updates =
+			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+
+		assert_eq!(updates.len(), 1);
+		graph
+			.import_public(connection_type, updates_to_page(&updates))
+			.expect("should import");
+
+		let added_connection_1 = graph.find_connection(&(curr_id + 1));
+		let added_connection_2 = graph.find_connection(&(curr_id + 2));
+		assert_eq!(added_connection_1, Some(2));
+		assert_eq!(added_connection_2, Some(2));
+	}
+
+	#[test]
+	#[timeout(5000)] // let's make sure this terminates successfully
+	fn calculate_updates_private_follow_pages_should_succeed() {
+		// arrange
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let ids_per_page = 5;
+		let user_id = 3;
+		let mut curr_id = 1u64;
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let mut page_builder = GraphPageBuilder::new(connection_type);
+		for i in 0..5 {
+			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			let prids: Vec<_> = ids.iter().map(|id| DsnpPrid::new(&id.to_le_bytes())).collect();
+			page_builder = page_builder.with_page(i, &ids, &prids, 0);
+			curr_id += ids_per_page;
+		}
+
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let shared_state = Rc::new(RefCell::from(SharedStateManager::new()));
+		let user_key = Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state.clone())));
+		let mut graph = Graph::new(env, user_id, schema_id, user_key.clone());
+		for p in page_builder.build() {
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+		shared_state
+			.borrow_mut()
+			.import_keys_test(
+				user_id,
+				&vec![DsnpPublicKey {
+					key_id: Some(key.key_id),
+					key: key.key_pair.get_public_key_raw(),
+				}],
+				0,
+			)
+			.expect("should insert keys");
+		user_key
+			.borrow_mut()
+			.import_key_pairs(vec![GraphKeyPair {
+				key_type: GraphKeyType::X25519,
+				public_key: key.key_pair.get_public_key_raw(),
+				secret_key: key.key_pair.get_secret_key_raw(),
+			}])
+			.expect("should import user keys");
+
+		let updates = vec![
+			UpdateEvent::create_remove(1, graph.schema_id),
+			UpdateEvent::create_add(curr_id + 1, graph.schema_id),
+		];
+
+		// act
+		let updates =
+			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+
+		assert_eq!(updates.len(), 1);
+		graph
+			.import_private(
+				&DsnpVersionConfig::new(DsnpVersion::Version1_0),
+				connection_type,
+				&updates_to_page(&updates),
+			)
+			.expect("should import");
+
+		let removed_connection_1 = graph.find_connection(&1);
+		assert!(removed_connection_1.is_none());
+
+		let added_connection_1 = graph.find_connection(&(curr_id + 1));
+		assert_eq!(added_connection_1, Some(0));
+	}
+
+	#[test]
+	#[timeout(5000)] // let's make sure this terminates successfully
+	fn calculate_updates_private_friendship_pages_should_succeed() {
+		// arrange
+		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
+		let ids_per_page = 5;
+		let user_id = 1000;
+		let mut curr_id = 1u64;
+		let mut page_builder = GraphPageBuilder::new(connection_type);
+		let mut key_mapper = HashMap::new();
+		let shared_state = Rc::new(RefCell::from(SharedStateManager::new()));
+		let owner_key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let removed_friend_user_id: DsnpUserId = 3;
+		for i in 0..5 {
+			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			ids.iter().for_each(|id| {
+				key_mapper.insert(
+					*id,
+					DsnpPublicKey { key_id: Some(1), key: StackKeyPair::gen().public_key.to_vec() },
+				);
+
+				let public_key: PublicKeyType = key_mapper.get(id).unwrap().try_into().unwrap();
+				let mut prid = DsnpPrid::create_prid(
+					*id,
+					user_id,
+					&owner_key.clone().key_pair.into(),
+					&public_key,
+				)
+				.unwrap();
+
+				if *id == removed_friend_user_id {
+					// setting wrong prid
+					prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
+				}
+				shared_state
+					.borrow_mut()
+					.import_prids_test(*id, &vec![prid], 1)
+					.expect("should import prid");
+			});
+			let prids: Vec<_> = ids
+				.iter()
+				.map(|id| {
+					let public_key: PublicKeyType = key_mapper.get(id).unwrap().try_into().unwrap();
+					DsnpPrid::create_prid(
+						user_id,
+						*id,
+						&owner_key.clone().key_pair.into(),
+						&public_key,
+					)
+					.unwrap()
+				})
+				.collect();
+			page_builder = page_builder.with_page(i, &ids, &prids, 0);
+			curr_id += ids_per_page;
+		}
+
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let user_key = Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state.clone())));
+		let mut graph = Graph::new(env, user_id, schema_id, user_key.clone());
+		for p in page_builder.build() {
+			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+		}
+		let mut dsnp_keys = vec![(
+			user_id,
+			DsnpPublicKey {
+				key_id: Some(owner_key.key_id),
+				key: owner_key.key_pair.get_public_key_raw(),
+			},
+		)];
+		let other_keys: Vec<_> = key_mapper.iter().map(|(a, b)| (*a, b.clone())).collect();
+		dsnp_keys.extend_from_slice(&other_keys);
+		// add public key for new connection
+		dsnp_keys.push((
+			curr_id + 1,
+			DsnpPublicKey { key_id: Some(1), key: StackKeyPair::gen().public_key.to_vec() },
+		));
+		for (user, key) in dsnp_keys {
+			shared_state
+				.borrow_mut()
+				.import_keys_test(user, &vec![key], 0)
+				.expect("should insert keys");
+		}
+		user_key
+			.borrow_mut()
+			.import_key_pairs(vec![GraphKeyPair {
+				key_type: GraphKeyType::X25519,
+				public_key: owner_key.key_pair.get_public_key_raw(),
+				secret_key: owner_key.key_pair.get_secret_key_raw(),
+			}])
+			.expect("should import user keys");
+
+		let updates = vec![
+			UpdateEvent::create_remove(1, graph.schema_id),
+			UpdateEvent::create_add(curr_id + 1, graph.schema_id),
+		];
+
+		// act
+		let updates =
+			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+
+		assert_eq!(updates.len(), 1);
+		graph
+			.import_private(
+				&DsnpVersionConfig::new(DsnpVersion::Version1_0),
+				connection_type,
+				&updates_to_page(&updates),
+			)
+			.expect("should import");
+
+		let removed_connection_1 = graph.find_connection(&1);
+		assert!(removed_connection_1.is_none());
+
+		let added_connection_1 = graph.find_connection(&(curr_id + 1));
+		assert_eq!(added_connection_1, Some(0));
+
+		let removed_connection_2 = graph.find_connection(&removed_friend_user_id);
+		assert!(removed_connection_2.is_none());
 	}
 }

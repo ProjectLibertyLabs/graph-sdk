@@ -42,7 +42,7 @@ impl From<DsnpUserId> for DsnpPrid {
 pub fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
 	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec();
 	let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
-		.with_page(1, &ids, &vec![])
+		.with_page(1, &ids, &vec![], 0)
 		.build();
 	let page = pages.first().expect("page should exist").clone();
 	(ids, page)
@@ -57,7 +57,7 @@ pub fn create_test_graph() -> Graph {
 	let mut curr_id = 0u64;
 	for i in 0..num_pages {
 		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
-		page_builder = page_builder.with_page(i, &ids, &vec![]);
+		page_builder = page_builder.with_page(i, &ids, &vec![], 0);
 		curr_id += ids_per_page;
 	}
 
@@ -160,7 +160,7 @@ impl KeyDataBuilder {
 pub struct GraphPageBuilder {
 	connection_type: ConnectionType,
 	// using BTreeMap to keep the pages sorted
-	pages: BTreeMap<PageId, (Vec<DsnpUserId>, Vec<DsnpPrid>)>,
+	pages: BTreeMap<PageId, (Vec<DsnpUserId>, Vec<DsnpPrid>, u32)>,
 }
 
 impl GraphPageBuilder {
@@ -173,17 +173,19 @@ impl GraphPageBuilder {
 		page_id: PageId,
 		connections: &[DsnpUserId],
 		prids: &[DsnpPrid],
+		content_hash: u32,
 	) -> Self {
-		let (c, p) = self.pages.entry(page_id).or_insert((vec![], vec![]));
+		let (c, p, hash) = self.pages.entry(page_id).or_insert((vec![], vec![], 0));
 		c.extend_from_slice(connections);
 		p.extend_from_slice(prids);
+		*hash = content_hash;
 		self
 	}
 
 	pub fn build(self) -> Vec<GraphPage> {
 		self.pages
 			.iter()
-			.map(|(page_id, (connections, prids))| {
+			.map(|(page_id, (connections, prids, hash))| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
 				page.set_connections(
 					connections.iter().map(|c| DsnpGraphEdge { user_id: *c, since: 0 }).collect(),
@@ -191,6 +193,7 @@ impl GraphPageBuilder {
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 					page.set_prids(prids.clone()).expect("should set");
 				}
+				page.set_content_hash(*hash);
 				page
 			})
 			.collect()
@@ -220,8 +223,9 @@ impl PageDataBuilder {
 		page_id: PageId,
 		connections: &[DsnpUserId],
 		prids: &[DsnpPrid],
+		content_hash: u32,
 	) -> Self {
-		self.page_builder = self.page_builder.with_page(page_id, connections, prids);
+		self.page_builder = self.page_builder.with_page(page_id, connections, prids, content_hash);
 		self
 	}
 
@@ -271,8 +275,10 @@ impl ImportBundleBuilder {
 		page_id: PageId,
 		connections: &[DsnpUserId],
 		prids: &[DsnpPrid],
+		content_hash: u32,
 	) -> Self {
-		self.page_data_builder = self.page_data_builder.with_page(page_id, connections, prids);
+		self.page_data_builder =
+			self.page_data_builder.with_page(page_id, connections, prids, content_hash);
 		self
 	}
 

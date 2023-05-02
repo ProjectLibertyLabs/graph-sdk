@@ -16,7 +16,7 @@ use crate::{
 	types::PrivateGraphChunk,
 };
 
-const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
+pub const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
 
 /// A traits that returns a removed page binary payload according to the DSNP Graph schema
 pub trait RemovedPageDataProvider {
@@ -191,6 +191,16 @@ impl GraphPage {
 		self.connections = connections
 	}
 
+	/// Getter for the content hash
+	pub fn content_hash(&self) -> u32 {
+		self.content_hash
+	}
+
+	/// Setter for the content hash
+	pub fn set_content_hash(&mut self, content_hash: u32) {
+		self.content_hash = content_hash;
+	}
+
 	/// Get page id
 	pub fn page_id(&self) -> PageId {
 		self.page_id
@@ -256,12 +266,23 @@ impl GraphPage {
 		self.prids = prids;
 		Ok(())
 	}
+
+	/// Clear prids in the page
+	pub fn clear_prids(&mut self) {
+		self.prids = vec![];
+	}
 }
 
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::tests::helpers::*;
+	use crate::{dsnp::dsnp_configs::KeyPairType, tests::helpers::*};
+	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::{
+		ConnectionType::{Follow, Friendship},
+		DsnpVersion,
+		PrivacyType::Public,
+	};
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
 
@@ -335,7 +356,7 @@ mod test {
 	fn is_full_non_aggressive_returns_true_for_full() {
 		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64).collect::<Vec<u64>>();
 		let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
-			.with_page(1, &connections, &vec![])
+			.with_page(1, &connections, &vec![], 0)
 			.build();
 
 		let page = pages.first().expect("page should exist");
@@ -406,5 +427,248 @@ mod test {
 
 		// assert
 		assert!(res.is_err())
+	}
+
+	#[test]
+	fn graph_page_public_try_from_page_data_should_work_correctly() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = Public;
+		let content_hash = 20;
+		let connections = vec![1, 2, 3, 4];
+		let page_data = PageDataBuilder::new(Follow(privacy_type))
+			.with_page(page_id, &connections, &vec![], content_hash)
+			.build();
+		let expected = GraphPage {
+			page_id,
+			privacy_type,
+			content_hash,
+			prids: vec![],
+			connections: connections
+				.iter()
+				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.collect(),
+		};
+		// act
+		let graph_page = GraphPage::try_from(page_data.get(0).unwrap());
+
+		// assert
+		assert!(graph_page.is_ok());
+		let graph_page = graph_page.unwrap();
+		assert_eq!(graph_page, expected);
+	}
+
+	#[test]
+	fn graph_page_private_follow_try_from_page_data_should_work_correctly() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = PrivacyType::Private;
+		let content_hash = 20;
+		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+		let connections = vec![1, 2, 3, 4];
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let page_data = PageDataBuilder::new(Follow(privacy_type))
+			.with_page(page_id, &connections, &vec![], content_hash)
+			.with_encryption_key(key.clone())
+			.build();
+		let expected = GraphPage {
+			page_id,
+			privacy_type,
+			content_hash,
+			prids: vec![],
+			connections: connections
+				.iter()
+				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.collect(),
+		};
+
+		// act
+		let graph_page = GraphPage::try_from((page_data.get(0).unwrap(), &dsnp, &vec![key]));
+
+		// assert
+		assert!(graph_page.is_ok());
+		let graph_page = graph_page.unwrap();
+		assert_eq!(graph_page, expected);
+	}
+
+	#[test]
+	fn graph_page_private_friendship_try_from_page_data_should_work_correctly() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = PrivacyType::Private;
+		let content_hash = 20;
+		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+		let connections = vec![1, 2, 3, 4];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let page_data = PageDataBuilder::new(Friendship(privacy_type))
+			.with_page(page_id, &connections, &prids, content_hash)
+			.with_encryption_key(key.clone())
+			.build();
+		let expected = GraphPage {
+			page_id,
+			privacy_type,
+			content_hash,
+			prids,
+			connections: connections
+				.iter()
+				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.collect(),
+		};
+
+		// act
+		let graph_page = GraphPage::try_from((page_data.get(0).unwrap(), &dsnp, &vec![key]));
+
+		// assert
+		assert!(graph_page.is_ok());
+		let graph_page = graph_page.unwrap();
+		assert_eq!(graph_page, expected);
+	}
+
+	#[test]
+	fn graph_page_private_try_from_page_data_should_try_other_keys_to_decrypt() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = PrivacyType::Private;
+		let content_hash = 20;
+		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+		let connections = vec![1, 2, 3, 4];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let other_key =
+			ResolvedKeyPair { key_id: 2, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let page_data = PageDataBuilder::new(Friendship(privacy_type))
+			.with_page(page_id, &connections, &prids, content_hash)
+			.with_encryption_key(ResolvedKeyPair {
+				key_id: 1,
+				key_pair: other_key.key_pair.clone(),
+			})
+			.build();
+
+		let expected = GraphPage {
+			page_id,
+			privacy_type,
+			content_hash,
+			prids,
+			connections: connections
+				.iter()
+				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.collect(),
+		};
+
+		// act
+		let graph_page =
+			GraphPage::try_from((page_data.get(0).unwrap(), &dsnp, &vec![key, other_key]));
+
+		// assert
+		assert!(graph_page.is_ok());
+		let graph_page = graph_page.unwrap();
+		assert_eq!(graph_page, expected);
+	}
+
+	#[test]
+	fn graph_page_private_try_from_page_data_with_wrong_keys_should_fail() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = PrivacyType::Private;
+		let content_hash = 20;
+		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+		let connections = vec![1, 2, 3, 4];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let encrypted_key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let other_key =
+			ResolvedKeyPair { key_id: 2, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let page_data = PageDataBuilder::new(Friendship(privacy_type))
+			.with_page(page_id, &connections, &prids, content_hash)
+			.with_encryption_key(encrypted_key)
+			.build();
+
+		// act
+		let graph_page = GraphPage::try_from((page_data.get(0).unwrap(), &dsnp, &vec![other_key]));
+
+		// assert
+		assert!(graph_page.is_err());
+	}
+
+	#[test]
+	fn removed_page_data_provider_should_return_removed_page_as_expected() {
+		// arrange
+		let graph = GraphPage {
+			page_id: 1,
+			privacy_type: PrivacyType::Private,
+			content_hash: 10,
+			prids: vec![DsnpPrid::from(vec![1u8, 2, 3, 4, 5, 6, 7, 8])],
+			connections: vec![DsnpGraphEdge { user_id: 70, since: 2873 }],
+		};
+		let expected = PageData { page_id: 1, content: vec![], content_hash: 10 };
+
+		// act
+		let removed = graph.to_removed_page_data();
+
+		// assert
+		assert_eq!(expected, removed);
+	}
+
+	#[test]
+	fn public_page_data_provider_should_return_public_page_as_expected() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = Public;
+		let content_hash = 20;
+		let connections = vec![1, 2, 3, 4];
+		let page_data = PageDataBuilder::new(Follow(privacy_type))
+			.with_page(page_id, &connections, &vec![], content_hash)
+			.build();
+		let graph = GraphPage {
+			page_id,
+			privacy_type,
+			content_hash,
+			prids: vec![],
+			connections: connections
+				.iter()
+				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.collect(),
+		};
+
+		// act
+		let public = graph.to_public_page_data();
+
+		// assert
+		assert!(public.is_ok());
+		let public = public.unwrap();
+		assert_eq!(&public, page_data.get(0).unwrap());
+	}
+
+	#[test]
+	fn private_page_data_provider_should_return_private_page_as_expected() {
+		// arrange
+		let page_id = 10;
+		let privacy_type = PrivacyType::Private;
+		let content_hash = 20;
+		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+		let connections = vec![1, 2, 3, 4];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let page_data = PageDataBuilder::new(Friendship(privacy_type))
+			.with_page(page_id, &connections, &prids, content_hash)
+			.with_encryption_key(key.clone())
+			.build();
+		let graph_page =
+			GraphPage::try_from((page_data.get(0).unwrap(), &dsnp, &vec![key.clone()]))
+				.expect("should work");
+
+		// act
+		let private = graph_page.to_private_page_data(&dsnp, &key).expect("should work");
+		let graph_page2 = GraphPage::try_from((&private, &dsnp, &vec![key.clone()]));
+
+		// assert
+		assert!(graph_page2.is_ok());
+		let graph_page2 = graph_page2.unwrap();
+		assert_eq!(graph_page, graph_page2);
 	}
 }

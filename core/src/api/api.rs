@@ -407,7 +407,7 @@ mod test {
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections, &vec![])
+			.with_page(1, &connections, &vec![], 0)
 			.build();
 
 		// act
@@ -452,7 +452,7 @@ mod test {
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections, &vec![])
+			.with_page(1, &connections, &vec![], 0)
 			.build();
 
 		// act
@@ -494,7 +494,7 @@ mod test {
 			DsnpPrid::new(&[3, 2, 3, 4, 4, 6, 1, 4]),
 		];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_page(1, &connections, &prids)
+			.with_page(1, &connections, &prids, 0)
 			.build();
 
 		// act
@@ -531,7 +531,7 @@ mod test {
 		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections, &vec![])
+			.with_page(1, &connections, &vec![], 0)
 			.build();
 		let wrong_key_pair = StackKeyPair::gen();
 		input.key_pairs = vec![GraphKeyPair {
@@ -628,7 +628,7 @@ mod test {
 		let connections = vec![2, 3, 4, 5];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections, &vec![])
+			.with_page(1, &connections, &vec![], 0)
 			.build();
 		state.import_users_data(vec![input]).expect("should work");
 		let actions = vec![
