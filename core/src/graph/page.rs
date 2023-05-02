@@ -191,12 +191,12 @@ impl GraphPage {
 		self.connections = connections
 	}
 
-	/// Getter for the connections in the page
+	/// Getter for the content hash
 	pub fn content_hash(&self) -> u32 {
 		self.content_hash
 	}
 
-	/// Setter for the connections in the page
+	/// Setter for the content hash
 	pub fn set_content_hash(&mut self, content_hash: u32) {
 		self.content_hash = content_hash;
 	}

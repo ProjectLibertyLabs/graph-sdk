@@ -178,7 +178,7 @@ impl Graph {
 		// the number of pages to update.
 		let pages_with_removals = self.find_connections(&ids_to_remove);
 
-		// using tree-map to keep the order of pages consistent in process
+		// using tree-map to keep the order of pages consistent in update process
 		let mut updated_pages: BTreeMap<PageId, GraphPage> = self
 			.pages
 			.iter()
