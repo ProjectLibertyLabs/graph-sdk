@@ -3,7 +3,7 @@ use dsnp_graph_config::Environment;
 use dsnp_graph_core::api::api::{GraphAPI, GraphState as InnerGraphState};
 
 #[no_mangle]
-pub extern "C" fn graph_state_new(environment: *const Environment) -> *mut GraphState {
+pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> *mut GraphState {
 	let environment = unsafe { &*environment };
 	let inner = Box::new(InnerGraphState::new(environment.clone()));
 	let graph_state = GraphState { inner };
@@ -11,7 +11,7 @@ pub extern "C" fn graph_state_new(environment: *const Environment) -> *mut Graph
 }
 
 #[no_mangle]
-pub extern "C" fn graph_state_free(graph_state: *mut GraphState) {
+pub unsafe extern "C" fn graph_state_free(graph_state: *mut GraphState) {
 	if !graph_state.is_null() {
 		unsafe { Box::from_raw(graph_state) };
 	}
