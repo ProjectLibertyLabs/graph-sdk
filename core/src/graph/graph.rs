@@ -1191,8 +1191,9 @@ mod test {
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
 		let mut key_manager = MockUserKeyManager::new();
-		let ids: Vec<DsnpUserId> = (1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).collect();
-		let verifications: Vec<_> = ids.iter().map(|id| (*id, Some(true))).collect();
+		let ids: Vec<(DsnpUserId, u64)> =
+			(1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).map(|u| (u, 0)).collect();
+		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
 		key_manager.register_verifications(&verifications);
 		// register one sided connections
 		key_manager.register_verifications(&vec![(1, Some(false)), (2, Some(false))]);
@@ -1265,8 +1266,9 @@ mod test {
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
 		let mut key_manager = MockUserKeyManager::new();
-		let ids: Vec<DsnpUserId> = (1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).collect();
-		let verifications: Vec<_> = ids.iter().map(|id| (*id, Some(true))).collect();
+		let ids: Vec<(DsnpUserId, u64)> =
+			(1..APPROX_MAX_CONNECTIONS_PER_PAGE as DsnpUserId).map(|id| (id, 0)).collect();
+		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
 		key_manager.register_verifications(&verifications);
 		// register failure
 		key_manager.register_verifications(&vec![(2, None)]);
