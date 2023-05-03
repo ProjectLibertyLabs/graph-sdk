@@ -11,3 +11,5 @@
 //! the C header file `graph_sdk_ffi.h` in your C, C++, or other FFI-compatible projects.
 mod c_api;
 pub use c_api::*;
+mod bindings;
+pub use bindings::*;

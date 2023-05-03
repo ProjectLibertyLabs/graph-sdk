@@ -412,6 +412,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "graph-sdk-ffi"
+version = "0.1.0"
+dependencies = [
+ "dsnp-graph-config",
+ "dsnp-graph-core",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

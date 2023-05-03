@@ -1,0 +1,14 @@
+[package]
+name = "graph-sdk-ffi"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+publish = false
+
+[lib]
+name = "graph_sdk_ffi"
+crate-type = ["cdylib"]
+
+[dependencies]
+dsnp-graph-core = { version = "0.1.0", path = "../core" }
+dsnp-graph-config = { version = "0.1.0", path = "../config" }

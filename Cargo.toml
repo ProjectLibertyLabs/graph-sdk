@@ -1,12 +1,14 @@
 [workspace]
 members = [
     "core",
-    "config"
+    "config",
+    "ffi"
 ]
 
 default-members = [
     "core",
-    "config"
+    "config",
+    "ffi"
 ]
 
 [profile.release]
