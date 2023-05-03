@@ -7,6 +7,7 @@ use crate::{
 		shared_state_manager::PriProvider,
 		updates::UpdateEvent,
 	},
+	util::time::duration_days_since,
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
@@ -418,13 +419,17 @@ impl Graph {
 		encryption_key: &ResolvedKeyPair,
 	) -> Result<()> {
 		// verify connection existence based on prid
+		let max_allowed_stale_days =
+			self.environment.get_config().sdk_max_stale_friendship_days as u64;
 		for c in updated_page
 			.connections()
 			.clone()
 			.iter()
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
-			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
+			if duration_days_since(c.since) > max_allowed_stale_days &&
+				!self.user_key_manager.borrow().verify_connection(c.user_id)?
+			{
 				// connection is removed from the other side
 				updated_page.remove_connection(&c.user_id)?;
 			}
@@ -475,6 +480,7 @@ mod test {
 			avro_public_payload, create_test_graph, create_test_ids_and_page, GraphPageBuilder,
 			KeyDataBuilder, PageDataBuilder, INNER_TEST_DATA,
 		},
+		util::time::time_in_ksecs,
 	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{DsnpVersion, GraphKeyType};
@@ -654,7 +660,7 @@ mod test {
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let pages = PageDataBuilder::new(connection_type)
 			.with_encryption_key(resolved_key.clone())
-			.with_page(0, &orig_connections.iter().cloned().collect::<Vec<_>>(), &vec![], 0)
+			.with_page(0, &orig_connections.iter().map(|u| (*u, 0)).collect::<Vec<_>>(), &vec![], 0)
 			.build();
 		let graph_key_pair = GraphKeyPair {
 			key_type: GraphKeyType::X25519,
@@ -824,7 +830,8 @@ mod test {
 		let mut curr_id = 1u64;
 		let mut page_builder = GraphPageBuilder::new(connection_type);
 		for i in 0..5 {
-			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			let ids: Vec<(DsnpUserId, u64)> =
+				(curr_id..(curr_id + ids_per_page)).map(|id| (id, 0)).collect();
 			page_builder = page_builder.with_page(i, &ids, &vec![], 0);
 			curr_id += ids_per_page;
 		}
@@ -887,7 +894,8 @@ mod test {
 		let mut curr_id = 1u64;
 		let mut page_builder = GraphPageBuilder::new(connection_type);
 		for i in 0..2 {
-			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+			let ids: Vec<(DsnpUserId, u64)> =
+				(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
 			page_builder = page_builder.with_page(i, &ids, &vec![], 0);
 			curr_id += ids_per_page;
 		}
@@ -945,8 +953,9 @@ mod test {
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let mut page_builder = GraphPageBuilder::new(connection_type);
 		for i in 0..5 {
-			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
-			let prids: Vec<_> = ids.iter().map(|id| DsnpPrid::new(&id.to_le_bytes())).collect();
+			let ids: Vec<_> = (curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
+			let prids: Vec<_> =
+				ids.iter().map(|(id, _)| DsnpPrid::new(&id.to_le_bytes())).collect();
 			page_builder = page_builder.with_page(i, &ids, &prids, 0);
 			curr_id += ids_per_page;
 		}
@@ -1025,9 +1034,12 @@ mod test {
 		let owner_key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let removed_friend_user_id: DsnpUserId = 3;
+		let non_stale_friend_user_id: DsnpUserId = 4;
 		for i in 0..5 {
-			let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
-			ids.iter().for_each(|id| {
+			let ids: Vec<(DsnpUserId, u64)> = (curr_id..(curr_id + ids_per_page))
+				.map(|u| if u == removed_friend_user_id { (u, 0) } else { (u, time_in_ksecs()) })
+				.collect();
+			ids.iter().for_each(|(id, _since)| {
 				key_mapper.insert(
 					*id,
 					DsnpPublicKey { key_id: Some(1), key: StackKeyPair::gen().public_key.to_vec() },
@@ -1042,7 +1054,7 @@ mod test {
 				)
 				.unwrap();
 
-				if *id == removed_friend_user_id {
+				if *id == removed_friend_user_id || *id == non_stale_friend_user_id {
 					// setting wrong prid
 					prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
 				}
@@ -1053,7 +1065,7 @@ mod test {
 			});
 			let prids: Vec<_> = ids
 				.iter()
-				.map(|id| {
+				.map(|(id, _since)| {
 					let public_key: PublicKeyType = key_mapper.get(id).unwrap().try_into().unwrap();
 					DsnpPrid::create_prid(
 						user_id,
@@ -1137,5 +1149,8 @@ mod test {
 
 		let removed_connection_2 = graph.find_connection(&removed_friend_user_id);
 		assert!(removed_connection_2.is_none());
+
+		let should_not_be_removed = graph.find_connection(&non_stale_friend_user_id);
+		assert_eq!(should_not_be_removed, Some(0));
 	}
 }

@@ -82,7 +82,7 @@ mod test {
 		let key = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
 
 		let mut serialized = SchemaHandler::write_public_key(&key).expect("should serialize");
-		serialized[0] = serialized[0].saturating_add(1); // corrupting the input
+		serialized[0] = !serialized[0]; // corrupting the input
 		let deserialized = SchemaHandler::read_public_key(&serialized);
 
 		assert!(deserialized.is_err());

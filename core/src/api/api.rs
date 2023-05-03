@@ -404,7 +404,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)
@@ -425,7 +425,7 @@ mod test {
 		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
 		let mapped: HashSet<_> = connections
 			.into_iter()
-			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.map(|(c, s)| DsnpGraphEdge { user_id: c, since: s })
 			.collect();
 		assert_eq!(res_set, mapped);
 	}
@@ -448,7 +448,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
@@ -470,7 +470,7 @@ mod test {
 		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
 		let mapped: HashSet<_> = connections
 			.into_iter()
-			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.map(|(c, s)| DsnpGraphEdge { user_id: c, since: s })
 			.collect();
 		assert_eq!(res_set, mapped);
 	}
@@ -486,7 +486,7 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids = vec![
 			DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 4]),
 			DsnpPrid::new(&[10, 2, 3, 4, 5, 6, 7, 4]),
@@ -527,7 +527,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
@@ -625,7 +625,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)

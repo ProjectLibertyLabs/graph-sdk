@@ -39,8 +39,8 @@ impl From<DsnpUserId> for DsnpPrid {
 }
 
 /// Create test data for a single page
-pub fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
-	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec();
+pub fn create_test_ids_and_page() -> (Vec<(DsnpUserId, u64)>, GraphPage) {
+	let ids: Vec<(DsnpUserId, u64)> = vec![(1u64, 0), (2u64, 0), (3u64, 0)].to_vec();
 	let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
 		.with_page(1, &ids, &vec![], 0)
 		.build();
@@ -56,7 +56,8 @@ pub fn create_test_graph() -> Graph {
 	let user_id = 3;
 	let mut curr_id = 0u64;
 	for i in 0..num_pages {
-		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+		let ids: Vec<(DsnpUserId, u64)> =
+			(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
 		page_builder = page_builder.with_page(i, &ids, &vec![], 0);
 		curr_id += ids_per_page;
 	}
@@ -160,7 +161,7 @@ impl KeyDataBuilder {
 pub struct GraphPageBuilder {
 	connection_type: ConnectionType,
 	// using BTreeMap to keep the pages sorted
-	pages: BTreeMap<PageId, (Vec<DsnpUserId>, Vec<DsnpPrid>, u32)>,
+	pages: BTreeMap<PageId, (Vec<DsnpGraphEdge>, Vec<DsnpPrid>, u32)>,
 }
 
 impl GraphPageBuilder {
@@ -171,12 +172,16 @@ impl GraphPageBuilder {
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
 		let (c, p, hash) = self.pages.entry(page_id).or_insert((vec![], vec![], 0));
-		c.extend_from_slice(connections);
+		let edges: Vec<_> = connections
+			.iter()
+			.map(|(u, s)| DsnpGraphEdge { user_id: *u, since: *s })
+			.collect();
+		c.extend_from_slice(&edges);
 		p.extend_from_slice(prids);
 		*hash = content_hash;
 		self
@@ -187,9 +192,7 @@ impl GraphPageBuilder {
 			.iter()
 			.map(|(page_id, (connections, prids, hash))| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
-				page.set_connections(
-					connections.iter().map(|c| DsnpGraphEdge { user_id: *c, since: 0 }).collect(),
-				);
+				page.set_connections(connections.clone());
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 					page.set_prids(prids.clone()).expect("should set");
 				}
@@ -221,7 +224,7 @@ impl PageDataBuilder {
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
@@ -273,7 +276,7 @@ impl ImportBundleBuilder {
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
