@@ -1,5 +1,13 @@
 use dsnp_graph_config::{Config, ConnectionType, Environment};
-use dsnp_graph_core::{api::api::GraphState as InnerGraphState, dsnp::api_types::PrivacyType};
+use dsnp_graph_core::{
+	api::api::GraphState as InnerGraphState,
+	dsnp::api_types::{Action, PrivacyType},
+};
+
+#[repr(C)]
+pub struct CAction {
+	pub action: Box<Action>,
+}
 
 #[repr(C)]
 pub enum CEnvironment {
