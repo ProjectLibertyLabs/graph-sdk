@@ -4,6 +4,7 @@ use std::collections::HashMap;
 
 pub struct ConfigBuilder {
 	sdk_max_users_graph_size: u32,
+	sdk_max_stale_friendship_days: u32,
 	max_graph_page_size_bytes: u32,
 	max_page_id: u32,
 	max_key_page_size_bytes: u32,
@@ -19,12 +20,21 @@ impl ConfigBuilder {
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			sdk_max_users_graph_size: 1000,
+			sdk_max_stale_friendship_days: 90,
 			dsnp_versions: vec![],
 		}
 	}
 
 	pub fn with_sdk_max_users_graph_size(mut self, sdk_max_users_graph_size: u32) -> Self {
 		self.sdk_max_users_graph_size = sdk_max_users_graph_size;
+		self
+	}
+
+	pub fn with_sdk_max_stale_friendship_days(
+		mut self,
+		sdk_max_stale_friendship_days: u32,
+	) -> Self {
+		self.sdk_max_stale_friendship_days = sdk_max_stale_friendship_days;
 		self
 	}
 
@@ -51,6 +61,7 @@ impl ConfigBuilder {
 	pub fn build(self) -> Config {
 		Config {
 			sdk_max_users_graph_size: self.sdk_max_users_graph_size,
+			sdk_max_stale_friendship_days: self.sdk_max_stale_friendship_days,
 			schema_map: self.schema_map,
 			max_page_id: self.max_page_id,
 			max_key_page_size_bytes: self.max_key_page_size_bytes,
