@@ -14,3 +14,10 @@ remove_underscores = true
 
 [fn]
 sort_by = "None"
+
+[parse]
+parse_deps = true
+include =["dsnp-graph-core", "dsnp-graph-config"]
+
+[parse.expand]
+crates = ["graph-sdk-ffi"]
