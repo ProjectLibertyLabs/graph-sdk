@@ -213,3 +213,16 @@ pub struct Config {
 	pub dsnp_versions_len: size_t,
 	pub dsnp_versions: *mut DsnpVersion,
 }
+
+#[repr(C)]
+pub enum EnvironmentType {
+	Mainnet,
+	Rococo,
+	Dev,
+}
+
+#[repr(C)]
+pub struct Environment {
+	pub environment_type: EnvironmentType,
+	pub config: Config, // This field will only be used when environment_type is Dev.
+}
