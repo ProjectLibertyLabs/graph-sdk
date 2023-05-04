@@ -1,5 +1,11 @@
-use dsnp_graph_config::GraphKeyType;
 use libc::{c_void, size_t};
+
+/// KeyType wrapper
+#[repr(C)]
+pub enum GraphKeyType {
+	/// Ed25519 key type
+	X25519 = 0,
+}
 
 /// KeyData wrapper
 #[repr(C)]

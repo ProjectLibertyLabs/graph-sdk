@@ -7,7 +7,7 @@ publish = false
 
 [lib]
 name = "graph_sdk_ffi"
-crate-type = ["cdylib"]
+crate-type = ["staticlib"]
 
 [dependencies]
 dsnp-graph-core = { version = "0.1.0", path = "../core" }

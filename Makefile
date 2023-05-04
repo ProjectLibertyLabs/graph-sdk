@@ -38,3 +38,9 @@ all: check test clippy fmt build doc
 
 .PHONY: ci-local
 ci-local: all
+
+bindgen:
+	@echo "Running bindgen..."
+	@cargo install cbindgen
+	@cargo build --release --all --all-features --all-targets
+	@cd ffi && 	cbindgen --config cbindgen.toml --crate graph-sdk-ffi --output graph_sdk_ffi.h

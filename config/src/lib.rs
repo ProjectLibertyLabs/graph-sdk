@@ -64,7 +64,6 @@ impl ConnectionType {
 }
 
 /// Graph Key type
-#[repr(C)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GraphKeyType {
 	X25519 = 0,
