@@ -180,9 +180,9 @@ pub struct AddKey {
 
 #[repr(C)]
 pub enum Update {
-	PersistPage(PersistPage),
-	DeletePage(DeletePage),
-	AddKey(AddKey),
+	Persist(PersistPage),
+	Delete(DeletePage),
+	Add(AddKey),
 }
 
 #[repr(C)]
@@ -209,13 +209,19 @@ pub struct SchemaConfig {
 }
 
 #[repr(C)]
+pub struct SchemaConfigTuple {
+	pub schema_id: u16,
+	pub schema_config: SchemaConfig,
+}
+
+#[repr(C)]
 pub struct Config {
 	pub sdk_max_users_graph_size: u32,
 	pub max_graph_page_size_bytes: u32,
 	pub max_page_id: u32,
 	pub max_key_page_size_bytes: u32,
 	pub schema_map_len: size_t,
-	pub schema_map: *mut (u16, SchemaConfig),
+	pub schema_map: *mut SchemaConfigTuple,
 	pub dsnp_versions_len: size_t,
 	pub dsnp_versions: *mut DsnpVersion,
 }

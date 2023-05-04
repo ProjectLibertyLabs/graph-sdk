@@ -4,6 +4,7 @@ use libc::{c_int, c_void, size_t};
 use std::collections::HashMap;
 
 // Define a C-compatible representation of GraphState
+#[repr(C)]
 pub struct GraphState {
 	inner: *mut c_void,
 }
@@ -65,8 +66,10 @@ fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 	let schema_map_slice =
 		unsafe { std::slice::from_raw_parts(config.schema_map, config.schema_map_len) };
 	let mut schema_map = HashMap::new();
-	for (id, schema_config) in schema_map_slice {
-		schema_map.insert(*id, schema_config_from_ffi(schema_config));
+	for schema_config_tuple in schema_map_slice {
+		let id = schema_config_tuple.schema_id;
+		let schema_config = &schema_config_tuple.schema_config;
+		schema_map.insert(id, schema_config_from_ffi(schema_config));
 	}
 
 	let dsnp_versions_slice =

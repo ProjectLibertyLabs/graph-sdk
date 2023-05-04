@@ -1,6 +1,6 @@
 /*
  Copyright (C) 2023 Frequency Team /
-
+ */
 
 #ifndef GRAPH_SDK_FFI_H_
 #define GRAPH_SDK_FFI_H_
@@ -42,14 +42,9 @@ typedef enum {
   Private,
 } PrivacyType;
 
-typedef struct Config Config;
-
-typedef struct GraphState GraphState;
-
 typedef struct {
-  EnvironmentType environment_type;
-  Config config;
-} Environment;
+  void *inner;
+} GraphState;
 
 typedef enum {
   Follow,
@@ -72,6 +67,27 @@ typedef struct {
   DsnpVersion dsnp_version;
   ConnectionType connection_type;
 } SchemaConfig;
+
+typedef struct {
+  uint16_t schema_id;
+  SchemaConfig schema_config;
+} SchemaConfigTuple;
+
+typedef struct {
+  uint32_t sdk_max_users_graph_size;
+  uint32_t max_graph_page_size_bytes;
+  uint32_t max_page_id;
+  uint32_t max_key_page_size_bytes;
+  size_t schema_map_len;
+  SchemaConfigTuple *schema_map;
+  size_t dsnp_versions_len;
+  DsnpVersion *dsnp_versions;
+} Config;
+
+typedef struct {
+  EnvironmentType environment_type;
+  Config config;
+} Environment;
 
 /**
  * Key Pair wrapper
@@ -206,22 +222,22 @@ typedef struct {
 } AddKey;
 
 typedef enum {
-  PersistPage,
-  DeletePage,
-  AddKey,
+  Persist,
+  Delete,
+  Add,
 } Update_Tag;
 
 typedef struct {
   Update_Tag tag;
   union {
     struct {
-      PersistPage persist_page;
+      PersistPage persist;
     };
     struct {
-      DeletePage delete_page;
+      DeletePage delete_;
     };
     struct {
-      AddKey add_key;
+      AddKey add;
     };
   };
 } Update;
