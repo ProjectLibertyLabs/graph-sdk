@@ -107,3 +107,13 @@ pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> *mu
 	let c_graph_state = GraphState { inner: Box::into_raw(Box::new(graph_state)) as *mut c_void };
 	Box::into_raw(Box::new(c_graph_state))
 }
+
+// Implement graph_state_free function
+#[no_mangle]
+pub unsafe extern "C" fn graph_state_free(graph_state: *mut GraphState) {
+	if graph_state.is_null() {
+		return
+	}
+	let graph_state = Box::from_raw(graph_state);
+	let _ = Box::from_raw(graph_state.inner as *mut GraphStateRust);
+}
