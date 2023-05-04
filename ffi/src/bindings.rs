@@ -178,3 +178,38 @@ pub enum Update {
 	DeletePage(DeletePage),
 	AddKey(AddKey),
 }
+
+#[repr(C)]
+pub enum ConnectionType {
+	Follow(PrivacyType),
+	Friendship(PrivacyType),
+}
+
+#[repr(C)]
+pub enum PrivacyType {
+	Public,
+	Private,
+}
+
+#[repr(C)]
+pub enum DsnpVersion {
+	Version1_0,
+}
+
+#[repr(C)]
+pub struct SchemaConfig {
+	pub dsnp_version: DsnpVersion,
+	pub connection_type: ConnectionType,
+}
+
+#[repr(C)]
+pub struct Config {
+	pub sdk_max_users_graph_size: u32,
+	pub max_graph_page_size_bytes: u32,
+	pub max_page_id: u32,
+	pub max_key_page_size_bytes: u32,
+	pub schema_map_len: size_t,
+	pub schema_map: *mut (u16, SchemaConfig),
+	pub dsnp_versions_len: size_t,
+	pub dsnp_versions: *mut DsnpVersion,
+}
