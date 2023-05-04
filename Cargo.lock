@@ -417,6 +417,7 @@ version = "0.1.0"
 dependencies = [
  "dsnp-graph-config",
  "dsnp-graph-core",
+ "libc",
 ]
 
 [[package]]

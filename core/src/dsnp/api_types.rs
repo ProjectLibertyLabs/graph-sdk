@@ -72,16 +72,6 @@ pub struct ImportBundle {
 	pub pages: Vec<PageData>,
 }
 
-/// A connection representation in graph sdk
-#[derive(Debug, Clone)]
-pub struct Connection {
-	/// dsnp user id of the user that this connection is associated with
-	pub dsnp_user_id: DsnpUserId,
-
-	/// Schema id of imported data
-	pub schema_id: SchemaId,
-}
-
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
 #[derive(Debug, PartialEq)]
@@ -94,6 +84,16 @@ pub struct DsnpKeys {
 
 	/// public keys for the dsnp user
 	pub keys: Vec<KeyData>,
+}
+
+/// A connection representation in graph sdk
+#[derive(Debug, Clone)]
+pub struct Connection {
+	/// dsnp user id of the user that this connection is associated with
+	pub dsnp_user_id: DsnpUserId,
+
+	/// Schema id of imported data
+	pub schema_id: SchemaId,
 }
 
 /// Different kind of actions that can be applied to the graph
