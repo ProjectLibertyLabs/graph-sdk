@@ -180,15 +180,15 @@ pub enum Update {
 }
 
 #[repr(C)]
-pub enum ConnectionType {
-	Follow(PrivacyType),
-	Friendship(PrivacyType),
-}
-
-#[repr(C)]
 pub enum PrivacyType {
 	Public,
 	Private,
+}
+
+#[repr(C)]
+pub enum ConnectionType {
+	Follow(PrivacyType),
+	Friendship(PrivacyType),
 }
 
 #[repr(C)]

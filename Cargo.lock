@@ -418,6 +418,8 @@ dependencies = [
  "dsnp-graph-config",
  "dsnp-graph-core",
  "libc",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
