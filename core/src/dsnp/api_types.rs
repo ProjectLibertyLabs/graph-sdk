@@ -87,6 +87,7 @@ pub struct DsnpKeys {
 }
 
 /// A connection representation in graph sdk
+#[repr(C)]
 #[derive(Debug, Clone)]
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
@@ -97,6 +98,7 @@ pub struct Connection {
 }
 
 /// Different kind of actions that can be applied to the graph
+#[repr(C)]
 #[derive(Debug, Clone)]
 pub enum Action {
 	/// an action that defines adding a connection in the social graph

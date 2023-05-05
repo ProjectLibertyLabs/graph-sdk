@@ -29,6 +29,7 @@ lazy_static! {
 }
 
 /// Privacy Type of the graph
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 #[serde(tag = "privacyType")]
 pub enum PrivacyType {
@@ -42,6 +43,7 @@ pub enum PrivacyType {
 }
 
 /// Different connection type in social graph
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 #[serde(tag = "connectionType")]
 pub enum ConnectionType {
@@ -87,6 +89,7 @@ impl Environment {
 	}
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub enum DsnpVersion {
 	#[serde(rename = "1.0")]

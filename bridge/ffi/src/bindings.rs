@@ -1,12 +1,6 @@
+use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType};
+use dsnp_graph_core::dsnp::api_types::Connection;
 use libc::{c_void, size_t};
-
-/// KeyType wrapper
-#[repr(C)]
-pub enum GraphKeyType {
-	/// Ed25519 key type
-	X25519 = 0,
-}
-
 /// KeyData wrapper
 #[repr(C)]
 pub struct KeyData {
@@ -75,15 +69,6 @@ pub struct ImportBundle {
 	/// Page data containing the social graph retrieved from chain
 	pub pages: *mut PageData,
 	pub pages_len: size_t,
-}
-
-// Connection wrapper
-#[repr(C)]
-pub struct Connection {
-	// dsnp user id
-	pub dsnp_user_id: u64,
-	// schema id
-	pub schema_id: u16,
 }
 
 // ActionType wrapper
@@ -183,23 +168,6 @@ pub enum Update {
 	Persist(PersistPage),
 	Delete(DeletePage),
 	Add(AddKey),
-}
-
-#[repr(C)]
-pub enum PrivacyType {
-	Public,
-	Private,
-}
-
-#[repr(C)]
-pub enum ConnectionType {
-	Follow(PrivacyType),
-	Friendship(PrivacyType),
-}
-
-#[repr(C)]
-pub enum DsnpVersion {
-	Version1_0,
 }
 
 #[repr(C)]

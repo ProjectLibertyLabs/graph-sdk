@@ -13,11 +13,6 @@
 #include <stdlib.h>
 
 typedef enum {
-  Connect,
-  Disconnect,
-} ActionType;
-
-typedef enum {
   Version1_0,
 } DsnpVersion;
 
@@ -28,26 +23,40 @@ typedef enum {
 } EnvironmentType;
 
 /**
- * KeyType wrapper
+ * Privacy Type of the graph
  */
 typedef enum {
   /**
-   * Ed25519 key type
+   * publicly accessible graph
    */
-  X25519 = 0,
-} GraphKeyType;
-
-typedef enum {
   Public,
+  /**
+   * only accessible to owner of the graph and whoever the encryption keys have been shared with
+   */
   Private,
 } PrivacyType;
+
+/**
+ * Graph Key type
+ */
+typedef struct GraphKeyType GraphKeyType;
 
 typedef struct {
   void *inner;
 } GraphState;
 
+/**
+ * Different connection type in social graph
+ */
 typedef enum {
+  /**
+   * Follow is a one-way connection type, which means it is only stored in follower side
+   */
   Follow,
+  /**
+   * Friendship is two-way connection type, which means it is stored in both sides and each
+   * side can revoke the connection for both sides
+   */
   Friendship,
 } ConnectionType_Tag;
 
@@ -243,9 +252,69 @@ typedef struct {
   };
 } Update;
 
+/**
+ * DSNP User Id
+ */
+typedef uint64_t DsnpUserId;
+
+typedef uint16_t SchemaId;
+
+/**
+ * A connection representation in graph sdk
+ */
 typedef struct {
-  ActionType action_type;
-  void *action;
+  /**
+   * dsnp user id of the user that this connection is associated with
+   */
+  DsnpUserId dsnp_user_id;
+  /**
+   * Schema id of imported data
+   */
+  SchemaId schema_id;
+} Connection;
+
+/**
+ * Different kind of actions that can be applied to the graph
+ */
+typedef enum {
+  /**
+   * an action that defines adding a connection in the social graph
+   */
+  Connect,
+  /**
+   * an action that defines removing an existing connection from social graph
+   */
+  Disconnect,
+} Action_Tag;
+
+typedef struct {
+  /**
+   * owner of the social graph
+   */
+  DsnpUserId owner_dsnp_user_id;
+  /**
+   * connection details
+   */
+  Connection connection;
+} Connect_Body;
+
+typedef struct {
+  /**
+   * owner of the social graph
+   */
+  DsnpUserId owner_dsnp_user_id;
+  /**
+   * connection details
+   */
+  Connection connection;
+} Disconnect_Body;
+
+typedef struct {
+  Action_Tag tag;
+  union {
+    Connect_Body connect;
+    Disconnect_Body disconnect;
+  };
 } Action;
 
 typedef struct {
