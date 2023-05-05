@@ -23,9 +23,11 @@ mod tests {
 
 		let graph_state = unsafe { graph_state_new(&environment as *const Environment) };
 
-		assert!(!graph_state.is_null());
+		assert!(graph_state);
 
-		unsafe { graph_state_free(graph_state) };
+		let is_graph_state_free = unsafe { graph_state_free() };
+
+		assert!(is_graph_state_free);
 	}
 
 	// Add more tests as needed

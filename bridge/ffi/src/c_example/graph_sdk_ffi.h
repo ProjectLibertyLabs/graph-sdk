@@ -46,9 +46,7 @@ typedef struct DsnpGraphEdge DsnpGraphEdge;
  */
 typedef struct GraphKeyType GraphKeyType;
 
-typedef struct {
-  void *inner;
-} GraphState;
+typedef struct GraphState GraphState;
 
 typedef uint16_t SchemaId;
 
@@ -334,8 +332,8 @@ typedef struct {
 
 void print_hello_graph(void);
 
-GraphState *graph_state_new(const Environment *environment);
+bool graph_state_new(const Environment *environment);
 
-void graph_state_free(GraphState *graph_state);
+bool graph_state_free(void);
 
 #endif /* GRAPH_SDK_FFI_H_ */
