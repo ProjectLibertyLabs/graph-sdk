@@ -75,7 +75,7 @@ impl DsnpWriter for Frequency {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 mod test {
 	use super::*;
 	use crate::{

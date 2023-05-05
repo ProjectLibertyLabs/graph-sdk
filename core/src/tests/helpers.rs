@@ -27,6 +27,7 @@ use crate::{
 use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{Environment, SchemaId};
+use rand::{distributions::Uniform, thread_rng, Rng};
 
 pub fn create_graph_edge(id: &DsnpUserId) -> DsnpGraphEdge {
 	DsnpGraphEdge { user_id: *id, since: time_in_ksecs() }
@@ -48,25 +49,19 @@ pub fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
 	(ids, page)
 }
 
-/// Create a test instance of a Graph
-pub fn create_test_graph() -> Graph {
-	let mut page_builder = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private));
-	let num_pages = 5;
-	let ids_per_page = 5;
-	let user_id = 3;
-	let mut curr_id = 0u64;
-	for i in 0..num_pages {
-		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
-		page_builder = page_builder.with_page(i, &ids, &vec![], 0);
-		curr_id += ids_per_page;
-	}
-
+/// Create an empty test instance of a Graph
+pub fn create_empty_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
+	let connection_type = match connection_arg {
+		Some(c) => c,
+		None => ConnectionType::Follow(PrivacyType::Private),
+	};
+	let user_id: u64 = 3;
 	let env = Environment::Mainnet;
 	let schema_id = env
 		.get_config()
-		.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+		.get_schema_id_from_connection_type(connection_type)
 		.expect("should exist");
-	let mut graph = Graph::new(
+	Graph::new(
 		env,
 		user_id,
 		schema_id,
@@ -74,7 +69,31 @@ pub fn create_test_graph() -> Graph {
 			user_id,
 			Rc::new(RefCell::from(SharedStateManager::new())),
 		))),
-	);
+	)
+}
+
+/// Create a test instance of a Graph
+pub fn create_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
+	let connection_type = match connection_arg {
+		Some(c) => c,
+		None => ConnectionType::Follow(PrivacyType::Private),
+	};
+	let mut page_builder = GraphPageBuilder::new(connection_type);
+	let num_pages = 5;
+	let ids_per_page = 5;
+	let mut curr_id = 0u64;
+	for i in 0..num_pages {
+		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+		let prids = match connection_type {
+			ConnectionType::Friendship(PrivacyType::Private) =>
+				ids.iter().cloned().map(|id| DsnpPrid::from(id)).collect(),
+			_ => Vec::<DsnpPrid>::new(),
+		};
+		page_builder = page_builder.with_page(i, &ids, &prids, 0);
+		curr_id += ids_per_page;
+	}
+
+	let mut graph = create_empty_test_graph(Some(connection_type));
 	for p in page_builder.build() {
 		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
@@ -161,11 +180,13 @@ pub struct GraphPageBuilder {
 	connection_type: ConnectionType,
 	// using BTreeMap to keep the pages sorted
 	pages: BTreeMap<PageId, (Vec<DsnpUserId>, Vec<DsnpPrid>, u32)>,
+	// Use a non-zero creation time for connections in order to generate worst-case compression scenarios
+	use_noisy_creation_time: bool,
 }
 
 impl GraphPageBuilder {
 	pub fn new(connection_type: ConnectionType) -> Self {
-		Self { connection_type, pages: BTreeMap::new() }
+		Self { connection_type, pages: BTreeMap::new(), use_noisy_creation_time: false }
 	}
 
 	pub fn with_page(
@@ -182,13 +203,27 @@ impl GraphPageBuilder {
 		self
 	}
 
-	pub fn build(self) -> Vec<GraphPage> {
+	pub fn with_noisy_creation_time(mut self, b: bool) -> Self {
+		self.use_noisy_creation_time = b;
+		self
+	}
+
+	pub fn build(&self) -> Vec<GraphPage> {
 		self.pages
 			.iter()
 			.map(|(page_id, (connections, prids, hash))| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
 				page.set_connections(
-					connections.iter().map(|c| DsnpGraphEdge { user_id: *c, since: 0 }).collect(),
+					connections
+						.iter()
+						.map(|c| {
+							let since = match self.use_noisy_creation_time {
+								true => c - 1,
+								false => 0,
+							};
+							DsnpGraphEdge { user_id: *c, since }
+						})
+						.collect(),
 				);
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 					page.set_prids(prids.clone()).expect("should set");
@@ -204,6 +239,7 @@ pub struct PageDataBuilder {
 	connection_type: ConnectionType,
 	page_builder: GraphPageBuilder,
 	resolved_key: ResolvedKeyPair,
+	use_noisy_creation_time: bool,
 }
 
 impl PageDataBuilder {
@@ -215,6 +251,7 @@ impl PageDataBuilder {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id: 1,
 			},
+			use_noisy_creation_time: false,
 		}
 	}
 
@@ -234,6 +271,11 @@ impl PageDataBuilder {
 		self
 	}
 
+	pub fn with_noisy_creation_time(mut self, b: bool) -> Self {
+		self.use_noisy_creation_time = b;
+		self
+	}
+
 	pub fn build(self) -> Vec<PageData> {
 		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
 		self.page_builder
@@ -244,6 +286,24 @@ impl PageDataBuilder {
 					page.to_public_page_data().expect("should write public page"),
 				PrivacyType::Private =>
 					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+			})
+			.collect()
+	}
+
+	pub fn build_with_size(&self) -> Vec<(usize, PageData)> {
+		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
+		self.page_builder
+			.build()
+			.iter()
+			.map(|page| match self.connection_type.privacy_type() {
+				PrivacyType::Public => (
+					page.connections().len(),
+					page.to_public_page_data().expect("should write public page"),
+				),
+				PrivacyType::Private => (
+					page.connections().len(),
+					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+				),
 			})
 			.collect()
 	}
@@ -305,4 +365,40 @@ impl ImportBundleBuilder {
 			pages,
 		}
 	}
+}
+
+pub fn benchmark_page_capacity(connection_type: ConnectionType) -> (usize, usize) {
+	const MAX_PAGE_SIZE: usize = 1024;
+	let mut builder = PageDataBuilder::new(connection_type).with_noisy_creation_time(true);
+	let ids = Uniform::new(0x4000000000000000 as u64, 0x7fffffffffffffff as u64);
+	let best_compression_ids = Uniform::new(0x7fffffffffffff00 as u64, 0x7fffffffffffffff as u64);
+	let mut rng = thread_rng();
+	let mut last_result: (usize, usize) = (0, 0);
+
+	let mut i = 0;
+	loop {
+		let dist = match i == 0 {
+			true => best_compression_ids,
+			false => ids,
+		};
+		let connection_id = rng.sample(dist);
+		let prid = rng.sample(dist).into();
+		builder = builder.with_page(1, &[connection_id as u64], &[prid], 0);
+		let pages = builder.build_with_size();
+		let (page_len, page) = pages.first().expect("page should exist");
+		let page_size = page.content.len();
+
+		if page_size >= MAX_PAGE_SIZE {
+			// println!(
+			// 	"{:?} page full. # connections = {:?}, bytes = {:?}",
+			// 	connection_type, last_result.0, last_result.1
+			// );
+			break
+		}
+
+		last_result = (*page_len, page_size);
+		i += 1;
+	}
+
+	last_result
 }

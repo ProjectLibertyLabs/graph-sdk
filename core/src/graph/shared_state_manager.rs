@@ -266,7 +266,7 @@ impl SharedStateManager {
 			1
 	}
 
-	#[cfg(test)]
+	#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 	pub fn import_keys_test(
 		&mut self,
 		dsnp_user_id: DsnpUserId,
@@ -281,7 +281,7 @@ impl SharedStateManager {
 		Ok(())
 	}
 
-	#[cfg(test)]
+	#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 	pub fn import_prids_test(
 		&mut self,
 		dsnp_user_id: DsnpUserId,
@@ -296,7 +296,7 @@ impl SharedStateManager {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 mod tests {
 	use super::*;
 	use crate::{

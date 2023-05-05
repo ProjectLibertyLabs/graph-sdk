@@ -171,7 +171,7 @@ impl UserGraph {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 mod test {
 	use super::*;
 	use crate::{iter_graph_connections, tests::helpers::*};
@@ -268,7 +268,7 @@ mod test {
 	#[test]
 	fn clear_graph_clears_specific_graph_and_no_others() {
 		let env = Environment::Mainnet;
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		let mut user_graph =
 			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
@@ -302,7 +302,7 @@ mod test {
 	#[test]
 	fn clear_all_clears_all_graphs() {
 		let env = Environment::Mainnet;
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		let mut user_graph =
 			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {

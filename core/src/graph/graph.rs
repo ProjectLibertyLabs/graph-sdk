@@ -4,6 +4,7 @@ use crate::{
 	graph::{
 		key_manager::{ConnectionVerifier, UserKeyManager, UserKeyProvider},
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
+		page_capacities::PAGE_CAPACITIY_MAP,
 		shared_state_manager::PriProvider,
 		updates::UpdateEvent,
 	},
@@ -198,7 +199,7 @@ impl Graph {
 		let mut add_iter = ids_to_add.iter();
 		while let Some(_) = add_iter.clone().peekable().peek() {
 			if let Some((_page_id, page)) =
-				updated_pages.iter_mut().find(|(_, page)| !page.is_full(false))
+				updated_pages.iter_mut().find(|(_, page)| !self.is_page_full(&page, false))
 			{
 				let id_to_add = add_iter.next().unwrap(); // safe to unwrap because we peeked above
 				page.add_connection(id_to_add)?;
@@ -213,7 +214,7 @@ impl Graph {
 		while let Some(_) = add_iter.clone().peekable().peek() {
 			if current_page.is_none() {
 				let available_page = self.pages.iter().find(|(page_id, page)| {
-					!updated_pages.contains_key(page_id) && !page.is_full(false)
+					!updated_pages.contains_key(page_id) && !self.is_page_full(&page, false)
 				});
 
 				current_page = match available_page {
@@ -231,7 +232,7 @@ impl Graph {
 			match current_page {
 				Some(ref mut page) => {
 					page.add_connection(add_iter.next().unwrap())?; // safe to unwrap because we peeked above
-					if page.is_full(false) {
+					if self.is_page_full(&page, false) {
 						updated_pages.insert(page.page_id(), *page.clone());
 						current_page = None;
 					}
@@ -444,6 +445,20 @@ impl Graph {
 			.collect();
 		updated_page.set_prids(prid_result?)
 	}
+
+	/// Determine if page is full
+	///  aggressive:false -> use a simple heuristic based on the number of connections
+	///  aggressive:true  -> do actual compression to determine resulting actual page size
+	pub fn is_page_full(&self, page: &GraphPage, aggressive: bool) -> bool {
+		let connection_type = self.get_connection_type();
+		let max_connections_per_page = *PAGE_CAPACITIY_MAP.get(&connection_type).unwrap_or(&50);
+
+		if !aggressive {
+			return page.connections().len() >= max_connections_per_page
+		}
+
+		todo!()
+	}
 }
 
 /// Macro to get an iterator to all connections across all GraphPages
@@ -459,7 +474,7 @@ macro_rules! iter_graph_connections {
 	}};
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 mod test {
 	use super::*;
 	use crate::{
@@ -467,13 +482,11 @@ mod test {
 			dsnp_configs::{KeyPairType, PublicKeyType},
 			pseudo_relationship_identifier::PridProvider,
 		},
-		graph::{
-			page::APPROX_MAX_CONNECTIONS_PER_PAGE,
-			shared_state_manager::{PublicKeyProvider, SharedStateManager},
-		},
+		graph::shared_state_manager::{PublicKeyProvider, SharedStateManager},
 		tests::helpers::{
-			avro_public_payload, create_test_graph, create_test_ids_and_page, GraphPageBuilder,
-			KeyDataBuilder, PageDataBuilder, INNER_TEST_DATA,
+			avro_public_payload, create_empty_test_graph, create_test_graph,
+			create_test_ids_and_page, GraphPageBuilder, KeyDataBuilder, PageDataBuilder,
+			INNER_TEST_DATA,
 		},
 	};
 	use dryoc::keypair::StackKeyPair;
@@ -505,7 +518,7 @@ mod test {
 
 	#[test]
 	fn graph_len_reports_number_of_connections() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		assert_eq!(graph.len(), 25);
 	}
 
@@ -596,7 +609,7 @@ mod test {
 
 	#[test]
 	fn clear_removes_all_pages() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 		assert_eq!(graph.pages.len() > 0, true);
 		graph.clear();
 		assert_eq!(graph.pages.len(), 0);
@@ -685,7 +698,7 @@ mod test {
 
 	#[test]
 	fn create_page_with_existing_pageid_fails() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 
 		assert_eq!(graph.create_page(&0, None).is_err(), true);
 	}
@@ -715,35 +728,35 @@ mod test {
 
 	#[test]
 	fn has_connection_returns_false_for_missing_connection() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 
 		assert_eq!(graph.has_connection(&99), false);
 	}
 
 	#[test]
 	fn has_connection_returns_true_for_present_connection() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 
 		assert_eq!(graph.has_connection(&1), true);
 	}
 
 	#[test]
 	fn find_connection_returns_none_for_nonexistent_connection() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 
 		assert_eq!(graph.find_connection(&99), None);
 	}
 
 	#[test]
 	fn find_connections_returns_pageid_of_existing_connection() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 
 		assert_eq!(graph.find_connection(&1), Some(0));
 	}
 
 	#[test]
 	fn find_connections_returns_vec_of_pageids() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 
 		let mut v = graph.find_connections(&vec![1, 5, 24]);
 		v.sort();
@@ -752,14 +765,14 @@ mod test {
 
 	#[test]
 	fn add_connection_duplicate_connection_errors() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 
 		assert_eq!(graph.add_connection_to_page(&4, &0).is_err(), true);
 	}
 
 	#[test]
 	fn add_connection_to_nonexistent_page_adds_new_page() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 		let page_to_add: PageId = 99;
 
 		assert_eq!(graph.pages().contains_key(&page_to_add), false);
@@ -769,7 +782,7 @@ mod test {
 
 	#[test]
 	fn add_connection_succeeds() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 
 		let _ = graph.add_connection_to_page(&4, &99);
 		assert_eq!(graph.find_connection(&99), Some(4));
@@ -777,7 +790,7 @@ mod test {
 
 	#[test]
 	fn remove_connection_returns_none_for_not_found() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 
 		let result = graph.remove_connection(&99);
 		assert_eq!(result.unwrap().is_none(), true);
@@ -785,7 +798,7 @@ mod test {
 
 	#[test]
 	fn remove_connection_returns_pageid_of_removed_connection() {
-		let mut graph = create_test_graph();
+		let mut graph = create_test_graph(None);
 
 		let result = graph.remove_connection(&5);
 		assert_eq!(result.unwrap(), Some(1));
@@ -793,7 +806,7 @@ mod test {
 
 	#[test]
 	fn graph_iterator_should_iterate_over_all_connections() {
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		let mut test_connections: Vec<DsnpUserId> = (0..25).map(|i| i as DsnpUserId).collect();
 		test_connections.sort();
 
@@ -882,7 +895,8 @@ mod test {
 	fn calculate_updates_public_adding_new_page_should_succeed() {
 		// arrange
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
-		let ids_per_page = APPROX_MAX_CONNECTIONS_PER_PAGE as u64;
+		let ids_per_page =
+			*PAGE_CAPACITIY_MAP.get(&connection_type).expect("Missing page capacity") as u64;
 		let user_id = 3;
 		let mut curr_id = 1u64;
 		let mut page_builder = GraphPageBuilder::new(connection_type);
@@ -1138,4 +1152,71 @@ mod test {
 		let removed_connection_2 = graph.find_connection(&removed_friend_user_id);
 		assert!(removed_connection_2.is_none());
 	}
+
+	const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
+		ConnectionType::Follow(PrivacyType::Public),
+		ConnectionType::Friendship(PrivacyType::Public),
+		ConnectionType::Follow(PrivacyType::Private),
+		ConnectionType::Friendship(PrivacyType::Private),
+	];
+
+	#[test]
+	fn is_full_non_aggressive_returns_false_for_non_full() {
+		ALL_CONNECTION_TYPES.iter().for_each(|c| {
+			let graph = create_empty_test_graph(Some(*c));
+			let max_connections_per_page = PAGE_CAPACITIY_MAP
+				.get(c)
+				.expect("Connection type missing max connections soft limit");
+			let mut builder = GraphPageBuilder::new(*c);
+			for i in 1u64..*max_connections_per_page as u64 {
+				let prids: Vec<DsnpPrid> = match c {
+					ConnectionType::Friendship(PrivacyType::Private) =>
+						[i].iter().map(|id| DsnpPrid::from(*id)).collect(),
+					_ => vec![],
+				};
+				builder = builder.with_page(1, &[i], &prids, 0);
+				let pages = builder.build();
+				let page = pages.first().expect("Should have built at least one page");
+				assert_eq!(
+					graph.is_page_full(&page, false),
+					false,
+					"Testing soft connection limit for {:?}",
+					c,
+				);
+			}
+		});
+	}
+
+	#[test]
+	fn is_full_non_aggressive_returns_true_for_full() {
+		ALL_CONNECTION_TYPES.iter().for_each(|c| {
+			let graph = create_empty_test_graph(Some(*c));
+			let max_connections_per_page = PAGE_CAPACITIY_MAP
+				.get(c)
+				.expect("Connection type missing max connections soft limit");
+			let connections = (0..*max_connections_per_page as u64).collect::<Vec<u64>>();
+			let prids = match c.privacy_type() {
+				PrivacyType::Private =>
+					connections.iter().clone().map(|id| DsnpPrid::from(*id)).collect(),
+				_ => vec![],
+			};
+			let pages = GraphPageBuilder::new(*c).with_page(1, &connections, &prids, 0).build();
+
+			let page = pages.first().expect("page should exist");
+			assert_eq!(
+				graph.is_page_full(&page, false),
+				true,
+				"Testing soft connection limit for {:?}",
+				c
+			);
+		});
+	}
+
+	#[test]
+	#[ignore = "todo"]
+	fn is_full_aggressive_returns_false_for_non_full() {}
+
+	#[test]
+	#[ignore = "todo"]
+	fn is_full_aggressive_returns_true_for_full() {}
 }

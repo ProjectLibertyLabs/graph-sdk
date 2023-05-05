@@ -286,7 +286,7 @@ impl GraphState {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(feature = "calculate-page-capacity")))]
 mod test {
 	use crate::{
 		dsnp::{
