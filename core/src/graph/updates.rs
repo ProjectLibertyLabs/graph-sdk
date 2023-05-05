@@ -1,17 +1,12 @@
 #![allow(dead_code)]
 use crate::{
-	dsnp::{api_types::Update, dsnp_configs::DsnpVersionConfig, dsnp_types::DsnpUserId},
-	graph::{
-		updates::UpdateEvent::{Add, Remove},
-		user::UserGraph,
-	},
+	dsnp::dsnp_types::DsnpUserId,
+	graph::updates::UpdateEvent::{Add, Remove},
+	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::SchemaId;
-use std::{
-	cmp::Ordering,
-	collections::{HashMap, HashSet},
-};
+use std::{cmp::Ordering, collections::HashSet};
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
@@ -19,14 +14,25 @@ pub enum UpdateEvent {
 	Remove { dsnp_user_id: DsnpUserId, schema_id: SchemaId },
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UpdateTracker {
-	updates: HashMap<SchemaId, Vec<UpdateEvent>>,
+	updates: TransactionalHashMap<SchemaId, Vec<UpdateEvent>>,
+}
+
+/// implementing transactional trait for update tracker
+impl Transactional for UpdateTracker {
+	fn commit(&mut self) {
+		self.updates.commit();
+	}
+
+	fn rollback(&mut self) {
+		self.updates.rollback();
+	}
 }
 
 impl UpdateTracker {
 	pub fn new() -> Self {
-		Self { updates: HashMap::new() }
+		Self { updates: TransactionalHashMap::new() }
 	}
 
 	pub fn register_update(&mut self, event: &UpdateEvent) -> Result<()> {
@@ -57,23 +63,19 @@ impl UpdateTracker {
 	}
 
 	pub fn has_updates(&self) -> bool {
-		self.updates.iter().any(|(_, v)| !v.is_empty())
+		self.updates.inner().iter().any(|(_, v)| !v.is_empty())
 	}
 
 	pub fn get_updates_for_schema_id(&self, schema_id: SchemaId) -> Option<&Vec<UpdateEvent>> {
-		self.updates.get(&schema_id)
+		self.updates.inner().get(&schema_id)
 	}
 
 	pub fn get_updated_schema_ids(&self) -> HashSet<SchemaId> {
-		self.updates.keys().copied().collect()
-	}
-
-	pub fn get_mut_updates_for_schema_id(&mut self, schema_id: SchemaId) -> &Vec<UpdateEvent> {
-		self.updates.entry(schema_id).or_default()
+		self.updates.inner().keys().copied().collect()
 	}
 
 	pub fn contains(&self, event: &UpdateEvent) -> bool {
-		match self.updates.get(event.get_schema_id()) {
+		match self.updates.inner().get(event.get_schema_id()) {
 			Some(arr) => arr.contains(event),
 			None => false,
 		}
@@ -84,11 +86,13 @@ impl UpdateTracker {
 	}
 
 	fn remove(&mut self, event: &UpdateEvent) {
-		if let Some(arr) = self.updates.get_mut(event.get_schema_id()) {
-			arr.retain(|e| e.ne(event));
-			if arr.is_empty() {
-				self.updates.remove(event.get_schema_id());
-			}
+		if let Some(arr) = self.updates.get(event.get_schema_id()) {
+			let mut updates = arr.clone();
+			updates.retain(|e| e.ne(event));
+			match updates.is_empty() {
+				true => self.updates.remove(event.get_schema_id()),
+				false => self.updates.insert(*event.get_schema_id(), updates),
+			};
 		}
 	}
 
@@ -128,20 +132,6 @@ impl UpdateEvent {
 			(Add { .. }, Remove { .. }) => Ordering::Greater,
 			_ => a.cmp(b),
 		}
-	}
-}
-
-pub trait UpdateAPI {
-	fn calculate_updates(&mut self, dsnp_version_config: &DsnpVersionConfig)
-		-> Result<Vec<Update>>;
-}
-
-impl UpdateAPI for UserGraph {
-	fn calculate_updates(
-		&mut self,
-		dsnp_version_config: &DsnpVersionConfig,
-	) -> Result<Vec<Update>> {
-		self.calculate_updates(dsnp_version_config)
 	}
 }
 

@@ -8,9 +8,10 @@ use crate::{
 		schema::SchemaHandler,
 	},
 	frequency::Frequency,
+	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use anyhow::{Error, Result};
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 /// A trait that defines all the functionality that a pri manager should implement.
 pub trait PriProvider {
@@ -63,13 +64,13 @@ pub trait PublicKeyProvider {
 #[derive(Debug, Eq, PartialEq)]
 pub struct SharedStateManager {
 	/// keys are stored sorted by index
-	dsnp_user_to_keys: HashMap<DsnpUserId, (Vec<DsnpPublicKey>, PageHash)>,
+	dsnp_user_to_keys: TransactionalHashMap<DsnpUserId, (Vec<DsnpPublicKey>, PageHash)>,
 
 	/// stores and keeps track of any new key being added
-	new_keys: HashMap<DsnpUserId, DsnpPublicKey>,
+	new_keys: TransactionalHashMap<DsnpUserId, DsnpPublicKey>,
 
 	/// prids are stored with key_id
-	dsnp_user_to_pris: HashMap<DsnpUserId, Vec<(DsnpPrid, u64)>>,
+	dsnp_user_to_pris: TransactionalHashMap<DsnpUserId, Vec<(DsnpPrid, u64)>>,
 }
 
 impl PriProvider for SharedStateManager {
@@ -147,7 +148,7 @@ impl PublicKeyProvider for SharedStateManager {
 
 	fn export_new_keys(&self) -> Result<Vec<DsnpKeys>> {
 		let mut result = vec![];
-		for (dsnp_user_id, key) in &self.new_keys {
+		for (dsnp_user_id, key) in self.new_keys.inner() {
 			result.push(DsnpKeys {
 				dsnp_user_id: *dsnp_user_id,
 				keys: vec![KeyData {
@@ -214,12 +215,26 @@ impl PublicKeyProvider for SharedStateManager {
 	}
 }
 
+impl Transactional for SharedStateManager {
+	fn commit(&mut self) {
+		self.dsnp_user_to_keys.commit();
+		self.new_keys.commit();
+		self.dsnp_user_to_pris.commit();
+	}
+
+	fn rollback(&mut self) {
+		self.dsnp_user_to_keys.rollback();
+		self.new_keys.rollback();
+		self.dsnp_user_to_pris.rollback();
+	}
+}
+
 impl SharedStateManager {
 	pub fn new() -> Self {
 		Self {
-			new_keys: HashMap::new(),
-			dsnp_user_to_keys: HashMap::new(),
-			dsnp_user_to_pris: HashMap::new(),
+			new_keys: TransactionalHashMap::new(),
+			dsnp_user_to_keys: TransactionalHashMap::new(),
+			dsnp_user_to_pris: TransactionalHashMap::new(),
 		}
 	}
 
