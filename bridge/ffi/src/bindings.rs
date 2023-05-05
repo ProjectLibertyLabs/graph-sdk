@@ -7,9 +7,9 @@ use libc::{c_void, size_t};
 /// KeyData wrapper
 #[repr(C)]
 pub struct KeyData {
-	index: u16,
-	content: *mut u8,
-	content_len: size_t,
+	pub index: u16,
+	pub content: *mut u8,
+	pub content_len: size_t,
 }
 
 /// Key Pair wrapper
@@ -35,23 +35,23 @@ pub struct GraphKeyPair {
 #[repr(C)]
 pub struct PageData {
 	// Id of the page
-	pub page_id: u16,
+	pub page_id: PageId,
 
 	// raw content of page data
 	pub content: *mut u8,
 	pub content_len: size_t,
 
 	// hash value of content
-	pub content_hash: u64,
+	pub content_hash: PageHash,
 }
 
 // GraphAPI wrapper
 #[repr(C)]
 pub struct DsnpKeys {
-	dsnp_user_id: DsnpUserId,
-	keys_hash: PageHash,
-	keys: *mut KeyData,
-	keys_len: size_t,
+	pub dsnp_user_id: DsnpUserId,
+	pub keys_hash: PageHash,
+	pub keys: *mut KeyData,
+	pub keys_len: size_t,
 }
 
 // ImportBundle wrapper
@@ -68,7 +68,7 @@ pub struct ImportBundle {
 	pub key_pairs_len: size_t,
 
 	/// published dsnp keys associated with this dsnp user
-	pub dsnp_keys: *mut DsnpKeys,
+	pub dsnp_keys: DsnpKeys,
 
 	/// Page data containing the social graph retrieved from chain
 	pub pages: *mut PageData,
@@ -88,74 +88,74 @@ pub enum ActionType {
 #[repr(C)]
 pub struct ConnectAction {
 	// dsnp user id
-	owner_dsnp_user_id: DsnpUserId,
+	pub owner_dsnp_user_id: DsnpUserId,
 	// connection
-	connection: Connection,
+	pub connection: Connection,
 }
 
 // DisconnectAction wrapper
 #[repr(C)]
 pub struct DisconnectAction {
 	// dsnp user id
-	owner_dsnp_user_id: DsnpUserId,
+	pub owner_dsnp_user_id: DsnpUserId,
 	// connection
-	connection: Connection,
+	pub connection: Connection,
 }
 
 // Action wrapper
 #[repr(C)]
 pub struct Action {
 	// action type
-	action_type: ActionType,
+	pub action_type: ActionType,
 	// connect action
-	action: *mut c_void,
+	pub action: *mut c_void,
 }
 
 #[repr(C)]
 pub struct PersistPage {
 	/// owner of the social graph
-	owner_dsnp_user_id: DsnpUserId,
+	pub owner_dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
-	schema_id: SchemaId,
+	pub schema_id: SchemaId,
 
 	/// page id associated with changed page
-	page_id: PageId,
+	pub page_id: PageId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: PageHash,
+	pub prev_hash: PageHash,
 
 	/// social graph page data
-	payload: *mut u8,
-	payload_len: size_t,
+	pub payload: *mut u8,
+	pub payload_len: size_t,
 }
 
 #[repr(C)]
 pub struct DeletePage {
 	/// owner of the social graph
-	owner_dsnp_user_id: DsnpUserId,
+	pub owner_dsnp_user_id: DsnpUserId,
 
 	/// Schema id of removed data
-	schema_id: SchemaId,
+	pub schema_id: SchemaId,
 
 	/// page id associated with changed page
-	page_id: PageId,
+	pub page_id: PageId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: PageHash,
+	pub prev_hash: PageHash,
 }
 
 #[repr(C)]
 pub struct AddKey {
 	/// owner of the social graph
-	owner_dsnp_user_id: DsnpUserId,
+	pub owner_dsnp_user_id: DsnpUserId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: PageHash,
+	pub prev_hash: PageHash,
 
 	/// social graph page data
-	payload: *mut u8,
-	payload_len: size_t,
+	pub payload: *mut u8,
+	pub payload_len: size_t,
 }
 
 #[repr(C)]

@@ -68,3 +68,87 @@ pub fn environment_from_ffi(environment: &Environment) -> dsnp_graph_config::Env
 		EnvironmentType::Dev => dsnp_graph_config::Environment::Dev(config),
 	}
 }
+
+// Function to convert C-compatible `GraphKeyPair` to a Rust `GraphKeyPair`
+fn graph_key_pair_from_ffi(
+	graph_key_pair: &GraphKeyPair,
+) -> dsnp_graph_core::dsnp::api_types::GraphKeyPair {
+	let public_key = unsafe {
+		std::slice::from_raw_parts(graph_key_pair.public_key, graph_key_pair.public_key_len)
+	};
+	let secret_key = unsafe {
+		std::slice::from_raw_parts(graph_key_pair.secret_key, graph_key_pair.secret_key_len)
+	};
+	dsnp_graph_core::dsnp::api_types::GraphKeyPair {
+		key_type: graph_key_pair.key_type.clone(),
+		public_key: public_key.to_vec(),
+		secret_key: secret_key.to_vec(),
+	}
+}
+
+fn key_data_from_ffi(key_data: &KeyData) -> dsnp_graph_core::dsnp::api_types::KeyData {
+	let content = unsafe { std::slice::from_raw_parts(key_data.content, key_data.content_len) };
+	dsnp_graph_core::dsnp::api_types::KeyData { index: key_data.index, content: content.to_vec() }
+}
+
+fn dsnp_keys_from_ffi(dsnp_keys: &DsnpKeys) -> dsnp_graph_core::dsnp::api_types::DsnpKeys {
+	let keys = unsafe { std::slice::from_raw_parts(dsnp_keys.keys, dsnp_keys.keys_len) };
+	let key_data = keys.iter().map(|key| key_data_from_ffi(key)).collect();
+
+	dsnp_graph_core::dsnp::api_types::DsnpKeys {
+		dsnp_user_id: dsnp_keys.dsnp_user_id.clone(),
+		keys_hash: dsnp_keys.keys_hash.clone(),
+		keys: key_data,
+	}
+}
+
+// Function to convert C-compatible PageData to Rust PageData
+fn page_data_from_ffi(page_data: &PageData) -> dsnp_graph_core::dsnp::api_types::PageData {
+	let content = unsafe { std::slice::from_raw_parts(page_data.content, page_data.content_len) };
+	dsnp_graph_core::dsnp::api_types::PageData {
+		page_id: page_data.page_id,
+		content: content.to_vec(),
+		content_hash: page_data.content_hash,
+	}
+}
+
+// Function to convert C-compatible ImportBundle to Rust ImportBundle
+pub fn import_bundle_from_ffi(
+	import_bundle: &ImportBundle,
+) -> dsnp_graph_core::dsnp::api_types::ImportBundle {
+	let key_pairs_slice =
+		unsafe { std::slice::from_raw_parts(import_bundle.key_pairs, import_bundle.key_pairs_len) };
+	let mut key_pairs = Vec::new();
+	for graph_key_pair in key_pairs_slice {
+		key_pairs.push(graph_key_pair_from_ffi(graph_key_pair));
+	}
+
+	let dsnp_keys = dsnp_keys_from_ffi(&import_bundle.dsnp_keys);
+
+	let pages_slice =
+		unsafe { std::slice::from_raw_parts(import_bundle.pages, import_bundle.pages_len) };
+	let mut pages = Vec::new();
+	for page_data in pages_slice {
+		pages.push(page_data_from_ffi(page_data));
+	}
+
+	dsnp_graph_core::dsnp::api_types::ImportBundle {
+		dsnp_user_id: import_bundle.dsnp_user_id.clone(),
+		schema_id: import_bundle.schema_id,
+		key_pairs,
+		dsnp_keys,
+		pages,
+	}
+}
+
+// Function to convert C-compatible `ImportBundle` slice to a Rust `ImportBundle` vector
+pub fn payloads_from_ffi(
+	payloads: &[ImportBundle],
+) -> Vec<dsnp_graph_core::dsnp::api_types::ImportBundle> {
+	let mut rust_payloads = Vec::new();
+	for payload in payloads {
+		let rust_payload = import_bundle_from_ffi(payload);
+		rust_payloads.push(rust_payload);
+	}
+	rust_payloads
+}

@@ -156,11 +156,16 @@ typedef struct {
   size_t keys_len;
 } DsnpKeys;
 
+/**
+ * Graph page id
+ */
+typedef uint16_t PageId;
+
 typedef struct {
-  uint16_t page_id;
+  PageId page_id;
   uint8_t *content;
   size_t content_len;
-  uint64_t content_hash;
+  PageHash content_hash;
 } PageData;
 
 typedef struct {
@@ -180,18 +185,13 @@ typedef struct {
   /**
    * published dsnp keys associated with this dsnp user
    */
-  DsnpKeys *dsnp_keys;
+  DsnpKeys dsnp_keys;
   /**
    * Page data containing the social graph retrieved from chain
    */
   PageData *pages;
   size_t pages_len;
 } ImportBundle;
-
-/**
- * Graph page id
- */
-typedef uint16_t PageId;
 
 typedef struct {
   /**
@@ -334,6 +334,18 @@ typedef struct {
 void print_hello_graph(void);
 
 bool initialize_graph_state(const Environment *environment);
+
+bool initialize_graph_state_with_capacity(const Environment *environment, uintptr_t capacity);
+
+uintptr_t get_graph_capacity(void);
+
+bool graph_contains_user(const DsnpUserId *user_id);
+
+uintptr_t graph_users_count(void);
+
+bool graph_remove_user(const DsnpUserId *user_id);
+
+bool graph_import_users_data(const ImportBundle *payloads, uintptr_t payloads_len);
 
 bool free_graph_state(void);
 
