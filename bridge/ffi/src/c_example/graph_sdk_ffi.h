@@ -347,6 +347,8 @@ bool graph_remove_user(const DsnpUserId *user_id);
 
 bool graph_import_users_data(const ImportBundle *payloads, uintptr_t payloads_len);
 
+Update *graph_export_updates(void);
+
 bool free_graph_state(void);
 
 #endif /* GRAPH_SDK_FFI_H_ */

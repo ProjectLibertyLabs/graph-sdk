@@ -152,3 +152,56 @@ pub fn payloads_from_ffi(
 	}
 	rust_payloads
 }
+
+pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) -> Vec<Update> {
+	let mut ffi_updates = Vec::new();
+	for update in updates {
+		match update {
+			dsnp_graph_core::dsnp::api_types::Update::PersistPage {
+				owner_dsnp_user_id,
+				schema_id,
+				page_id,
+				prev_hash,
+				mut payload,
+			} => {
+				let ffi_persist_page = PersistPage {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					schema_id,
+					page_id,
+					prev_hash,
+					payload: payload.as_mut_ptr(),
+					payload_len: payload.len(),
+				};
+				ffi_updates.push(Update::Persist(ffi_persist_page));
+			},
+			dsnp_graph_core::dsnp::api_types::Update::DeletePage {
+				owner_dsnp_user_id,
+				schema_id,
+				page_id,
+				prev_hash,
+			} => {
+				let ffi_delete_page = DeletePage {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					schema_id,
+					page_id,
+					prev_hash,
+				};
+				ffi_updates.push(Update::Delete(ffi_delete_page));
+			},
+			dsnp_graph_core::dsnp::api_types::Update::AddKey {
+				owner_dsnp_user_id,
+				prev_hash,
+				mut payload,
+			} => {
+				let ffi_add_key = AddKey {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					prev_hash,
+					payload: payload.as_mut_ptr(),
+					payload_len: payload.len(),
+				};
+				ffi_updates.push(Update::Add(ffi_add_key));
+			},
+		}
+	}
+	ffi_updates
+}

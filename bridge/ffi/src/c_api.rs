@@ -88,6 +88,19 @@ pub unsafe extern "C" fn graph_import_users_data(
 	GRAPH_STATE.as_mut().unwrap().import_users_data(payloads).is_ok()
 }
 
+// Graph export updates fn export_updates(&mut self) -> Result<Vec<Update>> {
+#[no_mangle]
+pub unsafe extern "C" fn graph_export_updates() -> *mut Update {
+	if GRAPH_STATE.is_none() {
+		return std::ptr::null_mut()
+	}
+	let updates = GRAPH_STATE.as_mut().unwrap().export_updates().unwrap();
+	let ffi_updates = updates_to_ffi(updates);
+	let _updates_len = ffi_updates.len();
+	let updates_ptr = Box::into_raw(Box::new(ffi_updates));
+	updates_ptr as *mut Update
+}
+
 // Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state() -> bool {
