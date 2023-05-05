@@ -217,6 +217,7 @@ pub struct SchemaConfigTuple {
 #[repr(C)]
 pub struct Config {
 	pub sdk_max_users_graph_size: u32,
+	pub sdk_max_stale_friendship_days: u32,
 	pub max_graph_page_size_bytes: u32,
 	pub max_page_id: u32,
 	pub max_key_page_size_bytes: u32,

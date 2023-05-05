@@ -10,6 +10,7 @@ mod tests {
 			environment_type: EnvironmentType::Dev,
 			config: Config {
 				sdk_max_users_graph_size: 100,
+				sdk_max_stale_friendship_days: 90,
 				max_graph_page_size_bytes: 1024,
 				max_page_id: 10,
 				max_key_page_size_bytes: 1024,

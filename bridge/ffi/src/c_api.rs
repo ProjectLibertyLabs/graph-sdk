@@ -62,6 +62,7 @@ fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 	}
 	dsnp_graph_config::Config {
 		sdk_max_users_graph_size: config.sdk_max_users_graph_size,
+		sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		max_page_id: config.max_page_id,
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
