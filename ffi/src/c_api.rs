@@ -3,6 +3,11 @@ use dsnp_graph_core::api::api::GraphState as GraphStateRust;
 use libc::c_void;
 use std::collections::HashMap;
 
+#[no_mangle]
+pub extern "C" fn print_hello_graph() {
+	println!("Hello, Graph!");
+}
+
 // Define a C-compatible representation of GraphState
 #[repr(C)]
 pub struct GraphState {

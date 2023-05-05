@@ -10,7 +10,7 @@ include = ["Config", "GraphState", "Environment", "DsnpVersion", "ConnectionType
 item_types = ["enums", "functions", "opaque", "structs", "typedefs", "constants"]
 
 [export.mangle]
-remove_underscores = true
+remove_underscores = false
 
 [fn]
 sort_by = "None"
