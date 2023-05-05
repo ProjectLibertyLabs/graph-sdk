@@ -6,6 +6,7 @@ use crate::{
 		pseudo_relationship_identifier::PridProvider,
 	},
 	graph::shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
+	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 use anyhow::Result;
 use std::{cell::RefCell, fmt::Debug, rc::Rc};
@@ -42,7 +43,7 @@ pub struct UserKeyManager {
 	dsnp_user_id: DsnpUserId,
 
 	/// key pairs associated with this user
-	keys: Vec<KeyPairType>,
+	keys: TransactionalVec<KeyPairType>,
 }
 
 impl UserKeyProvider for UserKeyManager {
@@ -62,7 +63,9 @@ impl UserKeyProvider for UserKeyManager {
 		if let Some(dsnp) =
 			self.shared_state_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
 		{
-			if let Some(key_pair) = self.keys.iter().find(|&k| k.get_public_key_raw() == dsnp.key) {
+			if let Some(key_pair) =
+				self.keys.inner().iter().find(|&k| k.get_public_key_raw() == dsnp.key)
+			{
 				return Some(ResolvedKeyPair { key_id, key_pair: key_pair.clone() })
 			}
 		}
@@ -135,12 +138,31 @@ impl ConnectionVerifier for UserKeyManager {
 
 impl UserKeyManagerBase for UserKeyManager {}
 
+impl Transactional for UserKeyManager {
+	fn commit(&mut self) {
+		self.keys.commit();
+	}
+
+	fn rollback(&mut self) {
+		self.keys.rollback();
+	}
+}
+
 impl UserKeyManager {
 	pub fn new(
 		dsnp_user_id: DsnpUserId,
 		public_key_manager: Rc<RefCell<SharedStateManager>>,
 	) -> Self {
-		Self { shared_state_manager: public_key_manager, dsnp_user_id, keys: vec![] }
+		Self {
+			shared_state_manager: public_key_manager,
+			dsnp_user_id,
+			keys: TransactionalVec::new(),
+		}
+	}
+
+	#[cfg(test)]
+	pub fn get_imported_keys(&self) -> &Vec<KeyPairType> {
+		self.keys.inner()
 	}
 }
 
