@@ -614,8 +614,8 @@ mod test {
 			))),
 		);
 		graph.set_pages(pages.clone());
-		assert_eq!(pages.inner().len(), graph.pages().inner().len());
-		for i in 0..pages.inner().len() as u16 {
+		assert_eq!(pages.len(), graph.pages().len());
+		for i in 0..pages.len() as u16 {
 			assert_eq!(pages.get(&i), graph.pages().get(&i));
 		}
 	}
@@ -678,9 +678,9 @@ mod test {
 	#[test]
 	fn clear_removes_all_pages() {
 		let mut graph = create_test_graph();
-		assert_eq!(graph.pages.inner().len() > 0, true);
+		assert_eq!(graph.pages.len() > 0, true);
 		graph.clear();
-		assert_eq!(graph.pages.inner().len(), 0);
+		assert_eq!(graph.pages.len(), 0);
 	}
 
 	#[test]
@@ -705,7 +705,7 @@ mod test {
 		let pages = vec![blob];
 
 		let _ = graph.import_public(connection_type, &pages);
-		assert_eq!(graph.pages.inner().len(), 1);
+		assert_eq!(graph.pages.len(), 1);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let imported_connections: HashSet<DsnpUserId> =
@@ -758,7 +758,7 @@ mod test {
 		let res = graph.import_private(&dsnp_config, connection_type, &pages);
 
 		assert!(res.is_ok());
-		assert_eq!(graph.pages.inner().len(), 1);
+		assert_eq!(graph.pages.len(), 1);
 		let imported_connections: HashSet<DsnpUserId> =
 			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
 		assert_eq!(orig_connections, imported_connections);
@@ -1359,7 +1359,7 @@ mod test {
 		graph.rollback();
 
 		// assert
-		assert_eq!(graph.pages.inner().len(), 1);
+		assert_eq!(graph.pages.len(), 1);
 		assert_eq!(graph.pages.get(&1).unwrap().connections().len(), 1);
 		assert!(graph.pages.get(&1).unwrap().contains(&connection_dsnp));
 	}

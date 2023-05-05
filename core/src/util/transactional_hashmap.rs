@@ -86,6 +86,11 @@ where
 	}
 
 	#[inline]
+	pub fn len(&self) -> usize {
+		self.inner.len()
+	}
+
+	#[inline]
 	pub fn get<Q: ?Sized>(&self, k: &Q) -> Option<&V>
 	where
 		K: Borrow<Q>,

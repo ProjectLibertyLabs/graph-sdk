@@ -34,6 +34,11 @@ where
 	}
 
 	#[inline]
+	pub fn len(&self) -> usize {
+		self.inner.len()
+	}
+
+	#[inline]
 	pub fn clear(&mut self) {
 		for (index, val) in self.inner.iter().enumerate().rev() {
 			self.rollback_operations.push(Reversible::Remove { index, value: val.clone() });

@@ -174,7 +174,7 @@ mod test {
 
 		// assert
 		assert!(res.is_ok());
-		assert_eq!(tracker.updates.inner().len(), 0);
+		assert_eq!(tracker.updates.len(), 0);
 		assert!(!tracker.has_updates());
 	}
 

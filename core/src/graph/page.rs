@@ -245,7 +245,7 @@ impl GraphPage {
 	///  aggressive:true  -> do actual compression to determine resulting actual page size
 	pub fn is_full(&self, aggressive: bool) -> bool {
 		if !aggressive {
-			return self.connections.inner().len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
+			return self.connections.len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
 		}
 
 		todo!()
@@ -279,7 +279,7 @@ impl GraphPage {
 
 	/// Refresh PRIds based on latest
 	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
-		if self.connections.inner().len() != prids.len() {
+		if self.connections.len() != prids.len() {
 			return Err(Error::msg("prids len should be equal to connections len"))
 		}
 		self.prids.clear();
@@ -366,7 +366,7 @@ mod test {
 	fn is_full_non_aggressive_returns_false_for_non_full() {
 		let mut page = GraphPage::new(PrivacyType::Private, 0);
 		let mut last_connection: DsnpUserId = 0;
-		while page.connections.inner().len() < APPROX_MAX_CONNECTIONS_PER_PAGE {
+		while page.connections.len() < APPROX_MAX_CONNECTIONS_PER_PAGE {
 			assert_eq!(page.is_full(false), false);
 			let _ = page.add_connection(&last_connection);
 			last_connection += 1;
@@ -716,16 +716,16 @@ mod test {
 			page.add_connection(u).unwrap();
 		});
 		page.set_prids(prids).unwrap();
-		let prid_len = page.prids.inner().len();
-		let connection_len = page.connections.inner().len();
+		let prid_len = page.prids.len();
+		let connection_len = page.connections.len();
 
 		// act
 		page.commit();
 		page.rollback();
 
 		// assert
-		assert_eq!(prid_len, page.prids.inner().len());
-		assert_eq!(connection_len, page.connections.inner().len());
+		assert_eq!(prid_len, page.prids.len());
+		assert_eq!(connection_len, page.connections.len());
 	}
 
 	#[test]

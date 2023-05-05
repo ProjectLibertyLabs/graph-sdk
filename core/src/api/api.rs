@@ -124,7 +124,7 @@ impl GraphAPI for GraphState {
 
 	/// Return number of users in the current graph state
 	fn len(&self) -> usize {
-		self.user_map.inner().len()
+		self.user_map.len()
 	}
 
 	/// Remove the user graph from an instance
@@ -248,8 +248,8 @@ impl GraphState {
 
 	/// Gets an existing or creates a new UserGraph
 	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
-		let is_full = self.user_map.inner().len() >=
-			self.environment.get_config().sdk_max_users_graph_size as usize;
+		let is_full =
+			self.user_map.len() >= self.environment.get_config().sdk_max_users_graph_size as usize;
 		match self.user_map.entry(dsnp_user_id) {
 			Entry::Occupied(o) => Ok(o.into_mut()),
 			Entry::Vacant(v) => {
@@ -452,7 +452,7 @@ mod test {
 		let _ = state.get_or_create_user_graph(0);
 		let _ = state.get_or_create_user_graph(1);
 		state.remove_user_graph(&99);
-		assert_eq!(state.user_map.inner().len(), 2);
+		assert_eq!(state.user_map.len(), 2);
 	}
 
 	#[test]
@@ -687,7 +687,7 @@ mod test {
 			.is_err());
 
 		// assert
-		assert_eq!(state.user_map.inner().len(), 0);
+		assert_eq!(state.user_map.len(), 0);
 	}
 
 	#[test]
