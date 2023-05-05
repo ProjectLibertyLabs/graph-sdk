@@ -323,8 +323,8 @@ mod tests {
 		let non_existing_prid = DsnpPrid::new(&[2u8, 20, 3, 4, 5, 6, 7, 8]);
 		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![prid_1.clone()], 0)
-			.with_page(2, &vec![2], &vec![prid_2.clone()], 0)
+			.with_page(1, &vec![(1, 0)], &vec![prid_1.clone()], 0)
+			.with_page(2, &vec![(2, 0)], &vec![prid_2.clone()], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,
@@ -355,7 +355,7 @@ mod tests {
 		let old_prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
 		let key_id = 2;
 		let pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![old_prid], 0)
+			.with_page(1, &vec![(1, 0)], &vec![old_prid], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,
@@ -365,7 +365,7 @@ mod tests {
 		manager.import_pri(dsnp_user_id, &pages).expect("should work");
 		let new_prid = DsnpPrid::new(&[10u8, 20, 30, 40, 50, 60, 70, 80]);
 		let new_pages = PageDataBuilder::new(Friendship(PrivacyType::Private))
-			.with_page(1, &vec![1], &vec![new_prid.clone()], 0)
+			.with_page(1, &vec![(1, 0)], &vec![new_prid.clone()], 0)
 			.with_encryption_key(ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id,

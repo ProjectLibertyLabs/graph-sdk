@@ -105,6 +105,9 @@ pub struct Config {
 	#[serde(rename = "sdkMaxUsersGraphSize")]
 	pub sdk_max_users_graph_size: u32,
 
+	#[serde(rename = "sdkMaxStaleFriendshipDays")]
+	pub sdk_max_stale_friendship_days: u32,
+
 	#[serde(rename = "maxGraphPageSizeBytes")]
 	pub max_graph_page_size_bytes: u32,
 
@@ -188,6 +191,7 @@ mod test {
 	fn config_import_success() -> Result<(), serde_json::Error> {
 		let expected_config = Config {
 			sdk_max_users_graph_size: 1000,
+			sdk_max_stale_friendship_days: 90,
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,

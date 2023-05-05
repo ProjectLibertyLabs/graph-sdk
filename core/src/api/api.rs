@@ -60,6 +60,12 @@ pub trait GraphAPI {
 
 	/// return a list dsnp user ids that require keys
 	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>>;
+
+	/// Get a list of all private friendship connections that are only valid from users side
+	fn get_one_sided_private_friendship_connections(
+		&self,
+		user_id: &DsnpUserId,
+	) -> Result<Vec<DsnpGraphEdge>>;
 }
 
 impl GraphState {
@@ -235,6 +241,7 @@ impl GraphAPI for GraphState {
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
 	}
 
+	/// return a list dsnp user ids that require keys
 	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>> {
 		let private_friendship_schema_id = self
 			.environment
@@ -254,6 +261,24 @@ impl GraphAPI for GraphState {
 			.deref()
 			.borrow()
 			.find_users_without_keys(all_connections.into_iter().collect()))
+	}
+
+	/// Get a list of all private friendship connections that are only valid from users side
+	fn get_one_sided_private_friendship_connections(
+		&self,
+		user_id: &DsnpUserId,
+	) -> Result<Vec<DsnpGraphEdge>> {
+		let private_friendship_schema_id = self
+			.environment
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
+			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
+		let user_graph = match self.user_map.get(user_id) {
+			Some(graph) => graph,
+			None => return Err(Error::msg("user not present in graph state")),
+		};
+		let graph = user_graph.graph(&private_friendship_schema_id);
+		graph.get_one_sided_friendships()
 	}
 }
 
@@ -404,7 +429,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)
@@ -425,7 +450,7 @@ mod test {
 		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
 		let mapped: HashSet<_> = connections
 			.into_iter()
-			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.map(|(c, s)| DsnpGraphEdge { user_id: c, since: s })
 			.collect();
 		assert_eq!(res_set, mapped);
 	}
@@ -448,7 +473,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
@@ -470,7 +495,7 @@ mod test {
 		let res_set: HashSet<_> = res.unwrap().iter().copied().collect();
 		let mapped: HashSet<_> = connections
 			.into_iter()
-			.map(|c| DsnpGraphEdge { user_id: c, since: 0 })
+			.map(|(c, s)| DsnpGraphEdge { user_id: c, since: s })
 			.collect();
 		assert_eq!(res_set, mapped);
 	}
@@ -486,7 +511,7 @@ mod test {
 			.expect("should exist");
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids = vec![
 			DsnpPrid::new(&[1, 2, 3, 4, 5, 6, 7, 4]),
 			DsnpPrid::new(&[10, 2, 3, 4, 5, 6, 7, 4]),
@@ -527,7 +552,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
@@ -625,7 +650,7 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 123;
-		let connections = vec![2, 3, 4, 5];
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)

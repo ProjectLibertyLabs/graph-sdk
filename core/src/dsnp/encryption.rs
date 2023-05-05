@@ -77,7 +77,7 @@ mod test {
 
 		let key_pair = KeyPairType::Version1_0(StackKeyPair::from_seed(&[0, 1, 2, 3, 4]));
 		let mut encrypted = SealBox.encrypt(&plain_data, &key_pair.borrow().into()).unwrap();
-		encrypted[1] = encrypted[1].saturating_add(1); // corrupting data
+		encrypted[1] = !encrypted[1]; // corrupting data
 		let decrypted = SealBox.decrypt(&encrypted, &key_pair.into());
 
 		assert!(decrypted.is_err());

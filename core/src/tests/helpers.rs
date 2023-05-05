@@ -40,8 +40,8 @@ impl From<DsnpUserId> for DsnpPrid {
 }
 
 /// Create test data for a single page
-pub fn create_test_ids_and_page() -> (Vec<DsnpUserId>, GraphPage) {
-	let ids: Vec<DsnpUserId> = vec![1u64, 2u64, 3u64].to_vec();
+pub fn create_test_ids_and_page() -> (Vec<(DsnpUserId, u64)>, GraphPage) {
+	let ids: Vec<(DsnpUserId, u64)> = vec![(1u64, 0), (2u64, 0), (3u64, 0)].to_vec();
 	let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
 		.with_page(1, &ids, &vec![], 0)
 		.build();
@@ -83,10 +83,11 @@ pub fn create_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
 	let ids_per_page = 5;
 	let mut curr_id = 0u64;
 	for i in 0..num_pages {
-		let ids: Vec<DsnpUserId> = (curr_id..(curr_id + ids_per_page)).collect();
+		let ids: Vec<(DsnpUserId, u64)> =
+			(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
 		let prids = match connection_type {
 			ConnectionType::Friendship(PrivacyType::Private) =>
-				ids.iter().cloned().map(|id| DsnpPrid::from(id)).collect(),
+				ids.iter().cloned().map(|(id, _)| DsnpPrid::from(id)).collect(),
 			_ => Vec::<DsnpPrid>::new(),
 		};
 		page_builder = page_builder.with_page(i, &ids, &prids, 0);
@@ -179,32 +180,29 @@ impl KeyDataBuilder {
 pub struct GraphPageBuilder {
 	connection_type: ConnectionType,
 	// using BTreeMap to keep the pages sorted
-	pages: BTreeMap<PageId, (Vec<DsnpUserId>, Vec<DsnpPrid>, u32)>,
-	// Use a non-zero creation time for connections in order to generate worst-case compression scenarios
-	use_noisy_creation_time: bool,
+	pages: BTreeMap<PageId, (Vec<DsnpGraphEdge>, Vec<DsnpPrid>, u32)>,
 }
 
 impl GraphPageBuilder {
 	pub fn new(connection_type: ConnectionType) -> Self {
-		Self { connection_type, pages: BTreeMap::new(), use_noisy_creation_time: false }
+		Self { connection_type, pages: BTreeMap::new() }
 	}
 
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
 		let (c, p, hash) = self.pages.entry(page_id).or_insert((vec![], vec![], 0));
-		c.extend_from_slice(connections);
+		let edges: Vec<_> = connections
+			.iter()
+			.map(|(u, s)| DsnpGraphEdge { user_id: *u, since: *s })
+			.collect();
+		c.extend_from_slice(&edges);
 		p.extend_from_slice(prids);
 		*hash = content_hash;
-		self
-	}
-
-	pub fn with_noisy_creation_time(mut self, b: bool) -> Self {
-		self.use_noisy_creation_time = b;
 		self
 	}
 
@@ -213,18 +211,7 @@ impl GraphPageBuilder {
 			.iter()
 			.map(|(page_id, (connections, prids, hash))| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
-				page.set_connections(
-					connections
-						.iter()
-						.map(|c| {
-							let since = match self.use_noisy_creation_time {
-								true => c - 1,
-								false => 0,
-							};
-							DsnpGraphEdge { user_id: *c, since }
-						})
-						.collect(),
-				);
+				page.set_connections(connections.iter().cloned().collect());
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 					page.set_prids(prids.clone()).expect("should set");
 				}
@@ -258,7 +245,7 @@ impl PageDataBuilder {
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
@@ -333,7 +320,7 @@ impl ImportBundleBuilder {
 	pub fn with_page(
 		mut self,
 		page_id: PageId,
-		connections: &[DsnpUserId],
+		connections: &[(DsnpUserId, u64)],
 		prids: &[DsnpPrid],
 		content_hash: u32,
 	) -> Self {
@@ -383,7 +370,7 @@ pub fn benchmark_page_capacity(connection_type: ConnectionType) -> (usize, usize
 		};
 		let connection_id = rng.sample(dist);
 		let prid = rng.sample(dist).into();
-		builder = builder.with_page(1, &[connection_id as u64], &[prid], 0);
+		builder = builder.with_page(1, &[(connection_id, connection_id - 1)], &[prid], 0);
 		let pages = builder.build_with_size();
 		let (page_len, page) = pages.first().expect("page should exist");
 		let page_size = page.content.len();
