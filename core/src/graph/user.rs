@@ -5,30 +5,55 @@ use crate::{
 };
 use anyhow::Result;
 use dsnp_graph_config::{Environment, SchemaId};
-use std::{
-	cell::RefCell,
-	collections::{HashMap, HashSet},
-	rc::Rc,
-};
+use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
 use crate::{
 	dsnp::dsnp_configs::DsnpVersionConfig,
 	graph::{
 		key_manager::UserKeyManager, shared_state_manager::SharedStateManager, updates::UpdateEvent,
 	},
-	util::time::time_in_ksecs,
+	util::{
+		time::time_in_ksecs,
+		transactional_hashmap::{Transactional, TransactionalHashMap},
+	},
 };
 
 use super::graph::Graph;
 
-pub type GraphMap = HashMap<SchemaId, Graph>;
+pub type GraphMap = TransactionalHashMap<SchemaId, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserGraph {
 	graphs: GraphMap,
 	update_tracker: UpdateTracker,
 	pub user_key_manager: Rc<RefCell<UserKeyManager>>,
+}
+
+impl Transactional for UserGraph {
+	fn commit(&mut self) {
+		let ids: Vec<_> = self.graphs.inner().keys().copied().collect();
+		for gid in ids {
+			if let Some(g) = self.graphs.get_mut(&gid) {
+				g.commit();
+			}
+		}
+		self.graphs.commit();
+		self.update_tracker.commit();
+		self.user_key_manager.borrow_mut().commit();
+	}
+
+	fn rollback(&mut self) {
+		self.graphs.rollback();
+		let ids: Vec<_> = self.graphs.inner().keys().copied().collect();
+		for gid in ids {
+			if let Some(g) = self.graphs.get_mut(&gid) {
+				g.rollback();
+			}
+		}
+		self.update_tracker.rollback();
+		self.user_key_manager.borrow_mut().rollback();
+	}
 }
 
 impl UserGraph {
@@ -92,22 +117,18 @@ impl UserGraph {
 		}
 	}
 
-	/// Clear all graphs associated with this user
-	pub fn clear_all(&mut self) {
-		self.graphs.iter_mut().for_each(|(_, g)| g.clear());
-	}
-
 	/// Calculate pending updates for all graphs for this user
 	pub fn calculate_updates(
-		&mut self,
+		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 	) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
-		for (schema_id, graph) in self.graphs.iter() {
-			let graph_data = graph.calculate_updates(
-				dsnp_version_config,
-				self.update_tracker.get_mut_updates_for_schema_id(*schema_id),
-			)?;
+		for (schema_id, graph) in self.graphs.inner().iter() {
+			let updates = match self.update_tracker.get_updates_for_schema_id(*schema_id) {
+				Some(updates) => updates.clone(),
+				None => Vec::<UpdateEvent>::new(),
+			};
+			let graph_data = graph.calculate_updates(dsnp_version_config, &updates)?;
 			result.extend(graph_data.into_iter());
 		}
 
@@ -138,9 +159,10 @@ impl UserGraph {
 	) -> Vec<DsnpGraphEdge> {
 		let mut connections: HashSet<DsnpGraphEdge> = self
 			.graphs
+			.inner()
 			.values()
 			.filter(|graph| graph.get_schema_id() == schema_id)
-			.flat_map(|graph| graph.pages().values().map(|p| p.connections()))
+			.flat_map(|graph| graph.pages().inner().values().map(|p| p.connections()))
 			.flatten()
 			.copied()
 			.collect();
@@ -187,24 +209,24 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
-		assert_eq!(user_graph.graphs.contains_key(&follow_public_schema_id), true);
+		assert_eq!(user_graph.graphs.inner().contains_key(&follow_public_schema_id), true);
 		let follow_private_schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
-		assert_eq!(user_graph.graphs.contains_key(&follow_private_schema_id), true);
+		assert_eq!(user_graph.graphs.inner().contains_key(&follow_private_schema_id), true);
 		let friendship_public_schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Public))
 			.expect("should exist");
-		assert_eq!(user_graph.graphs.contains_key(&friendship_public_schema_id), true);
+		assert_eq!(user_graph.graphs.inner().contains_key(&friendship_public_schema_id), true);
 		let friendship_private_schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
 			.expect("should exist");
-		assert_eq!(user_graph.graphs.contains_key(&friendship_private_schema_id), true);
+		assert_eq!(user_graph.graphs.inner().contains_key(&friendship_private_schema_id), true);
 
-		for graph in user_graph.graphs.values() {
+		for graph in user_graph.graphs.inner().values() {
 			let graph_len = iter_graph_connections!(graph).len();
 			assert_eq!(graph_len, 0);
 		}
@@ -279,7 +301,7 @@ mod test {
 			}
 		}
 
-		for (_, g) in user_graph.graphs.iter() {
+		for (_, g) in user_graph.graphs.inner().iter() {
 			assert_eq!(g.len(), 25);
 		}
 
@@ -290,37 +312,12 @@ mod test {
 			.expect("should exist");
 		user_graph.clear_graph(&schema_id);
 
-		for (schema_id_to_clear, g) in user_graph.graphs {
-			if schema_id_to_clear == schema_id {
+		for (schema_id_to_clear, g) in user_graph.graphs.inner() {
+			if schema_id_to_clear == &schema_id {
 				assert_eq!(g.len(), 0);
 			} else {
 				assert_eq!(g.len(), 25);
 			}
-		}
-	}
-
-	#[test]
-	fn clear_all_clears_all_graphs() {
-		let env = Environment::Mainnet;
-		let graph = create_test_graph();
-		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
-		for p in [PrivacyType::Public, PrivacyType::Private] {
-			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				let schema_id =
-					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				user_graph.set_graph(&schema_id, graph.clone());
-			}
-		}
-
-		for (_, g) in user_graph.graphs.iter() {
-			assert_eq!(g.len(), 25);
-		}
-
-		user_graph.clear_all();
-
-		for (_, g) in user_graph.graphs.iter() {
-			assert_eq!(g.len(), 0);
 		}
 	}
 }

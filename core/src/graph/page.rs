@@ -14,6 +14,7 @@ use crate::{
 	},
 	frequency::Frequency,
 	types::PrivateGraphChunk,
+	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 
 pub const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
@@ -47,9 +48,9 @@ pub struct GraphPage {
 	/// Current content hash of page as retrieved from chain
 	content_hash: u32,
 	/// List of PRIds
-	prids: Vec<DsnpPrid>,
+	prids: TransactionalVec<DsnpPrid>,
 	/// List of connections
-	connections: Vec<DsnpGraphEdge>,
+	connections: TransactionalVec<DsnpGraphEdge>,
 }
 
 /// Conversion for Public Graph
@@ -60,8 +61,8 @@ impl TryFrom<&PageData> for GraphPage {
 			page_id: *page_id,
 			privacy_type: PrivacyType::Public,
 			content_hash: *content_hash,
-			prids: Vec::new(),
-			connections: Frequency::read_public_graph(&content)?,
+			prids: TransactionalVec::new(),
+			connections: TransactionalVec::from(Frequency::read_public_graph(&content)?),
 		})
 	}
 }
@@ -93,7 +94,7 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 		}
 
 		if private_graph_chunk.is_none() {
-			// could not decrypt using the indicated key id ,let try with other keys
+			// could not decrypt using the indicated key id ,lets try with other keys
 			for other_key in keys.iter().filter(|k| k.key_id != key_id) {
 				let secret_key = other_key.key_pair.clone().into();
 				if let Ok(chunk) =
@@ -111,8 +112,8 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 				page_id: *page_id,
 				privacy_type: PrivacyType::Private,
 				content_hash: *content_hash,
-				prids: chunk.prids,
-				connections: chunk.inner_graph,
+				prids: TransactionalVec::from(chunk.prids),
+				connections: TransactionalVec::from(chunk.inner_graph),
 			}),
 		}
 	}
@@ -153,14 +154,26 @@ impl PrivatePageDataProvider for GraphPage {
 			content_hash: self.content_hash,
 			content: Frequency::write_private_graph(
 				&PrivateGraphChunk {
-					prids: self.prids.clone(),
-					inner_graph: self.connections.clone(),
+					prids: self.prids.inner().clone(),
+					inner_graph: self.connections.inner().clone(),
 					key_id: key.clone().key_id,
 				},
 				dsnp_version_config,
 				&key.key_pair.borrow().into(),
 			)?,
 		})
+	}
+}
+
+impl Transactional for GraphPage {
+	fn commit(&mut self) {
+		self.prids.commit();
+		self.connections.commit();
+	}
+
+	fn rollback(&mut self) {
+		self.prids.rollback();
+		self.connections.rollback();
 	}
 }
 
@@ -171,24 +184,25 @@ impl GraphPage {
 			page_id,
 			privacy_type,
 			content_hash: 0,
-			prids: Vec::<DsnpPrid>::new(),
-			connections: Vec::<DsnpGraphEdge>::new(),
+			prids: TransactionalVec::<DsnpPrid>::new(),
+			connections: TransactionalVec::<DsnpGraphEdge>::new(),
 		}
 	}
 
 	/// Getter for the prids in the page
 	pub fn prids(&self) -> &Vec<DsnpPrid> {
-		&self.prids
+		self.prids.inner()
 	}
 
 	/// Getter for the connections in the page
 	pub fn connections(&self) -> &Vec<DsnpGraphEdge> {
-		&self.connections
+		self.connections.inner()
 	}
 
 	/// Setter for the connections in the page
 	pub fn set_connections(&mut self, connections: Vec<DsnpGraphEdge>) {
-		self.connections = connections
+		self.connections.clear();
+		self.connections.extend_from_slice(&connections);
 	}
 
 	/// Getter for the content hash
@@ -208,17 +222,21 @@ impl GraphPage {
 
 	/// Tester to check if the page contains a connection to a particular DsnpUserId
 	pub fn contains(&self, connection_id: &DsnpUserId) -> bool {
-		self.connections.iter().any(|c| c.user_id == *connection_id)
+		self.connections.inner().iter().any(|c| c.user_id == *connection_id)
 	}
 
 	/// Checks if any of the users contains in this pages connections
 	pub fn contains_any(&self, connections: &Vec<DsnpUserId>) -> bool {
-		self.connections.iter().map(|c| c.user_id).any(|id| connections.contains(&id))
+		self.connections
+			.inner()
+			.iter()
+			.map(|c| c.user_id)
+			.any(|id| connections.contains(&id))
 	}
 
 	/// Function to test if the page is empty
 	pub fn is_empty(&self) -> bool {
-		self.connections.is_empty()
+		self.connections.inner().is_empty()
 	}
 
 	/// Determine if page is full
@@ -226,7 +244,7 @@ impl GraphPage {
 	///  aggressive:true  -> do actual compression to determine resulting actual page size
 	pub fn is_full(&self, aggressive: bool) -> bool {
 		if !aggressive {
-			return self.connections.len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
+			return self.connections.inner().len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
 		}
 
 		todo!()
@@ -260,16 +278,17 @@ impl GraphPage {
 
 	/// Refresh PRIds based on latest
 	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
-		if self.connections.len() != prids.len() {
+		if self.connections.inner().len() != prids.len() {
 			return Err(Error::msg("prids len should be equal to connections len"))
 		}
-		self.prids = prids;
+		self.prids.clear();
+		self.prids.extend_from_slice(&prids);
 		Ok(())
 	}
 
 	/// Clear prids in the page
 	pub fn clear_prids(&mut self) {
-		self.prids = vec![];
+		self.prids.clear();
 	}
 }
 
@@ -346,7 +365,7 @@ mod test {
 	fn is_full_non_aggressive_returns_false_for_non_full() {
 		let mut page = GraphPage::new(PrivacyType::Private, 0);
 		let mut last_connection: DsnpUserId = 0;
-		while page.connections.len() < APPROX_MAX_CONNECTIONS_PER_PAGE {
+		while page.connections.inner().len() < APPROX_MAX_CONNECTIONS_PER_PAGE {
 			assert_eq!(page.is_full(false), false);
 			let _ = page.add_connection(&last_connection);
 			last_connection += 1;
@@ -447,11 +466,13 @@ mod test {
 			page_id,
 			privacy_type,
 			content_hash,
-			prids: vec![],
-			connections: connections
-				.iter()
-				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
-				.collect(),
+			prids: TransactionalVec::new(),
+			connections: TransactionalVec::from(
+				connections
+					.iter()
+					.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
+					.collect(),
+			),
 		};
 		// act
 		let graph_page = GraphPage::try_from(page_data.get(0).unwrap());
@@ -480,11 +501,13 @@ mod test {
 			page_id,
 			privacy_type,
 			content_hash,
-			prids: vec![],
-			connections: connections
-				.iter()
-				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
-				.collect(),
+			prids: TransactionalVec::new(),
+			connections: TransactionalVec::from(
+				connections
+					.iter()
+					.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
+					.collect(),
+			),
 		};
 
 		// act
@@ -515,11 +538,13 @@ mod test {
 			page_id,
 			privacy_type,
 			content_hash,
-			prids,
-			connections: connections
-				.iter()
-				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
-				.collect(),
+			prids: TransactionalVec::from(prids),
+			connections: TransactionalVec::from(
+				connections
+					.iter()
+					.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
+					.collect(),
+			),
 		};
 
 		// act
@@ -556,11 +581,13 @@ mod test {
 			page_id,
 			privacy_type,
 			content_hash,
-			prids,
-			connections: connections
-				.iter()
-				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
-				.collect(),
+			prids: TransactionalVec::from(prids),
+			connections: TransactionalVec::from(
+				connections
+					.iter()
+					.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
+					.collect(),
+			),
 		};
 
 		// act
@@ -605,8 +632,8 @@ mod test {
 			page_id: 1,
 			privacy_type: PrivacyType::Private,
 			content_hash: 10,
-			prids: vec![DsnpPrid::from(vec![1u8, 2, 3, 4, 5, 6, 7, 8])],
-			connections: vec![DsnpGraphEdge { user_id: 70, since: 2873 }],
+			prids: TransactionalVec::from(vec![DsnpPrid::from(vec![1u8, 2, 3, 4, 5, 6, 7, 8])]),
+			connections: TransactionalVec::from(vec![DsnpGraphEdge { user_id: 70, since: 2873 }]),
 		};
 		let expected = PageData { page_id: 1, content: vec![], content_hash: 10 };
 
@@ -631,11 +658,13 @@ mod test {
 			page_id,
 			privacy_type,
 			content_hash,
-			prids: vec![],
-			connections: connections
-				.iter()
-				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
-				.collect(),
+			prids: TransactionalVec::new(),
+			connections: TransactionalVec::from(
+				connections
+					.iter()
+					.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
+					.collect(),
+			),
 		};
 
 		// act

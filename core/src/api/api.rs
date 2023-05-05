@@ -10,13 +10,14 @@ use crate::{
 		updates::UpdateEvent,
 		user::UserGraph,
 	},
+	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use anyhow::{Error, Ok, Result};
 use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
 use std::{
 	cell::RefCell,
 	cmp::min,
-	collections::{hash_map::Entry, HashMap, HashSet},
+	collections::{hash_map::Entry, HashSet},
 	ops::{Deref, DerefMut},
 	rc::Rc,
 };
@@ -25,7 +26,7 @@ use std::{
 pub struct GraphState {
 	environment: Environment,
 	shared_state_manager: Rc<RefCell<SharedStateManager>>,
-	user_map: HashMap<DsnpUserId, UserGraph>,
+	user_map: TransactionalHashMap<DsnpUserId, UserGraph>,
 }
 
 pub trait GraphAPI {
@@ -45,7 +46,7 @@ pub trait GraphAPI {
 
 	/// Calculate the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
-	fn export_updates(&mut self) -> Result<Vec<Update>>;
+	fn export_updates(&self) -> Result<Vec<Update>>;
 
 	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
@@ -72,7 +73,7 @@ impl GraphState {
 	pub fn new(environment: Environment) -> Self {
 		Self {
 			environment,
-			user_map: HashMap::<DsnpUserId, UserGraph>::new(),
+			user_map: TransactionalHashMap::new(),
 			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
 		}
 	}
@@ -81,7 +82,7 @@ impl GraphState {
 		let size = min(capacity, environment.get_config().sdk_max_users_graph_size as usize);
 		Self {
 			environment,
-			user_map: HashMap::<DsnpUserId, UserGraph>::with_capacity(size),
+			user_map: TransactionalHashMap::with_capacity(size),
 			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
 		}
 	}
@@ -91,82 +92,64 @@ impl GraphState {
 	}
 }
 
+impl Transactional for GraphState {
+	fn commit(&mut self) {
+		let ids: Vec<_> = self.user_map.inner().keys().copied().collect();
+		for uid in ids {
+			if let Some(u) = self.user_map.get_mut(&uid) {
+				u.commit();
+			}
+		}
+		self.user_map.commit();
+		self.shared_state_manager.deref().borrow_mut().commit();
+	}
+
+	fn rollback(&mut self) {
+		self.user_map.rollback();
+		let ids: Vec<_> = self.user_map.inner().keys().copied().collect();
+		for uid in ids {
+			if let Some(u) = self.user_map.get_mut(&uid) {
+				u.rollback();
+			}
+		}
+		self.shared_state_manager.deref().borrow_mut().rollback();
+	}
+}
+
 impl GraphAPI for GraphState {
 	/// Check if graph state contains a user
 	fn contains_user_graph(&self, user_id: &DsnpUserId) -> bool {
-		self.user_map.contains_key(user_id)
+		self.user_map.inner().contains_key(user_id)
 	}
 
 	/// Return number of users in the current graph state
 	fn len(&self) -> usize {
-		self.user_map.len()
+		self.user_map.inner().len()
 	}
 
 	/// Remove the user graph from an instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId) {
 		self.user_map.remove(user_id);
+		self.user_map.commit();
 	}
 
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	// TODO: should make it transactional
 	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()> {
-		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
-			let dsnp_config = self
-				.get_dsnp_config(schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
-			let config = self.environment.get_config();
-			let connection_type = config
-				.get_connection_type_from_schema_id(schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
-			self.shared_state_manager
-				.deref()
-				.borrow_mut()
-				.deref_mut()
-				.import_dsnp_keys(&dsnp_keys)?;
-
-			let user_graph = self.get_or_create_user_graph(dsnp_user_id)?;
-
-			let include_secret_keys = !key_pairs.is_empty();
-			{
-				let mut user_key_manager = user_graph.user_key_manager.borrow_mut();
-
-				// import key-pairs inside user key manager
-				user_key_manager.deref_mut().import_key_pairs(key_pairs)?;
-			};
-
-			let graph = user_graph.graph_mut(&schema_id);
-			graph.clear();
-
-			match (connection_type.privacy_type(), include_secret_keys) {
-				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
-				(PrivacyType::Private, true) => {
-					graph.import_private(&dsnp_config, connection_type, &pages)?;
-					self.shared_state_manager
-						.deref()
-						.borrow_mut()
-						.deref_mut()
-						.import_pri(dsnp_user_id, &pages)
-				},
-				(PrivacyType::Private, false) => self
-					.shared_state_manager
-					.deref()
-					.borrow_mut()
-					.deref_mut()
-					.import_pri(dsnp_user_id, &pages),
-			}?;
-		}
-
-		Ok(())
+		let result = self.do_import_users_data(&payloads);
+		match result {
+			Result::Ok(_) => self.commit(),
+			Result::Err(_) => self.rollback(),
+		};
+		result
 	}
 
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed
-	// TODO: should make it transactional
-	fn export_updates(&mut self) -> Result<Vec<Update>> {
+	fn export_updates(&self) -> Result<Vec<Update>> {
 		let mut result = vec![];
-		let keys: Vec<_> = self.user_map.keys().copied().collect();
+		let keys: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in keys {
 			let schemas = self
 				.user_map
@@ -178,7 +161,7 @@ impl GraphAPI for GraphState {
 				schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
 
 			// we are checking user existence on previous lines so we can unwrap safely here
-			let user_graph = self.user_map.get_mut(&user_id).unwrap();
+			let user_graph = self.user_map.get(&user_id).unwrap();
 			for dsnp_config in related_dsnp_configs.iter() {
 				let updates = user_graph.calculate_updates(dsnp_config)?;
 				result.extend(updates);
@@ -188,42 +171,13 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Apply actions (Connect, Disconnect) to imported users graph
-	// TODO: should become transactional
 	fn apply_actions(&mut self, actions: &[Action]) -> Result<()> {
-		for action in actions {
-			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
-			let update_event = match action {
-				Action::Connect {
-					connection: Connection { ref dsnp_user_id, ref schema_id },
-					..
-				} => {
-					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
-						return Err(Error::msg(format!(
-							"Connection from {} to {} already exists!",
-							action.owner_dsnp_user_id(),
-							dsnp_user_id
-						)))
-					}
-					UpdateEvent::create_add(*dsnp_user_id, *schema_id)
-				},
-				Action::Disconnect {
-					connection: Connection { ref dsnp_user_id, ref schema_id },
-					..
-				} => {
-					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
-						return Err(Error::msg(format!(
-							"Connection from {} to {} does not exists to be disconnected!",
-							action.owner_dsnp_user_id(),
-							dsnp_user_id
-						)))
-					}
-					UpdateEvent::create_remove(*dsnp_user_id, *schema_id)
-				},
-			};
-
-			owner_graph.update_tracker_mut().register_update(&update_event)?;
-		}
-		Ok(())
+		let result = self.do_apply_actions(actions);
+		match result {
+			Result::Ok(_) => self.commit(),
+			Result::Err(_) => self.rollback(),
+		};
+		result
 	}
 
 	/// Get a list of all connections of the indicated type for the user
@@ -250,6 +204,7 @@ impl GraphAPI for GraphState {
 			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
 		let all_connections: HashSet<_> = self
 			.user_map
+			.inner()
 			.values()
 			.flat_map(|user_graph| {
 				user_graph.get_all_connections_of(private_friendship_schema_id, true)
@@ -293,8 +248,8 @@ impl GraphState {
 
 	/// Gets an existing or creates a new UserGraph
 	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
-		let is_full =
-			self.user_map.len() >= self.environment.get_config().sdk_max_users_graph_size as usize;
+		let is_full = self.user_map.inner().len() >=
+			self.environment.get_config().sdk_max_users_graph_size as usize;
 		match self.user_map.entry(dsnp_user_id) {
 			Entry::Occupied(o) => Ok(o.into_mut()),
 			Entry::Vacant(v) => {
@@ -308,6 +263,93 @@ impl GraphState {
 				)))
 			},
 		}
+	}
+
+	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
+		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
+			let dsnp_config = self
+				.get_dsnp_config(*schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+			let connection_type = self
+				.environment
+				.get_config()
+				.get_connection_type_from_schema_id(*schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+			self.shared_state_manager
+				.deref()
+				.borrow_mut()
+				.deref_mut()
+				.import_dsnp_keys(&dsnp_keys)?;
+
+			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
+
+			let include_secret_keys = !key_pairs.is_empty();
+			{
+				let mut user_key_manager = user_graph.user_key_manager.borrow_mut();
+
+				// import key-pairs inside user key manager
+				user_key_manager.deref_mut().import_key_pairs(key_pairs.clone())?;
+			};
+
+			let graph = user_graph.graph_mut(&schema_id);
+			graph.clear();
+
+			match (connection_type.privacy_type(), include_secret_keys) {
+				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
+				(PrivacyType::Private, true) => {
+					graph.import_private(&dsnp_config, connection_type, pages)?;
+					self.shared_state_manager
+						.deref()
+						.borrow_mut()
+						.deref_mut()
+						.import_pri(*dsnp_user_id, pages)
+				},
+				(PrivacyType::Private, false) => self
+					.shared_state_manager
+					.deref()
+					.borrow_mut()
+					.deref_mut()
+					.import_pri(*dsnp_user_id, pages),
+			}?;
+		}
+		Ok(())
+	}
+
+	fn do_apply_actions(&mut self, actions: &[Action]) -> Result<()> {
+		for action in actions {
+			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
+			let update_event = match action {
+				Action::Connect {
+					connection: Connection { ref dsnp_user_id, ref schema_id },
+					..
+				} => {
+					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						return Err(Error::msg(format!(
+							"Connection from {} to {} already exists!",
+							action.owner_dsnp_user_id(),
+							dsnp_user_id
+						)))
+					}
+					UpdateEvent::create_add(*dsnp_user_id, *schema_id)
+				},
+				Action::Disconnect {
+					connection: Connection { ref dsnp_user_id, ref schema_id },
+					..
+				} => {
+					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						return Err(Error::msg(format!(
+							"Connection from {} to {} does not exists to be disconnected!",
+							action.owner_dsnp_user_id(),
+							dsnp_user_id
+						)))
+					}
+					UpdateEvent::create_remove(*dsnp_user_id, *schema_id)
+				},
+			};
+
+			owner_graph.update_tracker_mut().register_update(&update_event)?;
+		}
+		Ok(())
 	}
 }
 
@@ -335,7 +377,7 @@ mod test {
 		);
 		let capacity: usize = 5;
 		let new_state = GraphState::with_capacity(env, capacity);
-		assert!(new_state.user_map.capacity() >= capacity);
+		assert!(new_state.user_map.inner().capacity() >= capacity);
 	}
 
 	#[test]
@@ -344,7 +386,7 @@ mod test {
 			ConfigBuilder::new().with_sdk_max_users_graph_size(TEST_CAPACITY as u32).build(),
 		);
 		let new_state = GraphState::with_capacity(env, TEST_CAPACITY * 2);
-		assert!(new_state.user_map.capacity() >= TEST_CAPACITY);
+		assert!(new_state.user_map.inner().capacity() >= TEST_CAPACITY);
 	}
 
 	#[test]
@@ -410,7 +452,7 @@ mod test {
 		let _ = state.get_or_create_user_graph(0);
 		let _ = state.get_or_create_user_graph(1);
 		state.remove_user_graph(&99);
-		assert_eq!(state.user_map.len(), 2);
+		assert_eq!(state.user_map.inner().len(), 2);
 	}
 
 	#[test]

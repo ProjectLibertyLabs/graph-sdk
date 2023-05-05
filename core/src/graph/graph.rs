@@ -6,7 +6,10 @@ use crate::{
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
 		updates::UpdateEvent,
 	},
-	util::time::duration_days_since,
+	util::{
+		time::duration_days_since,
+		transactional_hashmap::{Transactional, TransactionalHashMap},
+	},
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
@@ -19,7 +22,7 @@ use std::{
 
 use super::page::GraphPage;
 
-pub type PageMap = HashMap<PageId, GraphPage>;
+pub type PageMap = TransactionalHashMap<PageId, GraphPage>;
 
 /// Graph structure to hold pages of connections of a single type
 #[derive(Debug, Clone)]
@@ -40,6 +43,28 @@ impl PartialEq for Graph {
 	}
 }
 
+impl Transactional for Graph {
+	fn commit(&mut self) {
+		let page_ids: Vec<_> = self.pages.inner().keys().copied().collect();
+		for pid in page_ids {
+			if let Some(g) = self.pages.get_mut(&pid) {
+				g.commit();
+			}
+		}
+		self.pages.commit();
+	}
+
+	fn rollback(&mut self) {
+		let page_ids: Vec<_> = self.pages.inner().keys().copied().collect();
+		for pid in page_ids {
+			if let Some(g) = self.pages.get_mut(&pid) {
+				g.rollback();
+			}
+		}
+		self.pages.rollback();
+	}
+}
+
 impl Graph {
 	/// Create a new, empty Graph
 	pub fn new<E>(
@@ -56,7 +81,7 @@ impl Graph {
 
 	/// Get total number of connections in graph
 	pub fn len(&self) -> usize {
-		self.pages.values().flat_map(|p| p.connections()).count()
+		self.pages.inner().values().flat_map(|p| p.connections()).count()
 	}
 
 	/// Getter for Pages in Graph
@@ -65,13 +90,14 @@ impl Graph {
 	}
 
 	/// Setter for Pages in Graph
+	#[cfg(test)]
 	pub fn set_pages(&mut self, pages: PageMap) {
 		self.pages = pages;
 	}
 
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
-		let existing_pages = self.pages.keys().cloned().collect::<HashSet<PageId>>();
+		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
 		for pid in 0..(self.environment.get_config().max_page_id as PageId) {
 			if !existing_pages.contains(&pid) {
 				return Some(pid)
@@ -101,13 +127,13 @@ impl Graph {
 	pub fn import_public(
 		&mut self,
 		connection_type: ConnectionType,
-		pages: Vec<PageData>,
+		pages: &Vec<PageData>,
 	) -> Result<()> {
 		if connection_type != self.get_connection_type() {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
 
-		let mut page_map = HashMap::<PageId, GraphPage>::new();
+		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			match GraphPage::try_from(page) {
 				Err(e) => return Err(e),
@@ -117,7 +143,10 @@ impl Graph {
 			};
 		}
 
-		self.set_pages(page_map);
+		self.pages.clear();
+		for (page_id, page) in page_map {
+			self.pages.insert(page_id, page);
+		}
 
 		Ok(())
 	}
@@ -134,7 +163,7 @@ impl Graph {
 		}
 
 		let keys = self.user_key_manager.deref().borrow().get_all_resolved_keys();
-		let mut page_map = PageMap::new();
+		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(e.into()),
@@ -144,7 +173,10 @@ impl Graph {
 			};
 		}
 
-		self.set_pages(page_map);
+		self.pages.clear();
+		for (page_id, page) in page_map {
+			self.pages.insert(page_id, page);
+		}
 
 		Ok(())
 	}
@@ -184,6 +216,7 @@ impl Graph {
 		// using tree-map to keep the order of pages consistent in update process
 		let mut updated_pages: BTreeMap<PageId, GraphPage> = self
 			.pages
+			.inner()
 			.iter()
 			.filter_map(|(page_id, page)| {
 				if pages_with_removals.contains(page_id) {
@@ -215,7 +248,7 @@ impl Graph {
 		let mut current_page: Option<Box<GraphPage>> = None;
 		while let Some(_) = add_iter.clone().peekable().peek() {
 			if current_page.is_none() {
-				let available_page = self.pages.iter().find(|(page_id, page)| {
+				let available_page = self.pages.inner().iter().find(|(page_id, page)| {
 					!updated_pages.contains_key(page_id) && !page.is_full(false)
 				});
 
@@ -312,6 +345,7 @@ impl Graph {
 	/// Error on duplicate PageId.
 	/// If Some(Page) supplied, insert the given page.
 	/// Otherwise, create a new empty page.
+	#[cfg(test)]
 	pub fn create_page(
 		&mut self,
 		page_id: &PageId,
@@ -346,12 +380,12 @@ impl Graph {
 
 	/// Boolean function to indicate if a connection is present in the graph
 	pub fn has_connection(&self, dsnp_id: &DsnpUserId) -> bool {
-		self.pages.iter().any(|(_, page)| page.contains(dsnp_id))
+		self.pages.inner().iter().any(|(_, page)| page.contains(dsnp_id))
 	}
 
 	/// Return the PageId in which the given connection resides, if found.
 	pub fn find_connection(&self, dsnp_id: &DsnpUserId) -> Option<PageId> {
-		for (id, page) in self.pages.iter() {
+		for (id, page) in self.pages.inner().iter() {
 			if page.contains(dsnp_id) {
 				return Some(*id)
 			}
@@ -363,6 +397,7 @@ impl Graph {
 	/// Return all PageIds containing any of the connections in the list
 	pub fn find_connections(&self, ids: &Vec<DsnpUserId>) -> Vec<PageId> {
 		self.pages
+			.inner()
 			.iter()
 			.filter_map(|(page_id, page)| match page.contains_any(ids) {
 				true => Some(*page_id),
@@ -384,7 +419,7 @@ impl Graph {
 			return Err(Error::msg("Add of duplicate connection in another page detected"))
 		}
 
-		if !self.pages.contains_key(page_id) {
+		if !self.pages.inner().contains_key(page_id) {
 			self.pages.insert(
 				*page_id,
 				GraphPage::new(self.get_connection_type().privacy_type(), *page_id),
@@ -422,7 +457,7 @@ impl Graph {
 		}
 
 		let mut result = vec![];
-		for c in self.pages().values().flat_map(|g| g.connections()) {
+		for c in self.pages.inner().values().flat_map(|g| g.connections()) {
 			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
 				result.push(*c)
 			}
@@ -480,6 +515,7 @@ impl Graph {
 macro_rules! iter_graph_connections {
 	( $x:expr ) => {{
 		$x.pages()
+			.inner()
 			.values()
 			.flat_map(|p| p.connections().iter().cloned())
 			.collect::<Vec<DsnpGraphEdge>>()
@@ -533,7 +569,7 @@ mod test {
 				Rc::new(RefCell::from(SharedStateManager::new())),
 			))),
 		);
-		assert_eq!(graph.pages().is_empty(), true);
+		assert_eq!(graph.pages().inner().is_empty(), true);
 	}
 
 	#[test]
@@ -550,7 +586,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
-		let mut pages = HashMap::<PageId, GraphPage>::new();
+		let mut pages = PageMap::new();
 		for i in 0..=1 {
 			let (_, p) = create_test_ids_and_page();
 			pages.insert(i, p);
@@ -565,8 +601,8 @@ mod test {
 			))),
 		);
 		graph.set_pages(pages.clone());
-		assert_eq!(pages.len(), graph.pages().len());
-		for i in 0..pages.len() as u16 {
+		assert_eq!(pages.inner().len(), graph.pages().inner().len());
+		for i in 0..pages.inner().len() as u16 {
 			assert_eq!(pages.get(&i), graph.pages().get(&i));
 		}
 	}
@@ -581,7 +617,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(CONN_TYPE)
 			.expect("should exist");
-		let pages: HashMap<PageId, GraphPage> = (0..environment.get_config().max_page_id as PageId)
+		let pages: PageMap = (0..environment.get_config().max_page_id as PageId)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		let graph = Graph {
@@ -608,8 +644,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(CONN_TYPE)
 			.expect("should exist");
-		let mut pages: HashMap<PageId, GraphPage> = (0..environment.get_config().max_page_id
-			as PageId)
+		let mut pages: PageMap = (0..environment.get_config().max_page_id as PageId)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		pages.remove(&8);
@@ -630,9 +665,9 @@ mod test {
 	#[test]
 	fn clear_removes_all_pages() {
 		let mut graph = create_test_graph();
-		assert_eq!(graph.pages.len() > 0, true);
+		assert_eq!(graph.pages.inner().len() > 0, true);
 		graph.clear();
-		assert_eq!(graph.pages.len(), 0);
+		assert_eq!(graph.pages.inner().len(), 0);
 	}
 
 	#[test]
@@ -656,8 +691,8 @@ mod test {
 		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
 		let pages = vec![blob];
 
-		let _ = graph.import_public(connection_type, pages);
-		assert_eq!(graph.pages.len(), 1);
+		let _ = graph.import_public(connection_type, &pages);
+		assert_eq!(graph.pages.inner().len(), 1);
 		let orig_connections: HashSet<DsnpUserId> =
 			INNER_TEST_DATA.iter().map(|edge| edge.user_id).collect();
 		let imported_connections: HashSet<DsnpUserId> =
@@ -710,7 +745,7 @@ mod test {
 		let res = graph.import_private(&dsnp_config, connection_type, &pages);
 
 		assert!(res.is_ok());
-		assert_eq!(graph.pages.len(), 1);
+		assert_eq!(graph.pages.inner().len(), 1);
 		let imported_connections: HashSet<DsnpUserId> =
 			iter_graph_connections!(graph).map(|edge| edge.user_id).collect();
 		assert_eq!(orig_connections, imported_connections);
@@ -795,9 +830,9 @@ mod test {
 		let mut graph = create_test_graph();
 		let page_to_add: PageId = 99;
 
-		assert_eq!(graph.pages().contains_key(&page_to_add), false);
+		assert_eq!(graph.pages().inner().contains_key(&page_to_add), false);
 		let _ = graph.add_connection_to_page(&page_to_add, &12345);
-		assert_eq!(graph.pages().contains_key(&page_to_add), true);
+		assert_eq!(graph.pages().inner().contains_key(&page_to_add), true);
 	}
 
 	#[test]
@@ -897,7 +932,7 @@ mod test {
 
 		assert_eq!(updates.len(), 2);
 		graph
-			.import_public(connection_type, updates_to_page(&updates))
+			.import_public(connection_type, &updates_to_page(&updates))
 			.expect("should import");
 
 		let removed_connection_1 = graph.find_connection(&1);
@@ -959,7 +994,7 @@ mod test {
 
 		assert_eq!(updates.len(), 1);
 		graph
-			.import_public(connection_type, updates_to_page(&updates))
+			.import_public(connection_type, &updates_to_page(&updates))
 			.expect("should import");
 
 		let added_connection_1 = graph.find_connection(&(curr_id + 1));

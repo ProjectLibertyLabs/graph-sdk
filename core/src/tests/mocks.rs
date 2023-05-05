@@ -34,7 +34,7 @@ impl ConnectionVerifier for MockUserKeyManager {
 		match self.verifications.get(&from) {
 			Some(Some(verified)) => Ok(*verified),
 			Some(None) => Err(Error::msg("Generic error in verifier!")),
-			None => Err(Error::msg("Non registered use!r")),
+			None => Err(Error::msg("Non registered user!")),
 		}
 	}
 }
