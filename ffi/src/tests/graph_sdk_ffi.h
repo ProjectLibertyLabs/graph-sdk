@@ -252,6 +252,8 @@ typedef struct {
   uint64_t since;
 } DsnpGraphEdge;
 
+void print_hello_graph(void);
+
 GraphState *graph_state_new(const Environment *environment);
 
 void graph_state_free(GraphState *graph_state);
