@@ -13,5 +13,8 @@ mod c_api;
 pub use c_api::*;
 mod bindings;
 pub use bindings::*;
+mod utils;
+pub use utils::*;
 
+#[cfg(test)]
 mod tests;
