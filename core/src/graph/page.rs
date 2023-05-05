@@ -310,7 +310,7 @@ mod test {
 	#[test]
 	fn page_contains_finds_item() {
 		let (ids, page) = create_test_ids_and_page();
-		for id in ids {
+		for (id, _) in ids {
 			assert_eq!(page.contains(&id as &DsnpUserId), true);
 		}
 	}
@@ -331,7 +331,8 @@ mod test {
 	#[test]
 	fn page_contains_any_finds_some() {
 		let (ids, page) = create_test_ids_and_page();
-		let ids_to_find = vec![*ids.first().unwrap(), 100, 200, 300, 400, 500];
+		let (user, _) = ids.first().unwrap();
+		let ids_to_find = vec![*user, 100, 200, 300, 400, 500];
 		assert_eq!(page.contains_any(&ids_to_find), true);
 	}
 
@@ -354,7 +355,9 @@ mod test {
 
 	#[test]
 	fn is_full_non_aggressive_returns_true_for_full() {
-		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64).collect::<Vec<u64>>();
+		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64)
+			.map(|u| (u, 0))
+			.collect::<Vec<(u64, u64)>>();
 		let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
 			.with_page(1, &connections, &vec![], 0)
 			.build();
@@ -405,7 +408,8 @@ mod test {
 	#[test]
 	fn remove_list_of_connections_removes_matching_connections() {
 		let (ids, mut page) = create_test_ids_and_page();
-		let mut ids_to_remove: Vec<DsnpUserId> = ids.iter().take(ids.len() / 2).cloned().collect();
+		let mut ids_to_remove: Vec<DsnpUserId> =
+			ids.iter().map(|(c, _)| c).take(ids.len() / 2).cloned().collect();
 		ids_to_remove.extend_from_slice(vec![100, 200, 300, 400].as_slice());
 
 		page.remove_connections(&ids_to_remove);
@@ -419,7 +423,7 @@ mod test {
 		// arrange
 		let (ids, mut page) = create_test_ids_and_page();
 		let mut prids: Vec<DsnpPrid> =
-			ids.iter().map(|id| DsnpPrid::new(&id.to_le_bytes())).collect();
+			ids.iter().map(|(id, _)| DsnpPrid::new(&id.to_le_bytes())).collect();
 		prids.remove(0); // making prids size different than connection size
 
 		// act
@@ -435,7 +439,7 @@ mod test {
 		let page_id = 10;
 		let privacy_type = Public;
 		let content_hash = 20;
-		let connections = vec![1, 2, 3, 4];
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
 		let page_data = PageDataBuilder::new(Follow(privacy_type))
 			.with_page(page_id, &connections, &vec![], content_hash)
 			.build();
@@ -446,7 +450,7 @@ mod test {
 			prids: vec![],
 			connections: connections
 				.iter()
-				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
 				.collect(),
 		};
 		// act
@@ -465,7 +469,7 @@ mod test {
 		let privacy_type = PrivacyType::Private;
 		let content_hash = 20;
 		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
-		let connections = vec![1, 2, 3, 4];
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
 		let key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let page_data = PageDataBuilder::new(Follow(privacy_type))
@@ -479,7 +483,7 @@ mod test {
 			prids: vec![],
 			connections: connections
 				.iter()
-				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
 				.collect(),
 		};
 
@@ -499,8 +503,8 @@ mod test {
 		let privacy_type = PrivacyType::Private;
 		let content_hash = 20;
 		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
-		let connections = vec![1, 2, 3, 4];
-		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|(id, _)| DsnpPrid::from(*id)).collect();
 		let key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let page_data = PageDataBuilder::new(Friendship(privacy_type))
@@ -514,7 +518,7 @@ mod test {
 			prids,
 			connections: connections
 				.iter()
-				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
 				.collect(),
 		};
 
@@ -534,8 +538,8 @@ mod test {
 		let privacy_type = PrivacyType::Private;
 		let content_hash = 20;
 		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
-		let connections = vec![1, 2, 3, 4];
-		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|(id, _)| DsnpPrid::from(*id)).collect();
 		let key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let other_key =
@@ -555,7 +559,7 @@ mod test {
 			prids,
 			connections: connections
 				.iter()
-				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
 				.collect(),
 		};
 
@@ -576,8 +580,8 @@ mod test {
 		let privacy_type = PrivacyType::Private;
 		let content_hash = 20;
 		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
-		let connections = vec![1, 2, 3, 4];
-		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|(id, _)| DsnpPrid::from(*id)).collect();
 		let encrypted_key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let other_key =
@@ -619,7 +623,7 @@ mod test {
 		let page_id = 10;
 		let privacy_type = Public;
 		let content_hash = 20;
-		let connections = vec![1, 2, 3, 4];
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
 		let page_data = PageDataBuilder::new(Follow(privacy_type))
 			.with_page(page_id, &connections, &vec![], content_hash)
 			.build();
@@ -630,7 +634,7 @@ mod test {
 			prids: vec![],
 			connections: connections
 				.iter()
-				.map(|c| DsnpGraphEdge { user_id: *c, since: 0 })
+				.map(|(c, s)| DsnpGraphEdge { user_id: *c, since: *s })
 				.collect(),
 		};
 
@@ -650,8 +654,8 @@ mod test {
 		let privacy_type = PrivacyType::Private;
 		let content_hash = 20;
 		let dsnp = DsnpVersionConfig::new(DsnpVersion::Version1_0);
-		let connections = vec![1, 2, 3, 4];
-		let prids: Vec<DsnpPrid> = connections.iter().map(|id| DsnpPrid::from(*id)).collect();
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|(id, _)| DsnpPrid::from(*id)).collect();
 		let key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let page_data = PageDataBuilder::new(Friendship(privacy_type))

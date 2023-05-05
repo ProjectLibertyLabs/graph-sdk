@@ -8,7 +8,7 @@ use crate::{
 	graph::shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
 };
 use anyhow::Result;
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, fmt::Debug, rc::Rc};
 
 /// Common trait that manages public and private keys for each user
 pub trait UserKeyProvider {
@@ -29,6 +29,9 @@ pub trait UserKeyProvider {
 pub trait ConnectionVerifier {
 	fn verify_connection(&self, from: DsnpUserId) -> Result<bool>;
 }
+
+/// a combining trait that provides all functionalities required by user key manager
+pub trait UserKeyManagerBase: UserKeyProvider + PriProvider + ConnectionVerifier + Debug {}
 
 #[derive(Debug)]
 pub struct UserKeyManager {
@@ -129,6 +132,8 @@ impl ConnectionVerifier for UserKeyManager {
 		Ok(false)
 	}
 }
+
+impl UserKeyManagerBase for UserKeyManager {}
 
 impl UserKeyManager {
 	pub fn new(
