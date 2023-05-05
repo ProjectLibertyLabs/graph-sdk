@@ -738,7 +738,7 @@ mod test {
 			privacy_type: PrivacyType::Private,
 			content_hash: 10,
 			prids: TransactionalVec::from(vec![prid.clone()]),
-			connections: TransactionalVec::from(vec![connection.clone()]),
+			connections: TransactionalVec::from(vec![connection]),
 		};
 		page.add_connection(&10).expect("should add");
 		page.set_prids(vec![prid.clone(), DsnpPrid::from(vec![10u8, 20, 30, 40, 50, 60, 70, 80])])
