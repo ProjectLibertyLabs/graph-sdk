@@ -211,7 +211,7 @@ impl GraphPageBuilder {
 			.iter()
 			.map(|(page_id, (connections, prids, hash))| {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
-				page.set_connections(connections.iter().cloned().collect());
+				page.set_connections(connections.clone());
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 					page.set_prids(prids.clone()).expect("should set");
 				}

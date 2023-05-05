@@ -1,4 +1,3 @@
-#[cfg_attr(all(test, not(feature = "calculate-page-capacity")), allow(dead_code))]
 use crate::{
 	dsnp::{
 		api_types::{GraphKeyPair, PageData, ResolvedKeyPair},
