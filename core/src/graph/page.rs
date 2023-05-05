@@ -637,13 +637,16 @@ mod test {
 	}
 }
 
-#[cfg(all(test, feature = "calculate-page-capacity"))]
+// #[cfg(all(test, feature = "calculate-page-capacity"))]
 mod page_capacity {
 	use super::*;
 	use crate::tests::helpers::*;
+	use std::{collections::hash_map::HashMap, path::PathBuf};
 
 	#[test]
 	fn calculate_page_capacities() {
+		let mut capacity_map: HashMap<ConnectionType, usize> = HashMap::new();
+
 		for c in [
 			ConnectionType::Follow(PrivacyType::Public),
 			ConnectionType::Friendship(PrivacyType::Public),
@@ -651,16 +654,54 @@ mod page_capacity {
 			ConnectionType::Friendship(PrivacyType::Private),
 		] {
 			let mut result_vec: Vec<usize> = Vec::new();
-			for _ in 0..100 {
+			for _ in 0..1 {
 				result_vec.push(benchmark_page_capacity(c).0);
 			}
 			result_vec.sort();
-			println!(
-				"{:?} best case: {:?}, worst case: {:?}",
-				c,
-				result_vec.last().unwrap(),
-				result_vec.first().unwrap()
+			capacity_map.insert(c, *result_vec.first().unwrap());
+		}
+
+		let mut capacity_str = "[".to_string();
+		capacity_map.iter().for_each(|(conn_type, capacity)| {
+			capacity_str.push_str(
+				match conn_type {
+					ConnectionType::Follow(PrivacyType::Public) =>
+						format!("(ConnectionType::Follow(PrivacyType::Public), {capacity})"),
+					ConnectionType::Follow(PrivacyType::Private) =>
+						format!("(ConnectionType::Follow(PrivacyType::Private), {capacity})"),
+					ConnectionType::Friendship(PrivacyType::Public) =>
+						format!("(ConnectionType::Friendship(PrivacyType::Public), {capacity})"),
+					ConnectionType::Friendship(PrivacyType::Private) =>
+						format!("(ConnectionType::Friendship(PrivacyType::Private), {capacity})"),
+				}
+				.as_str(),
 			);
+			capacity_str.push_str(",");
+		});
+		capacity_str.push_str("]");
+
+		let code = format!(
+			"use dsnp_graph_config::{{ConnectionType, PrivacyType}};
+use lazy_static::lazy_static;
+use std::collections::hash_map::*;
+
+lazy_static! {{
+	pub static ref PAGE_CAPACITIY_MAP: HashMap<ConnectionType, usize> = {{
+		let m = HashMap::from({});
+		m
+	}};
+}}
+",
+			capacity_str
+		);
+
+		let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+		path.push("src/graph/page_capacities.rs");
+
+		println!("expanded macro:\n{:?}\n{}", path.as_os_str(), code);
+		let result = std::fs::write(path, code);
+		if result.is_err() {
+			println!("Error: {:?}", result);
 		}
 
 		assert!(true);

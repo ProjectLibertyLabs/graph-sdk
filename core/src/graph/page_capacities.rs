@@ -5,10 +5,10 @@ use std::collections::hash_map::*;
 lazy_static! {
 	pub static ref PAGE_CAPACITIY_MAP: HashMap<ConnectionType, usize> = {
 		let m = HashMap::from([
-			(ConnectionType::Follow(PrivacyType::Public), 107),
-			(ConnectionType::Friendship(PrivacyType::Public), 107),
-			(ConnectionType::Follow(PrivacyType::Private), 101),
-			(ConnectionType::Friendship(PrivacyType::Private), 53),
+			(ConnectionType::Friendship(PrivacyType::Public), 94),
+			(ConnectionType::Follow(PrivacyType::Public), 93),
+			(ConnectionType::Follow(PrivacyType::Private), 88),
+			(ConnectionType::Friendship(PrivacyType::Private), 50),
 		]);
 		m
 	};
