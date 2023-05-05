@@ -12,7 +12,7 @@ pub trait Transactional {
 #[derive(Debug, Eq, PartialEq, Clone)]
 enum Reversible<K, V> {
 	Add { key: K, prev: Option<V> },
-	Remove { key: K, prev: Option<V> },
+	Remove { key: K, prev: V },
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
@@ -67,17 +67,19 @@ where
 
 	#[inline]
 	pub fn remove(&mut self, k: &K) -> Option<V> {
-		let prev = self.inner.remove(k);
-		self.rollback_operations
-			.push(Reversible::Remove { prev: prev.clone(), key: k.clone() });
-		prev
+		if let Some(v) = self.inner.remove(&k) {
+			self.rollback_operations
+				.push(Reversible::Remove { prev: v.clone(), key: k.clone() });
+			return Some(v)
+		}
+		None
 	}
 
 	#[inline]
 	pub fn clear(&mut self) {
 		for (key, value) in self.inner.iter() {
 			self.rollback_operations
-				.push(Reversible::Remove { key: key.clone(), prev: Some(value.clone()) });
+				.push(Reversible::Remove { key: key.clone(), prev: value.clone() });
 		}
 
 		self.inner.clear()
@@ -107,6 +109,8 @@ where
 	K: Eq + Hash + Clone,
 	V: Clone,
 {
+	/// This is creating a new TransactionalHashMap from iterator and since it is initializing
+	/// a new instance there is no need to track the initial items inside
 	fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> TransactionalHashMap<K, V> {
 		let mut map = TransactionalHashMap::new();
 		map.extend(iter);
@@ -142,10 +146,7 @@ where
 					Some(old) => self.inner.insert(key, old),
 					None => self.inner.remove(&key),
 				},
-				Reversible::Remove { prev, key } => match prev {
-					Some(old) => self.inner.insert(key, old),
-					None => None,
-				},
+				Reversible::Remove { prev, key } => self.inner.insert(key, prev),
 			};
 		}
 	}

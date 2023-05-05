@@ -55,13 +55,13 @@ impl Transactional for Graph {
 	}
 
 	fn rollback(&mut self) {
+		self.pages.rollback();
 		let page_ids: Vec<_> = self.pages.inner().keys().copied().collect();
 		for pid in page_ids {
 			if let Some(g) = self.pages.get_mut(&pid) {
 				g.rollback();
 			}
 		}
-		self.pages.rollback();
 	}
 }
 
@@ -98,7 +98,7 @@ impl Graph {
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
 		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
-		for pid in 0..(self.environment.get_config().max_page_id as PageId) {
+		for pid in 0..=(self.environment.get_config().max_page_id as PageId) {
 			if !existing_pages.contains(&pid) {
 				return Some(pid)
 			}
@@ -132,9 +132,15 @@ impl Graph {
 		if connection_type != self.get_connection_type() {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
-
+		let max_page_id = self.environment.get_config().max_page_id;
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
+			if page.page_id > max_page_id as PageId {
+				return Err(Error::msg(format!(
+					"Imported page has an invalid page Id {}",
+					page.page_id
+				)))
+			}
 			match GraphPage::try_from(page) {
 				Err(e) => return Err(e),
 				Ok(p) => {
@@ -162,9 +168,16 @@ impl Graph {
 			return Err(Error::msg("Incorrect connection type for graph import"))
 		}
 
+		let max_page_id = self.environment.get_config().max_page_id;
 		let keys = self.user_key_manager.deref().borrow().get_all_resolved_keys();
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
+			if page.page_id > max_page_id as PageId {
+				return Err(Error::msg(format!(
+					"Imported page has an invalid page Id {}",
+					page.page_id
+				)))
+			}
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(e.into()),
 				Ok(p) => {
@@ -617,7 +630,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(CONN_TYPE)
 			.expect("should exist");
-		let pages: PageMap = (0..environment.get_config().max_page_id as PageId)
+		let pages: PageMap = (0..=environment.get_config().max_page_id as PageId)
 			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
 			.collect();
 		let graph = Graph {
@@ -1320,5 +1333,34 @@ mod test {
 
 		// assert
 		assert!(one_sided.is_err());
+	}
+
+	#[test]
+	fn graph_page_rollback_should_revert_changes_on_graph_and_all_underlying_page() {
+		// arrange
+		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
+		let env = Environment::Mainnet;
+		let mut graph =
+			Graph::new(env, 1000, 2000, Rc::new(RefCell::from(MockUserKeyManager::new())));
+		let mut page_1 = GraphPage::new(connection_type.privacy_type(), 1);
+		let connection_dsnp = 900;
+		page_1.add_connection(&connection_dsnp).unwrap();
+		graph.pages.insert(1, page_1.clone());
+		graph.commit();
+
+		let page_1 = graph.pages.get_mut(&1).unwrap();
+		page_1.remove_connection(&connection_dsnp).unwrap();
+		page_1.add_connection(&500).unwrap();
+		let mut page_2 = GraphPage::new(connection_type.privacy_type(), 2);
+		page_2.add_connection(&400).unwrap();
+		graph.create_page(&2, Some(page_2)).unwrap();
+
+		// act
+		graph.rollback();
+
+		// assert
+		assert_eq!(graph.pages.inner().len(), 1);
+		assert_eq!(graph.pages.get(&1).unwrap().connections().len(), 1);
+		assert!(graph.pages.get(&1).unwrap().contains(&connection_dsnp));
 	}
 }

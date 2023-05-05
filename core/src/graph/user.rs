@@ -106,6 +106,7 @@ impl UserGraph {
 	}
 
 	/// Setter for the specified graph connection type
+	#[cfg(test)]
 	pub fn set_graph(&mut self, schema_id: &SchemaId, graph: Graph) {
 		self.graphs.insert(*schema_id, graph);
 	}
@@ -196,7 +197,10 @@ impl UserGraph {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::{iter_graph_connections, tests::helpers::*};
+	use crate::{graph::key_manager::UserKeyProvider, iter_graph_connections, tests::helpers::*};
+	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::GraphKeyType;
+	use std::ops::Deref;
 
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {
@@ -319,5 +323,47 @@ mod test {
 				assert_eq!(g.len(), 25);
 			}
 		}
+	}
+
+	#[test]
+	fn user_graph_rollback_should_revert_changes_on_user_and_underlying_graphs() {
+		// arrange
+		let env = Environment::Mainnet;
+		let graph = create_test_graph();
+		let mut user_graph =
+			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		user_graph.set_graph(&schema_id, graph.clone());
+		user_graph.commit();
+		let connection_dsnp = 1000000;
+		user_graph
+			.update_tracker
+			.register_update(&UpdateEvent::Add { dsnp_user_id: connection_dsnp, schema_id })
+			.unwrap();
+		let key = StackKeyPair::gen();
+		user_graph
+			.user_key_manager
+			.deref()
+			.borrow_mut()
+			.import_key_pairs(vec![GraphKeyPair {
+				secret_key: key.secret_key.to_vec(),
+				public_key: key.public_key.to_vec(),
+				key_type: GraphKeyType::X25519,
+			}])
+			.unwrap();
+		let graph = user_graph.graph_mut(&schema_id);
+		graph.add_connection_to_page(&1000, &connection_dsnp).unwrap();
+
+		// act
+		user_graph.rollback();
+
+		// assert
+		let graph = user_graph.graph(&schema_id);
+		assert!(graph.find_connection(&connection_dsnp).is_none());
+		assert!(!user_graph.update_tracker.has_updates());
+		assert_eq!(user_graph.user_key_manager.borrow().get_imported_keys().len(), 0);
 	}
 }

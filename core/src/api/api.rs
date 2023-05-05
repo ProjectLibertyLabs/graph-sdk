@@ -577,7 +577,8 @@ mod test {
 	}
 
 	#[test]
-	fn import_user_data_with_wrong_key_should_fail_for_private_follow_graph() {
+	fn import_user_data_with_wrong_key_should_fail_for_private_follow_graph_and_rollback_everything(
+	) {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id = env
@@ -612,6 +613,8 @@ mod test {
 
 		// assert
 		assert!(res.is_err());
+		assert_eq!(state.shared_state_manager.borrow().get_all_keys(dsnp_user_id).len(), 0);
+		assert!(state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true).is_err());
 	}
 
 	#[test]
@@ -658,6 +661,33 @@ mod test {
 		// act
 		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
 		assert!(state.apply_actions(&vec![disconnect_action]).is_err());
+	}
+
+	#[test]
+	fn apply_actions_error_should_rollback_every_action() {
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let owner_dsnp_user_id: DsnpUserId = 0;
+		let connect_action_1 = Action::Connect {
+			owner_dsnp_user_id,
+			connection: Connection { dsnp_user_id: 1, schema_id },
+		};
+		let connect_action_2 = Action::Connect {
+			owner_dsnp_user_id,
+			connection: Connection { dsnp_user_id: 2, schema_id },
+		};
+		let mut state = GraphState::new(env);
+
+		// act
+		assert!(state
+			.apply_actions(&vec![connect_action_1.clone(), connect_action_2, connect_action_1])
+			.is_err());
+
+		// assert
+		assert_eq!(state.user_map.inner().len(), 0);
 	}
 
 	#[test]

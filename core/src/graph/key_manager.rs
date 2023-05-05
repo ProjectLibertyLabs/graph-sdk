@@ -159,6 +159,11 @@ impl UserKeyManager {
 			keys: TransactionalVec::new(),
 		}
 	}
+
+	#[cfg(test)]
+	pub fn get_imported_keys(&self) -> &Vec<KeyPairType> {
+		self.keys.inner()
+	}
 }
 
 #[cfg(test)]

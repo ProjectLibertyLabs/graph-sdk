@@ -23,6 +23,8 @@ where
 		Self { inner: Vec::new(), rollback_operations: vec![] }
 	}
 
+	/// This is creating a new TransactionalVec from iterator and since it is initializing
+	/// a new instance there is no need to track the initial items inside
 	pub fn from(inner: Vec<T>) -> Self {
 		Self { inner, rollback_operations: vec![] }
 	}
@@ -96,7 +98,7 @@ mod tests {
 	use super::*;
 
 	#[test]
-	fn transactional_vec_should_revert_the_state_as_before() {
+	fn transactional_vec_should_revert_the_state_as_before_using_clean_and_extend() {
 		let arr = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 		let mut transactional = TransactionalVec::from(arr.clone());
 
@@ -119,5 +121,25 @@ mod tests {
 		transactional.extend_from_slice(&arr3);
 		transactional.commit();
 		assert_eq!(transactional.inner, arr3);
+	}
+
+	#[test]
+	fn transactional_vec_should_revert_the_state_as_before_using_push_and_retain() {
+		let arr = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+		let mut transactional = TransactionalVec::from(arr.clone());
+
+		let arr2 = vec![10, 11, 12, 13];
+		arr2.iter().for_each(|i| transactional.push(*i));
+		assert_eq!(transactional.inner, vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+
+		transactional.rollback();
+		assert_eq!(transactional.inner, arr);
+
+		transactional.retain(|i| *i < 5);
+		assert_eq!(transactional.inner, vec![1, 2, 3, 4]);
+		transactional.push(1000);
+
+		transactional.rollback();
+		assert_eq!(transactional.inner, arr);
 	}
 }

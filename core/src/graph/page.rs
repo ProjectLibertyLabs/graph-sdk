@@ -165,6 +165,7 @@ impl PrivatePageDataProvider for GraphPage {
 	}
 }
 
+/// Allows transactional operation support for graph page
 impl Transactional for GraphPage {
 	fn commit(&mut self) {
 		self.prids.commit();
@@ -703,5 +704,51 @@ mod test {
 		assert!(graph_page2.is_ok());
 		let graph_page2 = graph_page2.unwrap();
 		assert_eq!(graph_page, graph_page2);
+	}
+
+	#[test]
+	fn graph_page_commit_should_persist_changes_on_page() {
+		// arrange
+		let connections = vec![(1, 0), (2, 0), (3, 0), (4, 0)];
+		let prids: Vec<DsnpPrid> = connections.iter().map(|(id, _)| DsnpPrid::from(*id)).collect();
+		let mut page = GraphPage::new(PrivacyType::Private, 1);
+		connections.iter().for_each(|(u, _)| {
+			page.add_connection(u).unwrap();
+		});
+		page.set_prids(prids).unwrap();
+		let prid_len = page.prids.inner().len();
+		let connection_len = page.connections.inner().len();
+
+		// act
+		page.commit();
+		page.rollback();
+
+		// assert
+		assert_eq!(prid_len, page.prids.inner().len());
+		assert_eq!(connection_len, page.connections.inner().len());
+	}
+
+	#[test]
+	fn graph_page_rollback_should_revert_changes_on_page() {
+		// arrange
+		let prid = DsnpPrid::from(vec![1u8, 2, 3, 4, 5, 6, 7, 8]);
+		let connection = DsnpGraphEdge { user_id: 70, since: 2873 };
+		let mut page = GraphPage {
+			page_id: 1,
+			privacy_type: PrivacyType::Private,
+			content_hash: 10,
+			prids: TransactionalVec::from(vec![prid.clone()]),
+			connections: TransactionalVec::from(vec![connection.clone()]),
+		};
+		page.add_connection(&10).expect("should add");
+		page.set_prids(vec![prid.clone(), DsnpPrid::from(vec![10u8, 20, 30, 40, 50, 60, 70, 80])])
+			.expect("should add prid");
+
+		// act
+		page.rollback();
+
+		// assert
+		assert_eq!(page.prids.inner(), &vec![prid]);
+		assert_eq!(page.connections.inner(), &vec![connection]);
 	}
 }
