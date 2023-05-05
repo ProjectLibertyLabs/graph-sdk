@@ -1,5 +1,6 @@
 use crate::bindings::*;
 use dsnp_graph_core::api::api::GraphState as GraphStateRust;
+use libc::c_void;
 use std::collections::HashMap;
 
 // Define a C-compatible representation of GraphState
