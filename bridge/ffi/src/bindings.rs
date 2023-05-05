@@ -9,6 +9,7 @@ use libc::{c_void, size_t};
 pub struct KeyData {
 	index: u16,
 	content: *mut u8,
+	content_len: size_t,
 }
 
 /// Key Pair wrapper

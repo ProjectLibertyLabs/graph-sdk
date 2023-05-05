@@ -6,10 +6,10 @@ pub extern "C" fn print_hello_graph() {
 	println!("Hello, Graph!");
 }
 
-// Singleton for the Rust GraphState
+// Singleton for GraphState
 static mut GRAPH_STATE: Option<GraphState> = None;
 
-// Acquire a reference to the Rust GraphState
+// Intialize GraphState
 #[no_mangle]
 pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> bool {
 	let environment = &*environment;
@@ -19,7 +19,7 @@ pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> boo
 	true
 }
 
-// Free the Rust GraphState
+// Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn graph_state_free() -> bool {
 	GRAPH_STATE = None;

@@ -146,6 +146,7 @@ typedef uint32_t PageHash;
 typedef struct {
   uint16_t index;
   uint8_t *content;
+  size_t content_len;
 } KeyData;
 
 typedef struct {
