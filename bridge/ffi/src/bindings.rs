@@ -1,5 +1,8 @@
-use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType};
-use dsnp_graph_core::dsnp::api_types::Connection;
+use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType, SchemaId};
+use dsnp_graph_core::dsnp::{
+	api_types::{Connection, PageHash, PageId},
+	dsnp_types::DsnpUserId,
+};
 use libc::{c_void, size_t};
 /// KeyData wrapper
 #[repr(C)]
@@ -44,8 +47,8 @@ pub struct PageData {
 // GraphAPI wrapper
 #[repr(C)]
 pub struct DsnpKeys {
-	dsnp_user_id: u64,
-	keys_hash: u64,
+	dsnp_user_id: DsnpUserId,
+	keys_hash: PageHash,
 	keys: *mut KeyData,
 	keys_len: size_t,
 }
@@ -54,10 +57,10 @@ pub struct DsnpKeys {
 #[repr(C)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
-	pub dsnp_user_id: u64,
+	pub dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
-	pub schema_id: u16,
+	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
 	pub key_pairs: *mut GraphKeyPair,
@@ -84,7 +87,7 @@ pub enum ActionType {
 #[repr(C)]
 pub struct ConnectAction {
 	// dsnp user id
-	owner_dsnp_user_id: u64,
+	owner_dsnp_user_id: DsnpUserId,
 	// connection
 	connection: Connection,
 }
@@ -93,7 +96,7 @@ pub struct ConnectAction {
 #[repr(C)]
 pub struct DisconnectAction {
 	// dsnp user id
-	owner_dsnp_user_id: u64,
+	owner_dsnp_user_id: DsnpUserId,
 	// connection
 	connection: Connection,
 }
@@ -107,28 +110,19 @@ pub struct Action {
 	action: *mut c_void,
 }
 
-// DsnpGraphEdge wrapper
-#[repr(C)]
-pub struct DsnpGraphEdge {
-	// dsnp user id
-	user_id: u64,
-	// connection since
-	since: u64,
-}
-
 #[repr(C)]
 pub struct PersistPage {
 	/// owner of the social graph
-	owner_dsnp_user_id: u64,
+	owner_dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
-	schema_id: u16,
+	schema_id: SchemaId,
 
 	/// page id associated with changed page
-	page_id: u16,
+	page_id: PageId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: u32,
+	prev_hash: PageHash,
 
 	/// social graph page data
 	payload: *mut u8,
@@ -138,25 +132,25 @@ pub struct PersistPage {
 #[repr(C)]
 pub struct DeletePage {
 	/// owner of the social graph
-	owner_dsnp_user_id: u64,
+	owner_dsnp_user_id: DsnpUserId,
 
 	/// Schema id of removed data
-	schema_id: u16,
+	schema_id: SchemaId,
 
 	/// page id associated with changed page
-	page_id: u16,
+	page_id: PageId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: u32,
+	prev_hash: PageHash,
 }
 
 #[repr(C)]
 pub struct AddKey {
 	/// owner of the social graph
-	owner_dsnp_user_id: u64,
+	owner_dsnp_user_id: DsnpUserId,
 
 	/// previous hash value is used to avoid updating a stale state
-	prev_hash: u32,
+	prev_hash: PageHash,
 
 	/// social graph page data
 	payload: *mut u8,
@@ -178,7 +172,7 @@ pub struct SchemaConfig {
 
 #[repr(C)]
 pub struct SchemaConfigTuple {
-	pub schema_id: u16,
+	pub schema_id: SchemaId,
 	pub schema_config: SchemaConfig,
 }
 

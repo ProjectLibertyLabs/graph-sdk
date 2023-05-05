@@ -74,6 +74,7 @@ pub struct ImportBundle {
 
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
+#[repr(C)]
 #[derive(Debug, PartialEq)]
 pub struct DsnpKeys {
 	/// dsnp user id
