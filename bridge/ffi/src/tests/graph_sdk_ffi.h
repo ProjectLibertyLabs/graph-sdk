@@ -75,6 +75,7 @@ typedef struct {
 
 typedef struct {
   uint32_t sdk_max_users_graph_size;
+  uint32_t sdk_max_stale_friendship_days;
   uint32_t max_graph_page_size_bytes;
   uint32_t max_page_id;
   uint32_t max_key_page_size_bytes;
