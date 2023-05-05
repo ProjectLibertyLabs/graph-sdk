@@ -10,6 +10,6 @@ name = "graph_sdk_ffi"
 crate-type = ["cdylib"]
 
 [dependencies]
-dsnp-graph-core = { version = "0.1.0", path = "../core" }
-dsnp-graph-config = { version = "0.1.0", path = "../config" }
+dsnp-graph-core = { version = "0.1.0", path = "../../core" }
+dsnp-graph-config = { version = "0.1.0", path = "../../config" }
 libc = "0.2.0"

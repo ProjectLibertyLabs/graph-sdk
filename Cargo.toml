@@ -2,13 +2,13 @@
 members = [
     "core",
     "config",
-    "ffi"
+    "bridge/ffi",
 ]
 
 default-members = [
     "core",
     "config",
-    "ffi"
+    "bridge/ffi",
 ]
 
 [profile.release]
