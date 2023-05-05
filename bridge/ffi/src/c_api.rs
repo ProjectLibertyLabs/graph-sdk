@@ -1,7 +1,8 @@
 use crate::{bindings::*, utils::*};
+use dsnp_graph_config::SchemaId;
 use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
-	dsnp::dsnp_types::DsnpUserId,
+	dsnp::dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 
 #[no_mangle]
@@ -101,7 +102,7 @@ pub unsafe extern "C" fn graph_export_updates() -> *mut Update {
 	updates_ptr as *mut Update
 }
 
-// Graph apply actions 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
+// Graph apply actions
 #[no_mangle]
 pub unsafe extern "C" fn graph_apply_actions(actions: *const Action, actions_len: usize) -> bool {
 	if GRAPH_STATE.is_none() {
@@ -110,6 +111,66 @@ pub unsafe extern "C" fn graph_apply_actions(actions: *const Action, actions_len
 	let actions = std::slice::from_raw_parts(actions, actions_len);
 	let actions = actions_from_ffi(&actions);
 	GRAPH_STATE.as_mut().unwrap().apply_actions(&actions).is_ok()
+}
+
+// //	fn get_connections_for_user_graph(
+// 	&self,
+// 	user_id: &DsnpUserId,
+// 	schema_id: &SchemaId,
+// 	include_pending: bool,
+// ) ->
+
+// Graph get connections for user
+#[no_mangle]
+pub unsafe extern "C" fn graph_get_connections_for_user(
+	user_id: *const DsnpUserId,
+	schema_id: *const SchemaId,
+	include_pending: bool,
+) -> *mut DsnpGraphEdge {
+	if GRAPH_STATE.is_none() {
+		return std::ptr::null_mut()
+	}
+	let user_id = &*user_id;
+	let schema_id = &*schema_id;
+	let connections = GRAPH_STATE
+		.as_mut()
+		.unwrap()
+		.get_connections_for_user_graph(user_id, schema_id, include_pending)
+		.unwrap();
+	let _connections_len = connections.len();
+	let connections_ptr = Box::into_raw(Box::new(connections));
+	connections_ptr as *mut DsnpGraphEdge
+}
+
+// Get connections without keys
+#[no_mangle]
+pub unsafe extern "C" fn graph_get_connections_without_keys() -> *mut DsnpUserId {
+	if GRAPH_STATE.is_none() {
+		return std::ptr::null_mut()
+	}
+	let connections = GRAPH_STATE.as_mut().unwrap().get_connections_without_keys().unwrap();
+	let _connections_len = connections.len();
+	let connections_ptr = Box::into_raw(Box::new(connections));
+	connections_ptr as *mut DsnpUserId
+}
+
+// Get one sided private friendship connections
+#[no_mangle]
+pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
+	user_id: *const DsnpUserId,
+) -> *mut DsnpGraphEdge {
+	if GRAPH_STATE.is_none() {
+		return std::ptr::null_mut()
+	}
+	let user_id = &*user_id;
+	let connections = GRAPH_STATE
+		.as_mut()
+		.unwrap()
+		.get_one_sided_private_friendship_connections(user_id)
+		.unwrap();
+	let _connections_len = connections.len();
+	let connections_ptr = Box::into_raw(Box::new(connections));
+	connections_ptr as *mut DsnpGraphEdge
 }
 
 // Free GraphState

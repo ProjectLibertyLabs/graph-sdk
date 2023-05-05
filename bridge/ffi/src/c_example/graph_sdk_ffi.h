@@ -37,11 +37,6 @@ typedef enum {
 } PrivacyType;
 
 /**
- * Graph Edge defined in DSNP to store each connection
- */
-typedef struct DsnpGraphEdge DsnpGraphEdge;
-
-/**
  * Graph Key type
  */
 typedef struct GraphKeyType GraphKeyType;
@@ -331,6 +326,20 @@ typedef struct {
   };
 } Action;
 
+/**
+ * Graph Edge defined in DSNP to store each connection
+ */
+typedef struct {
+  /**
+   * DSNP User Id of object of relationship
+   */
+  DsnpUserId user_id;
+  /**
+   * Unix epoch in seconds when this relationship was originally established rounded to the nearest 1000
+   */
+  uint64_t since;
+} DsnpGraphEdge;
+
 void print_hello_graph(void);
 
 bool initialize_graph_state(const Environment *environment);
@@ -350,6 +359,14 @@ bool graph_import_users_data(const ImportBundle *payloads, uintptr_t payloads_le
 Update *graph_export_updates(void);
 
 bool graph_apply_actions(const Action *actions, uintptr_t actions_len);
+
+DsnpGraphEdge *graph_get_connections_for_user(const DsnpUserId *user_id,
+                                              const SchemaId *schema_id,
+                                              bool include_pending);
+
+DsnpUserId *graph_get_connections_without_keys(void);
+
+DsnpGraphEdge *graph_get_one_sided_private_friendship_connections(const DsnpUserId *user_id);
 
 bool free_graph_state(void);
 
