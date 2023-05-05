@@ -21,11 +21,11 @@ mod tests {
 			},
 		};
 
-		let graph_state = unsafe { graph_state_new(&environment as *const Environment) };
+		let graph_state = unsafe { initialize_graph_state(&environment as *const Environment) };
 
 		assert!(graph_state);
 
-		let is_graph_state_free = unsafe { graph_state_free() };
+		let is_graph_state_free = unsafe { free_graph_state() };
 
 		assert!(is_graph_state_free);
 	}

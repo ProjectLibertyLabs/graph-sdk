@@ -11,7 +11,7 @@ static mut GRAPH_STATE: Option<GraphState> = None;
 
 // Intialize GraphState
 #[no_mangle]
-pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> bool {
+pub unsafe extern "C" fn initialize_graph_state(environment: *const Environment) -> bool {
 	let environment = &*environment;
 	let rust_environment = environment_from_ffi(environment);
 	let graph_state = GraphState::new(rust_environment);
@@ -21,7 +21,7 @@ pub unsafe extern "C" fn graph_state_new(environment: *const Environment) -> boo
 
 // Free GraphState
 #[no_mangle]
-pub unsafe extern "C" fn graph_state_free() -> bool {
+pub unsafe extern "C" fn free_graph_state() -> bool {
 	GRAPH_STATE = None;
 	true
 }

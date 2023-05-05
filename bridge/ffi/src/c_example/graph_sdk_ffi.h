@@ -333,8 +333,8 @@ typedef struct {
 
 void print_hello_graph(void);
 
-bool graph_state_new(const Environment *environment);
+bool initialize_graph_state(const Environment *environment);
 
-bool graph_state_free(void);
+bool free_graph_state(void);
 
 #endif /* GRAPH_SDK_FFI_H_ */
