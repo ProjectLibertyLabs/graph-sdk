@@ -101,6 +101,17 @@ pub unsafe extern "C" fn graph_export_updates() -> *mut Update {
 	updates_ptr as *mut Update
 }
 
+// Graph apply actions 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
+#[no_mangle]
+pub unsafe extern "C" fn graph_apply_actions(actions: *const Action, actions_len: usize) -> bool {
+	if GRAPH_STATE.is_none() {
+		return false
+	}
+	let actions = std::slice::from_raw_parts(actions, actions_len);
+	let actions = actions_from_ffi(&actions);
+	GRAPH_STATE.as_mut().unwrap().apply_actions(&actions).is_ok()
+}
+
 // Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state() -> bool {

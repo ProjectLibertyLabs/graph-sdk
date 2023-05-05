@@ -349,6 +349,8 @@ bool graph_import_users_data(const ImportBundle *payloads, uintptr_t payloads_le
 
 Update *graph_export_updates(void);
 
+bool graph_apply_actions(const Action *actions, uintptr_t actions_len);
+
 bool free_graph_state(void);
 
 #endif /* GRAPH_SDK_FFI_H_ */
