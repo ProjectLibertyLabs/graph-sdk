@@ -37,6 +37,11 @@ typedef enum {
 } PrivacyType;
 
 /**
+ * Graph Edge defined in DSNP to store each connection
+ */
+typedef struct DsnpGraphEdge DsnpGraphEdge;
+
+/**
  * Graph Key type
  */
 typedef struct GraphKeyType GraphKeyType;
@@ -44,6 +49,8 @@ typedef struct GraphKeyType GraphKeyType;
 typedef struct {
   void *inner;
 } GraphState;
+
+typedef uint16_t SchemaId;
 
 /**
  * Different connection type in social graph
@@ -78,7 +85,7 @@ typedef struct {
 } SchemaConfig;
 
 typedef struct {
-  uint16_t schema_id;
+  SchemaId schema_id;
   SchemaConfig schema_config;
 } SchemaConfigTuple;
 
@@ -98,6 +105,11 @@ typedef struct {
   EnvironmentType environment_type;
   Config config;
 } Environment;
+
+/**
+ * DSNP User Id
+ */
+typedef uint64_t DsnpUserId;
 
 /**
  * Key Pair wrapper
@@ -126,6 +138,11 @@ typedef struct {
 } GraphKeyPair;
 
 /**
+ * Page Hash type
+ */
+typedef uint32_t PageHash;
+
+/**
  * KeyData wrapper
  */
 typedef struct {
@@ -134,8 +151,8 @@ typedef struct {
 } KeyData;
 
 typedef struct {
-  uint64_t dsnp_user_id;
-  uint64_t keys_hash;
+  DsnpUserId dsnp_user_id;
+  PageHash keys_hash;
   KeyData *keys;
   size_t keys_len;
 } DsnpKeys;
@@ -151,11 +168,11 @@ typedef struct {
   /**
    * graph owner dsnp user id
    */
-  uint64_t dsnp_user_id;
+  DsnpUserId dsnp_user_id;
   /**
    * Schema id of imported data
    */
-  uint16_t schema_id;
+  SchemaId schema_id;
   /**
    * key pairs associated with this graph which is used for encryption and PRI generation
    */
@@ -172,23 +189,28 @@ typedef struct {
   size_t pages_len;
 } ImportBundle;
 
+/**
+ * Graph page id
+ */
+typedef uint16_t PageId;
+
 typedef struct {
   /**
    * owner of the social graph
    */
-  uint64_t owner_dsnp_user_id;
+  DsnpUserId owner_dsnp_user_id;
   /**
    * Schema id of imported data
    */
-  uint16_t schema_id;
+  SchemaId schema_id;
   /**
    * page id associated with changed page
    */
-  uint16_t page_id;
+  PageId page_id;
   /**
    * previous hash value is used to avoid updating a stale state
    */
-  uint32_t prev_hash;
+  PageHash prev_hash;
   /**
    * social graph page data
    */
@@ -200,30 +222,30 @@ typedef struct {
   /**
    * owner of the social graph
    */
-  uint64_t owner_dsnp_user_id;
+  DsnpUserId owner_dsnp_user_id;
   /**
    * Schema id of removed data
    */
-  uint16_t schema_id;
+  SchemaId schema_id;
   /**
    * page id associated with changed page
    */
-  uint16_t page_id;
+  PageId page_id;
   /**
    * previous hash value is used to avoid updating a stale state
    */
-  uint32_t prev_hash;
+  PageHash prev_hash;
 } DeletePage;
 
 typedef struct {
   /**
    * owner of the social graph
    */
-  uint64_t owner_dsnp_user_id;
+  DsnpUserId owner_dsnp_user_id;
   /**
    * previous hash value is used to avoid updating a stale state
    */
-  uint32_t prev_hash;
+  PageHash prev_hash;
   /**
    * social graph page data
    */
@@ -251,13 +273,6 @@ typedef struct {
     };
   };
 } Update;
-
-/**
- * DSNP User Id
- */
-typedef uint64_t DsnpUserId;
-
-typedef uint16_t SchemaId;
 
 /**
  * A connection representation in graph sdk
@@ -316,11 +331,6 @@ typedef struct {
     Disconnect_Body disconnect;
   };
 } Action;
-
-typedef struct {
-  uint64_t user_id;
-  uint64_t since;
-} DsnpGraphEdge;
 
 void print_hello_graph(void);
 
