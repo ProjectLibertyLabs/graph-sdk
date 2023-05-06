@@ -80,7 +80,7 @@ pub unsafe extern "C" fn graph_remove_user(user_id: *const DsnpUserId) -> bool {
 	}
 }
 
-//
+//Graph import users data
 #[no_mangle]
 pub unsafe extern "C" fn graph_import_users_data(
 	payloads: *const ImportBundle,
@@ -97,22 +97,20 @@ pub unsafe extern "C" fn graph_import_users_data(
 
 // Graph export updates
 #[no_mangle]
-pub unsafe extern "C" fn graph_export_updates() -> *mut Update {
+pub unsafe extern "C" fn graph_export_updates() -> GraphUpdates {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		match graph_state.export_updates() {
 			Ok(updates) => {
-				let ffi_updates = updates_to_ffi(updates);
-				let _updates_len = ffi_updates.len();
-				let updates_ptr = Box::into_raw(Box::new(ffi_updates));
-				return updates_ptr as *mut Update
+				let mut ffi_updates = updates_to_ffi(updates);
+				let updates_len = ffi_updates.len();
+				let updates_ptr = ffi_updates.as_mut_ptr();
+				std::mem::forget(ffi_updates);
+				GraphUpdates { updates: updates_ptr, updates_len }
 			},
-			Err(_err) => {
-				// handle error?
-				return std::ptr::null_mut()
-			},
+			Err(_) => GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 },
 		}
 	} else {
-		return std::ptr::null_mut()
+		GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 }
 	}
 }
 
@@ -141,12 +139,12 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 		let mut connections = graph_state
 			.get_connections_for_user_graph(user_id, schema_id, include_pending)
 			.unwrap_or_default();
-		let len = connections.len();
+		let connections_len = connections.len();
 		let connections_ptr = connections.as_mut_ptr();
 		std::mem::forget(connections);
-		GraphConnections { connections: connections_ptr, len }
+		GraphConnections { connections: connections_ptr, connections_len }
 	} else {
-		GraphConnections { connections: std::ptr::null_mut(), len: 0 }
+		GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
 	}
 }
 
@@ -155,12 +153,12 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 pub unsafe extern "C" fn graph_get_connections_without_keys() -> GraphConnectionsWithoutKeys {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		let mut connections = graph_state.get_connections_without_keys().unwrap_or_default();
-		let len = connections.len();
+		let connections_len = connections.len();
 		let connections_ptr = connections.as_mut_ptr();
 		std::mem::forget(connections);
-		GraphConnectionsWithoutKeys { connections: connections_ptr, len }
+		GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len }
 	} else {
-		GraphConnectionsWithoutKeys { connections: std::ptr::null_mut(), len: 0 }
+		GraphConnectionsWithoutKeys { connections: std::ptr::null_mut(), connections_len: 0 }
 	}
 }
 
@@ -173,12 +171,12 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 		let user_id = &*user_id;
 		let mut connections =
 			graph_state.get_one_sided_private_friendship_connections(user_id).unwrap();
-		let len = connections.len();
+		let connections_len = connections.len();
 		let connections_ptr = connections.as_mut_ptr();
 		std::mem::forget(connections);
-		GraphConnections { connections: connections_ptr, len }
+		GraphConnections { connections: connections_ptr, connections_len }
 	} else {
-		GraphConnections { connections: std::ptr::null_mut(), len: 0 }
+		GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
 	}
 }
 

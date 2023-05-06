@@ -207,11 +207,17 @@ pub struct Environment {
 #[repr(C)]
 pub struct GraphConnections {
 	pub connections: *mut DsnpGraphEdge,
-	pub len: usize,
+	pub connections_len: usize,
 }
 
 #[repr(C)]
 pub struct GraphConnectionsWithoutKeys {
 	pub connections: *mut DsnpUserId,
-	pub len: usize,
+	pub connections_len: usize,
+}
+
+#[repr(C)]
+pub struct GraphUpdates {
+	pub updates: *mut Update,
+	pub updates_len: usize,
 }

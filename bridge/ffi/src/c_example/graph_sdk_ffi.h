@@ -268,6 +268,11 @@ typedef struct {
   };
 } Update;
 
+typedef struct {
+  Update *updates;
+  uintptr_t updates_len;
+} GraphUpdates;
+
 /**
  * A connection representation in graph sdk
  */
@@ -342,12 +347,12 @@ typedef struct {
 
 typedef struct {
   DsnpGraphEdge *connections;
-  uintptr_t len;
+  uintptr_t connections_len;
 } GraphConnections;
 
 typedef struct {
   DsnpUserId *connections;
-  uintptr_t len;
+  uintptr_t connections_len;
 } GraphConnectionsWithoutKeys;
 
 void print_hello_graph(void);
@@ -366,7 +371,7 @@ bool graph_remove_user(const DsnpUserId *user_id);
 
 bool graph_import_users_data(const ImportBundle *payloads, uintptr_t payloads_len);
 
-Update *graph_export_updates(void);
+GraphUpdates graph_export_updates(void);
 
 bool graph_apply_actions(const Action *actions, uintptr_t actions_len);
 
