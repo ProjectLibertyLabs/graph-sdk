@@ -107,9 +107,7 @@ pub unsafe extern "C" fn graph_export_updates() -> *mut Update {
 				return updates_ptr as *mut Update
 			},
 			Err(_err) => {
-				// Handle the error appropriately (e.g., log an error message, return an error code, etc.)
-				// Return null or an appropriate value based on the error handling strategy
-				// For example, return std::ptr::null_mut() to indicate an error condition
+				// handle error?
 				return std::ptr::null_mut()
 			},
 		}
