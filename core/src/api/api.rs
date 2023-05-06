@@ -42,7 +42,7 @@ pub trait GraphAPI {
 	/// Import raw data retrieved from the blockchain into users graph.
 	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()>;
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()>;
 
 	/// Calculate the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
@@ -136,8 +136,8 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()> {
-		let result = self.do_import_users_data(&payloads);
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
+		let result = self.do_import_users_data(payloads);
 		match result {
 			Result::Ok(_) => self.commit(),
 			Result::Err(_) => self.rollback(),
@@ -478,7 +478,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -523,7 +523,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -565,7 +565,7 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
@@ -609,7 +609,7 @@ mod test {
 		}];
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_err());
@@ -727,7 +727,7 @@ mod test {
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)
 			.build();
-		state.import_users_data(vec![input]).expect("should work");
+		state.import_users_data(&vec![input]).expect("should work");
 		let actions = vec![
 			Action::Connect {
 				connection: Connection { schema_id, dsnp_user_id: 1 },
