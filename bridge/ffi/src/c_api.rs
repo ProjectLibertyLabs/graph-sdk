@@ -169,8 +169,9 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 ) -> GraphConnections {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		let user_id = &*user_id;
-		let mut connections =
-			graph_state.get_one_sided_private_friendship_connections(user_id).unwrap();
+		let mut connections = graph_state
+			.get_one_sided_private_friendship_connections(user_id)
+			.unwrap_or_default();
 		let connections_len = connections.len();
 		let connections_ptr = connections.as_mut_ptr();
 		std::mem::forget(connections);
