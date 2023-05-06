@@ -1,9 +1,10 @@
 use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType, SchemaId};
 use dsnp_graph_core::dsnp::{
 	api_types::{Connection, PageHash, PageId},
-	dsnp_types::DsnpUserId,
+	dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 use libc::{c_void, size_t};
+
 /// KeyData wrapper
 #[repr(C)]
 pub struct KeyData {
@@ -201,4 +202,16 @@ pub enum EnvironmentType {
 pub struct Environment {
 	pub environment_type: EnvironmentType,
 	pub config: Config, // This field will only be used when environment_type is Dev.
+}
+
+#[repr(C)]
+pub struct GraphConnections {
+	pub connections: *mut DsnpGraphEdge,
+	pub len: usize,
+}
+
+#[repr(C)]
+pub struct GraphConnectionsWithoutKeys {
+	pub connections: *mut DsnpUserId,
+	pub len: usize,
 }

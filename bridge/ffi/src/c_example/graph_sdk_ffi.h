@@ -340,6 +340,16 @@ typedef struct {
   uint64_t since;
 } DsnpGraphEdge;
 
+typedef struct {
+  DsnpGraphEdge *connections;
+  uintptr_t len;
+} GraphConnections;
+
+typedef struct {
+  DsnpUserId *connections;
+  uintptr_t len;
+} GraphConnectionsWithoutKeys;
+
 void print_hello_graph(void);
 
 bool initialize_graph_state(const Environment *environment);
@@ -360,13 +370,13 @@ Update *graph_export_updates(void);
 
 bool graph_apply_actions(const Action *actions, uintptr_t actions_len);
 
-DsnpGraphEdge *graph_get_connections_for_user(const DsnpUserId *user_id,
-                                              const SchemaId *schema_id,
-                                              bool include_pending);
+GraphConnections graph_get_connections_for_user(const DsnpUserId *user_id,
+                                                const SchemaId *schema_id,
+                                                bool include_pending);
 
-DsnpUserId *graph_get_connections_without_keys(void);
+GraphConnectionsWithoutKeys graph_get_connections_without_keys(void);
 
-DsnpGraphEdge *graph_get_one_sided_private_friendship_connections(const DsnpUserId *user_id);
+GraphConnections graph_get_one_sided_private_friendship_connections(const DsnpUserId *user_id);
 
 bool free_graph_state(void);
 
