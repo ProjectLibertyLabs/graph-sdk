@@ -23,6 +23,13 @@ typedef enum {
 } EnvironmentType;
 
 /**
+ * Graph Key type
+ */
+typedef enum {
+  X25519 = 0,
+} GraphKeyType;
+
+/**
  * Privacy Type of the graph
  */
 typedef enum {
@@ -35,11 +42,6 @@ typedef enum {
    */
   Private,
 } PrivacyType;
-
-/**
- * Graph Key type
- */
-typedef struct GraphKeyType GraphKeyType;
 
 typedef struct GraphState GraphState;
 

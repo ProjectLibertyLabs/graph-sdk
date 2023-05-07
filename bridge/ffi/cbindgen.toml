@@ -6,7 +6,7 @@ include_guard = "GRAPH_SDK_FFI_H_"
 style = "type"
 
 [export]
-include = ["Config", "GraphState", "Environment", "DsnpVersion", "ConnectionType", "PrivacyType", "SchemaConfig","SchemaConfigTuple", "ImportBundle", "Update", "Action", "DsnpGraphEdge"]
+include = ["Config", "GraphKeyType", "GraphState", "Environment", "DsnpVersion", "ConnectionType", "PrivacyType", "SchemaConfig", "ImportBundle", "Update", "Action", "DsnpGraphEdge", "SchemaId"]
 item_types = ["enums", "functions", "opaque", "structs", "typedefs", "constants"]
 
 [export.mangle]
@@ -17,7 +17,7 @@ sort_by = "None"
 
 [parse]
 parse_deps = true
-include =["dsnp-graph-core", "dsnp-graph-config"]
+include = ["dsnp-graph-core", "dsnp-graph-config"]
 
 [parse.expand]
 crates = ["graph-sdk-ffi"]
