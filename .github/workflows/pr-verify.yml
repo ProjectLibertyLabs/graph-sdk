@@ -128,7 +128,7 @@ jobs:
           profile: minimal
           target: wasm32-unknown-unknown
       - name: Copy library to c_example
-        run: cp target/debug/libgraph_sdk_ffi.so bridge/ffi/src/c_example/
+        run: cp target/release/libgraph_sdk_ffi.so bridge/ffi/src/c_example/
       - name: Generate bindgen
         run: make bindgen
       - name: Build main binary
