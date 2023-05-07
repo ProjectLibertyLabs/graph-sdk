@@ -37,6 +37,7 @@ clean:
 
 .PHONY: capacities
 capacities:
+	@echo "Generating graph page capacities..."
 	@cargo test --features=calculate-page-capacity
 
 .PHONY: all
