@@ -113,8 +113,9 @@ jobs:
       - name: Cargo build
         run: make build
   test_binary:
-    name: Run simple c tests
+    name: Check generated lib
     runs-on: ubuntu-latest
+    needs: [verify, test, lint, build]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -127,10 +128,10 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
-      - name: Copy library to c_example
-        run: cp target/release/libgraph_sdk_ffi.so bridge/ffi/src/c_example/
       - name: Generate bindgen
         run: make bindgen
+      - name: Copy library to c_example
+        run: cp target/release/libgraph_sdk_ffi.so bridge/ffi/src/c_example/
       - name: Build main binary
         run: cd bridge/ffi/src/c_example/ && gcc main.c -L. -lgraph_sdk_ffi -o main
       - name: Run main binary
