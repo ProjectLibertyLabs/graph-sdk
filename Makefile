@@ -1,3 +1,5 @@
+.DEFAULT_GOAL := all
+
 .PHONY: check
 check:
 	@echo "Running Cargo check..."
@@ -32,6 +34,10 @@ doc:
 clean:
 	@echo "Running Cargo clean..."
 	@cargo clean
+
+.PHONY: capacities
+capacities:
+	@cargo test --features=calculate-page-capacity
 
 .PHONY: all
 all: check test clippy fmt build doc

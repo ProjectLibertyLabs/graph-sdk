@@ -525,7 +525,7 @@ mod test {
 		util::time::time_in_ksecs,
 	};
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::{DsnpVersion, GraphKeyType};
+	use dsnp_graph_config::{DsnpVersion, GraphKeyType, ALL_CONNECTION_TYPES};
 	use ntest::*;
 	#[allow(unused_imports)]
 	use pretty_assertions::{assert_eq, assert_ne, assert_str_eq};
@@ -1304,13 +1304,6 @@ mod test {
 		// assert
 		assert!(one_sided.is_err());
 	}
-
-	const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
-		ConnectionType::Follow(PrivacyType::Public),
-		ConnectionType::Friendship(PrivacyType::Public),
-		ConnectionType::Follow(PrivacyType::Private),
-		ConnectionType::Friendship(PrivacyType::Private),
-	];
 
 	#[test]
 	fn is_full_non_aggressive_returns_false_for_non_full() {
