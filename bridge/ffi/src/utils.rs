@@ -1,32 +1,6 @@
 use crate::bindings::*;
-use dsnp_graph_config::{ConnectionType, DsnpVersion, PrivacyType};
+use dsnp_graph_config::DsnpVersion;
 use std::collections::HashMap;
-
-// Function to convert C-compatible `SchemaConfig` to a Rust `SchemaConfig`
-pub fn schema_config_from_ffi(schema_config: &SchemaConfig) -> dsnp_graph_config::SchemaConfig {
-	let dsnp_version = match schema_config.dsnp_version {
-		DsnpVersion::Version1_0 => dsnp_graph_config::DsnpVersion::Version1_0,
-	};
-
-	let connection_type = match &schema_config.connection_type {
-		ConnectionType::Follow(privacy_type) => {
-			let privacy = match privacy_type {
-				PrivacyType::Public => dsnp_graph_config::PrivacyType::Public,
-				PrivacyType::Private => dsnp_graph_config::PrivacyType::Private,
-			};
-			dsnp_graph_config::ConnectionType::Follow(privacy)
-		},
-		ConnectionType::Friendship(privacy_type) => {
-			let privacy = match privacy_type {
-				PrivacyType::Public => dsnp_graph_config::PrivacyType::Public,
-				PrivacyType::Private => dsnp_graph_config::PrivacyType::Private,
-			};
-			dsnp_graph_config::ConnectionType::Friendship(privacy)
-		},
-	};
-
-	dsnp_graph_config::SchemaConfig { dsnp_version, connection_type }
-}
 
 // Function to convert C-compatible `Config` to a Rust `Config`
 pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
@@ -34,9 +8,7 @@ pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 		unsafe { std::slice::from_raw_parts(config.schema_map, config.schema_map_len) };
 	let mut schema_map = HashMap::new();
 	for schema_config_tuple in schema_map_slice {
-		let id = schema_config_tuple.schema_id;
-		let schema_config = &schema_config_tuple.schema_config;
-		schema_map.insert(id, schema_config_from_ffi(schema_config));
+		schema_map.insert(schema_config_tuple.schema_id, schema_config_tuple.schema_config.clone());
 	}
 
 	let dsnp_versions_slice =

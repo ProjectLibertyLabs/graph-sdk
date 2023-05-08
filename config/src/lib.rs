@@ -97,6 +97,7 @@ pub enum DsnpVersion {
 	Version1_0,
 }
 
+#[repr(C)]
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct SchemaConfig {
 	pub dsnp_version: DsnpVersion,

@@ -1,4 +1,4 @@
-use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType, SchemaId};
+use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig, SchemaId};
 use dsnp_graph_core::dsnp::{
 	api_types::{PageHash, PageId},
 	dsnp_types::{DsnpGraphEdge, DsnpUserId},
@@ -128,12 +128,6 @@ pub enum Update {
 	Persist(PersistPage),
 	Delete(DeletePage),
 	Add(AddKey),
-}
-
-#[repr(C)]
-pub struct SchemaConfig {
-	pub dsnp_version: DsnpVersion,
-	pub connection_type: ConnectionType,
 }
 
 #[repr(C)]
