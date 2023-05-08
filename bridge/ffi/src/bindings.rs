@@ -5,7 +5,7 @@ use dsnp_graph_core::dsnp::{
 };
 use libc::size_t;
 
-/// KeyData wrapper
+/// `dsnp_graph_core::dsnp::api_types::KeyData` wrapper
 #[repr(C)]
 pub struct KeyData {
 	pub index: u16,
@@ -13,7 +13,7 @@ pub struct KeyData {
 	pub content_len: size_t,
 }
 
-/// Key Pair wrapper
+/// `dsnp_graph_core::dsnp::api_types::GraphKeyPair` wrapper
 #[repr(C)]
 pub struct GraphKeyPair {
 	/// key pair type
@@ -32,7 +32,7 @@ pub struct GraphKeyPair {
 	pub secret_key_len: size_t,
 }
 
-// Raw page of Graph (or Key) data
+// `dsnp_graph_core::dsnp::api_types::PageData` wrapper
 #[repr(C)]
 pub struct PageData {
 	// Id of the page
@@ -46,7 +46,7 @@ pub struct PageData {
 	pub content_hash: PageHash,
 }
 
-// GraphAPI wrapper
+// `dsnp_graph_core::dsnp::api_types::DsnpKeys` wrapper
 #[repr(C)]
 pub struct DsnpKeys {
 	pub dsnp_user_id: DsnpUserId,
@@ -55,7 +55,7 @@ pub struct DsnpKeys {
 	pub keys_len: size_t,
 }
 
-// ImportBundle wrapper
+// `dsnp_graph_core::dsnp::api_types::ImportBundle` wrapper
 #[repr(C)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
@@ -76,6 +76,7 @@ pub struct ImportBundle {
 	pub pages_len: size_t,
 }
 
+// `dsnp_graph_core::dsnp::api_types::Update::PersistPage` wrapper
 #[repr(C)]
 pub struct PersistPage {
 	/// owner of the social graph
@@ -95,6 +96,7 @@ pub struct PersistPage {
 	pub payload_len: size_t,
 }
 
+// `dsnp_graph_core::dsnp::api_types::Update::DeletePage` wrapper
 #[repr(C)]
 pub struct DeletePage {
 	/// owner of the social graph
@@ -110,6 +112,7 @@ pub struct DeletePage {
 	pub prev_hash: PageHash,
 }
 
+// `dsnp_graph_core::dsnp::api_types::Update::AddKey` wrapper
 #[repr(C)]
 pub struct AddKey {
 	/// owner of the social graph
@@ -123,6 +126,7 @@ pub struct AddKey {
 	pub payload_len: size_t,
 }
 
+// `dsnp_graph_core::dsnp::api_types::Update` wrapper
 #[repr(C)]
 pub enum Update {
 	Persist(PersistPage),
@@ -130,12 +134,14 @@ pub enum Update {
 	Add(AddKey),
 }
 
+// SchemaConfig tuple wrapper
 #[repr(C)]
 pub struct SchemaConfigTuple {
 	pub schema_id: SchemaId,
 	pub schema_config: SchemaConfig,
 }
 
+// `dsnp_graph_config::Config` wrapper
 #[repr(C)]
 pub struct Config {
 	pub sdk_max_users_graph_size: u32,
@@ -149,6 +155,7 @@ pub struct Config {
 	pub dsnp_versions: *mut DsnpVersion,
 }
 
+// EnvironmentType for `Config`
 #[repr(C)]
 pub enum EnvironmentType {
 	Mainnet,
@@ -156,24 +163,28 @@ pub enum EnvironmentType {
 	Dev,
 }
 
+// `dsnp_graph_config::Environment` wrapper
 #[repr(C)]
 pub struct Environment {
 	pub environment_type: EnvironmentType,
 	pub config: Config, // This field will only be used when environment_type is Dev.
 }
 
+// Output type for GraphConnection list
 #[repr(C)]
 pub struct GraphConnections {
 	pub connections: *mut DsnpGraphEdge,
 	pub connections_len: usize,
 }
 
+// Output type for GraphConnectionsWithoutKeys list
 #[repr(C)]
 pub struct GraphConnectionsWithoutKeys {
 	pub connections: *mut DsnpUserId,
 	pub connections_len: usize,
 }
 
+// Output type for GraphUpdates list
 #[repr(C)]
 pub struct GraphUpdates {
 	pub updates: *mut Update,
