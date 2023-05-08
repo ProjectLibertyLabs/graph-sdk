@@ -5,7 +5,7 @@ use dsnp_graph_core::dsnp::{
 };
 use libc::size_t;
 
-/// `dsnp_graph_core::dsnp::api_types::KeyData` wrapper
+/// `dsnp_graph_core::dsnp::api_types::KeyData` type
 #[repr(C)]
 pub struct KeyData {
 	pub index: u16,
@@ -13,7 +13,7 @@ pub struct KeyData {
 	pub content_len: size_t,
 }
 
-/// `dsnp_graph_core::dsnp::api_types::GraphKeyPair` wrapper
+/// `dsnp_graph_core::dsnp::api_types::GraphKeyPair` type
 #[repr(C)]
 pub struct GraphKeyPair {
 	/// key pair type
@@ -32,7 +32,7 @@ pub struct GraphKeyPair {
 	pub secret_key_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::PageData` wrapper
+// `dsnp_graph_core::dsnp::api_types::PageData` type
 #[repr(C)]
 pub struct PageData {
 	// Id of the page
@@ -46,7 +46,7 @@ pub struct PageData {
 	pub content_hash: PageHash,
 }
 
-// `dsnp_graph_core::dsnp::api_types::DsnpKeys` wrapper
+// `dsnp_graph_core::dsnp::api_types::DsnpKeys` type
 #[repr(C)]
 pub struct DsnpKeys {
 	pub dsnp_user_id: DsnpUserId,
@@ -55,7 +55,7 @@ pub struct DsnpKeys {
 	pub keys_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::ImportBundle` wrapper
+// `dsnp_graph_core::dsnp::api_types::ImportBundle` type
 #[repr(C)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
@@ -76,7 +76,7 @@ pub struct ImportBundle {
 	pub pages_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update::PersistPage` wrapper
+// `dsnp_graph_core::dsnp::api_types::Update::PersistPage` type
 #[repr(C)]
 pub struct PersistPage {
 	/// owner of the social graph
@@ -96,7 +96,7 @@ pub struct PersistPage {
 	pub payload_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update::DeletePage` wrapper
+// `dsnp_graph_core::dsnp::api_types::Update::DeletePage` type
 #[repr(C)]
 pub struct DeletePage {
 	/// owner of the social graph
@@ -112,7 +112,7 @@ pub struct DeletePage {
 	pub prev_hash: PageHash,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update::AddKey` wrapper
+// `dsnp_graph_core::dsnp::api_types::Update::AddKey` type
 #[repr(C)]
 pub struct AddKey {
 	/// owner of the social graph
@@ -126,7 +126,7 @@ pub struct AddKey {
 	pub payload_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update` wrapper
+// `dsnp_graph_core::dsnp::api_types::Update` type
 #[repr(C)]
 pub enum Update {
 	Persist(PersistPage),
@@ -134,14 +134,14 @@ pub enum Update {
 	Add(AddKey),
 }
 
-// SchemaConfig tuple wrapper
+// SchemaConfig tuple type
 #[repr(C)]
 pub struct SchemaConfigTuple {
 	pub schema_id: SchemaId,
 	pub schema_config: SchemaConfig,
 }
 
-// `dsnp_graph_config::Config` wrapper
+// `dsnp_graph_config::Config` type
 #[repr(C)]
 pub struct Config {
 	pub sdk_max_users_graph_size: u32,
@@ -163,7 +163,7 @@ pub enum EnvironmentType {
 	Dev,
 }
 
-// `dsnp_graph_config::Environment` wrapper
+// `dsnp_graph_config::Environment` type
 #[repr(C)]
 pub struct Environment {
 	pub environment_type: EnvironmentType,

@@ -107,7 +107,7 @@ typedef struct {
 typedef uint64_t DsnpUserId;
 
 /**
- * Key Pair wrapper
+ * `dsnp_graph_core::dsnp::api_types::GraphKeyPair` type
  */
 typedef struct {
   /**
@@ -138,7 +138,7 @@ typedef struct {
 typedef uint32_t PageHash;
 
 /**
- * KeyData wrapper
+ * `dsnp_graph_core::dsnp::api_types::KeyData` type
  */
 typedef struct {
   uint16_t index;
