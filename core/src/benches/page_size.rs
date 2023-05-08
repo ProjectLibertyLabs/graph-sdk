@@ -46,7 +46,7 @@ fn calculate_page_capacities() {
 
 	for c in ALL_CONNECTION_TYPES {
 		let mut result_vec: Vec<usize> = Vec::new();
-		for _ in 0..1 {
+		for _ in 0..1000 {
 			result_vec.push(benchmark_page_capacity(c).0);
 		}
 		result_vec.sort();
