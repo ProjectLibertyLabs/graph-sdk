@@ -5,6 +5,8 @@ use dsnp_graph_core::{
 	dsnp::{api_types::Action, dsnp_types::DsnpUserId},
 };
 
+use std::mem::ManuallyDrop;
+
 #[no_mangle]
 pub extern "C" fn print_hello_graph() {
 	println!("Hello, Graph!");
@@ -101,10 +103,9 @@ pub unsafe extern "C" fn graph_export_updates() -> GraphUpdates {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		match graph_state.export_updates() {
 			Ok(updates) => {
-				let mut ffi_updates = updates_to_ffi(updates);
+				let ffi_updates = updates_to_ffi(updates);
 				let updates_len = ffi_updates.len();
-				let updates_ptr = ffi_updates.as_mut_ptr();
-				std::mem::forget(ffi_updates);
+				let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
 				GraphUpdates { updates: updates_ptr, updates_len }
 			},
 			Err(_) => GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 },
@@ -135,12 +136,11 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		let user_id = &*user_id;
 		let schema_id = &*schema_id;
-		let mut connections = graph_state
+		let connections = graph_state
 			.get_connections_for_user_graph(user_id, schema_id, include_pending)
 			.unwrap_or_default();
 		let connections_len = connections.len();
-		let connections_ptr = connections.as_mut_ptr();
-		std::mem::forget(connections);
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 		GraphConnections { connections: connections_ptr, connections_len }
 	} else {
 		GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
@@ -151,10 +151,9 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_connections_without_keys() -> GraphConnectionsWithoutKeys {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
-		let mut connections = graph_state.get_connections_without_keys().unwrap_or_default();
+		let connections = graph_state.get_connections_without_keys().unwrap_or_default();
 		let connections_len = connections.len();
-		let connections_ptr = connections.as_mut_ptr();
-		std::mem::forget(connections);
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 		GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len }
 	} else {
 		GraphConnectionsWithoutKeys { connections: std::ptr::null_mut(), connections_len: 0 }
@@ -168,12 +167,11 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 ) -> GraphConnections {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		let user_id = &*user_id;
-		let mut connections = graph_state
+		let connections = graph_state
 			.get_one_sided_private_friendship_connections(user_id)
 			.unwrap_or_default();
 		let connections_len = connections.len();
-		let connections_ptr = connections.as_mut_ptr();
-		std::mem::forget(connections);
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 		GraphConnections { connections: connections_ptr, connections_len }
 	} else {
 		GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
