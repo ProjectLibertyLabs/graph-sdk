@@ -131,9 +131,9 @@ jobs:
       - name: Generate bindgen
         run: make bindgen
       - name: Copy library to c_example
-        run: cp target/release/libgraph_sdk_ffi.so bridge/ffi/src/c_example/
+        run: cp target/release/libgraph_sdk_ffi.a bridge/ffi/src/c_example/
       - name: Build main binary
-        run: cd bridge/ffi/src/c_example/ && gcc main.c -L. -lgraph_sdk_ffi -o main
+        run: cd bridge/ffi/src/c_example/ && gcc main.c -L. -lgraph_sdk_ffi -lm -o main
       - name: Run main binary
         id: run-main
         run: |
@@ -149,13 +149,13 @@ jobs:
             echo "Some tests failed!"
             exit 1
           fi
-      - name: Upload artifacts graph_sdk_ffi.h and libgraph_sdk_ffi.so
+      - name: Upload artifacts graph_sdk_ffi.h and libgraph_sdk_ffi.a
         uses: actions/upload-artifact@v2
         with:
           name: graph_sdk_ffi
           path: |
             bridge/ffi/src/c_example/graph_sdk_ffi.h
-            bridge/ffi/src/c_example/libgraph_sdk_ffi.so
+            bridge/ffi/src/c_example/libgraph_sdk_ffi.a
             bridge/ffi/src/c_example/main.c
 
   generate-docs:
