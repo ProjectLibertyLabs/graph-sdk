@@ -1,9 +1,9 @@
 use dsnp_graph_config::{ConnectionType, DsnpVersion, GraphKeyType, SchemaId};
 use dsnp_graph_core::dsnp::{
-	api_types::{Connection, PageHash, PageId},
+	api_types::{PageHash, PageId},
 	dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
-use libc::{c_void, size_t};
+use libc::size_t;
 
 /// KeyData wrapper
 #[repr(C)]
@@ -74,42 +74,6 @@ pub struct ImportBundle {
 	/// Page data containing the social graph retrieved from chain
 	pub pages: *mut PageData,
 	pub pages_len: size_t,
-}
-
-// ActionType wrapper
-#[repr(C)]
-pub enum ActionType {
-	// Connect action
-	Connect,
-	// Disconnect action
-	Disconnect,
-}
-
-// ConnectAction wrapper
-#[repr(C)]
-pub struct ConnectAction {
-	// dsnp user id
-	pub owner_dsnp_user_id: DsnpUserId,
-	// connection
-	pub connection: Connection,
-}
-
-// DisconnectAction wrapper
-#[repr(C)]
-pub struct DisconnectAction {
-	// dsnp user id
-	pub owner_dsnp_user_id: DsnpUserId,
-	// connection
-	pub connection: Connection,
-}
-
-// Action wrapper
-#[repr(C)]
-pub struct Action {
-	// action type
-	pub action_type: ActionType,
-	// connect action
-	pub action: *mut c_void,
 }
 
 #[repr(C)]

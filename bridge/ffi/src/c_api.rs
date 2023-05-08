@@ -2,7 +2,7 @@ use crate::{bindings::*, utils::*};
 use dsnp_graph_config::SchemaId;
 use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
-	dsnp::dsnp_types::DsnpUserId,
+	dsnp::{api_types::Action, dsnp_types::DsnpUserId},
 };
 
 #[no_mangle]
@@ -119,7 +119,6 @@ pub unsafe extern "C" fn graph_export_updates() -> GraphUpdates {
 pub unsafe extern "C" fn graph_apply_actions(actions: *const Action, actions_len: usize) -> bool {
 	if let Some(graph_state) = GRAPH_STATE.as_mut() {
 		let actions = std::slice::from_raw_parts(actions, actions_len);
-		let actions = actions_from_ffi(&actions);
 		graph_state.apply_actions(&actions).is_ok()
 	} else {
 		false

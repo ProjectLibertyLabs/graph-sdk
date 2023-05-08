@@ -206,29 +206,3 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 	}
 	ffi_updates
 }
-
-// Function to convert C-compatible `Action` to a Rust `Action`
-pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_types::Action> {
-	let mut rust_actions = Vec::new();
-	for action in actions {
-		match action.action_type {
-			ActionType::Connect => {
-				let connect_action = unsafe { &*(action.action as *const ConnectAction) };
-				let rust_connect_action = dsnp_graph_core::dsnp::api_types::Action::Connect {
-					owner_dsnp_user_id: connect_action.owner_dsnp_user_id.clone(),
-					connection: connect_action.connection.clone(),
-				};
-				rust_actions.push(rust_connect_action);
-			},
-			ActionType::Disconnect => {
-				let disconnect_action = unsafe { &*(action.action as *const DisconnectAction) };
-				let rust_disconnect_action = dsnp_graph_core::dsnp::api_types::Action::Disconnect {
-					owner_dsnp_user_id: disconnect_action.owner_dsnp_user_id.clone(),
-					connection: disconnect_action.connection.clone(),
-				};
-				rust_actions.push(rust_disconnect_action);
-			},
-		}
-	}
-	rust_actions
-}

@@ -6,7 +6,7 @@ include_guard = "GRAPH_SDK_FFI_H_"
 style = "type"
 
 [export]
-include = ["Config", "GraphKeyType", "GraphState", "Environment", "DsnpVersion", "ConnectionType", "PrivacyType", "SchemaConfig", "ImportBundle", "Update", "Action", "DsnpGraphEdge", "SchemaId"]
+include = ["Config", "GraphKeyType", "GraphState", "Environment", "DsnpVersion", "ConnectionType", "PrivacyType", "SchemaConfig", "ImportBundle", "Update", "Action", "DsnpGraphEdge", "SchemaId", "Action"]
 item_types = ["enums", "functions", "opaque", "structs", "typedefs", "constants"]
 
 [export.mangle]
