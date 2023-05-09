@@ -41,9 +41,7 @@ ci-local: all
 
 bindgen:
 	@echo "Running bindgen..."
-	@cargo install cbindgen
-	@cargo build --release --all --all-features --all-targets
-	@cd ./bridge/ffi && 	cbindgen -v --config cbindgen.toml --crate dsnp-graph-sdk-ffi --output ./src/c_example/dsnp_graph_sdk_ffi.h
+	@./scripts/run_bindgen.sh
 
 test-ffi:
 	@echo "Running FFI tests..."
