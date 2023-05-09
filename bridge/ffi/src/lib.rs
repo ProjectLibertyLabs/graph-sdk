@@ -8,7 +8,7 @@
 //!
 //! To use the FFI layer, you need to build the dynamic library (e.g., .so, .dylib, or .dll) by adding
 //! the appropriate configuration to `Cargo.toml`. Then, include the generated dynamic library and
-//! the C header file `graph_sdk_ffi.h` in your C, C++, or other FFI-compatible projects.
+//! the C header file `dsnp_graph_sdk_ffi.h` in your C, C++, or other FFI-compatible projects.
 mod c_api;
 pub use c_api::*;
 mod bindings;

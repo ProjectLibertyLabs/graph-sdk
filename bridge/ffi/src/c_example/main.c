@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "graph_sdk_ffi.h"
+#include "dsnp_graph_sdk_ffi.h"
 
 #define ASSERT(condition, message) \
     do { \

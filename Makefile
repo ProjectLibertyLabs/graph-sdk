@@ -43,4 +43,4 @@ bindgen:
 	@echo "Running bindgen..."
 	@cargo install cbindgen
 	@cargo build --release --all --all-features --all-targets
-	@cd ./bridge/ffi && 	cbindgen -v --config cbindgen.toml --crate graph-sdk-ffi --output ./src/c_example/graph_sdk_ffi.h
+	@cd ./bridge/ffi && 	cbindgen -v --config cbindgen.toml --crate dsnp-graph-sdk-ffi --output ./src/c_example/dsnp_graph_sdk_ffi.h
