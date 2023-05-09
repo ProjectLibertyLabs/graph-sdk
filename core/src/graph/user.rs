@@ -3,7 +3,7 @@ use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	graph::updates::UpdateTracker,
 };
-use anyhow::Result;
+use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
 use std::{cell::RefCell, collections::HashSet, rc::Rc};
 
@@ -25,6 +25,7 @@ pub type GraphMap = TransactionalHashMap<SchemaId, Graph>;
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
 #[derive(Debug, Clone)]
 pub struct UserGraph {
+	environment: Environment,
 	graphs: GraphMap,
 	update_tracker: UpdateTracker,
 	pub user_key_manager: Rc<RefCell<UserKeyManager>>,
@@ -77,7 +78,12 @@ impl UserGraph {
 			})
 			.collect();
 
-		Self { graphs, user_key_manager, update_tracker: UpdateTracker::new() }
+		Self {
+			graphs,
+			user_key_manager,
+			update_tracker: UpdateTracker::new(),
+			environment: environment.clone(),
+		}
 	}
 
 	/// Getter for map of graphs
@@ -119,18 +125,32 @@ impl UserGraph {
 	}
 
 	/// Calculate pending updates for all graphs for this user
-	pub fn calculate_updates(
-		&self,
-		dsnp_version_config: &DsnpVersionConfig,
-	) -> Result<Vec<Update>> {
+	pub fn calculate_updates(&self) -> Result<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
 		for (schema_id, graph) in self.graphs.inner().iter() {
-			let updates = match self.update_tracker.get_updates_for_schema_id(*schema_id) {
-				Some(updates) => updates.clone(),
-				None => Vec::<UpdateEvent>::new(),
+			if let Some(updates) = self.update_tracker.get_updates_for_schema_id(*schema_id) {
+				let dsnp_version_config = self.get_dsnp_config(*schema_id).ok_or(Error::msg(
+					format!("Dsnp version of {} schema is not supported!", schema_id),
+				))?;
+
+				let graph_data = graph.calculate_updates(&dsnp_version_config, &updates)?;
+				result.extend(graph_data.into_iter());
 			};
-			let graph_data = graph.calculate_updates(dsnp_version_config, &updates)?;
-			result.extend(graph_data.into_iter());
+		}
+
+		Ok(result)
+	}
+
+	// force calculates all imported graphs which will use the latest encryption key
+	pub fn force_calculate_graphs(&self) -> Result<Vec<Update>> {
+		let mut result = vec![];
+		for (schema_id, graph) in self.graphs.inner().iter() {
+			let dsnp_version_config = self.get_dsnp_config(*schema_id).ok_or(Error::msg(
+				format!("Dsnp version of {} schema is not supported!", schema_id),
+			))?;
+
+			let updates = graph.force_recalculate(&dsnp_version_config)?;
+			result.extend(updates);
 		}
 
 		Ok(result)
@@ -191,6 +211,14 @@ impl UserGraph {
 		}
 
 		connections.into_iter().collect()
+	}
+
+	pub fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
+		let config = self.environment.get_config();
+		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {
+			return Some(DsnpVersionConfig::new(dsnp_version))
+		}
+		None
 	}
 }
 

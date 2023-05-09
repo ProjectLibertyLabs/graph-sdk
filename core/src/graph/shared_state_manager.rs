@@ -1,6 +1,6 @@
 use crate::{
 	dsnp::{
-		api_types::{DsnpKeys, KeyData, PageData, PageHash},
+		api_types::{DsnpKeys, PageData, PageHash, Update},
 		dsnp_configs::{PublicKeyType, SecretKeyType},
 		dsnp_types::{DsnpPrid, DsnpPublicKey, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
@@ -39,10 +39,10 @@ pub trait PublicKeyProvider {
 	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
 
 	/// exports added new keys to be submitted to chain
-	fn export_new_keys(&self) -> Result<Vec<DsnpKeys>>;
+	fn export_new_key_updates(&self) -> Result<Vec<Update>>;
 
-	/// get imported and new keys. New keys are appended in the end.
-	fn get_all_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey>;
+	/// get imported keys
+	fn get_imported_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey>;
 
 	/// returns a key by its id
 	fn get_key_by_id(&self, dsnp_user_id: DsnpUserId, key_id: u64) -> Option<&DsnpPublicKey>;
@@ -133,6 +133,11 @@ impl PublicKeyProvider for SharedStateManager {
 	}
 
 	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()> {
+		// check if exists
+		if self.get_key_by_public_key(dsnp_user_id, public_key.clone()).is_some() {
+			return Err(Error::msg("Added key already exists!"))
+		}
+
 		let new_key =
 			DsnpPublicKey { key: public_key, key_id: Some(self.get_next_key_id(dsnp_user_id)) };
 
@@ -146,41 +151,33 @@ impl PublicKeyProvider for SharedStateManager {
 		Ok(())
 	}
 
-	fn export_new_keys(&self) -> Result<Vec<DsnpKeys>> {
+	fn export_new_key_updates(&self) -> Result<Vec<Update>> {
 		let mut result = vec![];
 		for (dsnp_user_id, key) in self.new_keys.inner() {
-			result.push(DsnpKeys {
-				dsnp_user_id: *dsnp_user_id,
-				keys: vec![KeyData {
-					content: Frequency::write_public_key(&key)
-						.map_err(|e| Error::msg(format!("failed to serialize key {:?}", e)))?,
-					// all new keys are assigned a new id so we can unwrap here
-					index: key.key_id.unwrap() as u16,
-				}],
-				keys_hash: self
-					.dsnp_user_to_keys
-					.get(&dsnp_user_id)
-					.expect("Key hash should exist")
-					.1,
+			let prev_hash = self
+				.dsnp_user_to_keys
+				.get(&dsnp_user_id)
+				.map_or(PageHash::default(), |(_, hash)| *hash);
+			result.push(Update::AddKey {
+				owner_dsnp_user_id: *dsnp_user_id,
+				prev_hash,
+				payload: Frequency::write_public_key(key)?,
 			});
 		}
 		Ok(result)
 	}
 
-	fn get_all_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey> {
+	fn get_imported_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey> {
 		let mut all_keys = vec![];
 		if let Some((v, _)) = self.dsnp_user_to_keys.get(&dsnp_user_id) {
 			all_keys.extend(&v[..]);
-		}
-		if let Some(k) = self.new_keys.get(&dsnp_user_id) {
-			all_keys.push(k)
 		}
 		all_keys
 	}
 
 	fn get_key_by_id(&self, dsnp_user_id: DsnpUserId, key_id: u64) -> Option<&DsnpPublicKey> {
 		// get the first key by that id as specified in the spec
-		self.get_all_keys(dsnp_user_id)
+		self.get_imported_keys(dsnp_user_id)
 			.iter()
 			.find(|k| k.key_id == Some(key_id))
 			.copied()
@@ -192,11 +189,14 @@ impl PublicKeyProvider for SharedStateManager {
 		public_key: Vec<u8>,
 	) -> Option<&DsnpPublicKey> {
 		// get the first key by that public key as specified in the spec
-		self.get_all_keys(dsnp_user_id).iter().find(|k| k.key == public_key).copied()
+		self.get_imported_keys(dsnp_user_id)
+			.iter()
+			.find(|k| k.key == public_key)
+			.copied()
 	}
 
 	fn get_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<&DsnpPublicKey> {
-		let last_key = self.get_all_keys(dsnp_user_id).last().cloned();
+		let last_key = self.get_imported_keys(dsnp_user_id).last().cloned();
 		if let Some(k) = last_key {
 			if let Some(key_id) = k.key_id {
 				// get the first key published by that key_id
@@ -273,7 +273,7 @@ impl SharedStateManager {
 	}
 
 	fn get_next_key_id(&self, dsnp_user_id: DsnpUserId) -> u64 {
-		self.get_all_keys(dsnp_user_id)
+		self.get_imported_keys(dsnp_user_id)
 			.iter()
 			.filter_map(|key| key.key_id)
 			.max()
@@ -315,7 +315,10 @@ impl SharedStateManager {
 mod tests {
 	use super::*;
 	use crate::{
-		dsnp::{api_types::ResolvedKeyPair, dsnp_configs::KeyPairType},
+		dsnp::{
+			api_types::{KeyData, ResolvedKeyPair},
+			dsnp_configs::KeyPairType,
+		},
 		tests::helpers::PageDataBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
@@ -452,7 +455,8 @@ mod tests {
 	}
 
 	#[test]
-	fn shared_state_manager_add_new_key_should_store_a_key_with_increased_id() {
+	fn shared_state_manager_add_new_key_should_store_a_key_with_increased_id_and_export_as_update()
+	{
 		// arrange
 		let dsnp_user_id = 2;
 		let keys_hash = 233;
@@ -479,21 +483,40 @@ mod tests {
 		// assert
 		assert!(res.is_ok());
 		let active_key = key_manager.get_active_key(dsnp_user_id);
-		assert_eq!(active_key, Some(&expected_added_key));
-		let export = key_manager.export_new_keys().expect("should work");
+		assert_eq!(active_key, Some(&DsnpPublicKey { key_id: Some(2), key: key2.key }));
+		let export = key_manager.export_new_key_updates().expect("should work");
 		assert_eq!(
 			export,
-			vec![DsnpKeys {
-				keys_hash,
-				dsnp_user_id,
-				keys: vec![KeyData {
-					index: expected_added_key.key_id.unwrap() as u16,
-					content: Frequency::write_public_key(&expected_added_key)
-						.expect("should write")
-				}]
+			vec![Update::AddKey {
+				payload: Frequency::write_public_key(&expected_added_key).expect("should write"),
+				owner_dsnp_user_id: dsnp_user_id,
+				prev_hash: keys_hash,
 			}]
 		);
-		assert_eq!(key_manager.get_all_keys(dsnp_user_id).len(), 3);
+		assert_eq!(key_manager.get_imported_keys(dsnp_user_id).len(), 2);
+	}
+
+	#[test]
+	fn shared_state_manager_add_new_key_should_fail_if_already_exists() {
+		// arrange
+		let dsnp_user_id = 2;
+		let keys_hash = 233;
+		let key1 = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
+		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
+		let keys = create_dsnp_keys(
+			dsnp_user_id,
+			keys_hash,
+			vec![KeyData { index: 1, content: serialized1 }],
+		);
+		let new_public_key = key1.key.clone();
+		let mut key_manager = SharedStateManager::new();
+		key_manager.import_dsnp_keys(&keys).expect("should work");
+
+		// act
+		let res = key_manager.add_new_key(dsnp_user_id, new_public_key.clone());
+
+		// assert
+		assert!(res.is_err());
 	}
 
 	#[test]
