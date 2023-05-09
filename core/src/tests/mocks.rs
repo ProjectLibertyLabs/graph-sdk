@@ -15,17 +15,25 @@ use std::{collections::HashMap, fmt::Debug};
 #[derive(Debug)]
 pub struct MockUserKeyManager {
 	verifications: HashMap<DsnpUserId, Option<bool>>,
+	key_pairs: HashMap<DsnpUserId, Vec<ResolvedKeyPair>>,
 }
 
 impl MockUserKeyManager {
 	pub fn new() -> Self {
-		Self { verifications: HashMap::<DsnpUserId, Option<bool>>::default() }
+		Self {
+			verifications: HashMap::<DsnpUserId, Option<bool>>::default(),
+			key_pairs: HashMap::new(),
+		}
 	}
 
 	pub fn register_verifications(&mut self, pairs: &[(DsnpUserId, Option<bool>)]) {
 		pairs.iter().for_each(|(user, verified)| {
 			self.verifications.insert(*user, *verified);
 		})
+	}
+
+	pub fn register_key(&mut self, dsnp_user_id: DsnpUserId, pair: &ResolvedKeyPair) {
+		self.key_pairs.entry(dsnp_user_id).or_default().push(pair.clone());
 	}
 }
 
@@ -52,8 +60,11 @@ impl UserKeyProvider for MockUserKeyManager {
 		vec![]
 	}
 
-	fn get_resolved_active_key(&self, _dsnp_user_id: DsnpUserId) -> Option<ResolvedKeyPair> {
-		None
+	fn get_resolved_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<ResolvedKeyPair> {
+		match self.key_pairs.get(&dsnp_user_id) {
+			None => None,
+			Some(keys) => keys.last().cloned(),
+		}
 	}
 }
 
