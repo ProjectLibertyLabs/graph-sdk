@@ -128,34 +128,15 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
-      - name: Generate bindgen
-        run: make bindgen
-      - name: Copy library to c_example
-        run: cp target/release/libgraph_sdk_ffi.a bridge/ffi/src/c_example/
-      - name: Build main binary
-        run: cd bridge/ffi/src/c_example/ && gcc main.c -L. -lgraph_sdk_ffi -lm -o main
-      - name: Run main binary
-        id: run-main
-        run: |
-          export LD_LIBRARY_PATH=bridge/ffi/src/c_example/
-          output=$(./bridge/ffi/src/c_example/main)
-          echo "$output"
-          echo "::set-output name=output::$output"
-      - name: Check test result
-        run: |
-          if [[ "${{ steps.run-main.outputs.output }}" == *"passed"* ]]; then
-            echo "All tests passed!"
-          else
-            echo "Some tests failed!"
-            exit 1
-          fi
-      - name: Upload artifacts dsnp_graph_sdk_ffi.h and libgraph_sdk_ffi.a
+      - name: Run tests for ffo
+        run: make test-ffi
+      - name: Upload artifacts dsnp_graph_sdk_ffi.h and libdsnp_graph_sdk_ffi.a
         uses: actions/upload-artifact@v2
         with:
           name: dsnp_graph_sdk_ffi
           path: |
             bridge/ffi/src/c_example/dsnp_graph_sdk_ffi.h
-            bridge/ffi/src/c_example/libgraph_sdk_ffi.a
+            bridge/ffi/src/c_example/libdsnp_graph_sdk_ffi.a
             bridge/ffi/src/c_example/main.c
 
   generate-docs:

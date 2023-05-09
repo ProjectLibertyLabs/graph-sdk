@@ -44,3 +44,7 @@ bindgen:
 	@cargo install cbindgen
 	@cargo build --release --all --all-features --all-targets
 	@cd ./bridge/ffi && 	cbindgen -v --config cbindgen.toml --crate dsnp-graph-sdk-ffi --output ./src/c_example/dsnp_graph_sdk_ffi.h
+
+test-ffi:
+	@echo "Running FFI tests..."
+	@./scripts/run_ffi_tests.sh
