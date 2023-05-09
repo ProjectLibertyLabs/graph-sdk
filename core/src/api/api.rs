@@ -1,7 +1,6 @@
 use crate::{
 	dsnp::{
 		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
-		dsnp_configs::DsnpVersionConfig,
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 	},
 	graph::{
@@ -155,21 +154,12 @@ impl GraphAPI for GraphState {
 		let mut result = self.shared_state_manager.deref().borrow().export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
-			let schemas = self
+			let user_graph = self
 				.user_map
 				.get(&user_id)
-				.ok_or(Error::msg("User not found for graph export"))?
-				.update_tracker()
-				.get_updated_schema_ids();
-			let related_dsnp_configs: HashSet<DsnpVersionConfig> =
-				schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
-
-			// we are checking user existence on previous lines so we can unwrap safely here
-			let user_graph = self.user_map.get(&user_id).unwrap();
-			for dsnp_config in related_dsnp_configs.iter() {
-				let updates = user_graph.calculate_updates(dsnp_config)?;
-				result.extend(updates);
-			}
+				.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+			let updates = user_graph.calculate_updates()?;
+			result.extend(updates);
 		}
 		Ok(result)
 	}
@@ -186,36 +176,12 @@ impl GraphAPI for GraphState {
 
 	/// Export the graph pages for a certain user encrypted using the latest published key
 	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> Result<Vec<Update>> {
-		let mut result = vec![];
 		let user_graph = self
 			.user_map
 			.get(&user_id)
 			.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
 
-		for connection_type in vec![
-			ConnectionType::Follow(PrivacyType::Private),
-			ConnectionType::Follow(PrivacyType::Public),
-			ConnectionType::Friendship(PrivacyType::Private),
-			ConnectionType::Friendship(PrivacyType::Public),
-		] {
-			let schema_id = self
-				.environment
-				.get_config()
-				.get_schema_id_from_connection_type(connection_type)
-				.ok_or(Error::msg(format!(
-					"Schema id for {:?} does not exist!",
-					connection_type
-				)))?;
-			let config = self
-				.get_dsnp_config(schema_id)
-				.ok_or(Error::msg("Dsnp config should is not supported!"))?;
-
-			let graph = user_graph.graph(&schema_id);
-			let updates = graph.force_recalculate(&config)?;
-			result.extend(updates);
-		}
-
-		Ok(result)
+		user_graph.force_calculate_graphs()
 	}
 
 	/// Get a list of all connections of the indicated type for the user
@@ -227,7 +193,7 @@ impl GraphAPI for GraphState {
 	) -> Result<Vec<DsnpGraphEdge>> {
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg("user not present in graph state")),
+			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
 		};
 
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
@@ -268,7 +234,7 @@ impl GraphAPI for GraphState {
 			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg("user not present in graph state")),
+			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
 		};
 		let graph = user_graph.graph(&private_friendship_schema_id);
 		graph.get_one_sided_friendships()
@@ -276,14 +242,6 @@ impl GraphAPI for GraphState {
 }
 
 impl GraphState {
-	fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
-		let config = self.environment.get_config();
-		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {
-			return Some(DsnpVersionConfig::new(dsnp_version))
-		}
-		None
-	}
-
 	/// Gets an existing or creates a new UserGraph
 	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
 		let is_full =
@@ -305,9 +263,6 @@ impl GraphState {
 
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
-			let dsnp_config = self
-				.get_dsnp_config(*schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
 			let connection_type = self
 				.environment
 				.get_config()
@@ -320,6 +275,9 @@ impl GraphState {
 				.import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
+			let dsnp_config = user_graph
+				.get_dsnp_config(*schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
