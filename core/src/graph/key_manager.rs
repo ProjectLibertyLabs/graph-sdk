@@ -75,7 +75,7 @@ impl UserKeyProvider for UserKeyManager {
 	fn get_all_resolved_keys(&self) -> Vec<ResolvedKeyPair> {
 		self.shared_state_manager
 			.borrow()
-			.get_all_keys(self.dsnp_user_id)
+			.get_imported_keys(self.dsnp_user_id)
 			.iter()
 			.filter_map(|dsnp| match dsnp.key_id {
 				Some(ind) => self.get_resolved_key(ind),

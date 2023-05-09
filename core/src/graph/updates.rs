@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::SchemaId;
-use std::{cmp::Ordering, collections::HashSet};
+use std::cmp::Ordering;
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
@@ -68,10 +68,6 @@ impl UpdateTracker {
 
 	pub fn get_updates_for_schema_id(&self, schema_id: SchemaId) -> Option<&Vec<UpdateEvent>> {
 		self.updates.inner().get(&schema_id)
-	}
-
-	pub fn get_updated_schema_ids(&self) -> HashSet<SchemaId> {
-		self.updates.inner().keys().copied().collect()
 	}
 
 	pub fn contains(&self, event: &UpdateEvent) -> bool {

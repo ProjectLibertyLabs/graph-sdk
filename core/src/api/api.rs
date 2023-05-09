@@ -1,7 +1,6 @@
 use crate::{
 	dsnp::{
 		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
-		dsnp_configs::DsnpVersionConfig,
 		dsnp_types::{DsnpGraphEdge, DsnpUserId},
 	},
 	graph::{
@@ -50,6 +49,10 @@ pub trait GraphAPI {
 
 	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
+
+	/// Force re-calculates the imported graphs. This is useful to ensure the pages are using the
+	/// latest encryption key or refresh calculated PRIds or remove any empty pages and ...
+	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> Result<Vec<Update>>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -146,26 +149,17 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
-	/// be updated and/or removed
+	/// be updated and/or removed or added keys
 	fn export_updates(&self) -> Result<Vec<Update>> {
-		let mut result = vec![];
-		let keys: Vec<_> = self.user_map.inner().keys().copied().collect();
-		for user_id in keys {
-			let schemas = self
+		let mut result = self.shared_state_manager.deref().borrow().export_new_key_updates()?;
+		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
+		for user_id in imported_users {
+			let user_graph = self
 				.user_map
 				.get(&user_id)
-				.ok_or(Error::msg("User not found for graph export"))?
-				.update_tracker()
-				.get_updated_schema_ids();
-			let related_dsnp_configs: HashSet<DsnpVersionConfig> =
-				schemas.iter().filter_map(|s| self.get_dsnp_config(*s)).collect();
-
-			// we are checking user existence on previous lines so we can unwrap safely here
-			let user_graph = self.user_map.get(&user_id).unwrap();
-			for dsnp_config in related_dsnp_configs.iter() {
-				let updates = user_graph.calculate_updates(dsnp_config)?;
-				result.extend(updates);
-			}
+				.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+			let updates = user_graph.calculate_updates()?;
+			result.extend(updates);
 		}
 		Ok(result)
 	}
@@ -180,6 +174,16 @@ impl GraphAPI for GraphState {
 		result
 	}
 
+	/// Export the graph pages for a certain user encrypted using the latest published key
+	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> Result<Vec<Update>> {
+		let user_graph = self
+			.user_map
+			.get(&user_id)
+			.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+
+		user_graph.force_calculate_graphs()
+	}
+
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
 		&self,
@@ -189,7 +193,7 @@ impl GraphAPI for GraphState {
 	) -> Result<Vec<DsnpGraphEdge>> {
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg("user not present in graph state")),
+			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
 		};
 
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
@@ -230,7 +234,7 @@ impl GraphAPI for GraphState {
 			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg("user not present in graph state")),
+			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
 		};
 		let graph = user_graph.graph(&private_friendship_schema_id);
 		graph.get_one_sided_friendships()
@@ -238,14 +242,6 @@ impl GraphAPI for GraphState {
 }
 
 impl GraphState {
-	fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
-		let config = self.environment.get_config();
-		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {
-			return Some(DsnpVersionConfig::new(dsnp_version))
-		}
-		None
-	}
-
 	/// Gets an existing or creates a new UserGraph
 	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
 		let is_full =
@@ -267,9 +263,6 @@ impl GraphState {
 
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
-			let dsnp_config = self
-				.get_dsnp_config(*schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
 			let connection_type = self
 				.environment
 				.get_config()
@@ -282,10 +275,13 @@ impl GraphState {
 				.import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
+			let dsnp_config = user_graph
+				.get_dsnp_config(*schema_id)
+				.ok_or(Error::msg("Invalid schema id for environment!"))?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
-				let mut user_key_manager = user_graph.user_key_manager.borrow_mut();
+				let mut user_key_manager = user_graph.user_key_manager.deref().borrow_mut();
 
 				// import key-pairs inside user key manager
 				user_key_manager.deref_mut().import_key_pairs(key_pairs.clone())?;
@@ -318,7 +314,7 @@ impl GraphState {
 	fn do_apply_actions(&mut self, actions: &[Action]) -> Result<()> {
 		for action in actions {
 			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
-			let update_event = match action {
+			match action {
 				Action::Connect {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
 					..
@@ -330,7 +326,9 @@ impl GraphState {
 							dsnp_user_id
 						)))
 					}
-					UpdateEvent::create_add(*dsnp_user_id, *schema_id)
+					owner_graph
+						.update_tracker_mut()
+						.register_update(&UpdateEvent::create_add(*dsnp_user_id, *schema_id))?;
 				},
 				Action::Disconnect {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
@@ -343,11 +341,17 @@ impl GraphState {
 							dsnp_user_id
 						)))
 					}
-					UpdateEvent::create_remove(*dsnp_user_id, *schema_id)
+					owner_graph
+						.update_tracker_mut()
+						.register_update(&UpdateEvent::create_remove(*dsnp_user_id, *schema_id))?;
 				},
-			};
-
-			owner_graph.update_tracker_mut().register_update(&update_event)?;
+				Action::AddGraphKey { new_public_key, .. } => {
+					self.shared_state_manager
+						.deref()
+						.borrow_mut()
+						.add_new_key(action.owner_dsnp_user_id(), new_public_key.clone())?;
+				},
+			}
 		}
 		Ok(())
 	}
@@ -484,7 +488,7 @@ mod test {
 		assert!(res.is_ok());
 
 		let public_manager = state.shared_state_manager.borrow();
-		let keys = public_manager.get_all_keys(dsnp_user_id);
+		let keys = public_manager.get_imported_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
 		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
@@ -529,7 +533,7 @@ mod test {
 		assert!(res.is_ok());
 
 		let public_manager = state.shared_state_manager.borrow();
-		let keys = public_manager.get_all_keys(dsnp_user_id);
+		let keys = public_manager.get_imported_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
 		let res = state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false);
@@ -613,7 +617,7 @@ mod test {
 
 		// assert
 		assert!(res.is_err());
-		assert_eq!(state.shared_state_manager.borrow().get_all_keys(dsnp_user_id).len(), 0);
+		assert_eq!(state.shared_state_manager.borrow().get_imported_keys(dsnp_user_id).len(), 0);
 		assert!(state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true).is_err());
 	}
 
@@ -679,15 +683,28 @@ mod test {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 2, schema_id },
 		};
+
+		let key_add_action = Action::AddGraphKey {
+			owner_dsnp_user_id,
+			new_public_key: b"27893788291911998228288282".to_vec(),
+		};
 		let mut state = GraphState::new(env);
 
 		// act
 		assert!(state
-			.apply_actions(&vec![connect_action_1.clone(), connect_action_2, connect_action_1])
+			.apply_actions(&vec![
+				connect_action_1.clone(),
+				connect_action_2,
+				connect_action_1,
+				key_add_action
+			])
 			.is_err());
 
 		// assert
 		assert_eq!(state.user_map.len(), 0);
+		let updates = state.shared_state_manager.deref().borrow().export_new_key_updates();
+		assert!(updates.is_ok());
+		assert_eq!(updates.unwrap().len(), 0);
 	}
 
 	#[test]

@@ -333,25 +333,63 @@ impl Graph {
 			},
 		};
 
-		let mut updates: Vec<Update> = updated_blobs?
-			.iter()
-			.map(|page_data| Update::PersistPage {
-				owner_dsnp_user_id: self.user_id,
-				schema_id: self.schema_id,
-				page_id: page_data.page_id,
-				prev_hash: page_data.content_hash,
-				payload: page_data.content.clone(),
-			})
+		let updates: Vec<Update> = updated_blobs?
+			.into_iter()
+			.chain(removed_pages.into_iter())
+			.map(|page_data| Update::from((page_data, self.user_id, self.schema_id)))
 			.collect();
-
-		updates.extend(removed_pages.iter().map(|p| Update::DeletePage {
-			owner_dsnp_user_id: self.user_id,
-			schema_id: self.schema_id,
-			page_id: p.page_id,
-			prev_hash: p.content_hash,
-		}));
-
 		Ok(updates)
+	}
+
+	/// recalculates and export pages, can be used to rotate keys or refresh PRID or remove empty
+	/// pages
+	pub fn force_recalculate(
+		&self,
+		dsnp_version_config: &DsnpVersionConfig,
+	) -> Result<Vec<Update>> {
+		// get latest encryption key
+		let encryption_key = match self.get_connection_type().privacy_type() {
+			PrivacyType::Public => None,
+			PrivacyType::Private =>
+				self.user_key_manager.borrow().get_resolved_active_key(self.user_id),
+		};
+
+		let mut updates = vec![];
+
+		// calculate all pages
+		for (_, page) in self.pages.inner() {
+			let page_data_result = match page.is_empty() {
+				true => Ok(page.to_removed_page_data()),
+				false => match self.get_connection_type() {
+					ConnectionType::Follow(PrivacyType::Public) |
+					ConnectionType::Friendship(PrivacyType::Public) => page.to_public_page_data(),
+					ConnectionType::Follow(PrivacyType::Private) => {
+						let encryption_key = encryption_key
+							.clone()
+							.ok_or(Error::msg("No resolved active key found!"))?;
+						let mut updated_page = page.clone();
+						updated_page.clear_prids();
+						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
+					},
+					ConnectionType::Friendship(PrivacyType::Private) => {
+						let encryption_key = encryption_key
+							.clone()
+							.ok_or(Error::msg("No resolved active key found!"))?;
+						let mut updated_page = page.clone();
+						self.apply_prids(&mut updated_page, &vec![], &encryption_key)?;
+						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
+					},
+				},
+			};
+			updates.push(page_data_result?);
+		}
+
+		// map to Update type
+		let mapped = updates
+			.into_iter()
+			.map(|page_data| Update::from((page_data, self.user_id, self.schema_id)))
+			.collect();
+		Ok(mapped)
 	}
 
 	/// Create a new Page in the Graph, with the given PageId.
@@ -551,7 +589,7 @@ macro_rules! iter_graph_connections {
 	}};
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 	use crate::{
@@ -1442,5 +1480,96 @@ mod test {
 		assert_eq!(graph.pages.len(), 1);
 		assert_eq!(graph.pages.get(&1).unwrap().connections().len(), 1);
 		assert!(graph.pages.get(&1).unwrap().contains(&connection_dsnp));
+	}
+
+	#[test]
+	fn force_recalculate_public_should_work_as_expected() {
+		// arrange
+		let connection_type = ConnectionType::Follow(PrivacyType::Public);
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let user_id = 1000;
+		let ids: Vec<_> = (1..50).map(|u| (u, 0)).collect();
+		let pages = GraphPageBuilder::new(connection_type).with_page(1, &ids, &vec![], 0).build();
+		let mut graph =
+			Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(MockUserKeyManager::new())));
+		for (i, p) in pages.into_iter().enumerate() {
+			let _ = graph.create_page(&(i as PageId), Some(p));
+		}
+		// act
+		let updates = graph.force_recalculate(&DsnpVersionConfig::new(DsnpVersion::Version1_0));
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+		assert_eq!(updates.len(), 1);
+		assert!(matches!(updates.get(0).unwrap(), Update::PersistPage { .. }));
+	}
+
+	#[test]
+	fn force_recalculate_private_follow_should_work_as_expected() {
+		// arrange
+		let connection_type = ConnectionType::Follow(PrivacyType::Private);
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let user_id = 1000;
+		let ids: Vec<_> = (1..50).map(|u| (u, 0)).collect();
+		let pages = GraphPageBuilder::new(connection_type).with_page(1, &ids, &vec![], 0).build();
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let mut key_manager = MockUserKeyManager::new();
+		key_manager.register_key(user_id, &key);
+		let mut graph = Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(key_manager)));
+		for (i, p) in pages.into_iter().enumerate() {
+			let _ = graph.create_page(&(i as PageId), Some(p));
+		}
+		// act
+		let updates = graph.force_recalculate(&DsnpVersionConfig::new(DsnpVersion::Version1_0));
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+		assert_eq!(updates.len(), 1);
+		assert!(matches!(updates.get(0).unwrap(), Update::PersistPage { .. }));
+	}
+
+	#[test]
+	fn force_recalculate_private_friendship_should_work_as_expected() {
+		// arrange
+		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should exist");
+		let user_id = 1000;
+		let ids: Vec<_> = (1..50).map(|u| (u, 0)).collect();
+		let pages = GraphPageBuilder::new(connection_type)
+			.with_page(1, &ids, &vec![DsnpPrid::new(&[0, 1, 2, 3, 4, 5, 6, 7]); ids.len()], 0)
+			.build();
+		let key =
+			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
+		let mut key_manager = MockUserKeyManager::new();
+		key_manager.register_key(user_id, &key);
+		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
+		key_manager.register_verifications(&verifications);
+		let mut graph = Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(key_manager)));
+		for (i, p) in pages.into_iter().enumerate() {
+			let _ = graph.create_page(&(i as PageId), Some(p));
+		}
+		// act
+		let updates = graph.force_recalculate(&DsnpVersionConfig::new(DsnpVersion::Version1_0));
+
+		// assert
+		assert!(updates.is_ok());
+		let updates = updates.unwrap();
+		assert_eq!(updates.len(), 1);
+		assert!(matches!(updates.get(0).unwrap(), Update::PersistPage { .. }));
 	}
 }

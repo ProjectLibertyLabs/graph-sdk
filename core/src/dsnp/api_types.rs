@@ -119,6 +119,15 @@ pub enum Action {
 		/// connection details
 		connection: Connection,
 	},
+
+	/// an action that defines adding a new key to chain
+	AddGraphKey {
+		/// owner of the social graph
+		owner_dsnp_user_id: DsnpUserId,
+
+		/// public key
+		new_public_key: Vec<u8>,
+	},
 }
 
 impl Action {
@@ -126,12 +135,13 @@ impl Action {
 		match *self {
 			Action::Connect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
 			Action::Disconnect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
+			Action::AddGraphKey { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
 		}
 	}
 }
 
 /// Output of graph sdk that defines the different updates that needs to be applied to chain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Update {
 	/// A `PersistPage` type is used to upsert a page on the chain with latest changes
 	PersistPage {
@@ -179,17 +189,25 @@ pub enum Update {
 	},
 }
 
-#[allow(dead_code)] // todo: use or remove
-/// Encapsulates details required to do a key rotation
-pub struct Rotation {
-	/// owner of the social graph
-	owner_dsnp_user_id: DsnpUserId,
-
-	/// previous key used for encryption and PRI calculations
-	prev_key: GraphKeyPair,
-
-	/// new key to use for encryption and PRI calculations
-	new_key: GraphKeyPair,
+/// converts a `PageData` type to `Update` type
+impl From<(PageData, DsnpUserId, SchemaId)> for Update {
+	fn from((page_data, owner_dsnp_user_id, schema_id): (PageData, DsnpUserId, SchemaId)) -> Self {
+		match page_data.content.is_empty() {
+			false => Update::PersistPage {
+				owner_dsnp_user_id,
+				schema_id,
+				page_id: page_data.page_id,
+				prev_hash: page_data.content_hash,
+				payload: page_data.content.clone(),
+			},
+			true => Update::DeletePage {
+				owner_dsnp_user_id,
+				schema_id,
+				page_id: page_data.page_id,
+				prev_hash: page_data.content_hash,
+			},
+		}
+	}
 }
 
 impl PartialOrd for KeyData {
@@ -218,5 +236,27 @@ mod tests {
 		arr.sort();
 
 		assert_eq!(arr, vec![a, b, c]);
+	}
+
+	#[test]
+	fn update_from_page_data_should_create_correct_update_types() {
+		// arrange
+		let dsnp_user_id = 3;
+		let schema_id = 10;
+		let persist =
+			PageData { page_id: 1, content: vec![1u8, 2, 3, 4, 5, 6, 7, 8, 9], content_hash: 182 };
+		let delete = PageData {
+			page_id: 2,
+			content: vec![], // empty content should generate `DeletePage`
+			content_hash: 345,
+		};
+
+		// act
+		let persist_update = Update::from((persist, dsnp_user_id, schema_id));
+		let delete_update = Update::from((delete, dsnp_user_id, schema_id));
+
+		// assert
+		assert!(matches!(persist_update, Update::PersistPage { .. }));
+		assert!(matches!(delete_update, Update::DeletePage { .. }));
 	}
 }
