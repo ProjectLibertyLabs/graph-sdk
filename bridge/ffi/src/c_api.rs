@@ -14,7 +14,7 @@ pub extern "C" fn print_hello_graph() {
 
 // Collection of GraphStates
 #[no_mangle]
-static mut GRAPH_STATES: Option<Vec<*mut GraphState>> = None;
+static mut GRAPH_STATES: Vec<*mut GraphState> = Vec::new();
 
 // Initialize GraphState
 #[no_mangle]
@@ -25,12 +25,8 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let rust_environment = environment_from_ffi(environment);
 	let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
 
-	// Initialize the GRAPH_STATES vector if it's None
-	if let Some(graph_states) = GRAPH_STATES.as_mut() {
-		graph_states.push(graph_state);
-	} else {
-		GRAPH_STATES = Some(vec![graph_state]);
-	}
+	// Add state pointer to GRAPH_STATES vector
+	GRAPH_STATES.push(graph_state);
 
 	graph_state
 }
@@ -46,12 +42,8 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let graph_state =
 		Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
 
-	// Initialize the GRAPH_STATES vector if it's None
-	if let Some(graph_states) = GRAPH_STATES.as_mut() {
-		graph_states.push(graph_state);
-	} else {
-		GRAPH_STATES = Some(vec![graph_state]);
-	}
+	// Add state pointer to GRAPH_STATES vector
+	GRAPH_STATES.push(graph_state);
 
 	graph_state
 }
@@ -185,10 +177,8 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 // Free GraphStates
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_states() {
-	if let Some(graph_states) = GRAPH_STATES.as_mut() {
-		for graph_state in graph_states {
-			let _ = Box::from_raw(*graph_state);
-		}
+	for graph_state in GRAPH_STATES.iter() {
+		let _ = Box::from_raw(*graph_state);
 	}
 }
 
