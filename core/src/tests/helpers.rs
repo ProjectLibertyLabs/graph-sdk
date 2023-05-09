@@ -48,26 +48,19 @@ pub fn create_test_ids_and_page() -> (Vec<(DsnpUserId, u64)>, GraphPage) {
 	(ids, page)
 }
 
-/// Create a test instance of a Graph
-pub fn create_test_graph() -> Graph {
-	let mut page_builder = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private));
-	let num_pages = 5;
-	let ids_per_page = 5;
-	let user_id = 3;
-	let mut curr_id = 0u64;
-	for i in 0..num_pages {
-		let ids: Vec<(DsnpUserId, u64)> =
-			(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
-		page_builder = page_builder.with_page(i, &ids, &vec![], 0);
-		curr_id += ids_per_page;
-	}
-
+/// Create an empty test instance of a Graph
+pub fn create_empty_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
+	let connection_type = match connection_arg {
+		Some(c) => c,
+		None => ConnectionType::Follow(PrivacyType::Private),
+	};
+	let user_id: u64 = 3;
 	let env = Environment::Mainnet;
 	let schema_id = env
 		.get_config()
-		.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+		.get_schema_id_from_connection_type(connection_type)
 		.expect("should exist");
-	let mut graph = Graph::new(
+	Graph::new(
 		env,
 		user_id,
 		schema_id,
@@ -75,7 +68,32 @@ pub fn create_test_graph() -> Graph {
 			user_id,
 			Rc::new(RefCell::from(SharedStateManager::new())),
 		))),
-	);
+	)
+}
+
+/// Create a test instance of a Graph
+pub fn create_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
+	let connection_type = match connection_arg {
+		Some(c) => c,
+		None => ConnectionType::Follow(PrivacyType::Private),
+	};
+	let mut page_builder = GraphPageBuilder::new(connection_type);
+	let num_pages = 5;
+	let ids_per_page = 5;
+	let mut curr_id = 0u64;
+	for i in 0..num_pages {
+		let ids: Vec<(DsnpUserId, u64)> =
+			(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
+		let prids = match connection_type {
+			ConnectionType::Friendship(PrivacyType::Private) =>
+				ids.iter().cloned().map(|(id, _)| DsnpPrid::from(id)).collect(),
+			_ => Vec::<DsnpPrid>::new(),
+		};
+		page_builder = page_builder.with_page(i, &ids, &prids, 0);
+		curr_id += ids_per_page;
+	}
+
+	let mut graph = create_empty_test_graph(Some(connection_type));
 	for p in page_builder.build() {
 		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
@@ -187,7 +205,7 @@ impl GraphPageBuilder {
 		self
 	}
 
-	pub fn build(self) -> Vec<GraphPage> {
+	pub fn build(&self) -> Vec<GraphPage> {
 		self.pages
 			.iter()
 			.map(|(page_id, (connections, prids, hash))| {
@@ -207,6 +225,7 @@ pub struct PageDataBuilder {
 	connection_type: ConnectionType,
 	page_builder: GraphPageBuilder,
 	resolved_key: ResolvedKeyPair,
+	use_noisy_creation_time: bool,
 }
 
 impl PageDataBuilder {
@@ -218,6 +237,7 @@ impl PageDataBuilder {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
 				key_id: 1,
 			},
+			use_noisy_creation_time: false,
 		}
 	}
 
@@ -237,6 +257,11 @@ impl PageDataBuilder {
 		self
 	}
 
+	pub fn with_noisy_creation_time(mut self, b: bool) -> Self {
+		self.use_noisy_creation_time = b;
+		self
+	}
+
 	pub fn build(self) -> Vec<PageData> {
 		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
 		self.page_builder
@@ -247,6 +272,24 @@ impl PageDataBuilder {
 					page.to_public_page_data().expect("should write public page"),
 				PrivacyType::Private =>
 					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+			})
+			.collect()
+	}
+
+	pub fn build_with_size(&self) -> Vec<(usize, PageData)> {
+		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
+		self.page_builder
+			.build()
+			.iter()
+			.map(|page| match self.connection_type.privacy_type() {
+				PrivacyType::Public => (
+					page.connections().len(),
+					page.to_public_page_data().expect("should write public page"),
+				),
+				PrivacyType::Private => (
+					page.connections().len(),
+					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+				),
 			})
 			.collect()
 	}

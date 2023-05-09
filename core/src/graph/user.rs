@@ -294,7 +294,7 @@ mod test {
 	#[test]
 	fn clear_graph_clears_specific_graph_and_no_others() {
 		let env = Environment::Mainnet;
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		let mut user_graph =
 			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
@@ -329,7 +329,7 @@ mod test {
 	fn user_graph_rollback_should_revert_changes_on_user_and_underlying_graphs() {
 		// arrange
 		let env = Environment::Mainnet;
-		let graph = create_test_graph();
+		let graph = create_test_graph(None);
 		let mut user_graph =
 			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
 		let schema_id = env

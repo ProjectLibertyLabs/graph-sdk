@@ -65,6 +65,13 @@ impl ConnectionType {
 	}
 }
 
+pub const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
+	ConnectionType::Follow(PrivacyType::Public),
+	ConnectionType::Friendship(PrivacyType::Public),
+	ConnectionType::Follow(PrivacyType::Private),
+	ConnectionType::Friendship(PrivacyType::Private),
+];
+
 /// Graph Key type
 #[repr(C)]
 #[derive(Debug, Clone, Eq, PartialEq)]
