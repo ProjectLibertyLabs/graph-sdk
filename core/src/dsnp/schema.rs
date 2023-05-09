@@ -58,7 +58,7 @@ impl SchemaHandler {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 	use crate::dsnp::dsnp_types::{

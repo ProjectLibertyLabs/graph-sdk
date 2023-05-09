@@ -50,7 +50,7 @@ impl EncryptionBehavior for SealBox {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 	use crate::dsnp::dsnp_configs::KeyPairType;

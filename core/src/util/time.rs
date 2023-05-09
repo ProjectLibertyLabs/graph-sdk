@@ -20,7 +20,7 @@ fn duration_sec_from_to(from_sec: u64, to_sec: u64) -> u64 {
 	to.saturating_sub(from).as_secs()
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod tests {
 	use super::*;
 

@@ -145,7 +145,7 @@ impl UpdateAPI for UserGraph {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 

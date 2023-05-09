@@ -144,7 +144,7 @@ impl UserKeyManager {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod tests {
 	use super::*;
 	use crate::{

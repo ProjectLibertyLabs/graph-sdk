@@ -201,7 +201,7 @@ impl Ord for KeyData {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod tests {
 	use super::*;
 

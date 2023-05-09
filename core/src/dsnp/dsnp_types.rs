@@ -191,7 +191,7 @@ impl<'de> Visitor<'de> for PridVisitor {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 

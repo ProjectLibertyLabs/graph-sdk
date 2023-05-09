@@ -28,7 +28,7 @@ impl CompressionBehavior for DeflateCompression {
 	}
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 

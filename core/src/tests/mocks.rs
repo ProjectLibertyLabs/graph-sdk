@@ -17,7 +17,6 @@ pub struct MockUserKeyManager {
 	verifications: HashMap<DsnpUserId, Option<bool>>,
 }
 
-#[cfg_attr(feature = "calculate-page-capacity", allow(dead_code))]
 impl MockUserKeyManager {
 	pub fn new() -> Self {
 		Self { verifications: HashMap::<DsnpUserId, Option<bool>>::default() }
