@@ -125,7 +125,7 @@ pub fn payloads_from_ffi(
 	rust_payloads
 }
 
-// Function to convert C-compatible `Update` to a Rust `Update`
+// Function to convert Rust `Update` to C-compatible `Update`
 pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) -> Vec<Update> {
 	let mut ffi_updates = Vec::new();
 	for update in updates {
