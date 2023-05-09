@@ -2,7 +2,7 @@
 
 # Generate bindgen
 make bindgen
-
+cargo build --release -p dsnp-graph-sdk-ffi
 # Copy library to c_example
 cp target/release/libdsnp_graph_sdk_ffi.a bridge/ffi/src/c_example/
 
