@@ -361,6 +361,8 @@ dependencies = [
  "dryoc",
  "dsnp-graph-config",
  "hex",
+ "lazy_static",
+ "log",
  "miniz_oxide",
  "ntest",
  "pretty_assertions",

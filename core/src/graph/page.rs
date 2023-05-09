@@ -17,8 +17,6 @@ use crate::{
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 
-pub const APPROX_MAX_CONNECTIONS_PER_PAGE: usize = 10; // todo: determine best size for this
-
 /// A traits that returns a removed page binary payload according to the DSNP Graph schema
 pub trait RemovedPageDataProvider {
 	fn to_removed_page_data(&self) -> PageData;
@@ -240,17 +238,6 @@ impl GraphPage {
 		self.connections.inner().is_empty()
 	}
 
-	/// Determine if page is full
-	///  aggressive:false -> use a simple heuristic based on the number of connections
-	///  aggressive:true  -> do actual compression to determine resulting actual page size
-	pub fn is_full(&self, aggressive: bool) -> bool {
-		if !aggressive {
-			return self.connections.len() >= APPROX_MAX_CONNECTIONS_PER_PAGE
-		}
-
-		todo!()
-	}
-
 	/// Add a connection to the page. Fail if the connection is already present.
 	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> Result<()> {
 		if self.contains(connection_id) {
@@ -280,7 +267,12 @@ impl GraphPage {
 	/// Refresh PRIds based on latest
 	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
 		if self.connections.len() != prids.len() {
-			return Err(Error::msg("prids len should be equal to connections len"))
+			return Err(Error::msg(format!(
+				"page_id: {}, prids len should be equal to connections len (connections: {}, prids: {})",
+				self.page_id,
+				self.connections.len(),
+				prids.len()
+			)))
 		}
 		self.prids.clear();
 		self.prids.extend_from_slice(&prids);
@@ -361,38 +353,6 @@ mod test {
 		let (_, page) = create_test_ids_and_page();
 		assert_eq!(page.is_empty(), false);
 	}
-
-	#[test]
-	fn is_full_non_aggressive_returns_false_for_non_full() {
-		let mut page = GraphPage::new(PrivacyType::Private, 0);
-		let mut last_connection: DsnpUserId = 0;
-		while page.connections.len() < APPROX_MAX_CONNECTIONS_PER_PAGE {
-			assert_eq!(page.is_full(false), false);
-			let _ = page.add_connection(&last_connection);
-			last_connection += 1;
-		}
-	}
-
-	#[test]
-	fn is_full_non_aggressive_returns_true_for_full() {
-		let connections = (0..APPROX_MAX_CONNECTIONS_PER_PAGE as u64)
-			.map(|u| (u, 0))
-			.collect::<Vec<(u64, u64)>>();
-		let pages = GraphPageBuilder::new(ConnectionType::Follow(PrivacyType::Private))
-			.with_page(1, &connections, &vec![], 0)
-			.build();
-
-		let page = pages.first().expect("page should exist");
-		assert_eq!(page.is_full(false), true);
-	}
-
-	#[test]
-	#[ignore = "todo"]
-	fn is_full_aggressive_returns_false_for_non_full() {}
-
-	#[test]
-	#[ignore = "todo"]
-	fn is_full_aggressive_returns_true_for_full() {}
 
 	#[test]
 	fn add_duplicate_connection_fails() {
