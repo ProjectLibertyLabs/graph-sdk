@@ -38,7 +38,7 @@ clean:
 .PHONY: capacities
 capacities:
 	@echo "Generating graph page capacities..."
-	@cargo test --features=calculate-page-capacity calculate_page_capacities
+	@cargo test --features=calculate-page-capacity calculate_page_capacities; cargo fmt
 
 .PHONY: all
 all: check test clippy fmt build doc

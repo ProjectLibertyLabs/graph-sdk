@@ -589,7 +589,7 @@ macro_rules! iter_graph_connections {
 	}};
 }
 
-#[cfg(all(test, not(feature = "calculate-page-capacity")))]
+#[cfg(test)]
 mod test {
 	use super::*;
 	use crate::{
