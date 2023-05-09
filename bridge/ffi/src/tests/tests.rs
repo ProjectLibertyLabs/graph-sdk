@@ -21,20 +21,21 @@ mod tests {
 			},
 		};
 
-		let graph_state = unsafe { initialize_graph_state(&environment as *const Environment) };
-		assert!(graph_state);
+		unsafe {
+			let graph_state = initialize_graph_state(&environment as *const Environment);
+			assert!(!graph_state.is_null());
 
-		let graph_state_with_capacity = unsafe {
-			initialize_graph_state_with_capacity(&environment as *const Environment, 100)
-		};
-		assert!(graph_state_with_capacity);
+			let graph_state_with_capacity =
+				initialize_graph_state_with_capacity(&environment as *const Environment, 100);
+			assert!(!graph_state_with_capacity.is_null());
 
-		// expect  singleton to be initialized
-		let capacity = unsafe { get_graph_capacity() };
-		assert_eq!(capacity, 100);
+			// Expect singleton to be initialized
+			let capacity = get_graph_capacity(graph_state);
+			assert_eq!(capacity, 100);
 
-		let is_graph_state_free = unsafe { free_graph_state() };
-		assert!(is_graph_state_free);
+			free_graph_state(graph_state);
+			free_graph_state(graph_state_with_capacity);
+		}
 	}
 
 	// Add more tests as needed
