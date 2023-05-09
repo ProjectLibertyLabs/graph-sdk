@@ -1,6 +1,6 @@
 use crate::bindings::*;
 use dsnp_graph_config::DsnpVersion;
-use std::collections::HashMap;
+use std::{collections::HashMap, mem::ManuallyDrop};
 
 // Function to convert C-compatible `Config` to a Rust `Config`
 pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
@@ -135,15 +135,15 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 				schema_id,
 				page_id,
 				prev_hash,
-				mut payload,
+				payload,
 			} => {
 				let ffi_persist_page = PersistPage {
 					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
 					schema_id,
 					page_id,
 					prev_hash,
-					payload: payload.as_mut_ptr(),
 					payload_len: payload.len(),
+					payload: ManuallyDrop::new(payload).as_mut_ptr(),
 				};
 				ffi_updates.push(Update::Persist(ffi_persist_page));
 			},
@@ -164,13 +164,13 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 			dsnp_graph_core::dsnp::api_types::Update::AddKey {
 				owner_dsnp_user_id,
 				prev_hash,
-				mut payload,
+				payload,
 			} => {
 				let ffi_add_key = AddKey {
 					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
 					prev_hash,
-					payload: payload.as_mut_ptr(),
 					payload_len: payload.len(),
+					payload: ManuallyDrop::new(payload).as_mut_ptr(),
 				};
 				ffi_updates.push(Update::Add(ffi_add_key));
 			},
