@@ -4,6 +4,7 @@ use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
 	dsnp::dsnp_types::DsnpUserId,
 };
+use lazy_static::lazy_static;
 use std::{
 	mem::ManuallyDrop,
 	sync::{Arc, Mutex},
@@ -15,8 +16,12 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
-#[no_mangle]
-static mut GRAPH_STATES: Vec<Arc<Mutex<*mut GraphState>>> = Vec::new();
+static mut GRAPH_STATES: Option<Arc<Mutex<Vec<*mut GraphState>>>> = None;
+
+// Initialize GRAPH_STATES
+lazy_static! {
+	static ref GRAPH_STATES_LOCK: Mutex<()> = Mutex::new(());
+}
 
 // Initialize GraphState
 #[no_mangle]
@@ -27,9 +32,13 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let rust_environment = environment_from_ffi(environment);
 	let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
 
-	// Add state pointer to GRAPH_STATES vector
-	GRAPH_STATES.push(Arc::new(Mutex::new(graph_state)));
-
+	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is None
+	if GRAPH_STATES.is_none() {
+		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+	} else {
+		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+	}
 	graph_state
 }
 
@@ -44,9 +53,12 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let graph_state =
 		Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
 
-	// Add state pointer to GRAPH_STATES vector
-	GRAPH_STATES.push(Arc::new(Mutex::new(graph_state)));
-
+	if GRAPH_STATES.is_none() {
+		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+	} else {
+		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+	}
 	graph_state
 }
 
@@ -174,15 +186,33 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 // Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
-	let _ = Box::from_raw(graph_state);
+	// remove graph_state from GRAPH_STATES
+	// Lock GRAPH_STATES before accessing it
+	let _lock = GRAPH_STATES_LOCK.lock().unwrap();
+	if let Some(graph_states) = &GRAPH_STATES {
+		// Iterate over the Arc<Mutex<*mut GraphState>> items
+		for (index, state) in graph_states.lock().unwrap().iter().enumerate() {
+			if *state == graph_state {
+				let _ = Box::from_raw(*state);
+				graph_states.lock().unwrap().remove(index);
+			}
+		}
+	}
+	drop(_lock);
 }
 
 // Free GraphStates
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_states() {
-	for graph_state in GRAPH_STATES.iter() {
-		let _ = Box::from_raw(graph_state.lock().unwrap().as_mut().unwrap());
+	// Lock GRAPH_STATES before accessing it
+	let _lock = GRAPH_STATES_LOCK.lock().unwrap();
+	if let Some(graph_states) = &GRAPH_STATES {
+		// Iterate over the Arc<Mutex<*mut GraphState>> items
+		for graph_state in graph_states.lock().unwrap().iter() {
+			let _ = Box::from_raw(*graph_state);
+		}
 	}
+	drop(_lock);
 }
 
 // Free GraphUpdates
