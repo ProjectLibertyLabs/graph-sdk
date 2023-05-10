@@ -6,6 +6,7 @@ use dsnp_graph_core::{
 };
 use std::{
 	mem::ManuallyDrop,
+	panic,
 	sync::{Arc, Mutex},
 };
 
@@ -22,18 +23,25 @@ static mut GRAPH_STATES: Option<Arc<Mutex<Vec<*mut GraphState>>>> = None;
 pub unsafe extern "C" fn initialize_graph_state(
 	environment: *const Environment,
 ) -> *mut GraphState {
-	let environment = &*environment;
-	let rust_environment = environment_from_ffi(environment);
-	let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
+	// use panic_unwind
+	let result = panic::catch_unwind(|| {
+		let environment = &*environment;
+		let rust_environment = environment_from_ffi(environment);
+		let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
 
-	// Initialize GRAPH_STATES vector if GRAPH_STATES is None
-	if GRAPH_STATES.is_none() {
-		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+		// Initialize GRAPH_STATES vector if GRAPH_STATES is None
+		if GRAPH_STATES.is_none() {
+			GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+		}
+		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+
+		graph_state
+	});
+	match result {
+		Ok(graph_state) => graph_state,
+		Err(_) => std::ptr::null_mut(),
 	}
-	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-	GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
-
-	graph_state
 }
 
 // Intialize GraphState with capacity
@@ -42,18 +50,25 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	environment: *const Environment,
 	capacity: usize,
 ) -> *mut GraphState {
-	let environment = &*environment;
-	let rust_environment = environment_from_ffi(environment);
-	let graph_state =
-		Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
+	let result = panic::catch_unwind(|| {
+		let environment = &*environment;
+		let rust_environment = environment_from_ffi(environment);
+		let graph_state =
+			Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
 
-	// Initialize GRAPH_STATES vector if GRAPH_STATES is None
-	if GRAPH_STATES.is_none() {
-		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+		// Initialize GRAPH_STATES vector if GRAPH_STATES is None
+		if GRAPH_STATES.is_none() {
+			GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
+		}
+		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+
+		graph_state
+	});
+	match result {
+		Ok(graph_state) => graph_state,
+		Err(_) => std::ptr::null_mut(),
 	}
-	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-	GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
-	graph_state
 }
 
 // Get Capacity
