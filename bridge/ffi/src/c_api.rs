@@ -2,10 +2,12 @@ use crate::{bindings::*, utils::*};
 use dsnp_graph_config::SchemaId;
 use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
-	dsnp::{api_types::Action, dsnp_types::DsnpUserId},
+	dsnp::dsnp_types::DsnpUserId,
 };
-
-use std::mem::ManuallyDrop;
+use std::{
+	mem::ManuallyDrop,
+	sync::{Arc, Mutex},
+};
 
 #[no_mangle]
 pub extern "C" fn print_hello_graph() {
@@ -14,7 +16,7 @@ pub extern "C" fn print_hello_graph() {
 
 // Collection of GraphStates
 #[no_mangle]
-static mut GRAPH_STATES: Vec<*mut GraphState> = Vec::new();
+static mut GRAPH_STATES: Vec<Arc<Mutex<*mut GraphState>>> = Vec::new();
 
 // Initialize GraphState
 #[no_mangle]
@@ -26,7 +28,7 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
 
 	// Add state pointer to GRAPH_STATES vector
-	GRAPH_STATES.push(graph_state);
+	GRAPH_STATES.push(Arc::new(Mutex::new(graph_state)));
 
 	graph_state
 }
@@ -43,7 +45,7 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 		Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
 
 	// Add state pointer to GRAPH_STATES vector
-	GRAPH_STATES.push(graph_state);
+	GRAPH_STATES.push(Arc::new(Mutex::new(graph_state)));
 
 	graph_state
 }
@@ -118,6 +120,7 @@ pub unsafe extern "C" fn graph_apply_actions(
 ) -> bool {
 	let graph_state = &mut *graph_state;
 	let actions = std::slice::from_raw_parts(actions, actions_len);
+	let actions = actions_from_ffi(&actions);
 	graph_state.apply_actions(&actions).is_ok()
 }
 
@@ -178,7 +181,7 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_states() {
 	for graph_state in GRAPH_STATES.iter() {
-		let _ = Box::from_raw(*graph_state);
+		let _ = Box::from_raw(graph_state.lock().unwrap().as_mut().unwrap());
 	}
 }
 

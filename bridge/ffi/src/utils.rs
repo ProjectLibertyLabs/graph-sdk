@@ -33,11 +33,13 @@ pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 
 // Function to convert C-compatible `SchemaConfig` to a Rust `SchemaConfig`
 pub fn environment_from_ffi(environment: &Environment) -> dsnp_graph_config::Environment {
-	let config = config_from_ffi(&environment.config);
-	match environment.environment_type {
-		EnvironmentType::Mainnet => dsnp_graph_config::Environment::Mainnet,
-		EnvironmentType::Rococo => dsnp_graph_config::Environment::Rococo,
-		EnvironmentType::Dev => dsnp_graph_config::Environment::Dev(config),
+	match environment {
+		Environment::Mainnet => dsnp_graph_config::Environment::Mainnet,
+		Environment::Rococo => dsnp_graph_config::Environment::Rococo,
+		Environment::Dev(config) => {
+			let rust_config = config_from_ffi(config);
+			dsnp_graph_config::Environment::Dev(rust_config)
+		},
 	}
 }
 
@@ -177,4 +179,36 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 		}
 	}
 	ffi_updates
+}
+
+pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_types::Action> {
+	let mut rust_actions = Vec::new();
+	for action in actions {
+		match action {
+			Action::Connect { owner_dsnp_user_id, connection } => {
+				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Connect {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					connection: connection.clone(),
+				};
+				rust_actions.push(rust_action);
+			},
+			Action::Disconnect { owner_dsnp_user_id, connection } => {
+				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Disconnect {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					connection: connection.clone(),
+				};
+				rust_actions.push(rust_action);
+			},
+			Action::AddGraphKey { owner_dsnp_user_id, new_public_key, new_public_key_len } => {
+				let new_public_key =
+					unsafe { std::slice::from_raw_parts(*new_public_key, *new_public_key_len) };
+				let rust_action = dsnp_graph_core::dsnp::api_types::Action::AddGraphKey {
+					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					new_public_key: new_public_key.to_vec(),
+				};
+				rust_actions.push(rust_action);
+			},
+		}
+	}
+	rust_actions
 }

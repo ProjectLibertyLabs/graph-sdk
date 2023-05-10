@@ -1,6 +1,6 @@
 use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig, SchemaId};
 use dsnp_graph_core::dsnp::{
-	api_types::{PageHash, PageId},
+	api_types::{Connection, PageHash, PageId},
 	dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 use libc::size_t;
@@ -157,17 +157,10 @@ pub struct Config {
 
 // EnvironmentType for `Config`
 #[repr(C)]
-pub enum EnvironmentType {
+pub enum Environment {
 	Mainnet,
 	Rococo,
-	Dev,
-}
-
-// `dsnp_graph_config::Environment` type
-#[repr(C)]
-pub struct Environment {
-	pub environment_type: EnvironmentType,
-	pub config: Config, // This field will only be used when environment_type is Dev.
+	Dev(Config),
 }
 
 // Output type for GraphConnection list
@@ -189,4 +182,37 @@ pub struct GraphConnectionsWithoutKeys {
 pub struct GraphUpdates {
 	pub updates: *mut Update,
 	pub updates_len: usize,
+}
+
+/// Different kind of actions that can be applied to the graph
+#[repr(C)]
+#[derive(Debug, Clone)]
+pub enum Action {
+	/// an action that defines adding a connection in the social graph
+	Connect {
+		/// owner of the social graph
+		owner_dsnp_user_id: DsnpUserId,
+
+		/// connection details
+		connection: Connection,
+	},
+
+	/// an action that defines removing an existing connection from social graph
+	Disconnect {
+		/// owner of the social graph
+		owner_dsnp_user_id: DsnpUserId,
+
+		/// connection details
+		connection: Connection,
+	},
+
+	/// an action that defines adding a new key to chain
+	AddGraphKey {
+		/// owner of the social graph
+		owner_dsnp_user_id: DsnpUserId,
+
+		/// public key
+		new_public_key: *const u8,
+		new_public_key_len: size_t,
+	},
 }

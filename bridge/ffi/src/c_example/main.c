@@ -10,17 +10,21 @@
     } while (0)
 
 int test_graph_sdk_ffi() {
-    // Test initialization and graph state functions
     Environment environment;
-    // Set the values of the environment struct
-    // ...
-    environment.environment_type = Dev;
-
+    
+    // Set the environment type
+    environment.tag = Dev;
+    
     // Set the values of the Config struct
-    environment.config.sdk_max_users_graph_size = 100;
-    environment.config.max_graph_page_size_bytes = 4096;
-    environment.config.max_page_id = 1000;
-    environment.config.max_key_page_size_bytes = 2048;
+    environment.dev.sdk_max_users_graph_size = 100;
+    environment.dev.sdk_max_stale_friendship_days = 30;
+    environment.dev.max_graph_page_size_bytes = 4096;
+    environment.dev.max_page_id = 1000;
+    environment.dev.max_key_page_size_bytes = 2048;
+    environment.dev.schema_map_len = 0;
+    environment.dev.schema_map = NULL;
+    environment.dev.dsnp_versions_len = 0;
+    environment.dev.dsnp_versions = NULL;
 
     GraphState* graph_state = initialize_graph_state(&environment);
     ASSERT(graph_state != NULL, "Graph state initialization failed");
