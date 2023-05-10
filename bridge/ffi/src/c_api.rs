@@ -180,6 +180,9 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 // Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
+	if GRAPH_STATES.is_none() {
+		return
+	}
 	let mut graph_states = GRAPH_STATES.as_ref().unwrap().lock().unwrap();
 	if let Some(index) = graph_states.iter().position(|&state| state == graph_state) {
 		let _ = Box::from_raw(graph_states.remove(index));
