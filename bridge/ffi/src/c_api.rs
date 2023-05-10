@@ -4,7 +4,6 @@ use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
 	dsnp::dsnp_types::DsnpUserId,
 };
-use lazy_static::lazy_static;
 use std::{
 	mem::ManuallyDrop,
 	sync::{Arc, Mutex},
@@ -17,11 +16,6 @@ pub extern "C" fn print_hello_graph() {
 
 // Collection of GraphStates
 static mut GRAPH_STATES: Option<Arc<Mutex<Vec<*mut GraphState>>>> = None;
-
-// Initialize GRAPH_STATES
-lazy_static! {
-	static ref GRAPH_STATES_LOCK: Mutex<()> = Mutex::new(());
-}
 
 // Initialize GraphState
 #[no_mangle]
@@ -186,33 +180,21 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 // Free GraphState
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
-	// remove graph_state from GRAPH_STATES
-	// Lock GRAPH_STATES before accessing it
-	let _lock = GRAPH_STATES_LOCK.lock().unwrap();
-	if let Some(graph_states) = &GRAPH_STATES {
-		// Iterate over the Arc<Mutex<*mut GraphState>> items
-		for (index, state) in graph_states.lock().unwrap().iter().enumerate() {
-			if *state == graph_state {
-				let _ = Box::from_raw(*state);
-				graph_states.lock().unwrap().remove(index);
-			}
+	let mut graph_states = GRAPH_STATES.as_ref().unwrap().lock().unwrap();
+	for (i, state) in graph_states.iter().enumerate() {
+		if *state == graph_state {
+			graph_states.remove(i);
+			let _ = Box::from_raw(graph_state);
+			break
 		}
 	}
-	drop(_lock);
+	drop(graph_states);
 }
 
 // Free GraphStates
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_states() {
-	// Lock GRAPH_STATES before accessing it
-	let _lock = GRAPH_STATES_LOCK.lock().unwrap();
-	if let Some(graph_states) = &GRAPH_STATES {
-		// Iterate over the Arc<Mutex<*mut GraphState>> items
-		for graph_state in graph_states.lock().unwrap().iter() {
-			let _ = Box::from_raw(*graph_state);
-		}
-	}
-	drop(_lock);
+	GRAPH_STATES = None;
 }
 
 // Free GraphUpdates
