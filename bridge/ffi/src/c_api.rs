@@ -26,13 +26,13 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let rust_environment = environment_from_ffi(environment);
 	let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
 
-	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is None
+	// Initialize GRAPH_STATES vector if GRAPH_STATES is None
 	if GRAPH_STATES.is_none() {
 		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
-	} else {
-		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
 	}
+	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+	GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+
 	graph_state
 }
 
@@ -47,12 +47,12 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let graph_state =
 		Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
 
+	// Initialize GRAPH_STATES vector if GRAPH_STATES is None
 	if GRAPH_STATES.is_none() {
 		GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
-	} else {
-		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
 	}
+	// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
+	GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
 	graph_state
 }
 
