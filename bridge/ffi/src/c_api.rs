@@ -78,17 +78,6 @@ pub unsafe extern "C" fn get_graph_states_count() -> usize {
 	graph_states.len()
 }
 
-// Get graph state from GRAPH_STATES at a given index
-#[no_mangle]
-pub unsafe extern "C" fn get_graph_state_at_index(index: usize) -> *mut GraphState {
-	let graph_states = GRAPH_STATES.lock().unwrap();
-	if index >= graph_states.len() {
-		return std::ptr::null_mut()
-	}
-	let graph_state = &graph_states[index];
-	graph_state.as_ref() as *const _ as *mut _
-}
-
 // State contains user graph
 #[no_mangle]
 pub unsafe extern "C" fn graph_contains_user(
