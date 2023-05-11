@@ -29,10 +29,10 @@ mod tests {
 			assert_eq!(capacity_1, 100);
 
 			let graph_state_with_capacity =
-				initialize_graph_state_with_capacity(&environment as *const Environment, 100);
+				initialize_graph_state_with_capacity(&environment as *const Environment, 50);
 			assert!(!graph_state_with_capacity.is_null());
 			let capacity_2 = get_graph_capacity(graph_state_with_capacity);
-			assert_eq!(capacity_2, 100);
+			assert_eq!(capacity_2, 50);
 			free_graph_state(graph_state);
 			free_graph_state(graph_state_with_capacity);
 		}
