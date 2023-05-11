@@ -71,10 +71,7 @@ pub unsafe extern "C" fn get_graph_capacity(graph_state: *mut GraphState) -> usi
 		let graph_state = &mut *graph_state;
 		graph_state.capacity()
 	});
-	match result {
-		Ok(capacity) => capacity,
-		Err(_) => 0,
-	}
+	result.unwrap_or(0)
 }
 
 // Get total graph states in GRAPH_STATES
@@ -84,10 +81,7 @@ pub unsafe extern "C" fn get_graph_states_count() -> usize {
 		let graph_states = GRAPH_STATES.lock().unwrap();
 		graph_states.len()
 	});
-	match result {
-		Ok(count) => count,
-		Err(_) => 0,
-	}
+	result.unwrap_or(0)
 }
 
 // State contains user graph
@@ -104,10 +98,7 @@ pub unsafe extern "C" fn graph_contains_user(
 		let user_id = &*user_id;
 		graph_state.contains_user_graph(user_id)
 	});
-	match result {
-		Ok(contains) => contains,
-		Err(_) => false,
-	}
+	result.unwrap_or(false)
 }
 
 // Count of users in current graph
@@ -120,10 +111,7 @@ pub unsafe extern "C" fn graph_users_count(graph_state: *mut GraphState) -> usiz
 		let graph_state = &mut *graph_state;
 		graph_state.len()
 	});
-	match result {
-		Ok(count) => count,
-		Err(_) => 0,
-	}
+	result.unwrap_or(0)
 }
 
 // Remove user
@@ -141,10 +129,7 @@ pub unsafe extern "C" fn graph_remove_user(
 		graph_state.remove_user_graph(user_id);
 		true
 	});
-	match result {
-		Ok(removed) => removed,
-		Err(_) => false,
-	}
+	result.unwrap_or(false)
 }
 
 //Graph import users data
@@ -163,10 +148,7 @@ pub unsafe extern "C" fn graph_import_users_data(
 		let payloads = payloads_from_ffi(&payloads);
 		graph_state.import_users_data(&payloads).is_ok()
 	});
-	match result {
-		Ok(imported) => imported,
-		Err(_) => false,
-	}
+	result.unwrap_or(false)
 }
 
 // Graph export updates
@@ -205,10 +187,7 @@ pub unsafe extern "C" fn graph_apply_actions(
 		let actions = actions_from_ffi(&actions);
 		graph_state.apply_actions(&actions).is_ok()
 	});
-	match result {
-		Ok(applied) => applied,
-		Err(_) => false,
-	}
+	result.unwrap_or(false)
 }
 
 // Graph get connections for user
@@ -290,7 +269,7 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 }
 
 #[no_mangle]
-pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
+pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
 			return
