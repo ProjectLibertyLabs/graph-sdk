@@ -64,18 +64,30 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 // Get Capacity
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_capacity(graph_state: *mut GraphState) -> usize {
-	if graph_state.is_null() {
-		return 0
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return 0
+		}
+		let graph_state = &mut *graph_state;
+		graph_state.capacity()
+	});
+	match result {
+		Ok(capacity) => capacity,
+		Err(_) => 0,
 	}
-	let graph_state = &mut *graph_state;
-	graph_state.capacity()
 }
 
 // Get total graph states in GRAPH_STATES
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_states_count() -> usize {
-	let graph_states = GRAPH_STATES.lock().unwrap();
-	graph_states.len()
+	let result = panic::catch_unwind(|| {
+		let graph_states = GRAPH_STATES.lock().unwrap();
+		graph_states.len()
+	});
+	match result {
+		Ok(count) => count,
+		Err(_) => 0,
+	}
 }
 
 // State contains user graph
@@ -84,22 +96,34 @@ pub unsafe extern "C" fn graph_contains_user(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
 ) -> bool {
-	if graph_state.is_null() {
-		return false
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return false
+		}
+		let graph_state = &mut *graph_state;
+		let user_id = &*user_id;
+		graph_state.contains_user_graph(user_id)
+	});
+	match result {
+		Ok(contains) => contains,
+		Err(_) => false,
 	}
-	let graph_state = &mut *graph_state;
-	let user_id = &*user_id;
-	graph_state.contains_user_graph(user_id)
 }
 
 // Count of users in current graph
 #[no_mangle]
 pub unsafe extern "C" fn graph_users_count(graph_state: *mut GraphState) -> usize {
-	if graph_state.is_null() {
-		return 0
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return 0
+		}
+		let graph_state = &mut *graph_state;
+		graph_state.len()
+	});
+	match result {
+		Ok(count) => count,
+		Err(_) => 0,
 	}
-	let graph_state = &mut *graph_state;
-	graph_state.len()
 }
 
 // Remove user
@@ -108,13 +132,19 @@ pub unsafe extern "C" fn graph_remove_user(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
 ) -> bool {
-	if graph_state.is_null() {
-		return false
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return false
+		}
+		let graph_state = &mut *graph_state;
+		let user_id = &*user_id;
+		graph_state.remove_user_graph(user_id);
+		true
+	});
+	match result {
+		Ok(removed) => removed,
+		Err(_) => false,
 	}
-	let graph_state = &mut *graph_state;
-	let user_id = &*user_id;
-	graph_state.remove_user_graph(user_id);
-	true
 }
 
 //Graph import users data
@@ -124,27 +154,39 @@ pub unsafe extern "C" fn graph_import_users_data(
 	payloads: *const ImportBundle,
 	payloads_len: usize,
 ) -> bool {
-	if graph_state.is_null() {
-		return false
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return false
+		}
+		let graph_state = &mut *graph_state;
+		let payloads = std::slice::from_raw_parts(payloads, payloads_len);
+		let payloads = payloads_from_ffi(&payloads);
+		graph_state.import_users_data(&payloads).is_ok()
+	});
+	match result {
+		Ok(imported) => imported,
+		Err(_) => false,
 	}
-	let graph_state = &mut *graph_state;
-	let payloads = std::slice::from_raw_parts(payloads, payloads_len);
-	let payloads = payloads_from_ffi(&payloads);
-	graph_state.import_users_data(&payloads).is_ok()
 }
 
 // Graph export updates
 #[no_mangle]
 pub unsafe extern "C" fn graph_export_updates(graph_state: *mut GraphState) -> GraphUpdates {
-	if graph_state.is_null() {
-		return GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 }
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 }
+		}
+		let graph_state = &mut *graph_state;
+		let updates = graph_state.export_updates().unwrap_or_default();
+		let ffi_updates = updates_to_ffi(updates);
+		let updates_len = ffi_updates.len();
+		let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
+		GraphUpdates { updates: updates_ptr, updates_len }
+	});
+	match result {
+		Ok(graph_updates) => graph_updates,
+		Err(_) => GraphUpdates { updates: std::ptr::null_mut(), updates_len: 0 },
 	}
-	let graph_state = &mut *graph_state;
-	let updates = graph_state.export_updates().unwrap_or_default();
-	let ffi_updates = updates_to_ffi(updates);
-	let updates_len = ffi_updates.len();
-	let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
-	GraphUpdates { updates: updates_ptr, updates_len }
 }
 
 // Graph apply actions
@@ -154,13 +196,19 @@ pub unsafe extern "C" fn graph_apply_actions(
 	actions: *const Action,
 	actions_len: usize,
 ) -> bool {
-	if graph_state.is_null() {
-		return false
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return false
+		}
+		let graph_state = &mut *graph_state;
+		let actions = std::slice::from_raw_parts(actions, actions_len);
+		let actions = actions_from_ffi(&actions);
+		graph_state.apply_actions(&actions).is_ok()
+	});
+	match result {
+		Ok(applied) => applied,
+		Err(_) => false,
 	}
-	let graph_state = &mut *graph_state;
-	let actions = std::slice::from_raw_parts(actions, actions_len);
-	let actions = actions_from_ffi(&actions);
-	graph_state.apply_actions(&actions).is_ok()
 }
 
 // Graph get connections for user
@@ -171,18 +219,24 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 	schema_id: *const SchemaId,
 	include_pending: bool,
 ) -> GraphConnections {
-	if graph_state.is_null() {
-		return GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
+		}
+		let graph_state = &mut *graph_state;
+		let user_id = &*user_id;
+		let schema_id = &*schema_id;
+		let connections = graph_state
+			.get_connections_for_user_graph(user_id, schema_id, include_pending)
+			.unwrap_or_default();
+		let connections_len = connections.len();
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
+		GraphConnections { connections: connections_ptr, connections_len }
+	});
+	match result {
+		Ok(graph_connections) => graph_connections,
+		Err(_) => GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 },
 	}
-	let graph_state = &mut *graph_state;
-	let user_id = &*user_id;
-	let schema_id = &*schema_id;
-	let connections = graph_state
-		.get_connections_for_user_graph(user_id, schema_id, include_pending)
-		.unwrap_or_default();
-	let connections_len = connections.len();
-	let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
-	GraphConnections { connections: connections_ptr, connections_len }
 }
 
 // Get connections without keys
@@ -190,14 +244,24 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 pub unsafe extern "C" fn graph_get_connections_without_keys(
 	graph_state: *mut GraphState,
 ) -> GraphConnectionsWithoutKeys {
-	if graph_state.is_null() {
-		return GraphConnectionsWithoutKeys { connections: std::ptr::null_mut(), connections_len: 0 }
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return GraphConnectionsWithoutKeys {
+				connections: std::ptr::null_mut(),
+				connections_len: 0,
+			}
+		}
+		let graph_state = &mut *graph_state;
+		let connections = graph_state.get_connections_without_keys().unwrap_or_default();
+		let connections_len = connections.len();
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
+		GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len }
+	});
+	match result {
+		Ok(graph_connections) => graph_connections,
+		Err(_) =>
+			GraphConnectionsWithoutKeys { connections: std::ptr::null_mut(), connections_len: 0 },
 	}
-	let graph_state = &mut *graph_state;
-	let connections = graph_state.get_connections_without_keys().unwrap_or_default();
-	let connections_len = connections.len();
-	let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
-	GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len }
 }
 
 // Get one sided private friendship connections
@@ -206,41 +270,74 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
 ) -> GraphConnections {
-	if graph_state.is_null() {
-		return GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 }
+		}
+		let graph_state = &mut *graph_state;
+		let user_id = &*user_id;
+		let connections = graph_state
+			.get_one_sided_private_friendship_connections(user_id)
+			.unwrap_or_default();
+		let connections_len = connections.len();
+		let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
+		GraphConnections { connections: connections_ptr, connections_len }
+	});
+	match result {
+		Ok(graph_connections) => graph_connections,
+		Err(_) => GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 },
 	}
-	let graph_state = &mut *graph_state;
-	let user_id = &*user_id;
-	let connections = graph_state
-		.get_one_sided_private_friendship_connections(user_id)
-		.unwrap_or_default();
-	let connections_len = connections.len();
-	let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
-	GraphConnections { connections: connections_ptr, connections_len }
 }
 
 #[no_mangle]
 pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
-	let mut graph_states = GRAPH_STATES.lock().unwrap();
-	graph_states.retain(|x| !std::ptr::eq(x.as_ref(), unsafe { &*graph_state }));
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return
+		}
+		let mut graph_states = GRAPH_STATES.lock().unwrap();
+		graph_states.retain(|x| !std::ptr::eq(x.as_ref(), unsafe { &*graph_state }));
+	});
+	match result {
+		Ok(_) => (),
+		Err(_) => (),
+	}
 }
 
 #[no_mangle]
 pub extern "C" fn free_graph_states() {
-	let mut graph_states = GRAPH_STATES.lock().unwrap();
-	graph_states.clear();
+	let result = panic::catch_unwind(|| {
+		let mut graph_states = GRAPH_STATES.lock().unwrap();
+		graph_states.clear();
+	});
+	match result {
+		Ok(_) => (),
+		Err(_) => (),
+	}
 }
 
 // Free GraphUpdates
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_updates(graph_updates: *mut GraphUpdates) {
-	let _ = Box::from_raw(graph_updates);
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(graph_updates);
+	});
+	match result {
+		Ok(_) => (),
+		Err(_) => (),
+	}
 }
 
 // Free GraphConnections
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_connections(graph_connections: *mut GraphConnections) {
-	let _ = Box::from_raw(graph_connections);
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(graph_connections);
+	});
+	match result {
+		Ok(_) => (),
+		Err(_) => (),
+	}
 }
 
 // Free GraphConnectionsWithoutKeys
@@ -248,5 +345,11 @@ pub unsafe extern "C" fn free_graph_connections(graph_connections: *mut GraphCon
 pub unsafe extern "C" fn free_graph_connections_without_keys(
 	graph_connections: *mut GraphConnectionsWithoutKeys,
 ) {
-	let _ = Box::from_raw(graph_connections);
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(graph_connections);
+	});
+	match result {
+		Ok(_) => (),
+		Err(_) => (),
+	}
 }
