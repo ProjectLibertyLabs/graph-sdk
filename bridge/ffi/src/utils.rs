@@ -70,8 +70,8 @@ fn dsnp_keys_from_ffi(dsnp_keys: &DsnpKeys) -> dsnp_graph_core::dsnp::api_types:
 	let key_data = keys.iter().map(|key| key_data_from_ffi(key)).collect();
 
 	dsnp_graph_core::dsnp::api_types::DsnpKeys {
-		dsnp_user_id: dsnp_keys.dsnp_user_id.clone(),
-		keys_hash: dsnp_keys.keys_hash.clone(),
+		dsnp_user_id: dsnp_keys.dsnp_user_id,
+		keys_hash: dsnp_keys.keys_hash,
 		keys: key_data,
 	}
 }
@@ -107,7 +107,7 @@ pub fn import_bundle_from_ffi(
 	}
 
 	dsnp_graph_core::dsnp::api_types::ImportBundle {
-		dsnp_user_id: import_bundle.dsnp_user_id.clone(),
+		dsnp_user_id: import_bundle.dsnp_user_id,
 		schema_id: import_bundle.schema_id,
 		key_pairs,
 		dsnp_keys,
@@ -140,7 +140,7 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 				payload,
 			} => {
 				let ffi_persist_page = PersistPage {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					owner_dsnp_user_id,
 					schema_id,
 					page_id,
 					prev_hash,
@@ -155,12 +155,8 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 				page_id,
 				prev_hash,
 			} => {
-				let ffi_delete_page = DeletePage {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
-					schema_id,
-					page_id,
-					prev_hash,
-				};
+				let ffi_delete_page =
+					DeletePage { owner_dsnp_user_id, schema_id, page_id, prev_hash };
 				ffi_updates.push(Update::Delete(ffi_delete_page));
 			},
 			dsnp_graph_core::dsnp::api_types::Update::AddKey {
@@ -169,7 +165,7 @@ pub fn updates_to_ffi(updates: Vec<dsnp_graph_core::dsnp::api_types::Update>) ->
 				payload,
 			} => {
 				let ffi_add_key = AddKey {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					owner_dsnp_user_id,
 					prev_hash,
 					payload_len: payload.len(),
 					payload: ManuallyDrop::new(payload).as_mut_ptr(),
@@ -187,14 +183,14 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 		match action {
 			Action::Connect { owner_dsnp_user_id, connection } => {
 				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Connect {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					owner_dsnp_user_id: *owner_dsnp_user_id,
 					connection: connection.clone(),
 				};
 				rust_actions.push(rust_action);
 			},
 			Action::Disconnect { owner_dsnp_user_id, connection } => {
 				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Disconnect {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					owner_dsnp_user_id: *owner_dsnp_user_id,
 					connection: connection.clone(),
 				};
 				rust_actions.push(rust_action);
@@ -203,7 +199,7 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 				let new_public_key =
 					unsafe { std::slice::from_raw_parts(*new_public_key, *new_public_key_len) };
 				let rust_action = dsnp_graph_core::dsnp::api_types::Action::AddGraphKey {
-					owner_dsnp_user_id: owner_dsnp_user_id.clone(),
+					owner_dsnp_user_id: *owner_dsnp_user_id,
 					new_public_key: new_public_key.to_vec(),
 				};
 				rust_actions.push(rust_action);

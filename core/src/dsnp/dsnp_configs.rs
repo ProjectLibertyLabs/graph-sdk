@@ -142,6 +142,9 @@ impl TryInto<KeyPairType> for GraphKeyPair {
 				let secret_key = SecretKey::try_from(&self.secret_key[..])
 					.map_err(|_| Error::msg("invalid secret key"))?;
 				let pair = StackKeyPair::from_secret_key(secret_key);
+				if pair.public_key.to_vec() != self.public_key {
+					return Err(Error::msg("provided public key is not compatible with secret key!"))
+				}
 				Ok(KeyPairType::Version1_0(pair))
 			},
 		}

@@ -21,6 +21,7 @@ use std::{
 
 #[derive(Debug)]
 pub struct GraphState {
+	capacity: usize,
 	environment: Environment,
 	shared_state_manager: Arc<RwLock<SharedStateManager>>,
 	user_map: TransactionalHashMap<DsnpUserId, UserGraph>,
@@ -68,29 +69,6 @@ pub trait GraphAPI {
 		&self,
 		user_id: &DsnpUserId,
 	) -> Result<Vec<DsnpGraphEdge>>;
-}
-
-impl GraphState {
-	pub fn new(environment: Environment) -> Self {
-		Self {
-			environment,
-			user_map: TransactionalHashMap::new(),
-			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
-		}
-	}
-
-	pub fn with_capacity(environment: Environment, capacity: usize) -> Self {
-		let size = min(capacity, environment.get_config().sdk_max_users_graph_size as usize);
-		Self {
-			environment,
-			user_map: TransactionalHashMap::with_capacity(size),
-			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
-		}
-	}
-
-	pub fn capacity(&self) -> usize {
-		self.environment.get_config().sdk_max_users_graph_size as usize
-	}
 }
 
 impl Transactional for GraphState {
@@ -240,10 +218,32 @@ impl GraphAPI for GraphState {
 }
 
 impl GraphState {
+	pub fn new(environment: Environment) -> Self {
+		Self {
+			capacity: environment.get_config().sdk_max_users_graph_size as usize,
+			environment,
+			user_map: TransactionalHashMap::new(),
+			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
+		}
+	}
+
+	pub fn with_capacity(environment: Environment, capacity: usize) -> Self {
+		let size = min(capacity, environment.get_config().sdk_max_users_graph_size as usize);
+		Self {
+			environment,
+			capacity: size,
+			user_map: TransactionalHashMap::with_capacity(size),
+			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
+		}
+	}
+
+	pub fn capacity(&self) -> usize {
+		self.capacity
+	}
+
 	/// Gets an existing or creates a new UserGraph
 	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
-		let is_full =
-			self.user_map.len() >= self.environment.get_config().sdk_max_users_graph_size as usize;
+		let is_full = self.user_map.len() >= self.capacity;
 		match self.user_map.entry(dsnp_user_id) {
 			Entry::Occupied(o) => Ok(o.into_mut()),
 			Entry::Vacant(v) => {
@@ -284,14 +284,24 @@ impl GraphState {
 			let graph = user_graph.graph_mut(&schema_id);
 			graph.clear();
 
-			match (connection_type.privacy_type(), include_secret_keys) {
-				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
-				(PrivacyType::Private, true) => {
-					graph.import_private(&dsnp_config, connection_type, pages)?;
-					self.shared_state_manager.write().unwrap().import_pri(*dsnp_user_id, pages)
+			match connection_type.privacy_type() {
+				PrivacyType::Public => graph.import_public(connection_type, pages),
+				PrivacyType::Private => {
+					// private keys are provided try to import the graph
+					if include_secret_keys {
+						graph.import_private(&dsnp_config, connection_type, pages)?;
+					}
+
+					// since it's a private friendship import provided PRIs
+					if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
+						self.shared_state_manager
+							.write()
+							.unwrap()
+							.import_pri(*dsnp_user_id, pages)?;
+					}
+
+					Ok(())
 				},
-				(PrivacyType::Private, false) =>
-					self.shared_state_manager.write().unwrap().import_pri(*dsnp_user_id, pages),
 			}?;
 		}
 		Ok(())
@@ -351,7 +361,7 @@ mod test {
 			dsnp_configs::KeyPairType,
 			dsnp_types::DsnpPrid,
 		},
-		tests::helpers::ImportBundleBuilder,
+		util::builders::ImportBundleBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, GraphKeyType};
@@ -368,6 +378,7 @@ mod test {
 		let capacity: usize = 5;
 		let new_state = GraphState::with_capacity(env, capacity);
 		assert!(new_state.user_map.inner().capacity() >= capacity);
+		assert_eq!(new_state.capacity, capacity);
 	}
 
 	#[test]
@@ -377,15 +388,6 @@ mod test {
 		);
 		let new_state = GraphState::with_capacity(env, TEST_CAPACITY * 2);
 		assert!(new_state.user_map.inner().capacity() >= TEST_CAPACITY);
-	}
-
-	#[test]
-	fn graph_state_capacity() {
-		let env = Environment::Dev(
-			ConfigBuilder::new().with_sdk_max_users_graph_size(TEST_CAPACITY as u32).build(),
-		);
-		let state = GraphState::new(env);
-		assert_eq!(state.capacity(), TEST_CAPACITY);
 	}
 
 	#[test]

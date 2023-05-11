@@ -32,7 +32,7 @@ mod tests {
 				initialize_graph_state_with_capacity(&environment as *const Environment, 50);
 			assert!(!graph_state_with_capacity.is_null());
 			let capacity_2 = get_graph_capacity(graph_state_with_capacity);
-			assert_eq!(capacity_2, 100); // TODO change this after fix
+			assert_eq!(capacity_2, 50);
 
 			let count_before = get_graph_states_count();
 			free_graph_state(graph_state);
