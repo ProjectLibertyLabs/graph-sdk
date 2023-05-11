@@ -15,10 +15,8 @@ use crate::{
 use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
 use std::{
-	cell::RefCell,
 	collections::{BTreeMap, HashMap, HashSet},
-	ops::Deref,
-	rc::Rc,
+	sync::{Arc, RwLock},
 };
 
 use super::page::GraphPage;
@@ -32,7 +30,7 @@ pub struct Graph {
 	user_id: DsnpUserId,
 	schema_id: SchemaId,
 	pages: PageMap,
-	user_key_manager: Rc<RefCell<dyn UserKeyManagerBase>>,
+	user_key_manager: Arc<RwLock<dyn UserKeyManagerBase + 'static + Send + Sync>>,
 }
 
 impl PartialEq for Graph {
@@ -72,10 +70,10 @@ impl Graph {
 		environment: Environment,
 		user_id: DsnpUserId,
 		schema_id: SchemaId,
-		user_key_manager: Rc<RefCell<E>>,
+		user_key_manager: Arc<RwLock<E>>,
 	) -> Self
 	where
-		E: UserKeyManagerBase + 'static,
+		E: UserKeyManagerBase + 'static + Send + Sync,
 	{
 		Self { environment, user_id, schema_id, pages: PageMap::new(), user_key_manager }
 	}
@@ -170,7 +168,7 @@ impl Graph {
 		}
 
 		let max_page_id = self.environment.get_config().max_page_id;
-		let keys = self.user_key_manager.deref().borrow().get_all_resolved_keys();
+		let keys = self.user_key_manager.read().unwrap().get_all_resolved_keys();
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
@@ -203,7 +201,7 @@ impl Graph {
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
 			PrivacyType::Private =>
-				self.user_key_manager.borrow().get_resolved_active_key(self.user_id),
+				self.user_key_manager.read().unwrap().get_resolved_active_key(self.user_id),
 		};
 
 		let ids_to_remove: Vec<DsnpUserId> = updates
@@ -351,7 +349,7 @@ impl Graph {
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
 			PrivacyType::Private =>
-				self.user_key_manager.borrow().get_resolved_active_key(self.user_id),
+				self.user_key_manager.read().unwrap().get_resolved_active_key(self.user_id),
 		};
 
 		let mut updates = vec![];
@@ -510,7 +508,7 @@ impl Graph {
 
 		let mut result = vec![];
 		for c in self.pages.inner().values().flat_map(|g| g.connections()) {
-			if !self.user_key_manager.borrow().verify_connection(c.user_id)? {
+			if !self.user_key_manager.read().unwrap().verify_connection(c.user_id)? {
 				result.push(*c)
 			}
 		}
@@ -538,7 +536,7 @@ impl Graph {
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
 			if duration_days_since(c.since) > max_allowed_stale_days &&
-				!self.user_key_manager.borrow().verify_connection(c.user_id)?
+				!self.user_key_manager.read().unwrap().verify_connection(c.user_id)?
 			{
 				// connection is removed from the other side
 				updated_page.remove_connection(&c.user_id)?;
@@ -550,7 +548,7 @@ impl Graph {
 			.connections()
 			.iter()
 			.map(|c| {
-				self.user_key_manager.borrow().calculate_prid(
+				self.user_key_manager.read().unwrap().calculate_prid(
 					self.user_id,
 					c.user_id,
 					encryption_key.key_pair.clone().into(),
@@ -630,9 +628,9 @@ mod test {
 			env,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		assert_eq!(graph.pages().inner().is_empty(), true);
@@ -661,9 +659,9 @@ mod test {
 			env,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		graph.set_pages(pages.clone());
@@ -691,9 +689,9 @@ mod test {
 			schema_id, // doesn't matter which type
 			user_id,
 			pages,
-			user_key_manager: Rc::new(RefCell::from(UserKeyManager::new(
+			user_key_manager: Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		};
 
@@ -719,9 +717,9 @@ mod test {
 			schema_id, // doesn't matter which type
 			user_id,
 			pages,
-			user_key_manager: Rc::new(RefCell::from(UserKeyManager::new(
+			user_key_manager: Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		};
 
@@ -749,9 +747,9 @@ mod test {
 			environment,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		let blob = PageData { content_hash: 0, page_id: 0, content: avro_public_payload() };
@@ -775,9 +773,9 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
-		let shared_state_manager = Rc::new(RefCell::from(SharedStateManager::new()));
+		let shared_state_manager = Arc::new(RwLock::new(SharedStateManager::new()));
 		let user_key_manager =
-			Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state_manager.clone())));
+			Arc::new(RwLock::new(UserKeyManager::new(user_id, shared_state_manager.clone())));
 
 		let mut graph = Graph::new(environment, user_id, schema_id, user_key_manager.clone());
 		let raw_key_pair = StackKeyPair::gen();
@@ -801,11 +799,13 @@ mod test {
 			keys_hash: 0,
 		};
 		shared_state_manager
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_dsnp_keys(&dsnp_keys)
 			.expect("should succeed");
 		user_key_manager
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_key_pairs(vec![graph_key_pair])
 			.expect("should succeed");
 		let res = graph.import_private(&dsnp_config, connection_type, &pages);
@@ -837,9 +837,9 @@ mod test {
 			environment,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 
@@ -973,9 +973,9 @@ mod test {
 			env,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		for p in page_builder.build() {
@@ -1038,9 +1038,9 @@ mod test {
 			env,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		for p in page_builder.build() {
@@ -1094,14 +1094,15 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
-		let shared_state = Rc::new(RefCell::from(SharedStateManager::new()));
-		let user_key = Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state.clone())));
+		let shared_state = Arc::new(RwLock::new(SharedStateManager::new()));
+		let user_key = Arc::new(RwLock::new(UserKeyManager::new(user_id, shared_state.clone())));
 		let mut graph = Graph::new(env, user_id, schema_id, user_key.clone());
 		for p in page_builder.build() {
 			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
 		}
 		shared_state
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_keys_test(
 				user_id,
 				&vec![DsnpPublicKey {
@@ -1112,7 +1113,8 @@ mod test {
 			)
 			.expect("should insert keys");
 		user_key
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_key_pairs(vec![GraphKeyPair {
 				key_type: GraphKeyType::X25519,
 				public_key: key.key_pair.get_public_key_raw(),
@@ -1159,7 +1161,7 @@ mod test {
 		let mut curr_id = 1u64;
 		let mut page_builder = GraphPageBuilder::new(connection_type);
 		let mut key_mapper = HashMap::new();
-		let shared_state = Rc::new(RefCell::from(SharedStateManager::new()));
+		let shared_state = Arc::new(RwLock::new(SharedStateManager::new()));
 		let owner_key =
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let removed_friend_user_id: DsnpUserId = 3;
@@ -1188,7 +1190,8 @@ mod test {
 					prid = DsnpPrid::new(&[1u8, 2, 3, 4, 5, 6, 7, 8]);
 				}
 				shared_state
-					.borrow_mut()
+					.write()
+					.unwrap()
 					.import_prids_test(*id, &vec![prid], 1)
 					.expect("should import prid");
 			});
@@ -1214,7 +1217,7 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
-		let user_key = Rc::new(RefCell::from(UserKeyManager::new(user_id, shared_state.clone())));
+		let user_key = Arc::new(RwLock::new(UserKeyManager::new(user_id, shared_state.clone())));
 		let mut graph = Graph::new(env, user_id, schema_id, user_key.clone());
 		for p in page_builder.build() {
 			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
@@ -1235,12 +1238,14 @@ mod test {
 		));
 		for (user, key) in dsnp_keys {
 			shared_state
-				.borrow_mut()
+				.write()
+				.unwrap()
 				.import_keys_test(user, &vec![key], 0)
 				.expect("should insert keys");
 		}
 		user_key
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_key_pairs(vec![GraphKeyPair {
 				key_type: GraphKeyType::X25519,
 				public_key: owner_key.key_pair.get_public_key_raw(),
@@ -1300,7 +1305,7 @@ mod test {
 		key_manager.register_verifications(&verifications);
 		// register one sided connections
 		key_manager.register_verifications(&vec![(1, Some(false)), (2, Some(false))]);
-		let mut graph = Graph::new(env, 1000, schema_id, Rc::new(RefCell::from(key_manager)));
+		let mut graph = Graph::new(env, 1000, schema_id, Arc::new(RwLock::new(key_manager)));
 		for p in GraphPageBuilder::new(connection_type)
 			.with_page(1, &ids, &vec![DsnpPrid::new(&[0, 1, 2, 3, 4, 5, 6, 7]); ids.len()], 0)
 			.build()
@@ -1339,7 +1344,7 @@ mod test {
 				env.clone(),
 				1000,
 				schema_id,
-				Rc::new(RefCell::from(MockUserKeyManager::new())),
+				Arc::new(RwLock::new(MockUserKeyManager::new())),
 			);
 
 			// act
@@ -1376,7 +1381,7 @@ mod test {
 		key_manager.register_verifications(&verifications);
 		// register failure
 		key_manager.register_verifications(&vec![(2, None)]);
-		let mut graph = Graph::new(env, 1000, schema_id, Rc::new(RefCell::from(key_manager)));
+		let mut graph = Graph::new(env, 1000, schema_id, Arc::new(RwLock::new(key_manager)));
 		for p in GraphPageBuilder::new(connection_type)
 			.with_page(1, &ids, &vec![DsnpPrid::new(&[0, 1, 2, 3, 4, 5, 6, 7]); ids.len()], 0)
 			.build()
@@ -1459,7 +1464,7 @@ mod test {
 		let connection_type = ConnectionType::Friendship(PrivacyType::Private);
 		let env = Environment::Mainnet;
 		let mut graph =
-			Graph::new(env, 1000, 2000, Rc::new(RefCell::from(MockUserKeyManager::new())));
+			Graph::new(env, 1000, 2000, Arc::new(RwLock::new(MockUserKeyManager::new())));
 		let mut page_1 = GraphPage::new(connection_type.privacy_type(), 1);
 		let connection_dsnp = 900;
 		page_1.add_connection(&connection_dsnp).unwrap();
@@ -1495,7 +1500,7 @@ mod test {
 		let ids: Vec<_> = (1..50).map(|u| (u, 0)).collect();
 		let pages = GraphPageBuilder::new(connection_type).with_page(1, &ids, &vec![], 0).build();
 		let mut graph =
-			Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(MockUserKeyManager::new())));
+			Graph::new(env, user_id, schema_id, Arc::new(RwLock::new(MockUserKeyManager::new())));
 		for (i, p) in pages.into_iter().enumerate() {
 			let _ = graph.create_page(&(i as PageId), Some(p));
 		}
@@ -1525,7 +1530,7 @@ mod test {
 			ResolvedKeyPair { key_id: 1, key_pair: KeyPairType::Version1_0(StackKeyPair::gen()) };
 		let mut key_manager = MockUserKeyManager::new();
 		key_manager.register_key(user_id, &key);
-		let mut graph = Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(key_manager)));
+		let mut graph = Graph::new(env, user_id, schema_id, Arc::new(RwLock::new(key_manager)));
 		for (i, p) in pages.into_iter().enumerate() {
 			let _ = graph.create_page(&(i as PageId), Some(p));
 		}
@@ -1559,7 +1564,7 @@ mod test {
 		key_manager.register_key(user_id, &key);
 		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
 		key_manager.register_verifications(&verifications);
-		let mut graph = Graph::new(env, user_id, schema_id, Rc::new(RefCell::from(key_manager)));
+		let mut graph = Graph::new(env, user_id, schema_id, Arc::new(RwLock::new(key_manager)));
 		for (i, p) in pages.into_iter().enumerate() {
 			let _ = graph.create_page(&(i as PageId), Some(p));
 		}

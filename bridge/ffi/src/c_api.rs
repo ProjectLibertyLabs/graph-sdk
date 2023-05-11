@@ -4,11 +4,7 @@ use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
 	dsnp::dsnp_types::DsnpUserId,
 };
-use std::{
-	mem::ManuallyDrop,
-	panic,
-	sync::{Arc, Mutex},
-};
+use std::{mem::ManuallyDrop, panic, sync::Mutex};
 
 #[no_mangle]
 pub extern "C" fn print_hello_graph() {
@@ -16,7 +12,8 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
-static mut GRAPH_STATES: Option<Arc<Mutex<Vec<*mut GraphState>>>> = None;
+#[no_mangle]
+static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 // Initialize GraphState
 #[no_mangle]
@@ -27,16 +24,13 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state = Box::into_raw(Box::new(GraphState::new(rust_environment)));
+		let graph_state = Box::new(GraphState::new(rust_environment));
+		let graph_state_ptr = Box::into_raw(graph_state);
 
-		// Initialize GRAPH_STATES vector if GRAPH_STATES is None
-		if GRAPH_STATES.is_none() {
-			GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
-		}
-		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+		// Add state pointer to GRAPH_STATES vector
+		GRAPH_STATES.lock().unwrap().push(unsafe { Box::from_raw(graph_state_ptr) });
 
-		graph_state
+		graph_state_ptr
 	});
 	match result {
 		Ok(graph_state) => graph_state,
@@ -53,17 +47,13 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state =
-			Box::into_raw(Box::new(GraphState::with_capacity(rust_environment, capacity)));
+		let graph_state = Box::new(GraphState::with_capacity(rust_environment, capacity));
+		let graph_state_ptr = Box::into_raw(graph_state);
 
-		// Initialize GRAPH_STATES vector if GRAPH_STATES is None
-		if GRAPH_STATES.is_none() {
-			GRAPH_STATES = Some(Arc::new(Mutex::new(Vec::new())));
-		}
-		// Add state pointer to GRAPH_STATES vector if GRAPH_STATES is Some
-		GRAPH_STATES.as_ref().unwrap().lock().unwrap().push(graph_state);
+		// Add state pointer to GRAPH_STATES vector
+		GRAPH_STATES.lock().unwrap().push(unsafe { Box::from_raw(graph_state_ptr) });
 
-		graph_state
+		graph_state_ptr
 	});
 	match result {
 		Ok(graph_state) => graph_state,
@@ -84,24 +74,19 @@ pub unsafe extern "C" fn get_graph_capacity(graph_state: *mut GraphState) -> usi
 // Get total graph states in GRAPH_STATES
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_states_count() -> usize {
-	if GRAPH_STATES.is_none() {
-		return 0
-	}
-	let graph_states = GRAPH_STATES.as_ref().unwrap().lock().unwrap();
+	let graph_states = GRAPH_STATES.lock().unwrap();
 	graph_states.len()
 }
 
 // Get graph state from GRAPH_STATES at a given index
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_state_at_index(index: usize) -> *mut GraphState {
-	if GRAPH_STATES.is_none() {
-		return std::ptr::null_mut()
-	}
-	let graph_states = GRAPH_STATES.as_ref().unwrap().lock().unwrap();
+	let graph_states = GRAPH_STATES.lock().unwrap();
 	if index >= graph_states.len() {
 		return std::ptr::null_mut()
 	}
-	graph_states[index]
+	let graph_state = &graph_states[index];
+	graph_state.as_ref() as *const _ as *mut _
 }
 
 // State contains user graph
@@ -245,22 +230,18 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	GraphConnections { connections: connections_ptr, connections_len }
 }
 
-// Free GraphState
 #[no_mangle]
-pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
-	if GRAPH_STATES.is_none() {
-		return
-	}
-	let mut graph_states = GRAPH_STATES.as_ref().unwrap().lock().unwrap();
-	if let Some(index) = graph_states.iter().position(|&state| state == graph_state) {
-		let _ = Box::from_raw(graph_states.remove(index));
-	}
+pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
+	let graph_state_box = unsafe { Box::from_raw(graph_state) };
+	let mut graph_states = GRAPH_STATES.lock().unwrap();
+	graph_states.retain(|x| !std::ptr::eq(x, &graph_state_box));
+	drop(graph_state_box);
 }
 
-// Free GraphStates
 #[no_mangle]
-pub unsafe extern "C" fn free_graph_states() {
-	GRAPH_STATES = None;
+pub extern "C" fn free_graph_states() {
+	let mut graph_states = GRAPH_STATES.lock().unwrap();
+	graph_states.clear();
 }
 
 // Free GraphUpdates

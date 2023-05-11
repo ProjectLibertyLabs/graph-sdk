@@ -5,7 +5,10 @@ use crate::{
 };
 use anyhow::{Error, Result};
 use dsnp_graph_config::{Environment, SchemaId};
-use std::{cell::RefCell, collections::HashSet, rc::Rc};
+use std::{
+	collections::HashSet,
+	sync::{Arc, RwLock},
+};
 
 use crate::{
 	dsnp::dsnp_configs::DsnpVersionConfig,
@@ -28,7 +31,7 @@ pub struct UserGraph {
 	environment: Environment,
 	graphs: GraphMap,
 	update_tracker: UpdateTracker,
-	pub user_key_manager: Rc<RefCell<UserKeyManager>>,
+	pub user_key_manager: Arc<RwLock<UserKeyManager>>,
 }
 
 impl Transactional for UserGraph {
@@ -41,7 +44,7 @@ impl Transactional for UserGraph {
 		}
 		self.graphs.commit();
 		self.update_tracker.commit();
-		self.user_key_manager.borrow_mut().commit();
+		self.user_key_manager.write().unwrap().commit();
 	}
 
 	fn rollback(&mut self) {
@@ -53,7 +56,7 @@ impl Transactional for UserGraph {
 			}
 		}
 		self.update_tracker.rollback();
-		self.user_key_manager.borrow_mut().rollback();
+		self.user_key_manager.write().unwrap().rollback();
 	}
 }
 
@@ -62,10 +65,10 @@ impl UserGraph {
 	pub fn new(
 		user_id: &DsnpUserId,
 		environment: &Environment,
-		shared_state_manager: Rc<RefCell<SharedStateManager>>,
+		shared_state_manager: Arc<RwLock<SharedStateManager>>,
 	) -> Self {
 		let user_key_manager =
-			Rc::new(RefCell::new(UserKeyManager::new(*user_id, shared_state_manager)));
+			Arc::new(RwLock::new(UserKeyManager::new(*user_id, shared_state_manager)));
 		let graphs: GraphMap = environment
 			.get_config()
 			.schema_map
@@ -228,14 +231,13 @@ mod test {
 	use crate::{graph::key_manager::UserKeyProvider, iter_graph_connections, tests::helpers::*};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::GraphKeyType;
-	use std::ops::Deref;
 
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {
 		let user_id = 1;
 		let env = Environment::Mainnet;
 		let user_graph =
-			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+			UserGraph::new(&user_id, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 
 		let follow_public_schema_id = env
 			.get_config()
@@ -267,8 +269,7 @@ mod test {
 	#[test]
 	fn graph_getter_gets_correct_graph_for_connection_type() {
 		let env = Environment::Mainnet;
-		let user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+		let user_graph = UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -282,7 +283,7 @@ mod test {
 	fn graph_mut_getter_gets_correct_graph_for_connection_type() {
 		let env = Environment::Mainnet;
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+			UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -297,7 +298,7 @@ mod test {
 		let env = Environment::Mainnet;
 		let user_id = 1;
 		let mut user_graph =
-			UserGraph::new(&user_id, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+			UserGraph::new(&user_id, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let schema_id = env
 			.get_config()
@@ -307,9 +308,9 @@ mod test {
 			env,
 			user_id,
 			schema_id,
-			Rc::new(RefCell::from(UserKeyManager::new(
+			Arc::new(RwLock::new(UserKeyManager::new(
 				user_id,
-				Rc::new(RefCell::from(SharedStateManager::new())),
+				Arc::new(RwLock::new(SharedStateManager::new())),
 			))),
 		);
 		assert_eq!(new_graph.add_connection_to_page(&0, &2).is_ok(), true);
@@ -324,7 +325,7 @@ mod test {
 		let env = Environment::Mainnet;
 		let graph = create_test_graph(None);
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+			UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 		for p in [PrivacyType::Public, PrivacyType::Private] {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
@@ -359,7 +360,7 @@ mod test {
 		let env = Environment::Mainnet;
 		let graph = create_test_graph(None);
 		let mut user_graph =
-			UserGraph::new(&1, &env, Rc::new(RefCell::from(SharedStateManager::new())));
+			UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
 		let schema_id = env
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
@@ -374,8 +375,8 @@ mod test {
 		let key = StackKeyPair::gen();
 		user_graph
 			.user_key_manager
-			.deref()
-			.borrow_mut()
+			.write()
+			.unwrap()
 			.import_key_pairs(vec![GraphKeyPair {
 				secret_key: key.secret_key.to_vec(),
 				public_key: key.public_key.to_vec(),
@@ -392,6 +393,6 @@ mod test {
 		let graph = user_graph.graph(&schema_id);
 		assert!(graph.find_connection(&connection_dsnp).is_none());
 		assert!(!user_graph.update_tracker.has_updates());
-		assert_eq!(user_graph.user_key_manager.borrow().get_imported_keys().len(), 0);
+		assert_eq!(user_graph.user_key_manager.read().unwrap().get_imported_keys().len(), 0);
 	}
 }
