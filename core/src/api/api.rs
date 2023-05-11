@@ -14,17 +14,15 @@ use crate::{
 use anyhow::{Error, Ok, Result};
 use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
 use std::{
-	cell::RefCell,
 	cmp::min,
 	collections::{hash_map::Entry, HashSet},
-	ops::{Deref, DerefMut},
-	rc::Rc,
+	sync::{Arc, RwLock},
 };
 
 #[derive(Debug)]
 pub struct GraphState {
 	environment: Environment,
-	shared_state_manager: Rc<RefCell<SharedStateManager>>,
+	shared_state_manager: Arc<RwLock<SharedStateManager>>,
 	user_map: TransactionalHashMap<DsnpUserId, UserGraph>,
 }
 
@@ -41,7 +39,7 @@ pub trait GraphAPI {
 	/// Import raw data retrieved from the blockchain into users graph.
 	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()>;
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()>;
 
 	/// Calculate the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
@@ -77,7 +75,7 @@ impl GraphState {
 		Self {
 			environment,
 			user_map: TransactionalHashMap::new(),
-			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
+			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
 		}
 	}
 
@@ -86,7 +84,7 @@ impl GraphState {
 		Self {
 			environment,
 			user_map: TransactionalHashMap::with_capacity(size),
-			shared_state_manager: Rc::new(RefCell::from(SharedStateManager::new())),
+			shared_state_manager: Arc::new(RwLock::new(SharedStateManager::new())),
 		}
 	}
 
@@ -104,7 +102,7 @@ impl Transactional for GraphState {
 			}
 		}
 		self.user_map.commit();
-		self.shared_state_manager.deref().borrow_mut().commit();
+		self.shared_state_manager.write().unwrap().commit();
 	}
 
 	fn rollback(&mut self) {
@@ -115,7 +113,7 @@ impl Transactional for GraphState {
 				u.rollback();
 			}
 		}
-		self.shared_state_manager.deref().borrow_mut().rollback();
+		self.shared_state_manager.write().unwrap().rollback();
 	}
 }
 
@@ -139,8 +137,8 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: Vec<ImportBundle>) -> Result<()> {
-		let result = self.do_import_users_data(&payloads);
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
+		let result = self.do_import_users_data(payloads);
 		match result {
 			Result::Ok(_) => self.commit(),
 			Result::Err(_) => self.rollback(),
@@ -151,7 +149,7 @@ impl GraphAPI for GraphState {
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed or added keys
 	fn export_updates(&self) -> Result<Vec<Update>> {
-		let mut result = self.shared_state_manager.deref().borrow().export_new_key_updates()?;
+		let mut result = self.shared_state_manager.read().unwrap().export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
 			let user_graph = self
@@ -217,8 +215,8 @@ impl GraphAPI for GraphState {
 			.collect();
 		Ok(self
 			.shared_state_manager
-			.deref()
-			.borrow()
+			.read()
+			.unwrap()
 			.find_users_without_keys(all_connections.into_iter().collect()))
 	}
 
@@ -268,11 +266,7 @@ impl GraphState {
 				.get_config()
 				.get_connection_type_from_schema_id(*schema_id)
 				.ok_or(Error::msg("Invalid schema id for environment!"))?;
-			self.shared_state_manager
-				.deref()
-				.borrow_mut()
-				.deref_mut()
-				.import_dsnp_keys(&dsnp_keys)?;
+			self.shared_state_manager.write().unwrap().import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 			let dsnp_config = user_graph
@@ -281,10 +275,10 @@ impl GraphState {
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
-				let mut user_key_manager = user_graph.user_key_manager.deref().borrow_mut();
+				let mut user_key_manager = user_graph.user_key_manager.write().unwrap();
 
 				// import key-pairs inside user key manager
-				user_key_manager.deref_mut().import_key_pairs(key_pairs.clone())?;
+				user_key_manager.import_key_pairs(key_pairs.clone())?;
 			};
 
 			let graph = user_graph.graph_mut(&schema_id);
@@ -294,18 +288,10 @@ impl GraphState {
 				(PrivacyType::Public, _) => graph.import_public(connection_type, pages),
 				(PrivacyType::Private, true) => {
 					graph.import_private(&dsnp_config, connection_type, pages)?;
-					self.shared_state_manager
-						.deref()
-						.borrow_mut()
-						.deref_mut()
-						.import_pri(*dsnp_user_id, pages)
+					self.shared_state_manager.write().unwrap().import_pri(*dsnp_user_id, pages)
 				},
-				(PrivacyType::Private, false) => self
-					.shared_state_manager
-					.deref()
-					.borrow_mut()
-					.deref_mut()
-					.import_pri(*dsnp_user_id, pages),
+				(PrivacyType::Private, false) =>
+					self.shared_state_manager.write().unwrap().import_pri(*dsnp_user_id, pages),
 			}?;
 		}
 		Ok(())
@@ -347,8 +333,8 @@ impl GraphState {
 				},
 				Action::AddGraphKey { new_public_key, .. } => {
 					self.shared_state_manager
-						.deref()
-						.borrow_mut()
+						.write()
+						.unwrap()
 						.add_new_key(action.owner_dsnp_user_id(), new_public_key.clone())?;
 				},
 			}
@@ -482,12 +468,12 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
 
-		let public_manager = state.shared_state_manager.borrow();
+		let public_manager = state.shared_state_manager.read().unwrap();
 		let keys = public_manager.get_imported_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
@@ -527,12 +513,12 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
 
-		let public_manager = state.shared_state_manager.borrow();
+		let public_manager = state.shared_state_manager.read().unwrap();
 		let keys = public_manager.get_imported_keys(dsnp_user_id);
 		assert_eq!(keys.len(), 1);
 
@@ -569,12 +555,12 @@ mod test {
 			.build();
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_ok());
 
-		let manager = state.shared_state_manager.borrow();
+		let manager = state.shared_state_manager.read().unwrap();
 		for p in prids {
 			assert!(manager.contains(dsnp_user_id, p));
 		}
@@ -613,11 +599,14 @@ mod test {
 		}];
 
 		// act
-		let res = state.import_users_data(vec![input]);
+		let res = state.import_users_data(&vec![input]);
 
 		// assert
 		assert!(res.is_err());
-		assert_eq!(state.shared_state_manager.borrow().get_imported_keys(dsnp_user_id).len(), 0);
+		assert_eq!(
+			state.shared_state_manager.read().unwrap().get_imported_keys(dsnp_user_id).len(),
+			0
+		);
 		assert!(state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true).is_err());
 	}
 
@@ -702,7 +691,7 @@ mod test {
 
 		// assert
 		assert_eq!(state.user_map.len(), 0);
-		let updates = state.shared_state_manager.deref().borrow().export_new_key_updates();
+		let updates = state.shared_state_manager.write().unwrap().export_new_key_updates();
 		assert!(updates.is_ok());
 		assert_eq!(updates.unwrap().len(), 0);
 	}
@@ -744,7 +733,7 @@ mod test {
 			.with_key_pairs(&vec![keypair.clone()])
 			.with_page(1, &connections, &vec![], 0)
 			.build();
-		state.import_users_data(vec![input]).expect("should work");
+		state.import_users_data(&vec![input]).expect("should work");
 		let actions = vec![
 			Action::Connect {
 				connection: Connection { schema_id, dsnp_user_id: 1 },

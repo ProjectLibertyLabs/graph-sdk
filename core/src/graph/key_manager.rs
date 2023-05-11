@@ -9,7 +9,10 @@ use crate::{
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 use anyhow::Result;
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
+use std::{
+	fmt::Debug,
+	sync::{Arc, RwLock},
+};
 
 /// Common trait that manages public and private keys for each user
 pub trait UserKeyProvider {
@@ -37,7 +40,7 @@ pub trait UserKeyManagerBase: UserKeyProvider + PriProvider + ConnectionVerifier
 #[derive(Debug)]
 pub struct UserKeyManager {
 	/// keeps a reference to the shared instance of shared public keys and PRIDs
-	shared_state_manager: Rc<RefCell<SharedStateManager>>,
+	shared_state_manager: Arc<RwLock<SharedStateManager>>,
 
 	/// current user dsnp id that this key manager belongs to
 	dsnp_user_id: DsnpUserId,
@@ -60,8 +63,11 @@ impl UserKeyProvider for UserKeyManager {
 	}
 
 	fn get_resolved_key(&self, key_id: u64) -> Option<ResolvedKeyPair> {
-		if let Some(dsnp) =
-			self.shared_state_manager.borrow().get_key_by_id(self.dsnp_user_id, key_id)
+		if let Some(dsnp) = self
+			.shared_state_manager
+			.read()
+			.unwrap()
+			.get_key_by_id(self.dsnp_user_id, key_id)
 		{
 			if let Some(key_pair) =
 				self.keys.inner().iter().find(|&k| k.get_public_key_raw() == dsnp.key)
@@ -74,7 +80,8 @@ impl UserKeyProvider for UserKeyManager {
 
 	fn get_all_resolved_keys(&self) -> Vec<ResolvedKeyPair> {
 		self.shared_state_manager
-			.borrow()
+			.read()
+			.unwrap()
 			.get_imported_keys(self.dsnp_user_id)
 			.iter()
 			.filter_map(|dsnp| match dsnp.key_id {
@@ -85,7 +92,7 @@ impl UserKeyProvider for UserKeyManager {
 	}
 
 	fn get_resolved_active_key(&self, dsnp_user_id: DsnpUserId) -> Option<ResolvedKeyPair> {
-		if let Some(key) = self.shared_state_manager.borrow().get_active_key(dsnp_user_id) {
+		if let Some(key) = self.shared_state_manager.read().unwrap().get_active_key(dsnp_user_id) {
 			// can unwrap here since public key returns all keys with their ids
 			let key_id = key.key_id.unwrap();
 			return self.get_resolved_key(key_id)
@@ -96,11 +103,11 @@ impl UserKeyProvider for UserKeyManager {
 
 impl PriProvider for UserKeyManager {
 	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> Result<()> {
-		self.shared_state_manager.borrow_mut().import_pri(dsnp_user_id, pages)
+		self.shared_state_manager.write().unwrap().import_pri(dsnp_user_id, pages)
 	}
 
 	fn contains(&self, dsnp_user_id: DsnpUserId, prid: DsnpPrid) -> bool {
-		self.shared_state_manager.borrow().contains(dsnp_user_id, prid)
+		self.shared_state_manager.read().unwrap().contains(dsnp_user_id, prid)
 	}
 
 	fn calculate_prid(
@@ -109,14 +116,17 @@ impl PriProvider for UserKeyManager {
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
 	) -> Result<DsnpPrid> {
-		self.shared_state_manager.borrow().calculate_prid(from, to, from_secret)
+		self.shared_state_manager.read().unwrap().calculate_prid(from, to, from_secret)
 	}
 }
 
 impl ConnectionVerifier for UserKeyManager {
 	fn verify_connection(&self, from: DsnpUserId) -> Result<bool> {
-		let from_public_keys: Vec<_> =
-			self.shared_state_manager.borrow().get_prid_associated_public_keys(from)?;
+		let from_public_keys: Vec<_> = self
+			.shared_state_manager
+			.read()
+			.unwrap()
+			.get_prid_associated_public_keys(from)?;
 		let to_resolved_keys = self.get_all_resolved_keys();
 
 		for public in from_public_keys {
@@ -127,7 +137,7 @@ impl ConnectionVerifier for UserKeyManager {
 					&private.key_pair.clone().into(),
 					&public,
 				)?;
-				if self.shared_state_manager.borrow().contains(from, prid) {
+				if self.shared_state_manager.read().unwrap().contains(from, prid) {
 					return Ok(true)
 				}
 			}
@@ -151,7 +161,7 @@ impl Transactional for UserKeyManager {
 impl UserKeyManager {
 	pub fn new(
 		dsnp_user_id: DsnpUserId,
-		public_key_manager: Rc<RefCell<SharedStateManager>>,
+		public_key_manager: Arc<RwLock<SharedStateManager>>,
 	) -> Self {
 		Self {
 			shared_state_manager: public_key_manager,
@@ -185,7 +195,7 @@ mod tests {
 		// arrange
 		let dsnp_user_id = 2;
 		let public_key_manager = SharedStateManager::new();
-		let rc = Rc::new(RefCell::new(public_key_manager));
+		let rc = Arc::new(RwLock::new(public_key_manager));
 		let mutable_clone = rc.clone();
 		let mut user_key_manager = UserKeyManager::new(dsnp_user_id, rc.clone());
 		let key_pair_raw = StackKeyPair::gen();
@@ -204,7 +214,7 @@ mod tests {
 			dsnp_user_id,
 			keys: vec![KeyData { index: id1 as u16, content: serialized1 }],
 		};
-		mutable_clone.borrow_mut().import_dsnp_keys(&keys).expect("should work");
+		mutable_clone.write().unwrap().import_dsnp_keys(&keys).expect("should work");
 
 		// act
 		let res = user_key_manager.import_key_pairs(vec![key_pair.clone()]);

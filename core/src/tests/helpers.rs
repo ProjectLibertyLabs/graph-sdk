@@ -10,7 +10,11 @@ use crate::{
 	graph::{graph::Graph, page::GraphPage},
 	util::time::time_in_ksecs,
 };
-use std::{borrow::Borrow, cell::RefCell, collections::BTreeMap, rc::Rc};
+use std::{
+	borrow::Borrow,
+	collections::BTreeMap,
+	sync::{Arc, RwLock},
+};
 
 use crate::{
 	dsnp::{
@@ -64,9 +68,9 @@ pub fn create_empty_test_graph(connection_arg: Option<ConnectionType>) -> Graph 
 		env,
 		user_id,
 		schema_id,
-		Rc::new(RefCell::from(UserKeyManager::new(
+		Arc::new(RwLock::new(UserKeyManager::new(
 			user_id,
-			Rc::new(RefCell::from(SharedStateManager::new())),
+			Arc::new(RwLock::new(SharedStateManager::new())),
 		))),
 	)
 }

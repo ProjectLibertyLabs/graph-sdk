@@ -13,3 +13,6 @@ nohup.out
 *.iml
 **/node_modules
 **/dist
+bridge/ffi/src/c_example/libdsnp_graph_sdk_ffi.a
+bridge/ffi/src/c_example/main
+bridge/ffi/src/c_example/dsnp_graph_sdk_ffi.h
