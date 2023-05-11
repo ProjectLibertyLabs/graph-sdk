@@ -107,7 +107,7 @@ impl PriProvider for UserKeyManager {
 	}
 
 	fn contains(&self, dsnp_user_id: DsnpUserId, prid: DsnpPrid) -> bool {
-		self.shared_state_manager.write().unwrap().contains(dsnp_user_id, prid)
+		self.shared_state_manager.read().unwrap().contains(dsnp_user_id, prid)
 	}
 
 	fn calculate_prid(
@@ -116,7 +116,7 @@ impl PriProvider for UserKeyManager {
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
 	) -> Result<DsnpPrid> {
-		self.shared_state_manager.write().unwrap().calculate_prid(from, to, from_secret)
+		self.shared_state_manager.read().unwrap().calculate_prid(from, to, from_secret)
 	}
 }
 
