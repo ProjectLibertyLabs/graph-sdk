@@ -74,6 +74,9 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 // Get Capacity
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_capacity(graph_state: *mut GraphState) -> usize {
+	if graph_state.is_null() {
+		return 0
+	}
 	let graph_state = &mut *graph_state;
 	graph_state.capacity()
 }
