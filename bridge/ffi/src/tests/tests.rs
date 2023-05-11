@@ -33,8 +33,16 @@ mod tests {
 			assert!(!graph_state_with_capacity.is_null());
 			let capacity_2 = get_graph_capacity(graph_state_with_capacity);
 			assert_eq!(capacity_2, 100); // TODO change this after fix
+
+			let count_before = get_graph_states_count();
 			free_graph_state(graph_state);
+			let count_after = get_graph_states_count();
+			assert_eq!(count_before - 1, count_after);
+
+			let count_before_with_capacity = get_graph_states_count();
 			free_graph_state(graph_state_with_capacity);
+			let count_after_with_capacity = get_graph_states_count();
+			assert_eq!(count_before_with_capacity - 1, count_after_with_capacity);
 		}
 	}
 

@@ -221,10 +221,8 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 
 #[no_mangle]
 pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
-	let graph_state_box = unsafe { Box::from_raw(graph_state) };
 	let mut graph_states = GRAPH_STATES.lock().unwrap();
-	graph_states.retain(|x| !std::ptr::eq(x, &graph_state_box));
-	drop(graph_state_box);
+	graph_states.retain(|x| !std::ptr::eq(x.as_ref(), unsafe { &*graph_state }));
 }
 
 #[no_mangle]
