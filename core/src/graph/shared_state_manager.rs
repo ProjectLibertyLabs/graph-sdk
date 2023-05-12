@@ -11,7 +11,7 @@ use crate::{
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use anyhow::{Error, Result};
-use std::collections::HashSet;
+use std::{borrow::Borrow, collections::HashSet};
 
 /// A trait that defines all the functionality that a pri manager should implement.
 pub trait PriProvider {
@@ -123,6 +123,9 @@ impl PublicKeyProvider for SharedStateManager {
 		for key in sorted_keys {
 			let mut k = Frequency::read_public_key(&key.content)
 				.map_err(|e| Error::msg(format!("failed to deserialize key {:?}", e)))?;
+
+			// make sure it can deserializes correctly
+			let _: PublicKeyType = k.borrow().try_into()?;
 			// key id is the itemized index of the key stored in Frequency
 			k.key_id = Some(key.index.into());
 			dsnp_keys.push(k);
@@ -319,7 +322,7 @@ mod tests {
 			api_types::{KeyData, ResolvedKeyPair},
 			dsnp_configs::KeyPairType,
 		},
-		tests::helpers::PageDataBuilder,
+		util::builders::PageDataBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{ConnectionType::Friendship, PrivacyType};
@@ -404,7 +407,7 @@ mod tests {
 		let mut key_manager = SharedStateManager::new();
 		let dsnp_user_id = 23;
 		let key_hash = 128;
-		let key1 = DsnpPublicKey { key_id: Some(128), key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: Some(128), key: vec![1u8; 32] };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let old_keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -413,7 +416,7 @@ mod tests {
 		);
 		key_manager.import_dsnp_keys(&old_keys).expect("should work");
 		key_manager
-			.add_new_key(dsnp_user_id, b"21767812782988871812334324".to_vec())
+			.add_new_key(dsnp_user_id, vec![2u8; 32])
 			.expect("should add new key");
 
 		// act
@@ -428,9 +431,9 @@ mod tests {
 	fn shared_state_manager_should_import_and_retrieve_keys_as_expected() {
 		// arrange
 		let dsnp_user_id = 23;
-		let key1 = DsnpPublicKey { key_id: Some(2), key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: Some(2), key: vec![1u8; 32] };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: Some(1), key: b"217678127812871812334325".to_vec() };
+		let key2 = DsnpPublicKey { key_id: Some(1), key: vec![2u8; 32] };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -460,9 +463,9 @@ mod tests {
 		// arrange
 		let dsnp_user_id = 2;
 		let keys_hash = 233;
-		let key1 = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: None, key: vec![1u8; 32] };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: None, key: b"217678127812871812334325".to_vec() };
+		let key2 = DsnpPublicKey { key_id: None, key: vec![2u8; 32] };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -472,7 +475,7 @@ mod tests {
 				KeyData { index: 2, content: serialized2 },
 			],
 		);
-		let new_public_key = b"726871hsjgdjsa727821712812".to_vec();
+		let new_public_key = vec![3u8; 32];
 		let expected_added_key = DsnpPublicKey { key_id: Some(3), key: new_public_key.clone() };
 		let mut key_manager = SharedStateManager::new();
 		key_manager.import_dsnp_keys(&keys).expect("should work");
@@ -501,7 +504,7 @@ mod tests {
 		// arrange
 		let dsnp_user_id = 2;
 		let keys_hash = 233;
-		let key1 = DsnpPublicKey { key_id: None, key: b"217678127812871812334324".to_vec() };
+		let key1 = DsnpPublicKey { key_id: None, key: vec![1u8; 32] };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,
@@ -524,9 +527,11 @@ mod tests {
 		// arrange
 		let dsnp_user_id = 2;
 		let id = 4;
-		let key1 = DsnpPublicKey { key_id: Some(id), key: b"217678127812871812334324".to_vec() };
+		let key1 =
+			DsnpPublicKey { key_id: Some(id), key: b"21767812781287181233432465430875".to_vec() };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
-		let key2 = DsnpPublicKey { key_id: None, key: b"217678127812871812334325".to_vec() };
+		let key2 =
+			DsnpPublicKey { key_id: None, key: b"21767812781287181233432465430876".to_vec() };
 		let serialized2 = Frequency::write_public_key(&key2).expect("should serialize");
 		let keys = create_dsnp_keys(
 			dsnp_user_id,

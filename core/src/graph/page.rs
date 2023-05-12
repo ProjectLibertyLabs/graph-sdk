@@ -288,7 +288,9 @@ impl GraphPage {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::{dsnp::dsnp_configs::KeyPairType, tests::helpers::*};
+	use crate::{
+		dsnp::dsnp_configs::KeyPairType, tests::helpers::*, util::builders::PageDataBuilder,
+	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{
 		ConnectionType::{Follow, Friendship},

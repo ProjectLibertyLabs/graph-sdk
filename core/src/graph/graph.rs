@@ -602,12 +602,14 @@ mod test {
 		tests::{
 			helpers::{
 				avro_public_payload, create_empty_test_graph, create_test_graph,
-				create_test_ids_and_page, GraphPageBuilder, KeyDataBuilder, PageDataBuilder,
-				INNER_TEST_DATA,
+				create_test_ids_and_page, INNER_TEST_DATA,
 			},
 			mocks::MockUserKeyManager,
 		},
-		util::time::time_in_ksecs,
+		util::{
+			builders::{GraphPageBuilder, KeyDataBuilder, PageDataBuilder},
+			time::time_in_ksecs,
+		},
 	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{DsnpVersion, GraphKeyType, ALL_CONNECTION_TYPES};

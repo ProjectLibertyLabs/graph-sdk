@@ -251,7 +251,7 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 
 // free graph state
 #[no_mangle]
-pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
+pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
 			return
