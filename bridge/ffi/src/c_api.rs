@@ -12,25 +12,19 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
-#[no_mangle]
-static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
+static GRAPH_STATES: Mutex<Vec<GraphState>> = Mutex::new(Vec::new());
 
-// Initialize GraphState
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
 	environment: *const Environment,
 ) -> *mut GraphState {
-	// use panic_unwind
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state = Box::new(GraphState::new(rust_environment));
-		let graph_state_ptr = Box::into_raw(graph_state);
-
-		// Add state pointer to GRAPH_STATES vector
-		GRAPH_STATES.lock().unwrap().push(unsafe { Box::from_raw(graph_state_ptr) });
-
-		graph_state_ptr
+		let graph_state = GraphState::new(rust_environment);
+		let mut graph_states = GRAPH_STATES.lock().unwrap();
+		graph_states.push(graph_state);
+		graph_states.last_mut().unwrap() as *mut _
 	});
 	match result {
 		Ok(graph_state) => graph_state,
@@ -47,13 +41,10 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state = Box::new(GraphState::with_capacity(rust_environment, capacity));
-		let graph_state_ptr = Box::into_raw(graph_state);
-
-		// Add state pointer to GRAPH_STATES vector
-		GRAPH_STATES.lock().unwrap().push(unsafe { Box::from_raw(graph_state_ptr) });
-
-		graph_state_ptr
+		let graph_state = GraphState::with_capacity(rust_environment, capacity);
+		let mut graph_states = GRAPH_STATES.lock().unwrap();
+		graph_states.push(graph_state);
+		graph_states.last_mut().unwrap() as *mut _
 	});
 	match result {
 		Ok(graph_state) => graph_state,
@@ -289,6 +280,7 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	}
 }
 
+// free graph state
 #[no_mangle]
 pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
@@ -296,7 +288,8 @@ pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 			return
 		}
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
-		graph_states.retain(|x| !std::ptr::eq(x.as_ref(), unsafe { &*graph_state }));
+		let index = graph_states.iter().position(|x| x as *const _ == graph_state).unwrap();
+		graph_states.remove(index);
 	});
 	match result {
 		Ok(_) => (),
@@ -304,6 +297,7 @@ pub extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	}
 }
 
+// Free GraphStates
 #[no_mangle]
 pub extern "C" fn free_graph_states() {
 	let result = panic::catch_unwind(|| {
