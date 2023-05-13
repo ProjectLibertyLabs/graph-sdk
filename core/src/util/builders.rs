@@ -2,6 +2,7 @@ use crate::{
 	dsnp::{
 		api_types::{
 			DsnpKeys, GraphKeyPair, ImportBundle, KeyData, PageData, PageId, ResolvedKeyPair,
+			Update,
 		},
 		dsnp_configs::{DsnpVersionConfig, KeyPairType},
 		dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
@@ -84,7 +85,7 @@ impl GraphPageBuilder {
 				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
 				page.set_connections(connections.clone());
 				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
-					page.set_prids(prids.clone()).expect("should set");
+					page.unchecked_set_prids(prids.clone());
 				}
 				page.set_content_hash(*hash);
 				page
@@ -107,7 +108,7 @@ impl PageDataBuilder {
 			page_builder: GraphPageBuilder::new(connection_type),
 			resolved_key: ResolvedKeyPair {
 				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
-				key_id: 1,
+				key_id: 0,
 			},
 			use_noisy_creation_time: false,
 		}
@@ -224,5 +225,66 @@ impl ImportBundleBuilder {
 			key_pairs,
 			pages,
 		}
+	}
+
+	pub fn build_from(original: &ImportBundle, updates: &[Update]) -> ImportBundle {
+		let mut new_bundle = original.clone();
+		for u in updates {
+			match u {
+				Update::PersistPage {
+					page_id,
+					schema_id,
+					owner_dsnp_user_id,
+					payload,
+					prev_hash,
+				} => {
+					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
+						*schema_id != new_bundle.schema_id
+					{
+						continue
+					}
+					let new_page =
+						PageData { content_hash: 0, content: payload.clone(), page_id: *page_id };
+					match original.pages.iter().position(|p| p.page_id == *page_id) {
+						Some(ind) => {
+							let old_page = original.pages.get(ind).unwrap();
+							assert_eq!(old_page.content_hash, *prev_hash);
+							new_bundle.pages.remove(ind);
+							new_bundle.pages.insert(ind, new_page);
+						},
+						None => {
+							new_bundle.pages.push(new_page);
+						},
+					}
+				},
+				Update::DeletePage { page_id, prev_hash, schema_id, owner_dsnp_user_id } => {
+					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
+						*schema_id != new_bundle.schema_id
+					{
+						continue
+					}
+					let ind = original
+						.pages
+						.iter()
+						.position(|p| p.page_id == *page_id)
+						.expect("Page should exist!");
+					let old_page = original.pages.get(ind).unwrap();
+					assert_eq!(old_page.content_hash, *prev_hash);
+					new_bundle.pages.remove(ind);
+				},
+				Update::AddKey { prev_hash, payload, owner_dsnp_user_id } => {
+					if *owner_dsnp_user_id != new_bundle.dsnp_user_id {
+						continue
+					}
+					assert_eq!(original.dsnp_keys.keys_hash, *prev_hash);
+					new_bundle.dsnp_keys.keys_hash = 0;
+					new_bundle.dsnp_keys.keys.push(KeyData {
+						content: payload.clone(),
+						index: original.dsnp_keys.keys.len() as u16,
+					})
+				},
+			}
+		}
+		new_bundle
 	}
 }

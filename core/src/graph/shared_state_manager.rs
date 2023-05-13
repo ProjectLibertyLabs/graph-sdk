@@ -213,7 +213,10 @@ impl PublicKeyProvider for SharedStateManager {
 		dsnp_user_ids
 			.iter()
 			.copied()
-			.filter(|u| self.dsnp_user_to_keys.get(u).is_none())
+			.filter(|u| match self.dsnp_user_to_keys.get(u) {
+				Some((keys, _)) => keys.is_empty(),
+				None => true,
+			})
 			.collect()
 	}
 }

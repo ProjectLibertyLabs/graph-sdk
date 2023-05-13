@@ -613,52 +613,6 @@ mod test {
 	}
 
 	#[test]
-	#[ignore = "todo"]
-	fn export_user_updates() {}
-
-	#[test]
-	fn add_duplicate_connection_for_user_errors() {
-		let owner_dsnp_user_id: DsnpUserId = 0;
-		let env = Environment::Mainnet;
-		let schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
-			.expect("should exist");
-		let action = Action::Connect {
-			owner_dsnp_user_id,
-			connection: Connection { schema_id, dsnp_user_id: 1 },
-		};
-
-		let mut state = GraphState::new(env);
-		assert!(state.apply_actions(&vec![action.clone()]).is_ok());
-		assert!(state.apply_actions(&vec![action]).is_err());
-	}
-
-	#[test]
-	fn remove_connection_for_user_twice_errors() {
-		let env = Environment::Mainnet;
-		let schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
-			.expect("should exist");
-		let owner_dsnp_user_id: DsnpUserId = 0;
-		let connect_action = Action::Connect {
-			owner_dsnp_user_id,
-			connection: Connection { dsnp_user_id: 1, schema_id },
-		};
-		let disconnect_action = Action::Disconnect {
-			owner_dsnp_user_id,
-			connection: Connection { dsnp_user_id: 1, schema_id },
-		};
-		let mut state = GraphState::new(env);
-		assert!(state.apply_actions(&vec![connect_action]).is_ok());
-
-		// act
-		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
-		assert!(state.apply_actions(&vec![disconnect_action]).is_err());
-	}
-
-	#[test]
 	fn apply_actions_error_should_rollback_every_action() {
 		let env = Environment::Mainnet;
 		let schema_id = env
@@ -696,73 +650,5 @@ mod test {
 		let updates = state.shared_state_manager.write().unwrap().export_new_key_updates();
 		assert!(updates.is_ok());
 		assert_eq!(updates.unwrap().len(), 0);
-	}
-
-	#[test]
-	fn remove_connection_from_nonexistent_user_errors() {
-		let env = Environment::Mainnet;
-		let schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
-			.expect("should exist");
-		let mut state = GraphState::new(env);
-		assert!(state
-			.apply_actions(&vec![Action::Disconnect {
-				owner_dsnp_user_id: 0,
-				connection: Connection { dsnp_user_id: 1, schema_id }
-			}])
-			.is_err());
-	}
-
-	#[test]
-	fn get_connections_for_user_graph_with_pending_should_include_updates() {
-		// arrange
-		let env = Environment::Mainnet;
-		let schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
-			.expect("should exist");
-		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		let dsnp_user_id = 123;
-		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
-		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections, &vec![], 0)
-			.build();
-		state.import_users_data(&vec![input]).expect("should work");
-		let actions = vec![
-			Action::Connect {
-				connection: Connection { schema_id, dsnp_user_id: 1 },
-				owner_dsnp_user_id: dsnp_user_id,
-			},
-			Action::Disconnect {
-				connection: Connection { schema_id, dsnp_user_id: 3 },
-				owner_dsnp_user_id: dsnp_user_id,
-			},
-		];
-		let expected_connections = HashSet::from([2, 4, 5, 1]);
-
-		// act
-		let action1 = &actions[0..1];
-		let action2 = &actions[1..2];
-		let res1 = state.apply_actions(action1);
-		let res2 = state.apply_actions(action2);
-
-		// assert
-		assert!(res1.is_ok());
-		assert!(res2.is_ok());
-
-		let connections_result =
-			state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true);
-		assert!(connections_result.is_ok());
-		let mapped: HashSet<_> =
-			connections_result.unwrap().into_iter().map(|c| c.user_id).collect();
-		assert_eq!(mapped, expected_connections);
 	}
 }

@@ -180,6 +180,7 @@ impl Graph {
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(e.into()),
 				Ok(p) => {
+					p.verify_prid_len(self.get_connection_type())?;
 					page_map.insert(page.page_id, p);
 				},
 			};
