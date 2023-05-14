@@ -279,6 +279,27 @@ impl GraphPage {
 		Ok(())
 	}
 
+	/// verifies that the size of prids should be the same as connection in private friendship
+	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> Result<()> {
+		if connection_type == ConnectionType::Friendship(PrivacyType::Private) &&
+			self.connections.len() != self.prids.len()
+		{
+			return Err(Error::msg(format!(
+					"page_id: {}, prids len should be equal to connections len (connections: {}, prids: {})",
+					self.page_id,
+					self.connections.len(),
+					self.prids.len()
+				)))
+		}
+		Ok(())
+	}
+
+	/// unchecked sets prids (mostly used in tests)
+	pub fn unchecked_set_prids(&mut self, prids: Vec<DsnpPrid>) {
+		self.prids.clear();
+		self.prids.extend_from_slice(&prids);
+	}
+
 	/// Clear prids in the page
 	pub fn clear_prids(&mut self) {
 		self.prids.clear();

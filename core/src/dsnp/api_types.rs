@@ -55,6 +55,7 @@ pub type PageId = u16;
 pub type PageHash = u32;
 
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
+#[derive(Debug, Clone)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
 	pub dsnp_user_id: DsnpUserId,
@@ -75,7 +76,7 @@ pub struct ImportBundle {
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
 #[repr(C)]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct DsnpKeys {
 	/// dsnp user id
 	pub dsnp_user_id: DsnpUserId,

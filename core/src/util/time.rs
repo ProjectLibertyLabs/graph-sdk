@@ -1,6 +1,6 @@
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-const SECS_PER_DAY: u64 = 60 * 60 * 24;
+pub const SECS_PER_DAY: u64 = 60 * 60 * 24;
 
 /// Calculates current timestamp from EPOCH in seconds, rounded to the nearest 1000
 pub fn time_in_ksecs() -> u64 {
