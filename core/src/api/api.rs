@@ -1,7 +1,7 @@
 use crate::{
 	dsnp::{
 		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
-		dsnp_types::{DsnpGraphEdge, DsnpUserId},
+		dsnp_types::{DsnpGraphEdge, DsnpPublicKey, DsnpUserId},
 	},
 	graph::{
 		key_manager::UserKeyProvider,
@@ -69,6 +69,9 @@ pub trait GraphAPI {
 		&self,
 		user_id: &DsnpUserId,
 	) -> Result<Vec<DsnpGraphEdge>>;
+
+	/// Get a list published and imported public keys associated with a user
+	fn get_public_keys(&self, user_id: &DsnpUserId) -> Result<Vec<DsnpPublicKey>>;
 }
 
 impl Transactional for GraphState {
@@ -214,6 +217,15 @@ impl GraphAPI for GraphState {
 		};
 		let graph = user_graph.graph(&private_friendship_schema_id);
 		graph.get_one_sided_friendships()
+	}
+
+	/// Get a list published and imported public keys associated with a user
+	fn get_public_keys(&self, user_id: &DsnpUserId) -> Result<Vec<DsnpPublicKey>> {
+		Ok(self
+			.shared_state_manager
+			.read()
+			.map_err(|_| Error::msg("Error getting read lock for shared_state_manager!"))?
+			.get_public_keys(user_id))
 	}
 }
 
