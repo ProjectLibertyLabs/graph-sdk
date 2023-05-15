@@ -16,7 +16,7 @@ mod integration_tests {
 	use dsnp_graph_core::dsnp::{
 		api_types::{Action, Connection, GraphKeyPair, ResolvedKeyPair},
 		dsnp_configs::KeyPairType,
-		dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpUserId},
+		dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
 	};
 	use std::{borrow::Borrow, collections::HashSet};
@@ -983,5 +983,46 @@ mod integration_tests {
 			.map(|e| e.user_id)
 			.collect();
 		assert_eq!(new_connections, expected_connections);
+	}
+
+	#[test]
+	fn api_get_public_keys_should_return_imported_public_keys() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
+		let key_pair_raw_2 = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
+		let keypair_2 = GraphKeyPair {
+			secret_key: key_pair_raw_2.secret_key.to_vec(),
+			public_key: key_pair_raw_2.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
+		let dsnp_user_id = 123;
+		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair, keypair_2])
+			.with_page(1, &connections, &vec![], 0)
+			.build();
+		state.import_users_data(&vec![input]).expect("Import should work!");
+
+		// act
+		let res = state.get_public_keys(&dsnp_user_id);
+
+		// assert
+		assert!(res.is_ok());
+		let keys = res.unwrap();
+		assert_eq!(
+			keys,
+			vec![
+				DsnpPublicKey { key: key_pair_raw.public_key.to_vec(), key_id: Some(0) },
+				DsnpPublicKey { key: key_pair_raw_2.public_key.to_vec(), key_id: Some(1) }
+			]
+		);
 	}
 }

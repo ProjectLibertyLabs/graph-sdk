@@ -249,6 +249,27 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	result.unwrap_or(GraphConnections { connections: std::ptr::null_mut(), connections_len: 0 })
 }
 
+// Get a list published and imported public keys associated with a user
+#[no_mangle]
+pub unsafe extern "C" fn graph_get_public_keys(
+	graph_state: *mut GraphState,
+	user_id: *const DsnpUserId,
+) -> DsnpPublicKeys {
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return DsnpPublicKeys { keys: std::ptr::null_mut(), keys_len: 0 }
+		}
+		let graph_state = &mut *graph_state;
+		let user_id = &*user_id;
+		let keys = graph_state.get_public_keys(user_id).unwrap_or_default();
+		let ffi_keys = dsnp_public_keys_to_ffi(keys);
+		let keys_len = ffi_keys.len();
+		let keys_ptr = ManuallyDrop::new(ffi_keys).as_mut_ptr();
+		DsnpPublicKeys { keys: keys_ptr, keys_len }
+	});
+	result.unwrap_or(DsnpPublicKeys { keys: std::ptr::null_mut(), keys_len: 0 })
+}
+
 // free graph state
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {

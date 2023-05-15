@@ -208,3 +208,15 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 	}
 	rust_actions
 }
+
+pub fn dsnp_public_keys_to_ffi(
+	keys: Vec<dsnp_graph_core::dsnp::dsnp_types::DsnpPublicKey>,
+) -> Vec<DsnpPublicKey> {
+	keys.into_iter()
+		.map(|key| DsnpPublicKey {
+			key_id: key.key_id.unwrap(), // unwrap is fine since it should be always populated
+			content_len: key.key.len(),
+			content: ManuallyDrop::new(key.key).as_mut_ptr(),
+		})
+		.collect()
+}
