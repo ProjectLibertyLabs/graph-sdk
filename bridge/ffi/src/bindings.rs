@@ -13,6 +13,21 @@ pub struct KeyData {
 	pub content_len: size_t,
 }
 
+/// `dsnp_graph_core::dsnp::dsnp_types::DsnpPublicKey` type
+#[repr(C)]
+pub struct DsnpPublicKey {
+	pub key_id: u64,
+	pub content: *mut u8,
+	pub content_len: size_t,
+}
+
+// Output type for DsnpPublicKey list
+#[repr(C)]
+pub struct DsnpPublicKeys {
+	pub keys: *mut DsnpPublicKey,
+	pub keys_len: usize,
+}
+
 /// `dsnp_graph_core::dsnp::api_types::GraphKeyPair` type
 #[repr(C)]
 pub struct GraphKeyPair {

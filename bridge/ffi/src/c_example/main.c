@@ -61,6 +61,9 @@ int test_graph_sdk_ffi() {
     GraphConnections one_sided_connections = graph_get_one_sided_private_friendship_connections(graph_state, &user_id);
     ASSERT(one_sided_connections.connections_len == 0, "Failed to get one-sided private friendship connections");
 
+    DsnpPublicKeys public_keys = graph_get_public_keys(graph_state, &user_id);
+    ASSERT(public_keys.keys_len == 0, "Failed to get dsnp public keys");
+
     // Clean up and free the graph state
     free_graph_state(graph_state);
 
