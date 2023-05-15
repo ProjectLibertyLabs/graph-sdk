@@ -1,5 +1,5 @@
 pub mod builder;
-
+pub mod errors;
 use apache_avro::Schema;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};

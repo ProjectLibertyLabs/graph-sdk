@@ -15,9 +15,10 @@ clippy:
 	@echo "Running Cargo clippy..."
 	@cargo clippy --all --all-features --all-targets -- -D warnings
 
-.PHONY: fmt
-fmt:
+.PHONY: format
+format:
 	@echo "Running Cargo fmt..."
+	@cargo +nightly fmt
 	@cargo fmt --all -- --check
 
 .PHONY: build
