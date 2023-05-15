@@ -4,7 +4,7 @@ use crate::{
 	graph::{
 		key_manager::UserKeyManagerBase,
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
-		page_capacities::PAGE_CAPACITIY_MAP,
+		page_capacities::PAGE_CAPACITY_MAP,
 		updates::UpdateEvent,
 	},
 	util::{
@@ -245,49 +245,105 @@ impl Graph {
 
 		// Now try to add new connections into pages already being updated
 		// Note: these pages have already been cloned, so we don't clone them again
-		let mut add_iter = ids_to_add.iter();
-		while let Some(_) = add_iter.clone().peekable().peek() {
-			if let Some((_page_id, page)) =
-				updated_pages.iter_mut().find(|(_, page)| !self.is_page_full(&page, false))
-			{
-				let id_to_add = add_iter.next().unwrap(); // safe to unwrap because we peeked above
-				page.add_connection(id_to_add)?;
-			} else {
-				break
+		let mut add_iter = ids_to_add.iter().peekable();
+		for aggressive in vec![false, true] {
+			for page in updated_pages.values_mut() {
+				while let Some(id_to_add) = add_iter.peek() {
+					if let Ok(_) = self.try_add_connection_to_page(
+						page,
+						id_to_add,
+						aggressive,
+						&encryption_key,
+						Some(dsnp_version_config),
+					) {
+						let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
+						continue
+					} else {
+						break
+					}
+				}
 			}
 		}
 
-		// Now go through the remaining connections to be added and find space in
-		// other existing pages to add them
-		let mut current_page: Option<Box<GraphPage>> = None;
-		while let Some(_) = add_iter.clone().peekable().peek() {
-			if current_page.is_none() {
-				let available_page = self.pages.inner().iter().find(|(page_id, page)| {
-					!updated_pages.contains_key(page_id) && !self.is_page_full(&page, false)
-				});
+		// Now go through the remaining connections to be added and see if we can
+		// add them to other existing pages that are non-full. Here we prefer to only
+		// aggressively scan pages for fullness, because we want to minimize the number
+		// of additional pages to be updated.
+		let updated_keys: HashSet<PageId> = updated_pages.keys().cloned().collect();
+		'existing_page_loop: for (_, page) in
+			self.pages.inner().iter().filter(|(page_id, _)| !updated_keys.contains(page_id))
+		{
+			let mut current_page = page.clone();
+			let mut page_modified = false;
+			while let Some(id_to_add) = add_iter.peek() {
+				if let Ok(_) = self.try_add_connection_to_page(
+					&mut current_page,
+					id_to_add,
+					true,
+					&encryption_key,
+					Some(dsnp_version_config),
+				) {
+					page_modified = true;
+					let _ = add_iter.next(); // TODO: prefer advance_by(1) once stabilized
+						 // If no more connections to add, we're done. Otherwise we'll continue
+						 // adding connections to the current page until either it's full, or
+						 // we have no more connections to add.
+					if let None = add_iter.peek() {
+						updated_pages.insert(current_page.page_id(), current_page);
+						break 'existing_page_loop
+					}
+				}
+				// If we couldn't add a connection to the current page, it's full. Add this page
+				// to the updated pages list and move on to the next page.
+				else {
+					if page_modified {
+						updated_pages.insert(current_page.page_id(), current_page.clone());
+					}
+					continue 'existing_page_loop
+				}
+			}
+		}
 
-				current_page = match available_page {
-					Some((_page_id, page)) => Some(Box::new(page.clone())),
-					None => match self.get_next_available_page_id() {
-						Some(next_page_id) => Some(Box::new(GraphPage::new(
-							self.get_connection_type().privacy_type(),
-							next_page_id,
-						))),
-						None => None,
-					},
+		// At this point, all existing pages are aggressively full. Add new pages
+		// as needed to accommodate any remaining connections to be added, filling aggressively.
+		let mut new_page: Option<Box<GraphPage>> = None;
+		while let Some(id_to_add) = add_iter.peek() {
+			if new_page.is_none() {
+				if let Some(next_page_id) = self.get_next_available_page_id() {
+					new_page = Some(Box::new(GraphPage::new(
+						self.get_connection_type().privacy_type(),
+						next_page_id,
+					)));
+				} else {
+					return Err(Error::msg("Graph is full; no new pages available"))
 				}
 			}
 
-			match current_page {
-				Some(ref mut page) => {
-					page.add_connection(add_iter.next().unwrap())?; // safe to unwrap because we peeked above
-					if self.is_page_full(&page, false) {
+			if let Some(page) = new_page.as_mut() {
+				if self
+					.try_add_connection_to_page(
+						&mut **page,
+						id_to_add,
+						true,
+						&encryption_key,
+						Some(dsnp_version_config),
+					)
+					.is_ok()
+				{
+					let _ = add_iter.next(); // TODO: prefer advance_by(1) once stabilized
+					if add_iter.peek().is_none() {
 						updated_pages.insert(page.page_id(), *page.clone());
-						current_page = None;
+						new_page = None;
 					}
-				},
-				None => return Err(Error::msg("Graph is full")), // todo: re-calculate updates with agressive fullness determination
+				} else {
+					new_page = None;
+					continue
+				}
 			}
+		}
+
+		if let Some(last_added_page) = new_page {
+			updated_pages.insert(last_added_page.page_id(), *last_added_page);
 		}
 
 		// If any pages now empty, add to the remove list
@@ -299,10 +355,6 @@ impl Graph {
 			}
 			true
 		});
-
-		if let Some(last_page) = current_page {
-			updated_pages.insert(last_page.page_id(), *last_page);
-		}
 
 		let updated_blobs: Result<Vec<PageData>> = match self.get_connection_type() {
 			ConnectionType::Follow(PrivacyType::Public) |
@@ -563,15 +615,82 @@ impl Graph {
 	/// Determine if page is full
 	///  aggressive:false -> use a simple heuristic based on the number of connections
 	///  aggressive:true  -> do actual compression to determine resulting actual page size
-	pub fn is_page_full(&self, page: &GraphPage, aggressive: bool) -> bool {
+	pub fn try_add_connection_to_page(
+		&self,
+		page: &mut GraphPage,
+		connection_id: &DsnpUserId,
+		aggressive: bool,
+		keys: &Option<ResolvedKeyPair>,
+		dsnp_version_config: Option<&DsnpVersionConfig>,
+	) -> Result<()> {
 		let connection_type = self.get_connection_type();
-		let max_connections_per_page = *PAGE_CAPACITIY_MAP.get(&connection_type).unwrap_or(&50);
+		let max_connections_per_page =
+			*PAGE_CAPACITY_MAP.get(&connection_type).unwrap_or_else(|| {
+				let mut capacities: Vec<&usize> = PAGE_CAPACITY_MAP.values().collect();
+				capacities.sort();
+				capacities.first().unwrap() // default: return smallest capacity value
+			});
 
 		if !aggressive {
-			return page.connections().len() >= max_connections_per_page
+			if page.connections().len() >= max_connections_per_page {
+				return Err(Error::msg("Page trivially full"))
+			}
+
+			if let Err(e) = page.add_connection(connection_id) {
+				return Err(e)
+			}
+
+			return Ok(())
 		}
 
-		todo!()
+		if connection_type.privacy_type() == PrivacyType::Private &&
+			(dsnp_version_config.is_none() || keys.is_none())
+		{
+			return Err(Error::msg("Missing encryption key or config"))
+		}
+
+		let max_page_size = self.environment.get_config().max_graph_page_size_bytes as usize;
+		// Max page fullness leaves room for 2 uncompressed connections
+		let max_page_fullness = max_page_size -
+			(2 as usize *
+				(std::mem::size_of::<DsnpGraphEdge>() + std::mem::size_of::<DsnpPrid>()));
+
+		let mut temp_page = page.clone();
+		if let Err(e) = temp_page.add_connection(connection_id) {
+			return Err(e)
+		}
+
+		let page_blob = match connection_type {
+			ConnectionType::Follow(PrivacyType::Public) |
+			ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
+			ConnectionType::Follow(PrivacyType::Private) => {
+				let keys = keys.as_ref().unwrap();
+				let dsnp_version_config = dsnp_version_config.unwrap();
+				temp_page.clear_prids();
+				temp_page.to_private_page_data(dsnp_version_config, &keys)
+			},
+			ConnectionType::Friendship(PrivacyType::Private) => {
+				let keys = keys.as_ref().unwrap();
+				let dsnp_version_config = dsnp_version_config.unwrap();
+				self.apply_prids(&mut temp_page, &vec![], &keys)
+					.expect("Error applying prids to page");
+				temp_page.to_private_page_data(dsnp_version_config, &keys)
+			},
+		};
+
+		match page_blob {
+			Ok(blob) =>
+				if blob.content.len() >= max_page_fullness {
+					Err(Error::msg("Page aggressively full"))
+				} else {
+					if let Err(e) = page.add_connection(connection_id) {
+						return Err(e)
+					}
+
+					Ok(())
+				},
+			Err(e) => Err(e),
+		}
 	}
 }
 
@@ -1018,10 +1137,11 @@ mod test {
 		// arrange
 		let connection_type = ConnectionType::Follow(PrivacyType::Public);
 		let ids_per_page =
-			*PAGE_CAPACITIY_MAP.get(&connection_type).expect("Missing page capacity") as u64;
+			*PAGE_CAPACITY_MAP.get(&connection_type).expect("Missing page capacity") as u64;
 		let user_id = 3;
 		let mut curr_id = 1u64;
 		let mut page_builder = GraphPageBuilder::new(connection_type);
+		// First trivially fill the page
 		for i in 0..2 {
 			let ids: Vec<(DsnpUserId, u64)> =
 				(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
@@ -1029,6 +1149,8 @@ mod test {
 			curr_id += ids_per_page;
 		}
 
+		// Now we need to make sure the page is aggressively full
+		let dsnp_version_config = DsnpVersionConfig::new(DsnpVersion::Version1_0);
 		let env = Environment::Mainnet;
 		let schema_id = env
 			.get_config()
@@ -1043,21 +1165,39 @@ mod test {
 				Rc::new(RefCell::from(SharedStateManager::new())),
 			))),
 		);
-		for p in page_builder.build() {
-			let _ = graph.create_page(&p.page_id(), Some(p)).expect("should create page!");
+
+		for mut p in page_builder.build() {
+			// let page_id = p.page_id();
+			// let page = graph.create_page(&page_id, Some(p.clone())).expect("should create page!");
+
+			while graph
+				.try_add_connection_to_page(
+					&mut p,
+					&curr_id,
+					true,
+					&None,
+					Some(&dsnp_version_config),
+				)
+				.is_ok()
+			{
+				curr_id += 1;
+			}
+
+			graph.create_page(&p.page_id(), Some(p.clone())).expect("should create page!");
 		}
+
 		let updates = vec![
 			UpdateEvent::create_add(curr_id + 1, graph.schema_id),
 			UpdateEvent::create_add(curr_id + 2, graph.schema_id),
 		];
 
 		// act
-		let updates =
-			graph.calculate_updates(&DsnpVersionConfig::new(DsnpVersion::Version1_0), &updates);
+		let updates = graph.calculate_updates(&dsnp_version_config, &updates);
 
 		// assert
 		assert!(updates.is_ok());
 		let updates = updates.unwrap();
+		println!("Updates = {:?}", updates);
 
 		assert_eq!(updates.len(), 1);
 		graph
@@ -1293,7 +1433,7 @@ mod test {
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
 		let mut key_manager = MockUserKeyManager::new();
-		let max_connections = PAGE_CAPACITIY_MAP.get(&connection_type).unwrap();
+		let max_connections = PAGE_CAPACITY_MAP.get(&connection_type).unwrap();
 		let ids: Vec<(DsnpUserId, u64)> =
 			(1..*max_connections as u64 as DsnpUserId).map(|u| (u, 0)).collect();
 		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
@@ -1369,7 +1509,7 @@ mod test {
 			.get_schema_id_from_connection_type(connection_type)
 			.expect("should exist");
 		let mut key_manager = MockUserKeyManager::new();
-		let max_connections = PAGE_CAPACITIY_MAP.get(&connection_type).unwrap();
+		let max_connections = PAGE_CAPACITY_MAP.get(&connection_type).unwrap();
 		let ids: Vec<(DsnpUserId, u64)> =
 			(1..*max_connections as u64 as DsnpUserId).map(|id| (id, 0)).collect();
 		let verifications: Vec<_> = ids.iter().map(|(id, _)| (*id, Some(true))).collect();
@@ -1392,25 +1532,20 @@ mod test {
 	}
 
 	#[test]
-	fn is_full_non_aggressive_returns_false_for_non_full() {
+	fn trivial_add_to_trivially_non_full_page_succeeds() {
 		ALL_CONNECTION_TYPES.iter().for_each(|c| {
 			let graph = create_empty_test_graph(Some(*c));
-			let max_connections_per_page = PAGE_CAPACITIY_MAP
+			let max_connections_per_page = PAGE_CAPACITY_MAP
 				.get(c)
 				.expect("Connection type missing max connections soft limit");
-			let mut builder = GraphPageBuilder::new(*c);
+			let builder = GraphPageBuilder::new(*c).with_page(1, &[], &[], 0);
+			let mut pages = builder.build();
+			let page = pages.first_mut().expect("Should have created page");
+
 			for i in 1u64..*max_connections_per_page as u64 {
-				let prids: Vec<DsnpPrid> = match c {
-					ConnectionType::Friendship(PrivacyType::Private) =>
-						[i].iter().map(|id| DsnpPrid::from(*id)).collect(),
-					_ => vec![],
-				};
-				builder = builder.with_page(1, &[(i, 0)], &prids, 0);
-				let pages = builder.build();
-				let page = pages.first().expect("Should have built at least one page");
 				assert_eq!(
-					graph.is_page_full(&page, false),
-					false,
+					graph.try_add_connection_to_page(page, &i, false, &None, None).is_ok(),
+					true,
 					"Testing soft connection limit for {:?}",
 					c,
 				);
@@ -1419,10 +1554,10 @@ mod test {
 	}
 
 	#[test]
-	fn is_full_non_aggressive_returns_true_for_full() {
+	fn trivial_add_to_trivially_full_page_fails() {
 		ALL_CONNECTION_TYPES.iter().for_each(|c| {
 			let graph = create_empty_test_graph(Some(*c));
-			let max_connections_per_page = PAGE_CAPACITIY_MAP
+			let max_connections_per_page = PAGE_CAPACITY_MAP
 				.get(c)
 				.expect("Connection type missing max connections soft limit");
 			let connections = (0..*max_connections_per_page as u64)
@@ -1433,11 +1568,12 @@ mod test {
 					connections.iter().clone().map(|(id, _)| DsnpPrid::from(*id)).collect(),
 				_ => vec![],
 			};
-			let pages = GraphPageBuilder::new(*c).with_page(1, &connections, &prids, 0).build();
+			let mut pages = GraphPageBuilder::new(*c).with_page(1, &connections, &prids, 0).build();
 
-			let page = pages.first().expect("page should exist");
+			let page = pages.first_mut().expect("page should exist");
+			let conn_id: u64 = *max_connections_per_page as u64;
 			assert_eq!(
-				graph.is_page_full(&page, false),
+				graph.try_add_connection_to_page(page, &conn_id, false, &None, None).is_err(),
 				true,
 				"Testing soft connection limit for {:?}",
 				c
@@ -1447,11 +1583,15 @@ mod test {
 
 	#[test]
 	#[ignore = "todo"]
-	fn is_full_aggressive_returns_false_for_non_full() {}
+	fn aggressive_add_to_trivially_non_full_page_succeeds() {}
 
 	#[test]
 	#[ignore = "todo"]
-	fn is_full_aggressive_returns_true_for_full() {}
+	fn aggressive_add_to_aggressively_non_full_page_succeeds() {}
+
+	#[test]
+	#[ignore = "todo"]
+	fn aggressive_add_to_aggressively_full_page_fails() {}
 
 	#[test]
 	fn graph_page_rollback_should_revert_changes_on_graph_and_all_underlying_page() {

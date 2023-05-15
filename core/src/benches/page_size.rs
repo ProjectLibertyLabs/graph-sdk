@@ -26,10 +26,6 @@ pub fn benchmark_page_capacity(connection_type: ConnectionType) -> (usize, usize
 		let page_size = page.content.len();
 
 		if page_size >= MAX_PAGE_SIZE {
-			// println!(
-			// 	"{:?} page full. # connections = {:?}, bytes = {:?}",
-			// 	connection_type, last_result.0, last_result.1
-			// );
 			break
 		}
 
@@ -59,7 +55,7 @@ use lazy_static::lazy_static;
 use std::collections::hash_map::*;
 
 lazy_static! {{
-	pub static ref PAGE_CAPACITIY_MAP: HashMap<ConnectionType, usize> = {{
+	pub static ref PAGE_CAPACITY_MAP: HashMap<ConnectionType, usize> = {{
 		let m = HashMap::from({:?});
 		m
 	}};
