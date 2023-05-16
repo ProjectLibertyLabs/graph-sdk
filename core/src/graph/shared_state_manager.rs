@@ -283,6 +283,13 @@ impl SharedStateManager {
 			.collect()
 	}
 
+	pub fn get_public_keys(&self, dsnp_user_id: &DsnpUserId) -> Vec<DsnpPublicKey> {
+		match self.dsnp_user_to_keys.get(dsnp_user_id) {
+			Some((keys, _)) => keys.iter().cloned().collect(),
+			None => Vec::new(),
+		}
+	}
+
 	fn get_next_key_id(&self, dsnp_user_id: DsnpUserId) -> u64 {
 		self.get_imported_keys(dsnp_user_id)
 			.iter()

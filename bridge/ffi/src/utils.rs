@@ -181,10 +181,14 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 	let mut rust_actions = Vec::new();
 	for action in actions {
 		match action {
-			Action::Connect { owner_dsnp_user_id, connection } => {
+			Action::Connect { owner_dsnp_user_id, connection, dsnp_keys } => {
 				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Connect {
 					owner_dsnp_user_id: *owner_dsnp_user_id,
 					connection: connection.clone(),
+					dsnp_keys: match unsafe { dsnp_keys.as_ref() } {
+						Some(keys) => Some(dsnp_keys_from_ffi(keys)),
+						None => None,
+					},
 				};
 				rust_actions.push(rust_action);
 			},
@@ -207,4 +211,16 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 		}
 	}
 	rust_actions
+}
+
+pub fn dsnp_public_keys_to_ffi(
+	keys: Vec<dsnp_graph_core::dsnp::dsnp_types::DsnpPublicKey>,
+) -> Vec<DsnpPublicKey> {
+	keys.into_iter()
+		.map(|key| DsnpPublicKey {
+			key_id: key.key_id.unwrap(), // unwrap is fine since it should be always populated
+			content_len: key.key.len(),
+			content: ManuallyDrop::new(key.key).as_mut_ptr(),
+		})
+		.collect()
 }

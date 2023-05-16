@@ -89,6 +89,10 @@ pub enum DsnpGraphError {
 	)]
 	PridsLenShouldBeEqualToConnectionsLen(String, usize, usize),
 
+	// generic error
+	#[error("Unknown error caught: {0}")]
+	UnknownError(String),
+
 	// Invalid private schema id
 	#[error("Invalid private schema id")]
 	InvalidPrivateSchemaId,
@@ -157,9 +161,13 @@ pub enum DsnpGraphError {
 	#[error("Incompatible privacy type for blob export")]
 	IncompatiblePrivacyTypeForBlobExport,
 
-	// generic error
-	#[error("Unknown error caught: {0}")]
-	UnknownError(String),
+	// Failed to acquire write lock on state manager
+	#[error("Failed to acquire write lock on state manager")]
+	FailedtWriteLockStateManager,
+
+	// Failed to acquire read lock on state manager
+	#[error("Failed to acquire read lock on state manager")]
+	FailedtReadLockStateManager,
 }
 
 impl From<apache_avro::Error> for DsnpGraphError {
