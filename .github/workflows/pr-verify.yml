@@ -71,7 +71,7 @@ jobs:
           target: wasm32-unknown-unknown
 
       - name: Cargo fmt
-        run: make fmt
+        run: make format
 
   #  clippy:
   #    name: Run clippy
