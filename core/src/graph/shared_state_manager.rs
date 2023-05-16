@@ -122,8 +122,8 @@ impl PublicKeyProvider for SharedStateManager {
 
 		let mut dsnp_keys = vec![];
 		for key in sorted_keys {
-			let mut k = Frequency::read_public_key(&key.content)
-				.map_err(|e| DsnpGraphError::DeserializeKeyError(e.to_string()))?;
+			let mut k =
+				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
 
 			// make sure it can deserializes correctly
 			let _: PublicKeyType = k.borrow().try_into()?;
@@ -150,8 +150,7 @@ impl PublicKeyProvider for SharedStateManager {
 			DsnpPublicKey { key: public_key, key_id: Some(self.get_next_key_id(dsnp_user_id)) };
 
 		// making sure it is serializable before adding
-		let _ = Frequency::write_public_key(&new_key)
-			.map_err(|e| DsnpGraphError::SerializeKeyError(e.to_string()))?;
+		let _ = Frequency::write_public_key(&new_key).map_err(|e| DsnpGraphError::from(e))?;
 
 		// only one new key is allowed to be added to a dsnp_user_id at a time
 		self.new_keys.insert(dsnp_user_id, new_key.clone());

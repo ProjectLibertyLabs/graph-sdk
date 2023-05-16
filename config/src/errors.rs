@@ -25,11 +25,11 @@ pub enum DsnpGraphError {
 
 	// Failed to encrypt
 	#[error("Failed to encrypt: {0}")]
-	EncryptError(String),
+	EncryptionError(String),
 
 	// Failed to decrypt
 	#[error("Failed to decrypt: {0}")]
-	DecryptError(String),
+	DecryptionError(String),
 
 	// Failed to SerializeKey
 	#[error("Failed to SerializeKey: {0}")]

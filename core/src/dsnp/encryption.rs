@@ -26,7 +26,7 @@ impl EncryptionBehavior for SealBox {
 				let mut encrypted =
 					vec![0u8; plain_data.len().saturating_add(CRYPTO_BOX_SEALBYTES)];
 				crypto_box_seal(&mut encrypted, plain_data, key.as_array())
-					.map_err(|e| DsnpGraphError::EncryptError(e.to_string()))?;
+					.map_err(|e| DsnpGraphError::EncryptionError(e.to_string()))?;
 				Ok(encrypted)
 			},
 		}
@@ -43,7 +43,7 @@ impl EncryptionBehavior for SealBox {
 					key.public_key.as_array(),
 					key.secret_key.as_array(),
 				)
-				.map_err(|e| DsnpGraphError::DecryptError(e.to_string()))?;
+				.map_err(|e| DsnpGraphError::DecryptionError(e.to_string()))?;
 				Ok(plain)
 			},
 		}
