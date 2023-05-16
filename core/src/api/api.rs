@@ -325,6 +325,7 @@ impl GraphState {
 			match action {
 				Action::Connect {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
+					dsnp_keys,
 					..
 				} => {
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
@@ -337,6 +338,14 @@ impl GraphState {
 					owner_graph
 						.update_tracker_mut()
 						.register_update(&UpdateEvent::create_add(*dsnp_user_id, *schema_id))?;
+					if let Some(inner_keys) = dsnp_keys {
+						self.shared_state_manager
+							.write()
+							.map_err(|_| {
+								Error::msg("Failed to get write lock for shared_state_manager")
+							})?
+							.import_dsnp_keys(inner_keys)?;
+					}
 				},
 				Action::Disconnect {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
@@ -369,11 +378,11 @@ impl GraphState {
 mod test {
 	use crate::{
 		dsnp::{
-			api_types::{Connection, GraphKeyPair, ResolvedKeyPair},
+			api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
 			dsnp_configs::KeyPairType,
 			dsnp_types::DsnpPrid,
 		},
-		util::builders::ImportBundleBuilder,
+		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, GraphKeyType};
@@ -631,14 +640,26 @@ mod test {
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
+		let key_pair_raw = StackKeyPair::gen();
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
 		let owner_dsnp_user_id: DsnpUserId = 0;
 		let connect_action_1 = Action::Connect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 1, schema_id },
+			dsnp_keys: Some(DsnpKeys {
+				keys: KeyDataBuilder::new().with_key_pairs(&vec![keypair]).build(),
+				keys_hash: 0,
+				dsnp_user_id: owner_dsnp_user_id,
+			}),
 		};
 		let connect_action_2 = Action::Connect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 2, schema_id },
+			dsnp_keys: None,
 		};
 
 		let key_add_action = Action::AddGraphKey {

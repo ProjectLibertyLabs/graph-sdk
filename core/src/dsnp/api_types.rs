@@ -110,6 +110,9 @@ pub enum Action {
 
 		/// connection details
 		connection: Connection,
+
+		/// optional keys to import for the connection. Mostly useful for private friendships.
+		dsnp_keys: Option<DsnpKeys>,
 	},
 
 	/// an action that defines removing an existing connection from social graph

@@ -210,6 +210,9 @@ pub enum Action {
 
 		/// connection details
 		connection: Connection,
+
+		/// optional key to import
+		dsnp_keys: *mut DsnpKeys,
 	},
 
 	/// an action that defines removing an existing connection from social graph
