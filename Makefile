@@ -18,7 +18,7 @@ clippy:
 .PHONY: format
 format:
 	@echo "Running Cargo fmt..."
-	@cargo +nightly fmt
+	@cargo fmt
 	@cargo fmt --all -- --check
 
 .PHONY: build
