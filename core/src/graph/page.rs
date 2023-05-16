@@ -3,7 +3,7 @@ use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	util::time::time_in_ksecs,
 };
-use anyhow::{Error, Result};
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::borrow::Borrow;
 
 use crate::{
@@ -24,7 +24,7 @@ pub trait RemovedPageDataProvider {
 
 /// A traits that returns a public page binary payload according to the DSNP Public Graph schema
 pub trait PublicPageDataProvider {
-	fn to_public_page_data(&self) -> Result<PageData>;
+	fn to_public_page_data(&self) -> DsnpGraphResult<PageData>;
 }
 
 /// A traits that returns a private page binary payload according to the DSNP Private Graph schema
@@ -33,7 +33,7 @@ pub trait PrivatePageDataProvider {
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 		key: &ResolvedKeyPair,
-	) -> Result<PageData>;
+	) -> DsnpGraphResult<PageData>;
 }
 
 /// Graph page structure
@@ -53,8 +53,9 @@ pub struct GraphPage {
 
 /// Conversion for Public Graph
 impl TryFrom<&PageData> for GraphPage {
-	type Error = Error;
-	fn try_from(PageData { content_hash, content, page_id }: &PageData) -> Result<Self> {
+	type Error = DsnpGraphError;
+
+	fn try_from(PageData { content_hash, content, page_id }: &PageData) -> DsnpGraphResult<Self> {
 		Ok(Self {
 			page_id: *page_id,
 			privacy_type: PrivacyType::Public,
@@ -67,14 +68,15 @@ impl TryFrom<&PageData> for GraphPage {
 
 /// Conversion for Private Graph
 impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPage {
-	type Error = Error;
+	type Error = DsnpGraphError;
+
 	fn try_from(
 		(PageData { content_hash, content, page_id }, dsnp_version_config, keys): (
 			&PageData,
 			&DsnpVersionConfig,
 			&Vec<ResolvedKeyPair>,
 		),
-	) -> Result<Self> {
+	) -> DsnpGraphResult<Self> {
 		let mut private_graph_chunk: Option<PrivateGraphChunk> = None;
 
 		// read key_id from page
@@ -105,7 +107,7 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 		}
 
 		match private_graph_chunk {
-			None => Err(Error::msg("Unable to decrypt private graph chunk with any existing keys")),
+			None => Err(DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey),
 			Some(chunk) => Ok(GraphPage {
 				page_id: *page_id,
 				privacy_type: PrivacyType::Private,
@@ -124,9 +126,9 @@ impl RemovedPageDataProvider for GraphPage {
 }
 
 impl PublicPageDataProvider for GraphPage {
-	fn to_public_page_data(&self) -> Result<PageData> {
+	fn to_public_page_data(&self) -> DsnpGraphResult<PageData> {
 		if self.privacy_type != PrivacyType::Public {
-			return Err(Error::msg("Incompatible privacy type for blob export"))
+			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport)
 		}
 
 		Ok(PageData {
@@ -142,9 +144,9 @@ impl PrivatePageDataProvider for GraphPage {
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 		key: &ResolvedKeyPair,
-	) -> Result<PageData> {
+	) -> DsnpGraphResult<PageData> {
 		if self.privacy_type != PrivacyType::Private {
-			return Err(Error::msg("Incompatible privacy type for blob export"))
+			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport)
 		}
 
 		Ok(PageData {
@@ -239,9 +241,9 @@ impl GraphPage {
 	}
 
 	/// Add a connection to the page. Fail if the connection is already present.
-	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> Result<()> {
+	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if self.contains(connection_id) {
-			return Err(Error::msg("Add of duplicate connection detected"))
+			return Err(DsnpGraphError::DuplicateConnectionDetected)
 		}
 
 		self.connections
@@ -250,9 +252,9 @@ impl GraphPage {
 	}
 
 	/// Remove a connection from the page. Error if connection not found in page.
-	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> Result<()> {
+	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if !self.contains(connection_id) {
-			return Err(Error::msg("Connection not found in page"))
+			return Err(DsnpGraphError::ConnectionNotFound)
 		}
 
 		self.connections.retain(|c| c.user_id != *connection_id);
@@ -265,14 +267,13 @@ impl GraphPage {
 	}
 
 	/// Refresh PRIds based on latest
-	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> Result<()> {
+	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> DsnpGraphResult<()> {
 		if self.connections.len() != prids.len() {
-			return Err(Error::msg(format!(
-				"page_id: {}, prids len should be equal to connections len (connections: {}, prids: {})",
-				self.page_id,
+			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
+				self.page_id.to_string(),
 				self.connections.len(),
-				prids.len()
-			)))
+				prids.len(),
+			))
 		}
 		self.prids.clear();
 		self.prids.extend_from_slice(&prids);
@@ -280,16 +281,15 @@ impl GraphPage {
 	}
 
 	/// verifies that the size of prids should be the same as connection in private friendship
-	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> Result<()> {
+	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> DsnpGraphResult<()> {
 		if connection_type == ConnectionType::Friendship(PrivacyType::Private) &&
 			self.connections.len() != self.prids.len()
 		{
-			return Err(Error::msg(format!(
-					"page_id: {}, prids len should be equal to connections len (connections: {}, prids: {})",
-					self.page_id,
-					self.connections.len(),
-					self.prids.len()
-				)))
+			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
+				self.page_id.to_string(),
+				self.connections.len(),
+				self.prids.len(),
+			))
 		}
 		Ok(())
 	}

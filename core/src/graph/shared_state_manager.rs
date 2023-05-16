@@ -10,13 +10,13 @@ use crate::{
 	frequency::Frequency,
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
-use anyhow::{Error, Result};
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::{borrow::Borrow, collections::HashSet};
 
 /// A trait that defines all the functionality that a pri manager should implement.
 pub trait PriProvider {
 	/// imports pri for a user and replaces the older ones if exists
-	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> Result<()>;
+	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()>;
 
 	/// checks if a pri exist for a specific user
 	fn contains(&self, dsnp_user_id: DsnpUserId, prid: DsnpPrid) -> bool;
@@ -26,20 +26,21 @@ pub trait PriProvider {
 		from: DsnpUserId,
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
-	) -> Result<DsnpPrid>;
+	) -> DsnpGraphResult<DsnpPrid>;
 }
 
 /// A trait that defines all the functionality that a public key provider need to implement.
 pub trait PublicKeyProvider {
 	/// imports public keys with their hash and details into the provider
 	/// will overwrite any existing imported keys for the user and remove any new added keys
-	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> Result<()>;
+	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> DsnpGraphResult<()>;
 
 	/// adds a new public key to the provider
-	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()>;
+	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>)
+		-> DsnpGraphResult<()>;
 
 	/// exports added new keys to be submitted to chain
-	fn export_new_key_updates(&self) -> Result<Vec<Update>>;
+	fn export_new_key_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
 	/// get imported keys
 	fn get_imported_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey>;
@@ -74,7 +75,7 @@ pub struct SharedStateManager {
 }
 
 impl PriProvider for SharedStateManager {
-	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> Result<()> {
+	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()> {
 		let mut prids = vec![];
 		for p in pages {
 			let chunk = SchemaHandler::read_private_graph_chunk(&p.content[..])?;
@@ -98,10 +99,10 @@ impl PriProvider for SharedStateManager {
 		from: DsnpUserId,
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
-	) -> Result<DsnpPrid> {
+	) -> DsnpGraphResult<DsnpPrid> {
 		let to_public_key: PublicKeyType = self
 			.get_active_key(to)
-			.ok_or(Error::msg(format!("No public key found for {}!", to)))?
+			.ok_or(DsnpGraphError::NoPublicKeyFoundForUser(to.to_string()))?
 			.try_into()?;
 		let prid = DsnpPrid::create_prid(from, to, &from_secret, &to_public_key)?;
 		Ok(prid)
@@ -111,7 +112,7 @@ impl PriProvider for SharedStateManager {
 impl PublicKeyProvider for SharedStateManager {
 	/// importing dsnp keys as they are retrieved from blockchain
 	/// sorting indices since ids might not be unique but indices definitely should be
-	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> Result<()> {
+	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> DsnpGraphResult<()> {
 		self.dsnp_user_to_keys.remove(&keys.dsnp_user_id);
 		self.new_keys.remove(&keys.dsnp_user_id);
 
@@ -122,7 +123,7 @@ impl PublicKeyProvider for SharedStateManager {
 		let mut dsnp_keys = vec![];
 		for key in sorted_keys {
 			let mut k = Frequency::read_public_key(&key.content)
-				.map_err(|e| Error::msg(format!("failed to deserialize key {:?}", e)))?;
+				.map_err(|e| DsnpGraphError::DeserializeKeyError(e.to_string()))?;
 
 			// make sure it can deserializes correctly
 			let _: PublicKeyType = k.borrow().try_into()?;
@@ -135,10 +136,14 @@ impl PublicKeyProvider for SharedStateManager {
 		Ok(())
 	}
 
-	fn add_new_key(&mut self, dsnp_user_id: DsnpUserId, public_key: Vec<u8>) -> Result<()> {
+	fn add_new_key(
+		&mut self,
+		dsnp_user_id: DsnpUserId,
+		public_key: Vec<u8>,
+	) -> DsnpGraphResult<()> {
 		// check if exists
 		if self.get_key_by_public_key(dsnp_user_id, public_key.clone()).is_some() {
-			return Err(Error::msg("Added key already exists!"))
+			return Err(DsnpGraphError::PublicKeyAlreadyExists(format!("{:?}", public_key)))
 		}
 
 		let new_key =
@@ -146,7 +151,7 @@ impl PublicKeyProvider for SharedStateManager {
 
 		// making sure it is serializable before adding
 		let _ = Frequency::write_public_key(&new_key)
-			.map_err(|e| Error::msg(format!("failed to serialize key {:?}", e)))?;
+			.map_err(|e| DsnpGraphError::SerializeKeyError(e.to_string()))?;
 
 		// only one new key is allowed to be added to a dsnp_user_id at a time
 		self.new_keys.insert(dsnp_user_id, new_key.clone());
@@ -154,7 +159,7 @@ impl PublicKeyProvider for SharedStateManager {
 		Ok(())
 	}
 
-	fn export_new_key_updates(&self) -> Result<Vec<Update>> {
+	fn export_new_key_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = vec![];
 		for (dsnp_user_id, key) in self.new_keys.inner() {
 			let prev_hash = self
@@ -247,24 +252,24 @@ impl SharedStateManager {
 	pub fn get_prid_associated_public_keys(
 		&self,
 		dsnp_user_id: DsnpUserId,
-	) -> Result<Vec<PublicKeyType>> {
+	) -> DsnpGraphResult<Vec<PublicKeyType>> {
 		// get imported prids for user
 		let prids = self
 			.dsnp_user_to_pris
 			.get(&dsnp_user_id)
-			.ok_or(Error::msg(format!("no prids imported for {}", dsnp_user_id)))?;
+			.ok_or(DsnpGraphError::NoPrisImportedForUser(dsnp_user_id.to_string()))?;
 
 		// find all unique key_id used in prid calculations
 		let key_ids: HashSet<_> = prids.iter().map(|(_, key_id)| *key_id).collect();
 
 		// map key_id to their associated imported public keys
-		let public_keys: Result<Vec<_>> = key_ids
+		let public_keys: DsnpGraphResult<Vec<_>> = key_ids
 			.iter()
 			.map(|id| {
-				self.get_key_by_id(dsnp_user_id, *id).ok_or(Error::msg(format!(
-					"imported key not found for user {} and id {}",
-					dsnp_user_id, *id
-				)))
+				self.get_key_by_id(dsnp_user_id, *id).ok_or(DsnpGraphError::ImportedKeyNotFound(
+					dsnp_user_id.to_string(),
+					id.to_string(),
+				))
 			})
 			.collect();
 
@@ -272,7 +277,7 @@ impl SharedStateManager {
 		public_keys?
 			.iter()
 			.map(|&p| {
-				let mapped: Result<PublicKeyType> = p.try_into();
+				let mapped: DsnpGraphResult<PublicKeyType> = p.try_into();
 				mapped
 			})
 			.collect()
@@ -293,7 +298,7 @@ impl SharedStateManager {
 		dsnp_user_id: DsnpUserId,
 		keys: &[DsnpPublicKey],
 		hash: u32,
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		self.dsnp_user_to_keys.remove(&dsnp_user_id);
 		self.new_keys.remove(&dsnp_user_id);
 
@@ -308,7 +313,7 @@ impl SharedStateManager {
 		dsnp_user_id: DsnpUserId,
 		prids: &[DsnpPrid],
 		key_id: u64,
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		self.dsnp_user_to_pris.remove(&dsnp_user_id);
 
 		let mapped: Vec<_> = prids.iter().map(|p| (p.clone(), key_id)).collect();

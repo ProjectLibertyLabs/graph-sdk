@@ -9,7 +9,7 @@ use crate::{
 		shared_state_manager::PriProvider,
 	},
 };
-use anyhow::{Error, Result};
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::{collections::HashMap, fmt::Debug};
 
 #[derive(Debug)]
@@ -38,17 +38,18 @@ impl MockUserKeyManager {
 }
 
 impl ConnectionVerifier for MockUserKeyManager {
-	fn verify_connection(&self, from: DsnpUserId) -> Result<bool> {
+	fn verify_connection(&self, from: DsnpUserId) -> DsnpGraphResult<bool> {
 		match self.verifications.get(&from) {
 			Some(Some(verified)) => Ok(*verified),
-			Some(None) => Err(Error::msg("Generic error in verifier!")),
-			None => Err(Error::msg("Non registered user!")),
+			Some(None) =>
+				Err(DsnpGraphError::UnknownError("generic verification error!".to_string())),
+			None => Err(DsnpGraphError::UnknownError("Non registered user!".to_string())),
 		}
 	}
 }
 
 impl UserKeyProvider for MockUserKeyManager {
-	fn import_key_pairs(&mut self, _pairs: Vec<GraphKeyPair>) -> Result<()> {
+	fn import_key_pairs(&mut self, _pairs: Vec<GraphKeyPair>) -> DsnpGraphResult<()> {
 		Ok(())
 	}
 
@@ -69,7 +70,11 @@ impl UserKeyProvider for MockUserKeyManager {
 }
 
 impl PriProvider for MockUserKeyManager {
-	fn import_pri(&mut self, _dsnp_user_id: DsnpUserId, _pages: &[PageData]) -> Result<()> {
+	fn import_pri(
+		&mut self,
+		_dsnp_user_id: DsnpUserId,
+		_pages: &[PageData],
+	) -> DsnpGraphResult<()> {
 		Ok(())
 	}
 
@@ -82,7 +87,7 @@ impl PriProvider for MockUserKeyManager {
 		_from: DsnpUserId,
 		_to: DsnpUserId,
 		_from_secret: SecretKeyType,
-	) -> Result<DsnpPrid> {
+	) -> DsnpGraphResult<DsnpPrid> {
 		Ok(DsnpPrid::from(vec![0u8, 1, 2, 3, 4, 5, 6, 7]))
 	}
 }

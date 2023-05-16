@@ -3,8 +3,10 @@ use crate::{
 	dsnp::{api_types::*, dsnp_types::*},
 	graph::updates::UpdateTracker,
 };
-use anyhow::{Error, Result};
-use dsnp_graph_config::{Environment, SchemaId};
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	Environment, SchemaId,
+};
 use std::{
 	collections::HashSet,
 	sync::{Arc, RwLock},
@@ -128,13 +130,13 @@ impl UserGraph {
 	}
 
 	/// Calculate pending updates for all graphs for this user
-	pub fn calculate_updates(&self) -> Result<Vec<Update>> {
+	pub fn calculate_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
 		for (schema_id, graph) in self.graphs.inner().iter() {
 			if let Some(updates) = self.update_tracker.get_updates_for_schema_id(*schema_id) {
-				let dsnp_version_config = self.get_dsnp_config(*schema_id).ok_or(Error::msg(
-					format!("Dsnp version of {} schema is not supported!", schema_id),
-				))?;
+				let dsnp_version_config = self
+					.get_dsnp_config(*schema_id)
+					.ok_or(DsnpGraphError::UnsupportedSchema(schema_id.to_string()))?;
 
 				let graph_data = graph.calculate_updates(&dsnp_version_config, &updates)?;
 				result.extend(graph_data.into_iter());
@@ -145,12 +147,12 @@ impl UserGraph {
 	}
 
 	// force calculates all imported graphs which will use the latest encryption key
-	pub fn force_calculate_graphs(&self) -> Result<Vec<Update>> {
+	pub fn force_calculate_graphs(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = vec![];
 		for (schema_id, graph) in self.graphs.inner().iter() {
-			let dsnp_version_config = self.get_dsnp_config(*schema_id).ok_or(Error::msg(
-				format!("Dsnp version of {} schema is not supported!", schema_id),
-			))?;
+			let dsnp_version_config = self
+				.get_dsnp_config(*schema_id)
+				.ok_or(DsnpGraphError::UnsupportedSchema(schema_id.to_string()))?;
 
 			let updates = graph.force_recalculate(&dsnp_version_config)?;
 			result.extend(updates);

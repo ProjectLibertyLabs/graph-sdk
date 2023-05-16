@@ -12,8 +12,10 @@ use crate::{
 		transactional_hashmap::{Transactional, TransactionalHashMap},
 	},
 };
-use anyhow::{Error, Result};
-use dsnp_graph_config::{Environment, SchemaId};
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	Environment, SchemaId,
+};
 use std::{
 	collections::{BTreeMap, HashMap, HashSet},
 	sync::{Arc, RwLock},
@@ -127,21 +129,25 @@ impl Graph {
 		&mut self,
 		connection_type: ConnectionType,
 		pages: &Vec<PageData>,
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		if connection_type != self.get_connection_type() {
-			return Err(Error::msg("Incorrect connection type for graph import"))
+			return Err(DsnpGraphError::IncorrectConnectionType(format!(
+				"Expected {:?} but got {:?}",
+				self.get_connection_type(),
+				connection_type
+			)))
 		}
 		let max_page_id = self.environment.get_config().max_page_id;
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(Error::msg(format!(
+				return Err(DsnpGraphError::InvalidPageId(format!(
 					"Imported page has an invalid page Id {}",
 					page.page_id
 				)))
 			}
 			match GraphPage::try_from(page) {
-				Err(e) => return Err(e),
+				Err(e) => return Err(DsnpGraphError::PageError(e.to_string())),
 				Ok(p) => {
 					page_map.insert(page.page_id, p);
 				},
@@ -162,9 +168,13 @@ impl Graph {
 		dsnp_version_config: &DsnpVersionConfig,
 		connection_type: ConnectionType,
 		pages: &[PageData],
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		if connection_type != self.get_connection_type() {
-			return Err(Error::msg("Incorrect connection type for graph import"))
+			return Err(DsnpGraphError::IncorrectConnectionType(format!(
+				"Expected {:?} but got {:?}",
+				self.get_connection_type(),
+				connection_type
+			)))
 		}
 
 		let max_page_id = self.environment.get_config().max_page_id;
@@ -172,13 +182,13 @@ impl Graph {
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(Error::msg(format!(
+				return Err(DsnpGraphError::InvalidPageId(format!(
 					"Imported page has an invalid page Id {}",
 					page.page_id
 				)))
 			}
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
-				Err(e) => return Err(e.into()),
+				Err(e) => return Err(DsnpGraphError::PageError(e.to_string())),
 				Ok(p) => {
 					p.verify_prid_len(self.get_connection_type())?;
 					page_map.insert(page.page_id, p);
@@ -198,7 +208,7 @@ impl Graph {
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
 		updates: &Vec<UpdateEvent>,
-	) -> Result<Vec<Update>> {
+	) -> DsnpGraphResult<Vec<Update>> {
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
 			PrivacyType::Private =>
@@ -285,7 +295,7 @@ impl Graph {
 						current_page = None;
 					}
 				},
-				None => return Err(Error::msg("Graph is full")), // todo: re-calculate updates with agressive fullness determination
+				None => return Err(DsnpGraphError::GraphIsFull), // todo: re-calculate updates with agressive fullness determination
 			}
 		}
 
@@ -303,13 +313,13 @@ impl Graph {
 			updated_pages.insert(last_page.page_id(), *last_page);
 		}
 
-		let updated_blobs: Result<Vec<PageData>> = match self.get_connection_type() {
+		let updated_blobs: DsnpGraphResult<Vec<PageData>> = match self.get_connection_type() {
 			ConnectionType::Follow(PrivacyType::Public) |
 			ConnectionType::Friendship(PrivacyType::Public) =>
 				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			ConnectionType::Follow(PrivacyType::Private) => {
 				let encryption_key =
-					encryption_key.ok_or(Error::msg("No resolved active key found!"))?;
+					encryption_key.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
 				updated_pages
 					.iter_mut()
 					.map(|(_, page)| {
@@ -320,7 +330,7 @@ impl Graph {
 			},
 			ConnectionType::Friendship(PrivacyType::Private) => {
 				let encryption_key =
-					encryption_key.ok_or(Error::msg("No resolved active key found!"))?;
+					encryption_key.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
 				updated_pages
 					.iter_mut()
 					.map(|(_, page)| {
@@ -345,7 +355,7 @@ impl Graph {
 	pub fn force_recalculate(
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
-	) -> Result<Vec<Update>> {
+	) -> DsnpGraphResult<Vec<Update>> {
 		// get latest encryption key
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
@@ -365,7 +375,7 @@ impl Graph {
 					ConnectionType::Follow(PrivacyType::Private) => {
 						let encryption_key = encryption_key
 							.clone()
-							.ok_or(Error::msg("No resolved active key found!"))?;
+							.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
 						let mut updated_page = page.clone();
 						updated_page.clear_prids();
 						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
@@ -373,7 +383,7 @@ impl Graph {
 					ConnectionType::Friendship(PrivacyType::Private) => {
 						let encryption_key = encryption_key
 							.clone()
-							.ok_or(Error::msg("No resolved active key found!"))?;
+							.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
 						let mut updated_page = page.clone();
 						self.apply_prids(&mut updated_page, &vec![], &encryption_key)?;
 						updated_page.to_private_page_data(dsnp_version_config, &encryption_key)
@@ -401,9 +411,9 @@ impl Graph {
 		&mut self,
 		page_id: &PageId,
 		page: Option<GraphPage>,
-	) -> Result<&mut GraphPage, &str> {
+	) -> DsnpGraphResult<&mut GraphPage> {
 		if let Some(_existing_page) = self.pages.get(page_id) {
-			return Err("Attempt to create a new page for an existing page ID")
+			return Err(DsnpGraphError::NewPageForExistingPageId)
 		}
 
 		self.pages.insert(
@@ -413,10 +423,10 @@ impl Graph {
 				None => GraphPage::new(self.get_connection_type().privacy_type(), *page_id),
 			},
 		);
-		Ok(self
-			.pages
-			.get_mut(page_id)
-			.expect("Unable to retrieve graph page just inserted"))
+		match self.get_page_mut(page_id) {
+			Some(page) => Ok(page),
+			None => Err(DsnpGraphError::FailedToRetrieveGraphPage),
+		}
 	}
 
 	/// Retrieve the page with the given PageId
@@ -465,9 +475,9 @@ impl Graph {
 		&mut self,
 		page_id: &PageId,
 		connection_id: &DsnpUserId,
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		if self.find_connection(connection_id).is_some() {
-			return Err(Error::msg("Add of duplicate connection in another page detected"))
+			return Err(DsnpGraphError::DuplicateConnectionDetected)
 		}
 
 		if !self.pages.inner().contains_key(page_id) {
@@ -476,22 +486,27 @@ impl Graph {
 				GraphPage::new(self.get_connection_type().privacy_type(), *page_id),
 			);
 		}
-		let page = self.get_page_mut(page_id).expect("Unable to retrieve page");
-		page.add_connection(connection_id)
+		match self.get_page_mut(page_id) {
+			Some(page) => page.add_connection(connection_id),
+			None => Err(DsnpGraphError::FailedToRetrieveGraphPage),
+		}
 	}
 
 	/// Remove a connection from the graph.
 	/// Returns Ok(Option<PageId>) containing the PageId of the page
 	/// the connection was removed from, or Ok(None) if the connection
 	/// was not found.
-	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> Result<Option<PageId>> {
+	pub fn remove_connection(
+		&mut self,
+		connection_id: &DsnpUserId,
+	) -> DsnpGraphResult<Option<PageId>> {
 		if let Some(page_id) = self.find_connection(connection_id) {
 			return match self.get_page_mut(&page_id) {
 				Some(page) => match page.remove_connection(connection_id) {
 					Ok(()) => Ok(Some(page_id)),
 					Err(e) => Err(e),
 				},
-				None => Err(Error::msg("Unable to retrieve page")),
+				None => Err(DsnpGraphError::FailedToRetrieveGraphPage),
 			}
 		}
 
@@ -500,11 +515,9 @@ impl Graph {
 	}
 
 	/// returns one sided friendship connections
-	pub fn get_one_sided_friendships(&self) -> Result<Vec<DsnpGraphEdge>> {
+	pub fn get_one_sided_friendships(&self) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(Error::msg(
-				"Calling get_all_one_sided_friendships in non private friendship graph!",
-			))
+			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph)
 		}
 
 		let mut result = vec![];
@@ -522,9 +535,9 @@ impl Graph {
 		updated_page: &mut GraphPage,
 		ids_to_add: &Vec<DsnpUserId>,
 		encryption_key: &ResolvedKeyPair,
-	) -> Result<()> {
+	) -> DsnpGraphResult<()> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(Error::msg("Calling apply_prids in non private friendship graph!"))
+			return Err(DsnpGraphError::CallToPridsInPublicGraph)
 		}
 
 		// verify connection existence based on prid
@@ -545,7 +558,7 @@ impl Graph {
 		}
 
 		// calculating updated prids
-		let prid_result: Result<Vec<_>> = updated_page
+		let prid_result: DsnpGraphResult<Vec<_>> = updated_page
 			.connections()
 			.iter()
 			.map(|c| {

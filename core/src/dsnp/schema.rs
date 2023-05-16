@@ -1,47 +1,49 @@
 use crate::dsnp::dsnp_types::{
 	DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
 };
-use anyhow::Result;
 use apache_avro::{from_avro_datum, from_value, to_avro_datum, to_value, Schema};
+use dsnp_graph_config::errors::DsnpGraphResult;
 use serde::{Deserialize, Serialize};
 
 /// A utility to handle serialization and deserialization on specified schemas
 pub struct SchemaHandler;
 
 impl SchemaHandler {
-	pub fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
+	pub fn read_public_key(data: &[u8]) -> DsnpGraphResult<DsnpPublicKey> {
 		Self::read(data, &dsnp_graph_config::PUBLIC_KEY_SCHEMA)
 	}
 
-	pub fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
+	pub fn write_public_key(key: &DsnpPublicKey) -> DsnpGraphResult<Vec<u8>> {
 		Self::write(key, &dsnp_graph_config::PUBLIC_KEY_SCHEMA)
 	}
 
-	pub fn read_public_graph_chunk(data: &[u8]) -> Result<DsnpUserPublicGraphChunk> {
+	pub fn read_public_graph_chunk(data: &[u8]) -> DsnpGraphResult<DsnpUserPublicGraphChunk> {
 		Self::read(data, &dsnp_graph_config::PUBLIC_GRAPH_CHUNK_SCHEMA)
 	}
 
-	pub fn write_public_graph_chunk(chunk: &DsnpUserPublicGraphChunk) -> Result<Vec<u8>> {
+	pub fn write_public_graph_chunk(chunk: &DsnpUserPublicGraphChunk) -> DsnpGraphResult<Vec<u8>> {
 		Self::write(chunk, &dsnp_graph_config::PUBLIC_GRAPH_CHUNK_SCHEMA)
 	}
 
-	pub fn read_inner_graph(data: &[u8]) -> Result<DsnpInnerGraph> {
+	pub fn read_inner_graph(data: &[u8]) -> DsnpGraphResult<DsnpInnerGraph> {
 		Self::read(data, &dsnp_graph_config::PUBLIC_GRAPH_SCHEMA)
 	}
 
-	pub fn write_inner_graph(inner_graph: &DsnpInnerGraph) -> Result<Vec<u8>> {
+	pub fn write_inner_graph(inner_graph: &DsnpInnerGraph) -> DsnpGraphResult<Vec<u8>> {
 		Self::write(inner_graph, &dsnp_graph_config::PUBLIC_GRAPH_SCHEMA)
 	}
 
-	pub fn read_private_graph_chunk(data: &[u8]) -> Result<DsnpUserPrivateGraphChunk> {
+	pub fn read_private_graph_chunk(data: &[u8]) -> DsnpGraphResult<DsnpUserPrivateGraphChunk> {
 		Self::read(data, &dsnp_graph_config::PRIVATE_GRAPH_CHUNK_SCHEMA)
 	}
 
-	pub fn write_private_graph_chunk(chunk: &DsnpUserPrivateGraphChunk) -> Result<Vec<u8>> {
+	pub fn write_private_graph_chunk(
+		chunk: &DsnpUserPrivateGraphChunk,
+	) -> DsnpGraphResult<Vec<u8>> {
 		Self::write(chunk, &dsnp_graph_config::PRIVATE_GRAPH_CHUNK_SCHEMA)
 	}
 
-	fn read<Output>(data: &[u8], schema: &Schema) -> Result<Output>
+	fn read<Output>(data: &[u8], schema: &Schema) -> DsnpGraphResult<Output>
 	where
 		Output: for<'a> Deserialize<'a>,
 	{
@@ -49,7 +51,7 @@ impl SchemaHandler {
 		Ok(from_value::<Output>(&reader)?)
 	}
 
-	fn write<Input>(input: &Input, schema: &Schema) -> Result<Vec<u8>>
+	fn write<Input>(input: &Input, schema: &Schema) -> DsnpGraphResult<Vec<u8>>
 	where
 		Input: Serialize,
 	{
@@ -65,7 +67,6 @@ mod test {
 		DsnpGraphEdge, DsnpInnerGraph, DsnpPrid, DsnpPublicKey, DsnpUserPrivateGraphChunk,
 		DsnpUserPublicGraphChunk,
 	};
-	use apache_avro::Error as AvroError;
 	use dryoc::keypair::StackKeyPair;
 
 	#[test]
@@ -87,10 +88,11 @@ mod test {
 		let deserialized = SchemaHandler::read_public_key(&serialized);
 
 		assert!(deserialized.is_err());
-		assert!(matches!(
-			deserialized.unwrap_err().downcast_ref::<AvroError>(),
-			Some(AvroError::ConvertI64ToUsize(_, _))
-		))
+		let returned_err = deserialized.unwrap_err();
+		match returned_err {
+			dsnp_graph_config::errors::DsnpGraphError::AvroError(_) => assert!(true),
+			_ => assert!(false),
+		}
 	}
 
 	#[test]
