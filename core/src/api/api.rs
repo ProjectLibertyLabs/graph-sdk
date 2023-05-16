@@ -12,7 +12,10 @@ use crate::{
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use anyhow::{Error, Ok, Result};
-use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	ConnectionType, Environment, SchemaId,
+};
 use std::{
 	cmp::min,
 	collections::{hash_map::Entry, HashSet},
@@ -44,7 +47,7 @@ pub trait GraphAPI {
 
 	/// Calculate the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
-	fn export_updates(&self) -> Result<Vec<Update>>;
+	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
 	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
 	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
@@ -126,14 +129,14 @@ impl GraphAPI for GraphState {
 
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed or added keys
-	fn export_updates(&self) -> Result<Vec<Update>> {
+	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = self.shared_state_manager.read().unwrap().export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
 			let user_graph = self
 				.user_map
 				.get(&user_id)
-				.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+				.ok_or(DsnpGraphError::UserGraphNotImported(user_id.to_string()))?;
 			let updates = user_graph.calculate_updates()?;
 			result.extend(updates);
 		}

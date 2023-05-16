@@ -3,8 +3,10 @@
 
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, DsnpGraphError>;
+pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 
-/// Errors for graph-sdk crate
 #[derive(Debug, Error)]
-pub enum DsnpGraphError {}
+pub enum DsnpGraphError {
+	#[error("User graph for {0} is not imported")]
+	UserGraphNotImported(String),
+}
