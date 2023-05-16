@@ -181,10 +181,14 @@ pub fn actions_from_ffi(actions: &[Action]) -> Vec<dsnp_graph_core::dsnp::api_ty
 	let mut rust_actions = Vec::new();
 	for action in actions {
 		match action {
-			Action::Connect { owner_dsnp_user_id, connection } => {
+			Action::Connect { owner_dsnp_user_id, connection, dsnp_keys } => {
 				let rust_action = dsnp_graph_core::dsnp::api_types::Action::Connect {
 					owner_dsnp_user_id: *owner_dsnp_user_id,
 					connection: connection.clone(),
+					dsnp_keys: match unsafe { dsnp_keys.as_ref() } {
+						Some(keys) => Some(dsnp_keys_from_ffi(keys)),
+						None => None,
+					},
 				};
 				rust_actions.push(rust_action);
 			},
