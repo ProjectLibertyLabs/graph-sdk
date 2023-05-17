@@ -7,7 +7,7 @@ use crate::{
 		dsnp_types::*,
 		schema::SchemaHandler,
 	},
-	graph::{graph::Graph, page::GraphPage},
+	graph::{graph::Graph, page::GraphPage, shared_state_manager::PublicKeyProvider},
 	util::time::time_in_ksecs,
 };
 use std::{borrow::Borrow, cell::RefCell, collections::BTreeMap, rc::Rc};
@@ -21,12 +21,13 @@ use crate::{
 	graph::{
 		key_manager::UserKeyManager,
 		page::{PrivatePageDataProvider, PublicPageDataProvider},
+		page_capacities::PAGE_CAPACITY_MAP,
 		shared_state_manager::SharedStateManager,
 	},
 };
 use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
-use dsnp_graph_config::{Environment, SchemaId};
+use dsnp_graph_config::{DsnpVersion, Environment, GraphKeyType, SchemaId};
 
 pub fn create_graph_edge(id: &DsnpUserId) -> DsnpGraphEdge {
 	DsnpGraphEdge { user_id: *id, since: time_in_ksecs() }
@@ -48,27 +49,111 @@ pub fn create_test_ids_and_page() -> (Vec<(DsnpUserId, u64)>, GraphPage) {
 	(ids, page)
 }
 
+/// Get config environment and schema ID for a connection type
+pub fn get_env_and_config() -> (Environment, DsnpVersionConfig) {
+	let env = Environment::Mainnet;
+	let config = DsnpVersionConfig::new(DsnpVersion::Version1_0);
+	(env, config)
+}
+
 /// Create an empty test instance of a Graph
-pub fn create_empty_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
+pub fn create_empty_test_graph(
+	user_id: Option<DsnpUserId>,
+	connection_arg: Option<ConnectionType>,
+	user_key_manager: Option<Rc<RefCell<UserKeyManager>>>,
+) -> Graph {
 	let connection_type = match connection_arg {
 		Some(c) => c,
 		None => ConnectionType::Follow(PrivacyType::Private),
 	};
-	let user_id: u64 = 3;
-	let env = Environment::Mainnet;
-	let schema_id = env
-		.get_config()
-		.get_schema_id_from_connection_type(connection_type)
-		.expect("should exist");
-	Graph::new(
-		env,
-		user_id,
-		schema_id,
-		Rc::new(RefCell::from(UserKeyManager::new(
+	let user_id = match user_id {
+		Some(uid) => uid,
+		None => 3u64,
+	};
+	let (env, _) = get_env_and_config();
+	let user_key_manager = match user_key_manager {
+		Some(km) => km.clone(),
+		None => Rc::new(RefCell::from(UserKeyManager::new(
 			user_id,
 			Rc::new(RefCell::from(SharedStateManager::new())),
 		))),
+	};
+	Graph::new(
+		env.clone(),
+		user_id,
+		env.get_config()
+			.get_schema_id_from_connection_type(connection_type)
+			.expect("should get schema id"),
+		user_key_manager,
 	)
+}
+
+/// Create a page that is trivially full
+pub fn create_trivially_full_page(
+	connection_type: ConnectionType,
+	page_id: PageId,
+	start_conn_id: u64,
+) -> GraphPage {
+	let builder = GraphPageBuilder::new(connection_type);
+	let max_connections_per_page = *PAGE_CAPACITY_MAP.get(&connection_type).unwrap_or_else(|| {
+		let mut capacities: Vec<&usize> = PAGE_CAPACITY_MAP.values().collect();
+		capacities.sort();
+		capacities.first().unwrap() // default: return smallest capacity value
+	}) as u64;
+	let connections: Vec<(u64, u64)> = (start_conn_id..(start_conn_id + max_connections_per_page))
+		.map(|c| (c, 0))
+		.collect();
+	let prids: Vec<DsnpPrid> = match connection_type {
+		ConnectionType::Friendship(PrivacyType::Private) =>
+			connections.iter().map(|(c, _)| (c + 1).into()).collect(),
+		_ => vec![],
+	};
+	let pages = builder.with_page(page_id, &connections, &prids, 0).build();
+	pages.first().expect("should have created page").clone()
+}
+
+/// Create a page that is aggressively full
+pub fn create_aggressively_full_page(
+	graph: &mut Graph,
+	start_conn_id: u64,
+	dsnp_version_config: Option<&DsnpVersionConfig>,
+	shared_state: Option<Rc<RefCell<SharedStateManager>>>,
+) -> PageId {
+	let connection_type = graph.get_connection_type();
+	let page_id = graph.get_next_available_page_id().unwrap();
+	let mut page = GraphPage::new(connection_type.privacy_type(), page_id);
+	let mut connection_id = start_conn_id;
+
+	loop {
+		if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
+			let ref shared_state = match shared_state.borrow() {
+				Some(ss) => ss.clone(),
+				None => Rc::new(RefCell::from(SharedStateManager::new())),
+			};
+
+			let dsnp_keys = DsnpKeys {
+				dsnp_user_id: connection_id,
+				keys_hash: 0,
+				keys: KeyDataBuilder::new().with_generated_key().build(),
+			};
+			shared_state
+				.borrow_mut()
+				.import_dsnp_keys(&dsnp_keys)
+				.expect("failed to import public keys");
+		}
+
+		let result =
+			graph.try_add_connection_to_page(&mut page, &connection_id, true, dsnp_version_config);
+		if result.is_err() {
+			dbg!(result);
+			break
+		}
+
+		connection_id += 1;
+	}
+
+	graph.create_page(&page_id, Some(page)).expect("failed to add page to graph");
+	page_id
 }
 
 /// Create a test instance of a Graph
@@ -93,7 +178,7 @@ pub fn create_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
 		curr_id += ids_per_page;
 	}
 
-	let mut graph = create_empty_test_graph(Some(connection_type));
+	let mut graph = create_empty_test_graph(None, Some(connection_type), None);
 	for p in page_builder.build() {
 		let _ = graph.create_page(&p.page_id(), Some(p));
 	}
@@ -153,6 +238,16 @@ impl KeyDataBuilder {
 
 	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
 		self.key_pairs.extend_from_slice(key_pairs);
+		self
+	}
+
+	pub fn with_generated_key(mut self) -> Self {
+		let raw_key_pair = StackKeyPair::gen();
+		self.key_pairs.extend_from_slice(&vec![GraphKeyPair {
+			key_type: GraphKeyType::X25519,
+			secret_key: raw_key_pair.secret_key.to_vec(),
+			public_key: raw_key_pair.public_key.to_vec(),
+		}]);
 		self
 	}
 
@@ -270,8 +365,9 @@ impl PageDataBuilder {
 			.map(|page| match self.connection_type.privacy_type() {
 				PrivacyType::Public =>
 					page.to_public_page_data().expect("should write public page"),
-				PrivacyType::Private =>
-					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+				PrivacyType::Private => page
+					.to_private_page_data(&dsnp_config, &self.resolved_key)
+					.expect("should write private page"),
 			})
 			.collect()
 	}
@@ -288,7 +384,8 @@ impl PageDataBuilder {
 				),
 				PrivacyType::Private => (
 					page.connections().len(),
-					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+					page.to_private_page_data(&dsnp_config, &self.resolved_key)
+						.expect("should write private page"),
 				),
 			})
 			.collect()
