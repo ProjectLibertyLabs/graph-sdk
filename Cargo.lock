@@ -343,6 +343,7 @@ dependencies = [
 name = "dsnp-graph-config"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "apache-avro",
  "lazy_static",
  "pretty_assertions",

@@ -8,8 +8,8 @@ pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 #[derive(Debug, Error)]
 pub enum DsnpGraphError {
 	// Errors related to Avro
-	#[error("Avro error: {0}")]
-	AvroError(String),
+	#[error(transparent)]
+	AvroError(#[from] apache_avro::Error),
 
 	// Failure to import a user graph
 	#[error("User graph for {0} is not imported")]
@@ -90,8 +90,8 @@ pub enum DsnpGraphError {
 	PridsLenShouldBeEqualToConnectionsLen(String, usize, usize),
 
 	// generic error
-    #[error(transparent)]
-    Unknown(#[from] anyhow::Error),
+	#[error(transparent)]
+	Unknown(#[from] anyhow::Error),
 
 	// Invalid private schema id
 	#[error("Invalid private schema id")]
@@ -168,13 +168,4 @@ pub enum DsnpGraphError {
 	// Failed to acquire read lock on state manager
 	#[error("Failed to acquire read lock on state manager")]
 	FailedtoReadLockStateManager,
-}
-
-impl From<apache_avro::Error> for DsnpGraphError {
-	fn from(error: apache_avro::Error) -> Self {
-		// Convert the underlying error to DsnpGraphError variant
-		// based on your error handling logic
-		// For example:
-		DsnpGraphError::AvroError(error.to_string())
-	}
 }

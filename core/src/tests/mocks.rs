@@ -41,9 +41,8 @@ impl ConnectionVerifier for MockUserKeyManager {
 	fn verify_connection(&self, from: DsnpUserId) -> DsnpGraphResult<bool> {
 		match self.verifications.get(&from) {
 			Some(Some(verified)) => Ok(*verified),
-			Some(None) =>
-				Err(DsnpGraphError::UnknownError("generic verification error!".to_string())),
-			None => Err(DsnpGraphError::UnknownError("Non registered user!".to_string())),
+			Some(None) => Err(DsnpGraphError::Unknown(anyhow::anyhow!("User not registered!"))),
+			None => Err(DsnpGraphError::Unknown(anyhow::anyhow!("User not registered!"))),
 		}
 	}
 }
