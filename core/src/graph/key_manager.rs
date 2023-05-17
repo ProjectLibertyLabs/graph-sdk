@@ -121,6 +121,8 @@ impl PriProvider for UserKeyManager {
 }
 
 impl ConnectionVerifier for UserKeyManager {
+	/// Warning: if not all graph private keys are imported for the user, this might return `false`
+	/// for a valid connection, since it would not be able to verify the PRId existence
 	fn verify_connection(&self, from: DsnpUserId) -> Result<bool> {
 		let from_public_keys: Vec<_> = self
 			.shared_state_manager
