@@ -345,7 +345,6 @@ version = "0.1.0"
 dependencies = [
  "apache-avro",
  "lazy_static",
- "miniz_oxide",
  "pretty_assertions",
  "serde",
  "serde_json",

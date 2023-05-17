@@ -163,11 +163,11 @@ pub enum DsnpGraphError {
 
 	// Failed to acquire write lock on state manager
 	#[error("Failed to acquire write lock on state manager")]
-	FailedtWriteLockStateManager,
+	FailedtoWriteLockStateManager,
 
 	// Failed to acquire read lock on state manager
 	#[error("Failed to acquire read lock on state manager")]
-	FailedtReadLockStateManager,
+	FailedtoReadLockStateManager,
 }
 
 impl From<apache_avro::Error> for DsnpGraphError {

@@ -226,7 +226,7 @@ impl GraphAPI for GraphState {
 		Ok(self
 			.shared_state_manager
 			.read()
-			.map_err(|_| DsnpGraphError::FailedtReadLockStateManager)?
+			.map_err(|_| DsnpGraphError::FailedtoReadLockStateManager)?
 			.get_public_keys(user_id))
 	}
 }
@@ -345,7 +345,7 @@ impl GraphState {
 					if let Some(inner_keys) = dsnp_keys {
 						self.shared_state_manager
 							.write()
-							.map_err(|_| DsnpGraphError::FailedtWriteLockStateManager)?
+							.map_err(|_| DsnpGraphError::FailedtoWriteLockStateManager)?
 							.import_dsnp_keys(inner_keys)?;
 					}
 				},
