@@ -90,8 +90,8 @@ pub enum DsnpGraphError {
 	PridsLenShouldBeEqualToConnectionsLen(String, usize, usize),
 
 	// generic error
-	#[error("Unknown error caught: {0}")]
-	UnknownError(String),
+    #[error(transparent)]
+    Unknown(#[from] anyhow::Error),
 
 	// Invalid private schema id
 	#[error("Invalid private schema id")]
