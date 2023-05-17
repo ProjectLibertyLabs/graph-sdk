@@ -1,33 +1,23 @@
-#![allow(dead_code)]
-
 use crate::{
-	dsnp::{
-		api_types::*,
-		compression::{CompressionBehavior, DeflateCompression},
-		dsnp_types::*,
-		schema::SchemaHandler,
-	},
-	graph::{graph::Graph, page::GraphPage, shared_state_manager::PublicKeyProvider},
-	util::time::time_in_ksecs,
-};
-use std::{borrow::Borrow, cell::RefCell, collections::BTreeMap, rc::Rc};
-
-use crate::{
-	dsnp::{
-		dsnp_configs::{DsnpVersionConfig, KeyPairType},
-		reader_writer::DsnpWriter,
-	},
-	frequency::Frequency,
+	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::{
+		graph::Graph,
 		key_manager::UserKeyManager,
-		page::{PrivatePageDataProvider, PublicPageDataProvider},
+		page::GraphPage,
 		page_capacities::PAGE_CAPACITY_MAP,
-		shared_state_manager::SharedStateManager,
+		shared_state_manager::{PublicKeyProvider, SharedStateManager},
+	},
+	util::{
+		builders::{GraphPageBuilder, KeyDataBuilder},
+		time::time_in_ksecs,
 	},
 };
 use base64::{engine::general_purpose, Engine as _};
-use dryoc::keypair::StackKeyPair;
-use dsnp_graph_config::{DsnpVersion, Environment, GraphKeyType, SchemaId};
+use dsnp_graph_config::{DsnpVersion, Environment};
+use std::{
+	borrow::Borrow,
+	sync::{Arc, RwLock},
+};
 
 pub fn create_graph_edge(id: &DsnpUserId) -> DsnpGraphEdge {
 	DsnpGraphEdge { user_id: *id, since: time_in_ksecs() }
@@ -60,7 +50,7 @@ pub fn get_env_and_config() -> (Environment, DsnpVersionConfig) {
 pub fn create_empty_test_graph(
 	user_id: Option<DsnpUserId>,
 	connection_arg: Option<ConnectionType>,
-	user_key_manager: Option<Rc<RefCell<UserKeyManager>>>,
+	user_key_manager: Option<Arc<RwLock<UserKeyManager>>>,
 ) -> Graph {
 	let connection_type = match connection_arg {
 		Some(c) => c,
@@ -73,9 +63,9 @@ pub fn create_empty_test_graph(
 	let (env, _) = get_env_and_config();
 	let user_key_manager = match user_key_manager {
 		Some(km) => km.clone(),
-		None => Rc::new(RefCell::from(UserKeyManager::new(
+		None => Arc::new(RwLock::new(UserKeyManager::new(
 			user_id,
-			Rc::new(RefCell::from(SharedStateManager::new())),
+			Arc::new(RwLock::new(SharedStateManager::new())),
 		))),
 	};
 	Graph::new(
@@ -117,7 +107,7 @@ pub fn create_aggressively_full_page(
 	graph: &mut Graph,
 	start_conn_id: u64,
 	dsnp_version_config: Option<&DsnpVersionConfig>,
-	shared_state: Option<Rc<RefCell<SharedStateManager>>>,
+	shared_state: Option<Arc<RwLock<SharedStateManager>>>,
 ) -> PageId {
 	let connection_type = graph.get_connection_type();
 	let page_id = graph.get_next_available_page_id().unwrap();
@@ -128,7 +118,7 @@ pub fn create_aggressively_full_page(
 		if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 			let ref shared_state = match shared_state.borrow() {
 				Some(ss) => ss.clone(),
-				None => Rc::new(RefCell::from(SharedStateManager::new())),
+				None => Arc::new(RwLock::new(SharedStateManager::new())),
 			};
 
 			let dsnp_keys = DsnpKeys {
@@ -137,15 +127,16 @@ pub fn create_aggressively_full_page(
 				keys: KeyDataBuilder::new().with_generated_key().build(),
 			};
 			shared_state
-				.borrow_mut()
+				.write()
+				.unwrap()
 				.import_dsnp_keys(&dsnp_keys)
 				.expect("failed to import public keys");
 		}
 
-		let result =
-			graph.try_add_connection_to_page(&mut page, &connection_id, true, dsnp_version_config);
-		if result.is_err() {
-			dbg!(result);
+		if graph
+			.try_add_connection_to_page(&mut page, &connection_id, true, dsnp_version_config)
+			.is_err()
+		{
 			break
 		}
 
@@ -213,239 +204,8 @@ pub const INNER_TEST_DATA: [DsnpGraphEdge; 24] = [
 	DsnpGraphEdge { user_id: 4944236923077661927, since: 5383633821359802131 },
 ];
 
-pub fn avro_inner_payload() -> Vec<u8> {
-	SchemaHandler::write_inner_graph(&INNER_TEST_DATA.to_vec()).unwrap()
-}
-
-pub fn avro_compressed_inner_payload() -> Vec<u8> {
-	DeflateCompression::compress(&avro_inner_payload()).unwrap()
-}
-
 pub fn avro_public_payload() -> Vec<u8> {
 	// encoded payload below matches INNER_TEST_DATA wrapped in a DsnpUserPublicGraphChunk
 	let b64_payload = b"pgcBzgEx/jCCv5qI9dnF9HuKt5ehpIu9oPMB/tu5s5vfzIy5AeSzkPbhxrHDxwHI34PCjpnEyG6Mmuif0KXShBfE097BnvW1zaAB8oiR7eG3vbIghI2fqMqbjuVG6qenkePs34JZiqzL4ID1i+L5AaSxqMC18rubqwHujK/o49Hd2j++/ffo9trdouoBtJOqm+HU5shImNSa0YPLxrgpkpSO0LrD1dt+1sXbuu6CtscO0qTT8MvA0/ajAeCfzLnu8u7KvwHEjYKAqYr72sYB6s+E8YzZh9814L3XoMmllIXpAYKdopun8/bzff7A7c6rp4rh9QHKsuywn+yQmY8B4ofHusqzi4YCjOOaubTCr8I3iIWopJOhm8SkAa7mwYvh7N3MwwGendqh1ODk2ckB0vON46mUv/GaAeSP9/jzt/m28AGG1cW9wfDkm/4BnpatwvWIvcIr0JXk1u+8pJCAAbjgu5yH7Y2fxQGw+sfMpeqx3SSS18zMsNuRm+kByomanO3z66TmAYjRyo6Wg/z+mgHu3a/C3ZX3pByCs5anuIr0nVOg9e+RmpeDgeYBhvLL78fysfRGuoD9xr26osbSAc7T0Nal0rqdiQGmnPCu+pvBtpUBAA==";
 	general_purpose::STANDARD.decode(b64_payload).unwrap()
-}
-
-pub struct KeyDataBuilder {
-	key_pairs: Vec<GraphKeyPair>,
-}
-
-impl KeyDataBuilder {
-	pub fn new() -> Self {
-		KeyDataBuilder { key_pairs: vec![] }
-	}
-
-	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
-		self.key_pairs.extend_from_slice(key_pairs);
-		self
-	}
-
-	pub fn with_generated_key(mut self) -> Self {
-		let raw_key_pair = StackKeyPair::gen();
-		self.key_pairs.extend_from_slice(&vec![GraphKeyPair {
-			key_type: GraphKeyType::X25519,
-			secret_key: raw_key_pair.secret_key.to_vec(),
-			public_key: raw_key_pair.public_key.to_vec(),
-		}]);
-		self
-	}
-
-	pub fn get_key_pairs(&self) -> &Vec<GraphKeyPair> {
-		&self.key_pairs
-	}
-
-	pub fn build(self) -> Vec<KeyData> {
-		self.key_pairs
-			.iter()
-			.enumerate()
-			.map(|(i, pair)| KeyData {
-				index: i as u16,
-				content: Frequency::write_public_key(&DsnpPublicKey {
-					key_id: Some(i as u64),
-					key: pair.public_key.to_vec(),
-				})
-				.expect("should serialize"),
-			})
-			.collect()
-	}
-}
-
-pub struct GraphPageBuilder {
-	connection_type: ConnectionType,
-	// using BTreeMap to keep the pages sorted
-	pages: BTreeMap<PageId, (Vec<DsnpGraphEdge>, Vec<DsnpPrid>, u32)>,
-}
-
-impl GraphPageBuilder {
-	pub fn new(connection_type: ConnectionType) -> Self {
-		Self { connection_type, pages: BTreeMap::new() }
-	}
-
-	pub fn with_page(
-		mut self,
-		page_id: PageId,
-		connections: &[(DsnpUserId, u64)],
-		prids: &[DsnpPrid],
-		content_hash: u32,
-	) -> Self {
-		let (c, p, hash) = self.pages.entry(page_id).or_insert((vec![], vec![], 0));
-		let edges: Vec<_> = connections
-			.iter()
-			.map(|(u, s)| DsnpGraphEdge { user_id: *u, since: *s })
-			.collect();
-		c.extend_from_slice(&edges);
-		p.extend_from_slice(prids);
-		*hash = content_hash;
-		self
-	}
-
-	pub fn build(&self) -> Vec<GraphPage> {
-		self.pages
-			.iter()
-			.map(|(page_id, (connections, prids, hash))| {
-				let mut page = GraphPage::new(self.connection_type.privacy_type(), *page_id);
-				page.set_connections(connections.clone());
-				if self.connection_type == ConnectionType::Friendship(PrivacyType::Private) {
-					page.set_prids(prids.clone()).expect("should set");
-				}
-				page.set_content_hash(*hash);
-				page
-			})
-			.collect()
-	}
-}
-
-pub struct PageDataBuilder {
-	connection_type: ConnectionType,
-	page_builder: GraphPageBuilder,
-	resolved_key: ResolvedKeyPair,
-	use_noisy_creation_time: bool,
-}
-
-impl PageDataBuilder {
-	pub fn new(connection_type: ConnectionType) -> Self {
-		Self {
-			connection_type,
-			page_builder: GraphPageBuilder::new(connection_type),
-			resolved_key: ResolvedKeyPair {
-				key_pair: KeyPairType::Version1_0(StackKeyPair::gen()),
-				key_id: 1,
-			},
-			use_noisy_creation_time: false,
-		}
-	}
-
-	pub fn with_page(
-		mut self,
-		page_id: PageId,
-		connections: &[(DsnpUserId, u64)],
-		prids: &[DsnpPrid],
-		content_hash: u32,
-	) -> Self {
-		self.page_builder = self.page_builder.with_page(page_id, connections, prids, content_hash);
-		self
-	}
-
-	pub fn with_encryption_key(mut self, key_bundle: ResolvedKeyPair) -> Self {
-		self.resolved_key = key_bundle;
-		self
-	}
-
-	pub fn with_noisy_creation_time(mut self, b: bool) -> Self {
-		self.use_noisy_creation_time = b;
-		self
-	}
-
-	pub fn build(self) -> Vec<PageData> {
-		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
-		self.page_builder
-			.build()
-			.iter()
-			.map(|page| match self.connection_type.privacy_type() {
-				PrivacyType::Public =>
-					page.to_public_page_data().expect("should write public page"),
-				PrivacyType::Private => page
-					.to_private_page_data(&dsnp_config, &self.resolved_key)
-					.expect("should write private page"),
-			})
-			.collect()
-	}
-
-	pub fn build_with_size(&self) -> Vec<(usize, PageData)> {
-		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
-		self.page_builder
-			.build()
-			.iter()
-			.map(|page| match self.connection_type.privacy_type() {
-				PrivacyType::Public => (
-					page.connections().len(),
-					page.to_public_page_data().expect("should write public page"),
-				),
-				PrivacyType::Private => (
-					page.connections().len(),
-					page.to_private_page_data(&dsnp_config, &self.resolved_key)
-						.expect("should write private page"),
-				),
-			})
-			.collect()
-	}
-}
-
-pub struct ImportBundleBuilder {
-	env: Environment,
-	dsnp_user_id: DsnpUserId,
-	schema_id: SchemaId,
-	key_builder: KeyDataBuilder,
-	page_data_builder: PageDataBuilder,
-}
-
-impl ImportBundleBuilder {
-	pub fn new(env: Environment, dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
-		let connection_type =
-			env.get_config().get_connection_type_from_schema_id(schema_id).unwrap();
-		ImportBundleBuilder {
-			env,
-			dsnp_user_id,
-			schema_id,
-			key_builder: KeyDataBuilder::new(),
-			page_data_builder: PageDataBuilder::new(connection_type),
-		}
-	}
-
-	pub fn with_page(
-		mut self,
-		page_id: PageId,
-		connections: &[(DsnpUserId, u64)],
-		prids: &[DsnpPrid],
-		content_hash: u32,
-	) -> Self {
-		self.page_data_builder =
-			self.page_data_builder.with_page(page_id, connections, prids, content_hash);
-		self
-	}
-
-	pub fn with_encryption_key(mut self, key_bundle: ResolvedKeyPair) -> Self {
-		self.page_data_builder = self.page_data_builder.with_encryption_key(key_bundle);
-		self
-	}
-
-	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
-		self.key_builder = self.key_builder.with_key_pairs(key_pairs);
-		self
-	}
-
-	pub fn build(self) -> ImportBundle {
-		let key_pairs = self.key_builder.get_key_pairs().clone();
-		let pages: Vec<PageData> = self.page_data_builder.build();
-		let keys: Vec<KeyData> = self.key_builder.build();
-
-		ImportBundle {
-			dsnp_keys: DsnpKeys { keys, keys_hash: 232, dsnp_user_id: self.dsnp_user_id },
-			dsnp_user_id: self.dsnp_user_id,
-			schema_id: self.schema_id,
-			key_pairs,
-			pages,
-		}
-	}
 }

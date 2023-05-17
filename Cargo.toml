@@ -1,12 +1,14 @@
 [workspace]
 members = [
     "core",
-    "config"
+    "config",
+    "bridge/ffi",
 ]
 
 default-members = [
     "core",
-    "config"
+    "config",
+    "bridge/ffi",
 ]
 
 [profile.release]

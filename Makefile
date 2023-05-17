@@ -45,3 +45,11 @@ all: check test clippy fmt build doc
 
 .PHONY: ci-local
 ci-local: all
+
+bindgen:
+	@echo "Running bindgen..."
+	@./scripts/run_bindgen.sh
+
+test-ffi:
+	@echo "Running FFI tests..."
+	@./scripts/run_ffi_tests.sh

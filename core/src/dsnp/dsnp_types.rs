@@ -56,6 +56,7 @@ pub struct DsnpUserPublicGraphChunk {
 }
 
 /// Graph Edge defined in DSNP to store each connection
+#[repr(C)]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy)]
 pub struct DsnpGraphEdge {
 	/// DSNP User Id of object of relationship

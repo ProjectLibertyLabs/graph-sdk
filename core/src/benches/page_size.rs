@@ -1,6 +1,6 @@
 use dsnp_graph_config::{ConnectionType, ALL_CONNECTION_TYPES};
 
-use crate::tests::helpers::*;
+use crate::util::builders::PageDataBuilder;
 use rand::{distributions::Uniform, thread_rng, Rng};
 use std::{collections::hash_map::HashMap, path::PathBuf};
 

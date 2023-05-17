@@ -29,6 +29,7 @@ lazy_static! {
 }
 
 /// Privacy Type of the graph
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 #[serde(tag = "privacyType")]
 pub enum PrivacyType {
@@ -42,6 +43,7 @@ pub enum PrivacyType {
 }
 
 /// Different connection type in social graph
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 #[serde(tag = "connectionType")]
 pub enum ConnectionType {
@@ -71,6 +73,7 @@ pub const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
 ];
 
 /// Graph Key type
+#[repr(C)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum GraphKeyType {
 	X25519 = 0,
@@ -94,12 +97,14 @@ impl Environment {
 	}
 }
 
+#[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub enum DsnpVersion {
 	#[serde(rename = "1.0")]
 	Version1_0,
 }
 
+#[repr(C)]
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct SchemaConfig {
 	pub dsnp_version: DsnpVersion,
