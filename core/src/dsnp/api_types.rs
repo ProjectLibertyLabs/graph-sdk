@@ -1,7 +1,10 @@
 use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
-pub use dsnp_graph_config::{ConnectionType, PrivacyType};
+pub use dsnp_graph_config::{ConnectionType, PageId, PrivacyType};
 use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
+
+/// Page Hash type
+pub type PageHash = u32;
 
 /// Raw page of Graph (or Key) data
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -47,12 +50,6 @@ pub struct ResolvedKeyPair {
 	/// Public key
 	pub key_pair: KeyPairType,
 }
-
-/// Graph page id
-pub type PageId = u16;
-
-/// Page Hash type
-pub type PageHash = u32;
 
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
 #[derive(Debug, Clone)]

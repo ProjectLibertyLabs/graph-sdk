@@ -8,7 +8,7 @@ use crate::{
 	graph::shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
-use anyhow::Result;
+use dsnp_graph_config::errors::DsnpGraphResult;
 use std::{
 	fmt::Debug,
 	sync::{Arc, RwLock},
@@ -18,7 +18,7 @@ use std::{
 pub trait UserKeyProvider {
 	/// imports key pairs into a provider
 	/// will overwrite any existing imported keys for the user
-	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> Result<()>;
+	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> DsnpGraphResult<()>;
 
 	/// returns the dsnp associate and keypair with a certain id
 	fn get_resolved_key(&self, key_id: u64) -> Option<ResolvedKeyPair>;
@@ -31,7 +31,7 @@ pub trait UserKeyProvider {
 }
 
 pub trait ConnectionVerifier {
-	fn verify_connection(&self, from: DsnpUserId) -> Result<bool>;
+	fn verify_connection(&self, from: DsnpUserId) -> DsnpGraphResult<bool>;
 }
 
 /// a combining trait that provides all functionalities required by user key manager
@@ -50,7 +50,7 @@ pub struct UserKeyManager {
 }
 
 impl UserKeyProvider for UserKeyManager {
-	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> Result<()> {
+	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> DsnpGraphResult<()> {
 		let mut mapped_keys = vec![];
 		for p in pairs {
 			mapped_keys.push(p.try_into()?);
@@ -102,7 +102,7 @@ impl UserKeyProvider for UserKeyManager {
 }
 
 impl PriProvider for UserKeyManager {
-	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> Result<()> {
+	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()> {
 		self.shared_state_manager.write().unwrap().import_pri(dsnp_user_id, pages)
 	}
 
@@ -115,15 +115,13 @@ impl PriProvider for UserKeyManager {
 		from: DsnpUserId,
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
-	) -> Result<DsnpPrid> {
+	) -> DsnpGraphResult<DsnpPrid> {
 		self.shared_state_manager.read().unwrap().calculate_prid(from, to, from_secret)
 	}
 }
 
 impl ConnectionVerifier for UserKeyManager {
-	/// Warning: if not all graph private keys are imported for the user, this might return `false`
-	/// for a valid connection, since it would not be able to verify the PRId existence
-	fn verify_connection(&self, from: DsnpUserId) -> Result<bool> {
+	fn verify_connection(&self, from: DsnpUserId) -> DsnpGraphResult<bool> {
 		let from_public_keys: Vec<_> = self
 			.shared_state_manager
 			.read()

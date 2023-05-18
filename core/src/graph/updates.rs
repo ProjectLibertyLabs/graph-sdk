@@ -4,8 +4,10 @@ use crate::{
 	graph::updates::UpdateEvent::{Add, Remove},
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
-use anyhow::{Error, Result};
-use dsnp_graph_config::SchemaId;
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	SchemaId,
+};
 use std::cmp::Ordering;
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
@@ -35,9 +37,9 @@ impl UpdateTracker {
 		Self { updates: TransactionalHashMap::new() }
 	}
 
-	pub fn register_update(&mut self, event: &UpdateEvent) -> Result<()> {
+	pub fn register_update(&mut self, event: &UpdateEvent) -> DsnpGraphResult<()> {
 		if self.contains(event) {
-			return Err(Error::msg("event exists"))
+			return Err(DsnpGraphError::EventExists)
 		}
 
 		match self.contains_complement(event) {
@@ -50,9 +52,9 @@ impl UpdateTracker {
 		Ok(())
 	}
 
-	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> Result<()> {
+	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> DsnpGraphResult<()> {
 		if events.iter().any(|e| self.contains(e)) {
-			return Err(Error::msg("one or more events exist"))
+			return Err(DsnpGraphError::DuplicateUpdateEvents)
 		}
 
 		for e in events {

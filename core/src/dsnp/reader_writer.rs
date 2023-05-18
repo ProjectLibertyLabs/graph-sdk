@@ -5,32 +5,32 @@ use crate::{
 	},
 	types::PrivateGraphChunk,
 };
-use anyhow::Result;
+use dsnp_graph_config::errors::DsnpGraphResult;
 
 /// DSNP compatible reader
 pub trait DsnpReader {
 	/// reading public key from binary
-	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey>;
+	fn read_public_key(data: &[u8]) -> DsnpGraphResult<DsnpPublicKey>;
 	/// reading public graph from binary
-	fn read_public_graph(data: &[u8]) -> Result<DsnpInnerGraph>;
+	fn read_public_graph(data: &[u8]) -> DsnpGraphResult<DsnpInnerGraph>;
 	/// reading private graph from binary
 	fn read_private_graph(
 		data: &[u8],
 		dsnp_version_config: &DsnpVersionConfig,
 		decryption_input: &SecretKeyType,
-	) -> Result<PrivateGraphChunk>;
+	) -> DsnpGraphResult<PrivateGraphChunk>;
 }
 
 /// DSNP compatible writer
 pub trait DsnpWriter {
 	/// write public key to binary
-	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>>;
+	fn write_public_key(key: &DsnpPublicKey) -> DsnpGraphResult<Vec<u8>>;
 	/// write public graph to binary
-	fn write_public_graph(inner: &DsnpInnerGraph) -> Result<Vec<u8>>;
+	fn write_public_graph(inner: &DsnpInnerGraph) -> DsnpGraphResult<Vec<u8>>;
 	/// write private graph to binary
 	fn write_private_graph(
 		graph: &PrivateGraphChunk,
 		dsnp_version_config: &DsnpVersionConfig,
 		encryption_input: &PublicKeyType,
-	) -> Result<Vec<u8>>;
+	) -> DsnpGraphResult<Vec<u8>>;
 }

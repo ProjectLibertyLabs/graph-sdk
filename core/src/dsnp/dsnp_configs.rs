@@ -3,9 +3,11 @@ use crate::dsnp::{
 	dsnp_types::DsnpPublicKey,
 	encryption::{EncryptionBehavior, SealBox},
 };
-use anyhow::Error;
 use dryoc::keypair::{PublicKey, SecretKey, StackKeyPair};
-use dsnp_graph_config::{DsnpVersion, GraphKeyType};
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	DsnpVersion, GraphKeyType,
+};
 
 /// Dsnp versions hardcoded configuration
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
@@ -114,11 +116,11 @@ impl Into<DsnpVersionConfig> for &PublicKeyType {
 }
 
 impl TryInto<PublicKeyType> for &'_ DsnpPublicKey {
-	type Error = anyhow::Error;
+	type Error = DsnpGraphError;
 
-	fn try_into(self) -> Result<PublicKeyType, Self::Error> {
+	fn try_into(self) -> DsnpGraphResult<PublicKeyType> {
 		let public_key =
-			PublicKey::try_from(&self.key[..]).map_err(|_| Error::msg("invalid public key"))?;
+			PublicKey::try_from(&self.key[..]).map_err(|_| DsnpGraphError::InvalidPublicKey)?;
 		Ok(PublicKeyType::Version1_0(public_key))
 	}
 }
@@ -134,16 +136,16 @@ impl Into<Vec<u8>> for PublicKeyType {
 
 /// converts a `GraphKeyType` into a `KeyPairType`
 impl TryInto<KeyPairType> for GraphKeyPair {
-	type Error = anyhow::Error;
+	type Error = DsnpGraphError;
 
-	fn try_into(self) -> Result<KeyPairType, Self::Error> {
+	fn try_into(self) -> DsnpGraphResult<KeyPairType> {
 		match self.key_type {
 			GraphKeyType::X25519 => {
 				let secret_key = SecretKey::try_from(&self.secret_key[..])
-					.map_err(|_| Error::msg("invalid secret key"))?;
+					.map_err(|_| DsnpGraphError::InvalidSecretKey)?;
 				let pair = StackKeyPair::from_secret_key(secret_key);
 				if pair.public_key.to_vec() != self.public_key {
-					return Err(Error::msg("provided public key is not compatible with secret key!"))
+					return Err(DsnpGraphError::PublicKeyNotCompatibleWithSecretKey)
 				}
 				Ok(KeyPairType::Version1_0(pair))
 			},

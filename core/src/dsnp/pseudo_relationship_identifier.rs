@@ -2,7 +2,6 @@ use crate::dsnp::{
 	dsnp_configs::{PublicKeyType, SecretKeyType},
 	dsnp_types::{DsnpPrid, DsnpUserId},
 };
-use anyhow::{Error, Result};
 use dryoc::{
 	classic::{
 		crypto_box::crypto_box_beforenm,
@@ -12,6 +11,7 @@ use dryoc::{
 	kdf::{Key, StackKdf},
 	types::ByteArray,
 };
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::ops::Deref;
 use zeroize::Zeroizing;
 
@@ -28,14 +28,14 @@ pub trait PridProvider {
 		b: DsnpUserId,
 		a_secret_key: &SecretKeyType,
 		b_public_key: &PublicKeyType,
-	) -> Result<Self::DsnpPrid>;
+	) -> DsnpGraphResult<Self::DsnpPrid>;
 
 	/// creates shared context from A -> B
 	fn create_shared_context(
 		b: DsnpUserId,
 		a_secret_key: &SecretKeyType,
 		b_public_key: &PublicKeyType,
-	) -> Result<Key>;
+	) -> DsnpGraphResult<Key>;
 }
 
 impl PridProvider for DsnpPrid {
@@ -46,7 +46,7 @@ impl PridProvider for DsnpPrid {
 		b: DsnpUserId,
 		a_secret_key: &SecretKeyType,
 		b_public_key: &PublicKeyType,
-	) -> Result<Self::DsnpPrid> {
+	) -> DsnpGraphResult<Self::DsnpPrid> {
 		let id_a = a.to_le_bytes();
 		let id_b = b.to_le_bytes();
 		let shared_context = Self::create_shared_context(b, a_secret_key, b_public_key)?;
@@ -73,7 +73,7 @@ impl PridProvider for DsnpPrid {
 		b: DsnpUserId,
 		a_secret_key: &SecretKeyType,
 		b_public_key: &PublicKeyType,
-	) -> Result<Key> {
+	) -> DsnpGraphResult<Key> {
 		// calculate shared secret
 		let root_shared = match (a_secret_key, b_public_key) {
 			(SecretKeyType::Version1_0(a_pair), PublicKeyType::Version1_0(b_public)) =>
@@ -88,7 +88,7 @@ impl PridProvider for DsnpPrid {
 			StackKdf::from_parts(Key::from(root_shared.deref()), PRI_CONTEXT.as_array().into());
 		let derived_key: Key = kdf
 			.derive_subkey(b)
-			.map_err(|e| Error::msg(format!("key derivation error {:?}", e)))?;
+			.map_err(|e| DsnpGraphError::KeyDerivationError(e.to_string()))?;
 
 		Ok(derived_key)
 	}

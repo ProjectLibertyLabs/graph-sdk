@@ -11,8 +11,10 @@ use crate::{
 	},
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
-use anyhow::{Error, Ok, Result};
-use dsnp_graph_config::{ConnectionType, Environment, SchemaId};
+use dsnp_graph_config::{
+	errors::{DsnpGraphError, DsnpGraphResult},
+	ConnectionType, Environment, SchemaId,
+};
 use std::{
 	cmp::min,
 	collections::{hash_map::Entry, HashSet},
@@ -40,18 +42,18 @@ pub trait GraphAPI {
 	/// Import raw data retrieved from the blockchain into users graph.
 	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()>;
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()>;
 
 	/// Calculate the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
-	fn export_updates(&self) -> Result<Vec<Update>>;
+	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
 	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
-	fn apply_actions(&mut self, action: &[Action]) -> Result<()>;
+	fn apply_actions(&mut self, action: &[Action]) -> DsnpGraphResult<()>;
 
 	/// Force re-calculates the imported graphs. This is useful to ensure the pages are using the
 	/// latest encryption key or refresh calculated PRIds or remove any empty pages and ...
-	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> Result<Vec<Update>>;
+	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>>;
 
 	/// Get a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
@@ -59,19 +61,19 @@ pub trait GraphAPI {
 		user_id: &DsnpUserId,
 		schema_id: &SchemaId,
 		include_pending: bool,
-	) -> Result<Vec<DsnpGraphEdge>>;
+	) -> DsnpGraphResult<Vec<DsnpGraphEdge>>;
 
 	/// return a list dsnp user ids that require keys
-	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>>;
+	fn get_connections_without_keys(&self) -> DsnpGraphResult<Vec<DsnpUserId>>;
 
 	/// Get a list of all private friendship connections that are only valid from users side
 	fn get_one_sided_private_friendship_connections(
 		&self,
 		user_id: &DsnpUserId,
-	) -> Result<Vec<DsnpGraphEdge>>;
+	) -> DsnpGraphResult<Vec<DsnpGraphEdge>>;
 
 	/// Get a list published and imported public keys associated with a user
-	fn get_public_keys(&self, user_id: &DsnpUserId) -> Result<Vec<DsnpPublicKey>>;
+	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
 }
 
 impl Transactional for GraphState {
@@ -118,25 +120,25 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
+	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		let result = self.do_import_users_data(payloads);
 		match result {
-			Result::Ok(_) => self.commit(),
-			Result::Err(_) => self.rollback(),
+			DsnpGraphResult::Ok(_) => self.commit(),
+			DsnpGraphResult::Err(_) => self.rollback(),
 		};
 		result
 	}
 
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed or added keys
-	fn export_updates(&self) -> Result<Vec<Update>> {
+	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = self.shared_state_manager.read().unwrap().export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
 			let user_graph = self
 				.user_map
 				.get(&user_id)
-				.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+				.ok_or(DsnpGraphError::UserGraphNotImported(user_id))?;
 			let updates = user_graph.calculate_updates()?;
 			result.extend(updates);
 		}
@@ -144,21 +146,21 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Apply actions (Connect, Disconnect) to imported users graph
-	fn apply_actions(&mut self, actions: &[Action]) -> Result<()> {
+	fn apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		let result = self.do_apply_actions(actions);
 		match result {
-			Result::Ok(_) => self.commit(),
-			Result::Err(_) => self.rollback(),
+			DsnpGraphResult::Ok(_) => self.commit(),
+			DsnpGraphResult::Err(_) => self.rollback(),
 		};
 		result
 	}
 
 	/// Export the graph pages for a certain user encrypted using the latest published key
-	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> Result<Vec<Update>> {
+	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>> {
 		let user_graph = self
 			.user_map
 			.get(&user_id)
-			.ok_or(Error::msg(format!("User {} graph is not imported!", user_id)))?;
+			.ok_or(DsnpGraphError::UserGraphNotImported(*user_id))?;
 
 		user_graph.force_calculate_graphs()
 	}
@@ -169,22 +171,22 @@ impl GraphAPI for GraphState {
 		user_id: &DsnpUserId,
 		schema_id: &SchemaId,
 		include_pending: bool,
-	) -> Result<Vec<DsnpGraphEdge>> {
+	) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
+			None => return Err(DsnpGraphError::UserGraphNotImported(*user_id)),
 		};
 
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
 	}
 
 	/// return a list dsnp user ids that require keys
-	fn get_connections_without_keys(&self) -> Result<Vec<DsnpUserId>> {
+	fn get_connections_without_keys(&self) -> DsnpGraphResult<Vec<DsnpUserId>> {
 		let private_friendship_schema_id = self
 			.environment
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
-			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
+			.ok_or(DsnpGraphError::InvalidPrivateSchemaId)?;
 		let all_connections: HashSet<_> = self
 			.user_map
 			.inner()
@@ -205,26 +207,26 @@ impl GraphAPI for GraphState {
 	fn get_one_sided_private_friendship_connections(
 		&self,
 		user_id: &DsnpUserId,
-	) -> Result<Vec<DsnpGraphEdge>> {
+	) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		let private_friendship_schema_id = self
 			.environment
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
-			.ok_or(Error::msg("Schema id for private friendship does not exists!"))?;
+			.ok_or(DsnpGraphError::InvalidPrivateSchemaId)?;
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(Error::msg(format!("User {} graph is not imported!", user_id))),
+			None => return Err(DsnpGraphError::UserGraphNotImported(*user_id)),
 		};
 		let graph = user_graph.graph(&private_friendship_schema_id);
 		graph.get_one_sided_friendships()
 	}
 
 	/// Get a list published and imported public keys associated with a user
-	fn get_public_keys(&self, user_id: &DsnpUserId) -> Result<Vec<DsnpPublicKey>> {
+	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
 		Ok(self
 			.shared_state_manager
 			.read()
-			.map_err(|_| Error::msg("Error getting read lock for shared_state_manager!"))?
+			.map_err(|_| DsnpGraphError::FailedtoReadLockStateManager)?
 			.get_public_keys(user_id))
 	}
 }
@@ -254,13 +256,16 @@ impl GraphState {
 	}
 
 	/// Gets an existing or creates a new UserGraph
-	fn get_or_create_user_graph(&mut self, dsnp_user_id: DsnpUserId) -> Result<&mut UserGraph> {
+	fn get_or_create_user_graph(
+		&mut self,
+		dsnp_user_id: DsnpUserId,
+	) -> DsnpGraphResult<&mut UserGraph> {
 		let is_full = self.user_map.len() >= self.capacity;
 		match self.user_map.entry(dsnp_user_id) {
 			Entry::Occupied(o) => Ok(o.into_mut()),
 			Entry::Vacant(v) => {
 				if is_full {
-					return Err(Error::msg("GraphState instance full"))
+					return Err(DsnpGraphError::GraphStateIsFull)
 				}
 				Ok(v.insert(UserGraph::new(
 					&dsnp_user_id,
@@ -271,19 +276,19 @@ impl GraphState {
 		}
 	}
 
-	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> Result<()> {
+	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
 			let connection_type = self
 				.environment
 				.get_config()
 				.get_connection_type_from_schema_id(*schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 			self.shared_state_manager.write().unwrap().import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 			let dsnp_config = user_graph
 				.get_dsnp_config(*schema_id)
-				.ok_or(Error::msg("Invalid schema id for environment!"))?;
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
@@ -319,7 +324,7 @@ impl GraphState {
 		Ok(())
 	}
 
-	fn do_apply_actions(&mut self, actions: &[Action]) -> Result<()> {
+	fn do_apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		for action in actions {
 			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
 			match action {
@@ -329,11 +334,10 @@ impl GraphState {
 					..
 				} => {
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
-						return Err(Error::msg(format!(
-							"Connection from {} to {} already exists!",
+						return Err(DsnpGraphError::ConnectionAlreadyExists(
 							action.owner_dsnp_user_id(),
-							dsnp_user_id
-						)))
+							*dsnp_user_id,
+						))
 					}
 					owner_graph
 						.update_tracker_mut()
@@ -341,9 +345,7 @@ impl GraphState {
 					if let Some(inner_keys) = dsnp_keys {
 						self.shared_state_manager
 							.write()
-							.map_err(|_| {
-								Error::msg("Failed to get write lock for shared_state_manager")
-							})?
+							.map_err(|_| DsnpGraphError::FailedtoWriteLockStateManager)?
 							.import_dsnp_keys(inner_keys)?;
 					}
 				},
@@ -352,11 +354,10 @@ impl GraphState {
 					..
 				} => {
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
-						return Err(Error::msg(format!(
-							"Connection from {} to {} does not exists to be disconnected!",
+						return Err(DsnpGraphError::ConnectionDoesNotExist(
 							action.owner_dsnp_user_id(),
-							dsnp_user_id
-						)))
+							*dsnp_user_id,
+						))
 					}
 					owner_graph
 						.update_tracker_mut()
