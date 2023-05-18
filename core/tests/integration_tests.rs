@@ -11,12 +11,12 @@ use dsnp_graph_core::{
 #[cfg(test)]
 mod integration_tests {
 	use super::*;
+	use crate::common::create_new_keys;
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig};
 	use dsnp_graph_core::{
 		dsnp::{
-			api_types::{Action, Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
-			dsnp_configs::KeyPairType,
+			api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 			dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 			pseudo_relationship_identifier::PridProvider,
 		},
@@ -259,11 +259,7 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let graph_key_pair = GraphKeyPair {
-			key_type: GraphKeyType::X25519,
-			public_key: StackKeyPair::gen().public_key.to_vec(),
-			secret_key: StackKeyPair::gen().secret_key.to_vec(),
-		};
+		let (_, _, graph_key_pair) = create_new_keys();
 		let dsnp_user_id = 1;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
@@ -284,14 +280,7 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -316,15 +305,8 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 2 };
-		let key_pair_raw2 = StackKeyPair::gen();
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw2.secret_key.to_vec(),
-			public_key: key_pair_raw2.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, _) = create_new_keys();
+		let (_, _, keypair) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -347,14 +329,7 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 2 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -362,12 +337,7 @@ mod integration_tests {
 			.with_encryption_key(resolved_key)
 			.with_page(1, &connections, &vec![], 0)
 			.build();
-		let key_pair_raw2 = StackKeyPair::gen();
-		let key_pair_2 = GraphKeyPair {
-			secret_key: key_pair_raw2.secret_key.to_vec(),
-			public_key: key_pair_raw2.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, _, key_pair_2) = create_new_keys();
 		input.key_pairs = vec![key_pair_2];
 
 		// act
@@ -385,14 +355,7 @@ mod integration_tests {
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids: Vec<_> =
@@ -420,14 +383,7 @@ mod integration_tests {
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids: Vec<_> =
@@ -509,20 +465,13 @@ mod integration_tests {
 	}
 
 	#[test]
-	fn api_get_connections_without_keys_for_public_follow_should_return_all_connections() {
+	fn api_get_connections_without_keys_for_private_friendship_should_return_all_connections() {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let dsnp_user_id_1 = 1;
 		let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let prids: Vec<_> =
@@ -555,16 +504,7 @@ mod integration_tests {
 			let env = Environment::Mainnet;
 			let schema_id = get_schema_from(env.clone(), connection_type);
 			let mut state = GraphState::new(env.clone());
-			let key_pair_raw = StackKeyPair::gen();
-			let resolved_key = ResolvedKeyPair {
-				key_pair: KeyPairType::Version1_0(key_pair_raw.clone()),
-				key_id: 1,
-			};
-			let keypair = GraphKeyPair {
-				secret_key: key_pair_raw.secret_key.to_vec(),
-				public_key: key_pair_raw.public_key.to_vec(),
-				key_type: GraphKeyType::X25519,
-			};
+			let (_, resolved_key, keypair) = create_new_keys();
 			let dsnp_user_id_1 = 1;
 			let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 			let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
@@ -592,39 +532,9 @@ mod integration_tests {
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id_1 = 1;
-		// keys for dsnp user 1
-		let key_pair_raw_1 = StackKeyPair::gen();
-		let resolved_key_1 = ResolvedKeyPair {
-			key_pair: KeyPairType::Version1_0(key_pair_raw_1.clone()),
-			key_id: 0,
-		};
-		let keypair_1 = GraphKeyPair {
-			secret_key: key_pair_raw_1.secret_key.to_vec(),
-			public_key: key_pair_raw_1.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		// keys for dsnp user 2
-		let key_pair_raw_2 = StackKeyPair::gen();
-		let resolved_key_2 = ResolvedKeyPair {
-			key_pair: KeyPairType::Version1_0(key_pair_raw_2.clone()),
-			key_id: 0,
-		};
-		let keypair_2 = GraphKeyPair {
-			secret_key: key_pair_raw_2.secret_key.to_vec(),
-			public_key: key_pair_raw_2.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		// keys for dsnp user 3
-		let key_pair_raw_3 = StackKeyPair::gen();
-		let resolved_key_3 = ResolvedKeyPair {
-			key_pair: KeyPairType::Version1_0(key_pair_raw_3.clone()),
-			key_id: 0,
-		};
-		let keypair_3 = GraphKeyPair {
-			secret_key: key_pair_raw_3.secret_key.to_vec(),
-			public_key: key_pair_raw_3.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key_1, keypair_1) = create_new_keys();
+		let (_, resolved_key_2, keypair_2) = create_new_keys();
+		let (_, resolved_key_3, keypair_3) = create_new_keys();
 		// --------- user 1 graph setup--------------
 		let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0)];
 		let prids: Vec<_> = vec![
@@ -941,14 +851,7 @@ mod integration_tests {
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let connections_2 = vec![(10, 1), (20, 2)];
 		let connections_3 = vec![(100, 1)];
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 0 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
 			.with_page(1, &connections_1, &vec![], 1)
 			.with_page(2, &connections_2, &vec![], 2)
@@ -1005,44 +908,10 @@ mod integration_tests {
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 0), (3, 0)];
-		// owner user keys
-		let key_pair_raw = StackKeyPair::gen();
-		let resolved_key =
-			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 0 };
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		// keys for dsnp user 2
-		let key_pair_raw_2 = StackKeyPair::gen();
-		let resolved_key_2 = ResolvedKeyPair {
-			key_pair: KeyPairType::Version1_0(key_pair_raw_2.clone()),
-			key_id: 0,
-		};
-		let keypair_2 = GraphKeyPair {
-			secret_key: key_pair_raw_2.secret_key.to_vec(),
-			public_key: key_pair_raw_2.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		// keys for dsnp user 3
-		let key_pair_raw_3 = StackKeyPair::gen();
-		let resolved_key_3 = ResolvedKeyPair {
-			key_pair: KeyPairType::Version1_0(key_pair_raw_3.clone()),
-			key_id: 0,
-		};
-		let keypair_3 = GraphKeyPair {
-			secret_key: key_pair_raw_3.secret_key.to_vec(),
-			public_key: key_pair_raw_3.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		// keys for dsnp user 4
-		let key_pair_raw_4 = StackKeyPair::gen();
-		let keypair_4 = GraphKeyPair {
-			secret_key: key_pair_raw_4.secret_key.to_vec(),
-			public_key: key_pair_raw_4.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key_2, keypair_2) = create_new_keys();
+		let (_, resolved_key_3, keypair_3) = create_new_keys();
+		let (_, _, keypair_4) = create_new_keys();
 		// --------------------------//
 		let prids: Vec<_> = vec![
 			DsnpPrid::create_prid(
@@ -1135,23 +1004,66 @@ mod integration_tests {
 	}
 
 	#[test]
+	fn api_export_updates_without_updates_to_graph_should_be_empty() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1)
+			.build();
+		state.import_users_data(&vec![input1.clone()]).expect("should import!");
+
+		// act
+		let result = state.export_updates();
+
+		// assert
+		assert!(result.is_ok());
+		let exports = result.unwrap();
+		assert!(exports.is_empty())
+	}
+
+	#[test]
+	fn api_export_updates_for_private_friendship_graph_without_imported_connection_keys_should_fail(
+	) {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id =
+			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let (_, resolved_key, keypair) = create_new_keys();
+		// --------------------------//
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &vec![], &vec![], 1)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_encryption_key(resolved_key.clone())
+			.build();
+		state.import_users_data(&vec![input1.clone()]).expect("should import!");
+		let actions = vec![Action::Connect {
+			owner_dsnp_user_id: dsnp_user_id_1,
+			connection: Connection { dsnp_user_id: 4, schema_id },
+			dsnp_keys: None,
+		}];
+		state.apply_actions(&actions).expect("Should apply actions!");
+
+		// act
+		let result = state.export_updates();
+
+		// assert
+		assert!(result.is_err());
+	}
+
+	#[test]
 	fn api_get_public_keys_should_return_imported_public_keys() {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
 		let mut state = GraphState::new(env.clone());
-		let key_pair_raw = StackKeyPair::gen();
-		let key_pair_raw_2 = StackKeyPair::gen();
-		let keypair = GraphKeyPair {
-			secret_key: key_pair_raw.secret_key.to_vec(),
-			public_key: key_pair_raw.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
-		let keypair_2 = GraphKeyPair {
-			secret_key: key_pair_raw_2.secret_key.to_vec(),
-			public_key: key_pair_raw_2.public_key.to_vec(),
-			key_type: GraphKeyType::X25519,
-		};
+		let (key_pair_raw, _, keypair) = create_new_keys();
+		let (key_pair_raw_2, _, keypair_2) = create_new_keys();
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -1173,5 +1085,73 @@ mod integration_tests {
 				DsnpPublicKey { key: key_pair_raw_2.public_key.to_vec(), key_id: Some(1) }
 			]
 		);
+	}
+
+	#[test]
+	fn api_force_recalculate_graphs_should_encrypt_using_active_key_successfully() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
+		let connections_2 = vec![(20, 1), (30, 2), (40, 3), (50, 4)];
+		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, _, keypair_2) = create_new_keys();
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1)
+			.with_page(2, &connections_2, &vec![], 1)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.build();
+		state.import_users_data(&vec![input1.clone()]).expect("should import!");
+		let actions = vec![Action::AddGraphKey {
+			owner_dsnp_user_id: dsnp_user_id_1,
+			new_public_key: keypair_2.clone().public_key,
+		}];
+		state.apply_actions(&actions).expect("Should apply actions!");
+		let exports = state.export_updates().expect("Should export!");
+		let mut input2 = ImportBundleBuilder::build_from(&input1, &exports);
+		input2.key_pairs.push(keypair_2);
+		let mut state = GraphState::new(env.clone());
+		state.import_users_data(&vec![input2.clone()]).expect("should import input2");
+
+		// act
+		let result = state.force_recalculate_graphs(&dsnp_user_id_1);
+
+		// assert
+		assert!(result.is_ok());
+		let updates = result.unwrap();
+		assert_eq!(updates.len(), 2);
+		let mut input3 = ImportBundleBuilder::build_from(&input2, &updates);
+		input3.key_pairs.remove(0); // removing the old key secret
+		let mut state = GraphState::new(env);
+		assert!(state.import_users_data(&vec![input3]).is_ok());
+		let connections = state.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, false);
+		assert!(connections.is_ok());
+		assert_eq!(connections.unwrap().len(), connections_1.len() + connections_2.len());
+	}
+
+	#[test]
+	fn api_force_recalculate_graphs_should_remove_empty_page_successfully() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import!");
+
+		// act
+		let result = state.force_recalculate_graphs(&dsnp_user_id_1);
+
+		// assert
+		assert!(result.is_ok());
+		let updates = result.unwrap();
+		assert_eq!(updates.len(), 1);
+		assert!(matches!(updates[0], Update::DeletePage { .. }));
 	}
 }

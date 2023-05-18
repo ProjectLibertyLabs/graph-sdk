@@ -1,18 +1,18 @@
 use crate::dsnp::dsnp_configs::{PublicKeyType, SecretKeyType};
-use anyhow::{Error, Result as AnyResult};
 use dryoc::{
 	classic::crypto_box::{crypto_box_seal, crypto_box_seal_open},
 	constants::CRYPTO_BOX_SEALBYTES,
 	dryocbox::ByteArray,
 };
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 
 /// Common trait for different encryption algorithms
 pub trait EncryptionBehavior {
 	/// encrypt the plain_data
-	fn encrypt(&self, plain_data: &[u8], input: &PublicKeyType) -> AnyResult<Vec<u8>>;
+	fn encrypt(&self, plain_data: &[u8], input: &PublicKeyType) -> DsnpGraphResult<Vec<u8>>;
 
 	/// decrypt the encrypted_data
-	fn decrypt(&self, encrypted_data: &[u8], input: &SecretKeyType) -> AnyResult<Vec<u8>>;
+	fn decrypt(&self, encrypted_data: &[u8], input: &SecretKeyType) -> DsnpGraphResult<Vec<u8>>;
 }
 
 /// XSalsa20Poly1305 encryption algorithm
@@ -20,19 +20,19 @@ pub trait EncryptionBehavior {
 pub struct SealBox;
 
 impl EncryptionBehavior for SealBox {
-	fn encrypt(&self, plain_data: &[u8], input: &PublicKeyType) -> AnyResult<Vec<u8>> {
+	fn encrypt(&self, plain_data: &[u8], input: &PublicKeyType) -> DsnpGraphResult<Vec<u8>> {
 		match input {
 			PublicKeyType::Version1_0(key) => {
 				let mut encrypted =
 					vec![0u8; plain_data.len().saturating_add(CRYPTO_BOX_SEALBYTES)];
 				crypto_box_seal(&mut encrypted, plain_data, key.as_array())
-					.map_err(|e| Error::msg(format!("failed to encrypt {:?}", e)))?;
+					.map_err(|e| DsnpGraphError::EncryptionError(e.to_string()))?;
 				Ok(encrypted)
 			},
 		}
 	}
 
-	fn decrypt(&self, encrypted_data: &[u8], input: &SecretKeyType) -> AnyResult<Vec<u8>> {
+	fn decrypt(&self, encrypted_data: &[u8], input: &SecretKeyType) -> DsnpGraphResult<Vec<u8>> {
 		match input {
 			SecretKeyType::Version1_0(key) => {
 				let mut plain =
@@ -43,7 +43,7 @@ impl EncryptionBehavior for SealBox {
 					key.public_key.as_array(),
 					key.secret_key.as_array(),
 				)
-				.map_err(|e| Error::msg(format!("failed to decrypt {:?}", e)))?;
+				.map_err(|e| DsnpGraphError::DecryptionError(e.to_string()))?;
 				Ok(plain)
 			},
 		}

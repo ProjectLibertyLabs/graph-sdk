@@ -11,15 +11,15 @@ use crate::{
 	},
 	types::PrivateGraphChunk,
 };
-use anyhow::Result;
+use dsnp_graph_config::errors::DsnpGraphResult;
 
 /// implementing DsnpReader for Frequency
 impl DsnpReader for Frequency {
-	fn read_public_key(data: &[u8]) -> Result<DsnpPublicKey> {
+	fn read_public_key(data: &[u8]) -> DsnpGraphResult<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}
 
-	fn read_public_graph(data: &[u8]) -> Result<DsnpInnerGraph> {
+	fn read_public_graph(data: &[u8]) -> DsnpGraphResult<DsnpInnerGraph> {
 		let chunk = SchemaHandler::read_public_graph_chunk(data)?;
 		let decompressed = DeflateCompression::decompress(&chunk.compressed_public_graph)?;
 		SchemaHandler::read_inner_graph(&decompressed)
@@ -29,7 +29,7 @@ impl DsnpReader for Frequency {
 		data: &[u8],
 		dsnp_version_config: &DsnpVersionConfig,
 		decryption_input: &SecretKeyType,
-	) -> Result<PrivateGraphChunk> {
+	) -> DsnpGraphResult<PrivateGraphChunk> {
 		let chunk = SchemaHandler::read_private_graph_chunk(data)?;
 		let decrypted_compressed = dsnp_version_config
 			.get_algorithm()
@@ -45,11 +45,11 @@ impl DsnpReader for Frequency {
 
 /// implementing DsnpWriter for Frequency
 impl DsnpWriter for Frequency {
-	fn write_public_key(key: &DsnpPublicKey) -> Result<Vec<u8>> {
+	fn write_public_key(key: &DsnpPublicKey) -> DsnpGraphResult<Vec<u8>> {
 		SchemaHandler::write_public_key(key)
 	}
 
-	fn write_public_graph(inner: &DsnpInnerGraph) -> Result<Vec<u8>> {
+	fn write_public_graph(inner: &DsnpInnerGraph) -> DsnpGraphResult<Vec<u8>> {
 		let serialized = SchemaHandler::write_inner_graph(inner)?;
 		let compressed_public_graph = DeflateCompression::compress(&serialized)?;
 		SchemaHandler::write_public_graph_chunk(&DsnpUserPublicGraphChunk {
@@ -61,7 +61,7 @@ impl DsnpWriter for Frequency {
 		graph: &PrivateGraphChunk,
 		dsnp_version_config: &DsnpVersionConfig,
 		encryption_input: &PublicKeyType,
-	) -> Result<Vec<u8>> {
+	) -> DsnpGraphResult<Vec<u8>> {
 		let inner_serialized = SchemaHandler::write_inner_graph(&graph.inner_graph)?;
 		let compressed_inner = DeflateCompression::compress(&inner_serialized)?;
 		let encrypted_compressed = dsnp_version_config

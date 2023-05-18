@@ -123,7 +123,7 @@ pub fn create_trivially_full_page(
 pub fn create_aggressively_full_page(
 	graph: &mut Graph,
 	start_conn_id: u64,
-	dsnp_version_config: Option<&DsnpVersionConfig>,
+	dsnp_version_config: &DsnpVersionConfig,
 	shared_state: &Arc<RwLock<SharedStateManager>>,
 ) -> PageId {
 	let connection_type = graph.get_connection_type();

@@ -1,4 +1,5 @@
 use anyhow::Result;
+pub use dsnp_graph_config::DsnpUserId;
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
@@ -10,9 +11,6 @@ use std::{
 	fmt,
 	hash::{Hash, Hasher},
 };
-
-/// DSNP User Id
-pub type DsnpUserId = u64;
 
 /// Prid len in bytes
 const PRID_LEN_IN_BYTES: usize = 8;

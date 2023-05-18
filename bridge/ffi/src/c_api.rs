@@ -322,3 +322,12 @@ pub unsafe extern "C" fn free_graph_connections_without_keys(
 	});
 	result.unwrap_or(())
 }
+
+// Free DsnpPublicKeys
+#[no_mangle]
+pub unsafe extern "C" fn free_graph_dsnp_public_keys(public_keys: *mut DsnpPublicKeys) {
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(public_keys);
+	});
+	result.unwrap_or(())
+}
