@@ -276,7 +276,6 @@ impl Graph {
 						Some(dsnp_version_config),
 					) {
 						let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
-						continue
 					} else {
 						break
 					}
