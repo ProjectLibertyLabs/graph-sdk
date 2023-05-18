@@ -141,10 +141,7 @@ impl Graph {
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(format!(
-					"Imported page has an invalid page Id {}",
-					page.page_id
-				)))
+				return Err(DsnpGraphError::InvalidPageId(page.page_id))
 			}
 			match GraphPage::try_from(page) {
 				Err(e) => return Err(DsnpGraphError::from(e)),
@@ -182,10 +179,7 @@ impl Graph {
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(format!(
-					"Imported page has an invalid page Id {}",
-					page.page_id
-				)))
+				return Err(DsnpGraphError::InvalidPageId(page.page_id))
 			}
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(DsnpGraphError::from(e)),

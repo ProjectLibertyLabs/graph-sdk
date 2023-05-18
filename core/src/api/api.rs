@@ -138,7 +138,7 @@ impl GraphAPI for GraphState {
 			let user_graph = self
 				.user_map
 				.get(&user_id)
-				.ok_or(DsnpGraphError::UserGraphNotImported(user_id.to_string()))?;
+				.ok_or(DsnpGraphError::UserGraphNotImported(user_id))?;
 			let updates = user_graph.calculate_updates()?;
 			result.extend(updates);
 		}
@@ -160,7 +160,7 @@ impl GraphAPI for GraphState {
 		let user_graph = self
 			.user_map
 			.get(&user_id)
-			.ok_or(DsnpGraphError::UserGraphNotImported(user_id.to_string()))?;
+			.ok_or(DsnpGraphError::UserGraphNotImported(*user_id))?;
 
 		user_graph.force_calculate_graphs()
 	}
@@ -174,7 +174,7 @@ impl GraphAPI for GraphState {
 	) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(DsnpGraphError::UserGraphNotImported(user_id.to_string())),
+			None => return Err(DsnpGraphError::UserGraphNotImported(*user_id)),
 		};
 
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
@@ -215,7 +215,7 @@ impl GraphAPI for GraphState {
 			.ok_or(DsnpGraphError::InvalidPrivateSchemaId)?;
 		let user_graph = match self.user_map.get(user_id) {
 			Some(graph) => graph,
-			None => return Err(DsnpGraphError::UserGraphNotImported(user_id.to_string())),
+			None => return Err(DsnpGraphError::UserGraphNotImported(*user_id)),
 		};
 		let graph = user_graph.graph(&private_friendship_schema_id);
 		graph.get_one_sided_friendships()
@@ -282,13 +282,13 @@ impl GraphState {
 				.environment
 				.get_config()
 				.get_connection_type_from_schema_id(*schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(schema_id.to_string()))?;
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 			self.shared_state_manager.write().unwrap().import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 			let dsnp_config = user_graph
 				.get_dsnp_config(*schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(schema_id.to_string()))?;
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
@@ -335,8 +335,8 @@ impl GraphState {
 				} => {
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						return Err(DsnpGraphError::ConnectionAlreadyExists(
-							action.owner_dsnp_user_id().to_string(),
-							dsnp_user_id.to_string(),
+							action.owner_dsnp_user_id(),
+							*dsnp_user_id,
 						))
 					}
 					owner_graph
@@ -355,8 +355,8 @@ impl GraphState {
 				} => {
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						return Err(DsnpGraphError::ConnectionDoesNotExist(
-							action.owner_dsnp_user_id().to_string(),
-							dsnp_user_id.to_string(),
+							action.owner_dsnp_user_id(),
+							*dsnp_user_id,
 						))
 					}
 					owner_graph

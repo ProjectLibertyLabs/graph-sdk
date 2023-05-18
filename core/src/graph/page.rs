@@ -270,7 +270,7 @@ impl GraphPage {
 	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> DsnpGraphResult<()> {
 		if self.connections.len() != prids.len() {
 			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
-				self.page_id.to_string(),
+				self.page_id,
 				self.connections.len(),
 				prids.len(),
 			))
@@ -286,7 +286,7 @@ impl GraphPage {
 			self.connections.len() != self.prids.len()
 		{
 			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
-				self.page_id.to_string(),
+				self.page_id,
 				self.connections.len(),
 				self.prids.len(),
 			))

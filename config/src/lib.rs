@@ -6,7 +6,12 @@ use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::hash_map::HashMap;
 
+/// SchemaId type
 pub type SchemaId = u16;
+/// DsnpUserId type
+pub type DsnpUserId = u64;
+/// PageId type
+pub type PageId = u16;
 
 lazy_static! {
 	// Schemas

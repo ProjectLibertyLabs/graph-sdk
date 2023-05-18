@@ -1,8 +1,7 @@
 //! Errors for graph-sdk crate
 //!
-
+use super::*;
 use thiserror::Error;
-
 pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 
 #[derive(Debug, Error)]
@@ -20,10 +19,10 @@ pub enum DsnpGraphError {
 	CallToPrivateFriendsInPublicGraph,
 
 	#[error("Connection from {0} to {1} already exists!")]
-	ConnectionAlreadyExists(String, String),
+	ConnectionAlreadyExists(DsnpUserId, DsnpUserId),
 
 	#[error("Connection from {0} to {1} does not exists!")]
-	ConnectionDoesNotExist(String, String),
+	ConnectionDoesNotExist(DsnpUserId, DsnpUserId),
 
 	#[error("Connection not found")]
 	ConnectionNotFound,
@@ -33,9 +32,6 @@ pub enum DsnpGraphError {
 
 	#[error("Failed to decrypt: {0}")]
 	DecryptionError(String),
-
-	#[error("Failed to deserialize key: {0}")]
-	DeserializeKeyError(String),
 
 	#[error("Duplicate update events detected")]
 	DuplicateUpdateEvents,
@@ -62,10 +58,10 @@ pub enum DsnpGraphError {
 	GraphStateIsFull,
 
 	#[error("Invalid schema id: {0}")]
-	InvalidSchemaId(String),
+	InvalidSchemaId(SchemaId),
 
 	#[error("Invalid Page ID: {0}")]
-	InvalidPageId(String),
+	InvalidPageId(PageId),
 
 	#[error("Invalid private schema id")]
 	InvalidPrivateSchemaId,
@@ -77,7 +73,7 @@ pub enum DsnpGraphError {
 	InvalidSecretKey,
 
 	#[error("Imported key not found for user {0} and id {1}")]
-	ImportedKeyNotFound(String, String),
+	ImportedKeyNotFound(DsnpUserId, String),
 
 	#[error("Incorrect connection type: {0}")]
 	IncorrectConnectionType(String),
@@ -89,10 +85,10 @@ pub enum DsnpGraphError {
 	KeyDerivationError(String),
 
 	#[error("No pris imported for user: {0}")]
-	NoPrisImportedForUser(String),
+	NoPrisImportedForUser(DsnpUserId),
 
 	#[error("No public key found for user: {0}")]
-	NoPublicKeyFoundForUser(String),
+	NoPublicKeyFoundForUser(DsnpUserId),
 
 	#[error("No resolved active key found")]
 	NoResolvedActiveKeyFound,
@@ -106,25 +102,19 @@ pub enum DsnpGraphError {
 	#[error("Public key not compatible with secret key")]
 	PublicKeyNotCompatibleWithSecretKey,
 
-	#[error("Page error: {0}")]
-	PageError(String),
-
 	#[error(
 		"page_id: {0}, prids len should be equal to connections len (connections: {1}, prids: {2})"
 	)]
-	PridsLenShouldBeEqualToConnectionsLen(String, usize, usize),
-
-	#[error("Failed to SerializeKey: {0}")]
-	SerializeKeyError(String),
+	PridsLenShouldBeEqualToConnectionsLen(PageId, usize, usize),
 
 	#[error(" unsupported schema: {0}")]
-	UnsupportedSchema(String),
+	UnsupportedSchema(SchemaId),
 
 	#[error(transparent)]
 	Unknown(#[from] anyhow::Error),
 
 	#[error("User graph for {0} is not imported")]
-	UserGraphNotImported(String),
+	UserGraphNotImported(DsnpUserId),
 
 	#[error("Unable to decrypt private graph with any of the imported keys")]
 	UnableToDecryptGraphChunkWithAnyKey,
@@ -142,7 +132,6 @@ impl DsnpGraphError {
 			DsnpGraphError::ConnectionNotFound => 7,
 			DsnpGraphError::DecompressError(_) => 8,
 			DsnpGraphError::DecryptionError(_) => 9,
-			DsnpGraphError::DeserializeKeyError(_) => 10,
 			DsnpGraphError::DuplicateUpdateEvents => 11,
 			DsnpGraphError::EventExists => 12,
 			DsnpGraphError::EncryptionError(_) => 13,
@@ -166,9 +155,7 @@ impl DsnpGraphError {
 			DsnpGraphError::NewPageForExistingPageId => 31,
 			DsnpGraphError::PublicKeyAlreadyExists(_) => 32,
 			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 33,
-			DsnpGraphError::PageError(_) => 34,
 			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 35,
-			DsnpGraphError::SerializeKeyError(_) => 36,
 			DsnpGraphError::UnsupportedSchema(_) => 37,
 			DsnpGraphError::Unknown(..) => 38,
 			DsnpGraphError::UserGraphNotImported(_) => 39,

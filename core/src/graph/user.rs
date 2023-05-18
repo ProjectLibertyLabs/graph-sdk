@@ -136,7 +136,7 @@ impl UserGraph {
 			if let Some(updates) = self.update_tracker.get_updates_for_schema_id(*schema_id) {
 				let dsnp_version_config = self
 					.get_dsnp_config(*schema_id)
-					.ok_or(DsnpGraphError::UnsupportedSchema(schema_id.to_string()))?;
+					.ok_or(DsnpGraphError::UnsupportedSchema(*schema_id))?;
 
 				let graph_data = graph.calculate_updates(&dsnp_version_config, &updates)?;
 				result.extend(graph_data.into_iter());
@@ -152,7 +152,7 @@ impl UserGraph {
 		for (schema_id, graph) in self.graphs.inner().iter() {
 			let dsnp_version_config = self
 				.get_dsnp_config(*schema_id)
-				.ok_or(DsnpGraphError::UnsupportedSchema(schema_id.to_string()))?;
+				.ok_or(DsnpGraphError::UnsupportedSchema(*schema_id))?;
 
 			let updates = graph.force_recalculate(&dsnp_version_config)?;
 			result.extend(updates);

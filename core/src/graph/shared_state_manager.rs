@@ -102,7 +102,7 @@ impl PriProvider for SharedStateManager {
 	) -> DsnpGraphResult<DsnpPrid> {
 		let to_public_key: PublicKeyType = self
 			.get_active_key(to)
-			.ok_or(DsnpGraphError::NoPublicKeyFoundForUser(to.to_string()))?
+			.ok_or(DsnpGraphError::NoPublicKeyFoundForUser(to))?
 			.try_into()?;
 		let prid = DsnpPrid::create_prid(from, to, &from_secret, &to_public_key)?;
 		Ok(prid)
@@ -256,7 +256,7 @@ impl SharedStateManager {
 		let prids = self
 			.dsnp_user_to_pris
 			.get(&dsnp_user_id)
-			.ok_or(DsnpGraphError::NoPrisImportedForUser(dsnp_user_id.to_string()))?;
+			.ok_or(DsnpGraphError::NoPrisImportedForUser(dsnp_user_id))?;
 
 		// find all unique key_id used in prid calculations
 		let key_ids: HashSet<_> = prids.iter().map(|(_, key_id)| *key_id).collect();
@@ -265,10 +265,8 @@ impl SharedStateManager {
 		let public_keys: DsnpGraphResult<Vec<_>> = key_ids
 			.iter()
 			.map(|id| {
-				self.get_key_by_id(dsnp_user_id, *id).ok_or(DsnpGraphError::ImportedKeyNotFound(
-					dsnp_user_id.to_string(),
-					id.to_string(),
-				))
+				self.get_key_by_id(dsnp_user_id, *id)
+					.ok_or(DsnpGraphError::ImportedKeyNotFound(dsnp_user_id, id.to_string()))
 			})
 			.collect();
 
