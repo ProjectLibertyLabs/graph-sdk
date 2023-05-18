@@ -4,6 +4,7 @@ use super::*;
 use thiserror::Error;
 pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 
+#[repr(C, u8)]
 #[derive(Debug, Error)]
 pub enum DsnpGraphError {
 	#[error(transparent)]
