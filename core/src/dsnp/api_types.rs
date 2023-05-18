@@ -1,10 +1,7 @@
 use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
-pub use dsnp_graph_config::{ConnectionType, PageId as PageIdType, PrivacyType};
+pub use dsnp_graph_config::{ConnectionType, PageId, PrivacyType};
 use dsnp_graph_config::{GraphKeyType, SchemaId};
 use std::{cmp::Ordering, fmt::Debug};
-
-/// Graph page id
-pub type PageId = PageIdType;
 
 /// Page Hash type
 pub type PageHash = u32;

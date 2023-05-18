@@ -1,5 +1,5 @@
 use anyhow::Result;
-use dsnp_graph_config::DsnpUserId as DsnpUserIdType;
+pub use dsnp_graph_config::DsnpUserId;
 use serde::{
 	de::{SeqAccess, Visitor},
 	Deserialize, Deserializer, Serialize, Serializer,
@@ -12,8 +12,6 @@ use std::{
 	hash::{Hash, Hasher},
 };
 
-/// DsnpUserId type
-pub type DsnpUserId = DsnpUserIdType;
 /// Prid len in bytes
 const PRID_LEN_IN_BYTES: usize = 8;
 /// Inner Graph type used in both private and public graphs
