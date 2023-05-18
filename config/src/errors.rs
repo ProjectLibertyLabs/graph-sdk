@@ -129,3 +129,50 @@ pub enum DsnpGraphError {
 	#[error("Unable to decrypt private graph with any of the imported keys")]
 	UnableToDecryptGraphChunkWithAnyKey,
 }
+
+impl DsnpGraphError {
+	pub fn error_code(&self) -> i32 {
+		match self {
+			DsnpGraphError::AvroError { .. } => 1,
+			DsnpGraphError::DuplicateConnectionDetected => 2,
+			DsnpGraphError::CallToPridsInPublicGraph => 3,
+			DsnpGraphError::CallToPrivateFriendsInPublicGraph => 4,
+			DsnpGraphError::ConnectionAlreadyExists(..) => 5,
+			DsnpGraphError::ConnectionDoesNotExist(..) => 6,
+			DsnpGraphError::ConnectionNotFound => 7,
+			DsnpGraphError::DecompressError(_) => 8,
+			DsnpGraphError::DecryptionError(_) => 9,
+			DsnpGraphError::DeserializeKeyError(_) => 10,
+			DsnpGraphError::DuplicateUpdateEvents => 11,
+			DsnpGraphError::EventExists => 12,
+			DsnpGraphError::EncryptionError(_) => 13,
+			DsnpGraphError::FailedToRetrieveGraphPage => 14,
+			DsnpGraphError::FailedtoReadLockStateManager => 15,
+			DsnpGraphError::FailedtoWriteLockStateManager => 16,
+			DsnpGraphError::GraphIsFull => 17,
+			DsnpGraphError::GraphStateIsFull => 18,
+			DsnpGraphError::InvalidSchemaId(_) => 19,
+			DsnpGraphError::InvalidPageId(_) => 20,
+			DsnpGraphError::InvalidPrivateSchemaId => 21,
+			DsnpGraphError::InvalidPublicKey => 22,
+			DsnpGraphError::InvalidSecretKey => 23,
+			DsnpGraphError::ImportedKeyNotFound(..) => 24,
+			DsnpGraphError::IncorrectConnectionType(_) => 25,
+			DsnpGraphError::IncompatiblePrivacyTypeForBlobExport => 26,
+			DsnpGraphError::KeyDerivationError(_) => 27,
+			DsnpGraphError::NoPrisImportedForUser(_) => 28,
+			DsnpGraphError::NoPublicKeyFoundForUser(_) => 29,
+			DsnpGraphError::NoResolvedActiveKeyFound => 30,
+			DsnpGraphError::NewPageForExistingPageId => 31,
+			DsnpGraphError::PublicKeyAlreadyExists(_) => 32,
+			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 33,
+			DsnpGraphError::PageError(_) => 34,
+			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 35,
+			DsnpGraphError::SerializeKeyError(_) => 36,
+			DsnpGraphError::UnsupportedSchema(_) => 37,
+			DsnpGraphError::Unknown(..) => 38,
+			DsnpGraphError::UserGraphNotImported(_) => 39,
+			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 40,
+		}
+	}
+}
