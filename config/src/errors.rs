@@ -133,7 +133,7 @@ impl DsnpGraphError {
 			DsnpGraphError::ConnectionNotFound => 7,
 			DsnpGraphError::DecompressError(_) => 8,
 			DsnpGraphError::DecryptionError(_) => 9,
-			DsnpGraphError::DuplicateUpdateEvents => 10, // fixed numbering here
+			DsnpGraphError::DuplicateUpdateEvents => 10,
 			DsnpGraphError::EventExists => 11,
 			DsnpGraphError::EncryptionError(_) => 12,
 			DsnpGraphError::FailedToRetrieveGraphPage => 13,
@@ -156,11 +156,11 @@ impl DsnpGraphError {
 			DsnpGraphError::NewPageForExistingPageId => 30,
 			DsnpGraphError::PublicKeyAlreadyExists(_) => 31,
 			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 32,
-			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 33, // fixed numbering here
-			DsnpGraphError::UnsupportedSchema(_) => 34,                      // fixed numbering here
-			DsnpGraphError::Unknown(..) => 35,                               // fixed numbering here
-			DsnpGraphError::UserGraphNotImported(_) => 36,                   // fixed numbering here
-			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 37,       // fixed numbering here
+			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 33,
+			DsnpGraphError::UnsupportedSchema(_) => 34,
+			DsnpGraphError::Unknown(..) => 35,
+			DsnpGraphError::UserGraphNotImported(_) => 36,
+			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 37,
 		}
 	}
 }
