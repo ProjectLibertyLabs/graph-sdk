@@ -30,6 +30,7 @@ pub enum AddConnectionError {
 	PageTriviallyFull,
 	PageAggressivelyFull,
 	MissingEncryptionKey,
+	MissingDsnpVersionConfig,
 }
 
 impl Display for AddConnectionError {
@@ -39,6 +40,7 @@ impl Display for AddConnectionError {
 			AddConnectionError::MissingEncryptionKey => "MissingEncryptionKey".to_string(),
 			AddConnectionError::PageAggressivelyFull => "PageAggressivelyFull".to_string(),
 			AddConnectionError::PageTriviallyFull => "PageTriviallyFull".to_string(),
+			AddConnectionError::MissingDsnpVersionConfig => "MissingDsnpVersionConfig".to_string(),
 		};
 		write!(f, "{}", s)
 	}
@@ -658,26 +660,7 @@ impl Graph {
 			return Err(AddConnectionError::PageTriviallyFull)
 		}
 
-		if connection_type.privacy_type() == PrivacyType::Private &&
-			(dsnp_version_config.is_none() || encryption_key.is_none())
-		{
-			return Err(AddConnectionError::MissingEncryptionKey)
-		}
-
 		let max_page_size = self.environment.get_config().max_graph_page_size_bytes as usize;
-		// We are opting not to fill each page 100%, as a precaution. Therefore we're setting
-		// max page fullness to leave room for 2 uncompressed connections
-		// (rather than a percent fullness; if we estimate leaving room for 2 uncompressed connections,
-		// that should guarantee we don't run afoul of page fullness, while scaling well with changing
-		// page sizes -- ie, a 90% fullness max might work well for a page size of 400 bytes (leaving 40 bytes --
-		// exactly the size of 1 uncompressed connection (with PRId); however a 90% fullness for a page of 1024 bytes
-		// wastes too much space). So it's probably better to determine fullness in terms of # of (uncompressed)
-		// connections free, which guarantees that the amount of "wasted" space in a page will not change if
-		// page limits are changed.
-		let max_page_fullness = max_page_size -
-			(2 as usize *
-				(std::mem::size_of::<DsnpGraphEdge>() + std::mem::size_of::<DsnpPrid>()));
-
 		let mut temp_page = page.clone();
 		if let Err(e) = temp_page.add_connection(connection_id) {
 			return Err(AddConnectionError::Unknown(e.to_string()))
@@ -687,14 +670,18 @@ impl Graph {
 			ConnectionType::Follow(PrivacyType::Public) |
 			ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
 			ConnectionType::Follow(PrivacyType::Private) => {
-				let encryption_key = encryption_key.as_ref().unwrap();
-				let dsnp_version_config = dsnp_version_config.unwrap();
+				let encryption_key =
+					encryption_key.as_ref().ok_or(AddConnectionError::MissingEncryptionKey)?;
+				let dsnp_version_config =
+					dsnp_version_config.ok_or(AddConnectionError::MissingDsnpVersionConfig)?;
 				temp_page.clear_prids();
 				temp_page.to_private_page_data(dsnp_version_config, &encryption_key)
 			},
 			ConnectionType::Friendship(PrivacyType::Private) => {
-				let encryption_key = encryption_key.as_ref().unwrap();
-				let dsnp_version_config = dsnp_version_config.unwrap();
+				let encryption_key =
+					encryption_key.as_ref().ok_or(AddConnectionError::MissingEncryptionKey)?;
+				let dsnp_version_config =
+					dsnp_version_config.ok_or(AddConnectionError::MissingDsnpVersionConfig)?;
 				self.apply_prids(&mut temp_page, &vec![*connection_id], &encryption_key)
 					.expect("Error applying prids to page");
 				temp_page.to_private_page_data(dsnp_version_config, &encryption_key)
@@ -703,7 +690,7 @@ impl Graph {
 
 		match page_blob {
 			Ok(blob) =>
-				if blob.content.len() >= max_page_fullness {
+				if blob.content.len() > max_page_size {
 					Err(AddConnectionError::PageAggressivelyFull)
 				} else {
 					if let Err(e) = page.add_connection(connection_id) {
