@@ -289,7 +289,7 @@ impl Graph {
 		// aggressively scan pages for fullness, because we want to minimize the number
 		// of additional pages to be updated.
 		let updated_keys: HashSet<PageId> = updated_pages.keys().cloned().collect();
-		'existing_page_loop: for (_, page) in
+		for (_, page) in
 			self.pages.inner().iter().filter(|(page_id, _)| !updated_keys.contains(page_id))
 		{
 			let mut current_page = page.clone();
@@ -303,22 +303,20 @@ impl Graph {
 				) {
 					page_modified = true;
 					let _ = add_iter.next(); // TODO: prefer advance_by(1) once stabilized
-						 // If no more connections to add, we're done. Otherwise we'll continue
-						 // adding connections to the current page until either it's full, or
-						 // we have no more connections to add.
-					if let None = add_iter.peek() {
-						updated_pages.insert(current_page.page_id(), current_page);
-						break 'existing_page_loop
-					}
 				}
 				// If we couldn't add a connection to the current page, it's full. Add this page
 				// to the updated pages list and move on to the next page.
 				else {
-					if page_modified {
-						updated_pages.insert(current_page.page_id(), current_page.clone());
-					}
-					continue 'existing_page_loop
+					break
 				}
+			}
+
+			if page_modified {
+				updated_pages.insert(current_page.page_id(), current_page);
+			}
+
+			if let None = add_iter.peek() {
+				break
 			}
 		}
 
