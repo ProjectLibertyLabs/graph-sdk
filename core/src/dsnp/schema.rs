@@ -67,7 +67,9 @@ mod test {
 		DsnpGraphEdge, DsnpInnerGraph, DsnpPrid, DsnpPublicKey, DsnpUserPrivateGraphChunk,
 		DsnpUserPublicGraphChunk,
 	};
+	use apache_avro::Error as AvroError;
 	use dryoc::keypair::StackKeyPair;
+	use dsnp_graph_config::errors::DsnpGraphError;
 
 	#[test]
 	fn public_key_read_and_write_using_valid_input_should_succeed() {
@@ -88,11 +90,10 @@ mod test {
 		let deserialized = SchemaHandler::read_public_key(&serialized);
 
 		assert!(deserialized.is_err());
-		let returned_err = deserialized.unwrap_err();
-		match returned_err {
-			dsnp_graph_config::errors::DsnpGraphError::AvroError(_) => assert!(true),
-			_ => assert!(false),
-		}
+		assert!(matches!(
+			deserialized.unwrap_err(),
+			DsnpGraphError::AvroError(AvroError::ConvertI64ToUsize(_, _))
+		));
 	}
 
 	#[test]
