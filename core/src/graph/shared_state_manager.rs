@@ -310,6 +310,7 @@ impl SharedStateManager {
 	}
 
 	#[cfg(test)]
+	#[allow(unused)]
 	pub fn import_prids_test(
 		&mut self,
 		dsnp_user_id: DsnpUserId,

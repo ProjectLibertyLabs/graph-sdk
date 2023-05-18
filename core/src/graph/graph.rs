@@ -17,6 +17,7 @@ use dsnp_graph_config::{Environment, SchemaId};
 use std::{
 	collections::{BTreeMap, HashMap, HashSet},
 	fmt::{self, Display},
+	iter::Peekable,
 	sync::{Arc, RwLock},
 };
 
@@ -267,21 +268,10 @@ impl Graph {
 
 		// Now try to add new connections into pages already being updated
 		// Note: these pages have already been cloned, so we don't clone them again
-		let mut add_iter = ids_to_add.iter().peekable();
+		let mut add_iter = ids_to_add.iter().cloned().peekable();
 		for aggressive in vec![false, true] {
 			for page in updated_pages.values_mut() {
-				while let Some(id_to_add) = add_iter.peek() {
-					if let Ok(_) = self.try_add_connection_to_page(
-						page,
-						id_to_add,
-						aggressive,
-						Some(dsnp_version_config),
-					) {
-						let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
-					} else {
-						break
-					}
-				}
+				self.add_to_page_until_full(page, &mut add_iter, aggressive, dsnp_version_config);
 			}
 		}
 
@@ -290,27 +280,22 @@ impl Graph {
 		// aggressively scan pages for fullness, because we want to minimize the number
 		// of additional pages to be updated.
 		let updated_keys: HashSet<PageId> = updated_pages.keys().cloned().collect();
-		for (_, page) in
-			self.pages.inner().iter().filter(|(page_id, _)| !updated_keys.contains(page_id))
-		{
+		let remaining_pages: Vec<&GraphPage> = self
+			.pages
+			.inner()
+			.iter()
+			.filter_map(
+				|(page_id, page)| if !updated_keys.contains(page_id) { Some(page) } else { None },
+			)
+			.collect();
+		for page in remaining_pages {
 			let mut current_page = page.clone();
-			let mut page_modified = false;
-			while let Some(id_to_add) = add_iter.peek() {
-				if let Ok(_) = self.try_add_connection_to_page(
-					&mut current_page,
-					id_to_add,
-					true,
-					Some(dsnp_version_config),
-				) {
-					page_modified = true;
-					let _ = add_iter.next(); // TODO: prefer advance_by(1) once stabilized
-				}
-				// If we couldn't add a connection to the current page, it's full. Add this page
-				// to the updated pages list and move on to the next page.
-				else {
-					break
-				}
-			}
+			let page_modified = self.add_to_page_until_full(
+				&mut current_page,
+				&mut add_iter,
+				true,
+				dsnp_version_config,
+			);
 
 			if page_modified {
 				updated_pages.insert(current_page.page_id(), current_page);
@@ -323,43 +308,58 @@ impl Graph {
 
 		// At this point, all existing pages are aggressively full. Add new pages
 		// as needed to accommodate any remaining connections to be added, filling aggressively.
-		let mut new_page: Option<Box<GraphPage>> = None;
+		while let Some(_) = add_iter.peek() {
+			let mut new_page = match self.get_next_available_page_id() {
+				Some(next_page_id) =>
+					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id)),
+				None => Err(Error::msg("Graph is full; no new pages available")),
+			}?;
+
+			if self.add_to_page_until_full(&mut new_page, &mut add_iter, true, dsnp_version_config)
+			{
+				updated_pages.insert(new_page.page_id(), new_page);
+			}
+		}
+
+		self.pages_to_updates(&mut updated_pages, encryption_key, dsnp_version_config, &ids_to_add)
+	}
+
+	/// Function to add as many connections as possible to a page
+	fn add_to_page_until_full(
+		&self,
+		page: &mut GraphPage,
+		add_iter: &mut Peekable<impl Iterator<Item = u64>>,
+		fullness_mode: bool,
+		dsnp_version_config: &DsnpVersionConfig,
+	) -> bool {
+		let mut page_modified = false;
 		while let Some(id_to_add) = add_iter.peek() {
-			if new_page.is_none() {
-				if let Some(next_page_id) = self.get_next_available_page_id() {
-					new_page = Some(Box::new(GraphPage::new(
-						self.get_connection_type().privacy_type(),
-						next_page_id,
-					)));
-				} else {
-					return Err(Error::msg("Graph is full; no new pages available"))
-				}
-			}
-
-			if let Some(page) = new_page.as_mut() {
-				match self.try_add_connection_to_page(
-					page,
-					id_to_add,
-					true,
-					Some(dsnp_version_config),
-				) {
-					Ok(_) => {
-						let _ = add_iter.next(); // TODO: prefer advance_by(1) once stabilized
-					},
-					Err(AddConnectionError::PageAggressivelyFull) => {
-						updated_pages.insert(page.page_id(), *page.clone());
-						new_page = None;
-					},
-					Err(e) => return Err(Error::msg(e.to_string())),
-				};
+			if let Ok(_) = self.try_add_connection_to_page(
+				page,
+				id_to_add,
+				fullness_mode,
+				Some(dsnp_version_config),
+			) {
+				page_modified = true;
+				let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
+			} else {
+				break
 			}
 		}
 
-		if let Some(last_added_page) = new_page {
-			updated_pages.insert(last_added_page.page_id(), *last_added_page);
-		}
+		page_modified
+	}
 
-		// If any pages now empty, add to the remove list
+	/// Function to take a vec of updated & removed pages, and return a vec
+	/// of Update payloads.
+	fn pages_to_updates(
+		&self,
+		updated_pages: &mut BTreeMap<PageId, GraphPage>,
+		encryption_key: Option<ResolvedKeyPair>,
+		dsnp_version_config: &DsnpVersionConfig,
+		ids_to_add: &Vec<DsnpUserId>,
+	) -> Result<Vec<Update>> {
+		// If any pages now empty, remove from updates & add to the remove list
 		let mut removed_pages: Vec<PageData> = Vec::new();
 		updated_pages.retain(|_, page| {
 			if page.is_empty() {
