@@ -22,7 +22,7 @@ pub enum DsnpGraphError {
 	#[error("Connection from {0} to {1} already exists!")]
 	ConnectionAlreadyExists(DsnpUserId, DsnpUserId),
 
-	#[error("Connection from {0} to {1} does not exists!")]
+	#[error("Connection from {0} to {1} does not exist!")]
 	ConnectionDoesNotExist(DsnpUserId, DsnpUserId),
 
 	#[error("Connection not found")]
