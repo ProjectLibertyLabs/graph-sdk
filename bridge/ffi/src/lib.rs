@@ -23,6 +23,7 @@ mod tests;
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 
 #[repr(C)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct GraphFFIResult<T> {
 	pub result: *mut T,
 	pub error: *mut DsnpGraphError,
@@ -30,7 +31,8 @@ pub struct GraphFFIResult<T> {
 
 impl<T> GraphFFIResult<T> {
 	pub fn new(result: T) -> Self {
-		Self { result: Box::into_raw(Box::new(result)), error: std::ptr::null_mut() }
+		let result_ptr = Box::into_raw(Box::new(result));
+		Self { result: result_ptr, error: std::ptr::null_mut() }
 	}
 
 	pub fn new_error(error: DsnpGraphError) -> Self {
@@ -41,10 +43,14 @@ impl<T> GraphFFIResult<T> {
 impl<T> Drop for GraphFFIResult<T> {
 	fn drop(&mut self) {
 		if !self.result.is_null() {
-			unsafe { Box::from_raw(self.result) };
+			unsafe {
+				Box::from_raw(self.result);
+			}
 		}
 		if !self.error.is_null() {
-			unsafe { Box::from_raw(self.error) };
+			unsafe {
+				Box::from_raw(self.error);
+			}
 		}
 	}
 }
@@ -54,18 +60,6 @@ impl<T> From<DsnpGraphResult<T>> for GraphFFIResult<T> {
 		match result {
 			Ok(result) => Self::new(result),
 			Err(error) => Self::new_error(error),
-		}
-	}
-}
-
-impl<T> Into<DsnpGraphResult<T>> for GraphFFIResult<T> {
-	fn into(self) -> DsnpGraphResult<T> {
-		if !self.result.is_null() {
-			unsafe { Ok(*Box::from_raw(self.result)) }
-		} else if !self.error.is_null() {
-			unsafe { Err(*Box::from_raw(self.error)) }
-		} else {
-			Err(DsnpGraphError::Unknown(anyhow::anyhow!("GraphFFIResult is null")))
 		}
 	}
 }
