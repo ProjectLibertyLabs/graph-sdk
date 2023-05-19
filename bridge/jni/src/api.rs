@@ -4,7 +4,7 @@ use jni::{
 };
 
 #[no_mangle]
-pub extern "system" fn Java_frequency_Native_hello<'local>(
+pub extern "C" fn Java_frequency_Native_hello<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	input: JString<'local>,
@@ -21,7 +21,7 @@ pub extern "system" fn Java_frequency_Native_hello<'local>(
 ///
 /// cbindgen:ignore
 #[no_mangle]
-pub extern "system" fn Java_frequency_Native_keepAlive<'local>(
+pub extern "C" fn Java_frequency_Native_keepAlive<'local>(
 	mut _env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	_input: JObject<'local>,
