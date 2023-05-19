@@ -250,9 +250,13 @@ impl Graph {
 		// Now try to add new connections into pages already being updated
 		// Note: these pages have already been cloned, so we don't clone them again
 		let mut add_iter = ids_to_add.iter().cloned().peekable();
-		for aggressive in vec![false, true] {
+		'fullness_mode_loop: for aggressive in vec![false, true] {
 			for page in updated_pages.values_mut() {
 				self.add_to_page_until_full(page, &mut add_iter, aggressive, dsnp_version_config);
+
+				if let None = add_iter.peek() {
+					break 'fullness_mode_loop
+				}
 			}
 		}
 
@@ -260,15 +264,21 @@ impl Graph {
 		// add them to other existing pages that are non-full. Here we prefer to only
 		// aggressively scan pages for fullness, because we want to minimize the number
 		// of additional pages to be updated.
-		let updated_keys: HashSet<PageId> = updated_pages.keys().cloned().collect();
-		let remaining_pages: Vec<&GraphPage> = self
-			.pages
-			.inner()
-			.iter()
-			.filter_map(
-				|(page_id, page)| if !updated_keys.contains(page_id) { Some(page) } else { None },
-			)
-			.collect();
+		let mut remaining_pages: Vec<&GraphPage> =
+			self.pages
+				.inner()
+				.iter()
+				.filter_map(|(page_id, page)| {
+					if !updated_pages.keys().any(|k| k == page_id) {
+						Some(page)
+					} else {
+						None
+					}
+				})
+				.collect();
+		// Sort remaining pages by # of connections, in order to prefer filling the pages with the
+		// most available space first (so as to minimize the # of additional pages to be updated)
+		remaining_pages.sort_by_key(|page| page.connections().len());
 		for page in remaining_pages {
 			let mut current_page = page.clone();
 			let page_modified = self.add_to_page_until_full(
@@ -632,20 +642,14 @@ impl Graph {
 		// Regardless of whether we're in aggressive mode, if the page is trivially non-full,
 		// just try and add the connection
 		if page.connections().len() < max_connections_per_page {
-			if let Err(e) = page.add_connection(connection_id) {
-				return Err(e)
-			}
-
-			return Ok(())
+			return page.add_connection(connection_id)
 		} else if !aggressive {
 			return Err(DsnpGraphError::PageTriviallyFull)
 		}
 
 		let max_page_size = self.environment.get_config().max_graph_page_size_bytes as usize;
 		let mut temp_page = page.clone();
-		if let Err(e) = temp_page.add_connection(connection_id) {
-			return Err(e)
-		}
+		let _ = temp_page.add_connection(connection_id)?;
 
 		let page_blob = match connection_type {
 			ConnectionType::Follow(PrivacyType::Public) |
@@ -670,11 +674,7 @@ impl Graph {
 				if blob.content.len() > max_page_size {
 					Err(DsnpGraphError::PageAggressivelyFull)
 				} else {
-					if let Err(e) = page.add_connection(connection_id) {
-						return Err(e)
-					}
-
-					Ok(())
+					return page.add_connection(connection_id)
 				},
 			Err(e) => Err(e),
 		}
