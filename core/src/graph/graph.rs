@@ -26,6 +26,13 @@ use super::page::GraphPage;
 
 pub type PageMap = TransactionalHashMap<PageId, GraphPage>;
 
+/// Page-fullness determination algorithm methods
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum PageFullnessMode {
+	Trivial,
+	Aggressive,
+}
+
 /// Graph structure to hold pages of connections of a single type
 #[derive(Debug, Clone)]
 pub struct Graph {
@@ -97,6 +104,12 @@ impl Graph {
 		self.pages = pages;
 	}
 
+	/// Getter for UserKeyManager in Graph
+	#[cfg(test)]
+	pub fn get_user_key_mgr(&self) -> Arc<RwLock<dyn UserKeyManagerBase + 'static + Send + Sync>> {
+		self.user_key_manager.clone()
+	}
+
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
 		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
@@ -123,6 +136,10 @@ impl Graph {
 
 	pub fn get_schema_id(&self) -> SchemaId {
 		self.schema_id
+	}
+
+	pub fn get_dsnp_user_id(&self) -> DsnpUserId {
+		self.user_id
 	}
 
 	/// Import bundle of pages as a Public Graph
@@ -250,9 +267,17 @@ impl Graph {
 		// Now try to add new connections into pages already being updated
 		// Note: these pages have already been cloned, so we don't clone them again
 		let mut add_iter = ids_to_add.iter().cloned().peekable();
-		'fullness_mode_loop: for aggressive in vec![false, true] {
+		'fullness_mode_loop: for aggressive in
+			vec![PageFullnessMode::Trivial, PageFullnessMode::Aggressive]
+		{
 			for page in updated_pages.values_mut() {
-				self.add_to_page_until_full(page, &mut add_iter, aggressive, dsnp_version_config);
+				self.add_to_page_until_full(
+					page,
+					&mut add_iter,
+					aggressive,
+					dsnp_version_config,
+					&encryption_key,
+				);
 
 				if let None = add_iter.peek() {
 					break 'fullness_mode_loop
@@ -284,8 +309,9 @@ impl Graph {
 			let page_modified = self.add_to_page_until_full(
 				&mut current_page,
 				&mut add_iter,
-				true,
+				PageFullnessMode::Aggressive,
 				dsnp_version_config,
+				&encryption_key,
 			);
 
 			if page_modified {
@@ -306,8 +332,13 @@ impl Graph {
 				None => Err(DsnpGraphError::GraphIsFull),
 			}?;
 
-			if self.add_to_page_until_full(&mut new_page, &mut add_iter, true, dsnp_version_config)
-			{
+			if self.add_to_page_until_full(
+				&mut new_page,
+				&mut add_iter,
+				PageFullnessMode::Aggressive,
+				dsnp_version_config,
+				&encryption_key,
+			) {
 				updated_pages.insert(new_page.page_id(), new_page);
 			}
 		}
@@ -320,14 +351,19 @@ impl Graph {
 		&self,
 		page: &mut GraphPage,
 		add_iter: &mut Peekable<impl Iterator<Item = u64>>,
-		fullness_mode: bool,
+		fullness_mode: PageFullnessMode,
 		dsnp_version_config: &DsnpVersionConfig,
+		encryption_key: &Option<ResolvedKeyPair>,
 	) -> bool {
 		let mut page_modified = false;
 		while let Some(id_to_add) = add_iter.peek() {
-			if let Ok(_) =
-				self.try_add_connection_to_page(page, id_to_add, fullness_mode, dsnp_version_config)
-			{
+			if let Ok(_) = self.try_add_connection_to_page(
+				page,
+				id_to_add,
+				fullness_mode,
+				dsnp_version_config,
+				encryption_key,
+			) {
 				page_modified = true;
 				let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
 			} else {
@@ -623,8 +659,9 @@ impl Graph {
 		&self,
 		page: &mut GraphPage,
 		connection_id: &DsnpUserId,
-		aggressive: bool,
+		mode: PageFullnessMode,
 		dsnp_version_config: &DsnpVersionConfig,
+		encryption_key: &Option<ResolvedKeyPair>,
 	) -> DsnpGraphResult<()> {
 		let connection_type = self.get_connection_type();
 		let max_connections_per_page =
@@ -633,17 +670,12 @@ impl Graph {
 				capacities.sort();
 				capacities.first().unwrap() // default: return smallest capacity value
 			});
-		let encryption_key = match self.get_connection_type().privacy_type() {
-			PrivacyType::Public => None,
-			PrivacyType::Private =>
-				self.user_key_manager.read().unwrap().get_resolved_active_key(self.user_id),
-		};
 
 		// Regardless of whether we're in aggressive mode, if the page is trivially non-full,
 		// just try and add the connection
 		if page.connections().len() < max_connections_per_page {
 			return page.add_connection(connection_id)
-		} else if !aggressive {
+		} else if mode == PageFullnessMode::Trivial {
 			return Err(DsnpGraphError::PageTriviallyFull)
 		}
 
@@ -1496,7 +1528,15 @@ mod test {
 
 			for i in 1u64..*max_connections_per_page as u64 {
 				assert!(
-					graph.try_add_connection_to_page(page, &i, false, &dsnp_version_config).is_ok(),
+					graph
+						.try_add_connection_to_page(
+							page,
+							&i,
+							PageFullnessMode::Trivial,
+							&dsnp_version_config,
+							&None
+						)
+						.is_ok(),
 					"Testing soft connection limit for {:?}",
 					c,
 				);
@@ -1514,7 +1554,13 @@ mod test {
 			let conn_id = page.connections().iter().map(|edge| edge.user_id).max().unwrap() + 1;
 			assert!(
 				graph
-					.try_add_connection_to_page(&mut page, &conn_id, false, dsnp_version_config)
+					.try_add_connection_to_page(
+						&mut page,
+						&conn_id,
+						PageFullnessMode::Trivial,
+						dsnp_version_config,
+						&None
+					)
 					.is_err(),
 				"Testing soft connection limit for {:?}",
 				c
@@ -1535,7 +1581,13 @@ mod test {
 			conn_id += 1;
 			assert!(
 				graph
-					.try_add_connection_to_page(&mut page, &conn_id, true, dsnp_version_config)
+					.try_add_connection_to_page(
+						&mut page,
+						&conn_id,
+						PageFullnessMode::Aggressive,
+						dsnp_version_config,
+						&None
+					)
 					.is_ok(),
 				"Testing aggressive add to trivially non-full page for {:?}",
 				c
@@ -1548,6 +1600,8 @@ mod test {
 		ALL_CONNECTION_TYPES.iter().for_each(|c| {
 			let (graph, _, shared_state) = create_empty_test_graph(None, Some(*c));
 			let (_, dsnp_version_config) = get_env_and_config();
+			let encryption_key =
+				graph.get_user_key_mgr().read().unwrap().get_resolved_active_key(graph.user_id);
 
 			let mut page = create_trivially_full_page(*c, 0, 100);
 			let conn_id_to_add =
@@ -1563,8 +1617,9 @@ mod test {
 					.try_add_connection_to_page(
 						&mut page,
 						&conn_id_to_add,
-						true,
-						&dsnp_version_config
+						PageFullnessMode::Aggressive,
+						&dsnp_version_config,
+						&encryption_key
 					)
 					.is_ok(),
 				"Testing aggressive add to trivially full page for {:?}",
@@ -1578,6 +1633,8 @@ mod test {
 		ALL_CONNECTION_TYPES.iter().for_each(|c| {
 			let (mut graph, _, shared_state) = create_empty_test_graph(None, Some(*c));
 			let (_, dsnp_version_config) = get_env_and_config();
+			let encryption_key =
+				graph.get_user_key_mgr().read().unwrap().get_resolved_active_key(graph.user_id);
 
 			let page_id =
 				create_aggressively_full_page(&mut graph, 100, &dsnp_version_config, &shared_state);
@@ -1595,8 +1652,9 @@ mod test {
 					.try_add_connection_to_page(
 						&mut page,
 						&conn_id_to_add,
-						true,
-						&dsnp_version_config
+						PageFullnessMode::Aggressive,
+						&dsnp_version_config,
+						&encryption_key
 					)
 					.is_err(),
 				"Testing aggressive add to aggressively full page for {:?}",

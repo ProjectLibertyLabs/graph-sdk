@@ -5,7 +5,7 @@ use crate::{
 		dsnp_types::*,
 	},
 	graph::{
-		graph::Graph,
+		graph::{Graph, PageFullnessMode},
 		key_manager::{UserKeyManager, UserKeyProvider},
 		page::GraphPage,
 		page_capacities::PAGE_CAPACITY_MAP,
@@ -130,6 +130,11 @@ pub fn create_aggressively_full_page(
 	let page_id = graph.get_next_available_page_id().unwrap();
 	let mut page = GraphPage::new(connection_type.privacy_type(), page_id);
 	let mut connection_id = start_conn_id;
+	let encryption_key = graph
+		.get_user_key_mgr()
+		.read()
+		.unwrap()
+		.get_resolved_active_key(graph.get_dsnp_user_id());
 
 	loop {
 		if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
@@ -137,7 +142,13 @@ pub fn create_aggressively_full_page(
 		}
 
 		if graph
-			.try_add_connection_to_page(&mut page, &connection_id, true, dsnp_version_config)
+			.try_add_connection_to_page(
+				&mut page,
+				&connection_id,
+				PageFullnessMode::Aggressive,
+				dsnp_version_config,
+				&encryption_key,
+			)
 			.is_err()
 		{
 			break
