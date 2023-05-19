@@ -56,3 +56,7 @@ bindgen:
 test-ffi:
 	@echo "Running FFI tests..."
 	@./scripts/run_ffi_tests.sh
+
+build-jni:
+	@echo "Build JNI ..."
+	@./scripts/build_jni.sh

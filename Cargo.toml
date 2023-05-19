@@ -3,12 +3,14 @@ members = [
     "core",
     "config",
     "bridge/ffi",
+    "bridge/jni",
 ]
 
 default-members = [
     "core",
     "config",
     "bridge/ffi",
+    "bridge/jni",
 ]
 
 [profile.release]
