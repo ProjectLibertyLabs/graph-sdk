@@ -97,6 +97,12 @@ pub enum DsnpGraphError {
 	#[error("New page for existing page id")]
 	NewPageForExistingPageId,
 
+	#[error("Page is aggressively full")]
+	PageAggressivelyFull,
+
+	#[error("Page is trivially full")]
+	PageTriviallyFull,
+
 	#[error("Given public key already exists: {0}")]
 	PublicKeyAlreadyExists(String),
 
@@ -154,13 +160,15 @@ impl DsnpGraphError {
 			DsnpGraphError::NoPublicKeyFoundForUser(_) => 28,
 			DsnpGraphError::NoResolvedActiveKeyFound => 29,
 			DsnpGraphError::NewPageForExistingPageId => 30,
-			DsnpGraphError::PublicKeyAlreadyExists(_) => 31,
-			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 32,
-			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 33,
-			DsnpGraphError::UnsupportedSchema(_) => 34,
-			DsnpGraphError::Unknown(..) => 35,
-			DsnpGraphError::UserGraphNotImported(_) => 36,
-			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 37,
+			DsnpGraphError::PageAggressivelyFull => 31,
+			DsnpGraphError::PageTriviallyFull => 32,
+			DsnpGraphError::PublicKeyAlreadyExists(_) => 33,
+			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 34,
+			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 35,
+			DsnpGraphError::UnsupportedSchema(_) => 36,
+			DsnpGraphError::Unknown(..) => 37,
+			DsnpGraphError::UserGraphNotImported(_) => 38,
+			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 39,
 		}
 	}
 }
