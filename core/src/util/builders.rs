@@ -12,7 +12,7 @@ use crate::{
 	graph::page::{GraphPage, PrivatePageDataProvider, PublicPageDataProvider},
 };
 use dryoc::keypair::StackKeyPair;
-use dsnp_graph_config::{ConnectionType, Environment, PrivacyType, SchemaId};
+use dsnp_graph_config::{ConnectionType, Environment, GraphKeyType, PrivacyType, SchemaId};
 use std::{borrow::Borrow, collections::BTreeMap};
 
 pub struct KeyDataBuilder {
@@ -26,6 +26,16 @@ impl KeyDataBuilder {
 
 	pub fn with_key_pairs(mut self, key_pairs: &[GraphKeyPair]) -> Self {
 		self.key_pairs.extend_from_slice(key_pairs);
+		self
+	}
+
+	pub fn with_generated_key(mut self) -> Self {
+		let raw_key_pair = StackKeyPair::gen();
+		self.key_pairs.extend_from_slice(&vec![GraphKeyPair {
+			key_type: GraphKeyType::X25519,
+			secret_key: raw_key_pair.secret_key.to_vec(),
+			public_key: raw_key_pair.public_key.to_vec(),
+		}]);
 		self
 	}
 
@@ -143,8 +153,9 @@ impl PageDataBuilder {
 			.map(|page| match self.connection_type.privacy_type() {
 				PrivacyType::Public =>
 					page.to_public_page_data().expect("should write public page"),
-				PrivacyType::Private =>
-					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+				PrivacyType::Private => page
+					.to_private_page_data(&dsnp_config, &self.resolved_key)
+					.expect("should write private page"),
 			})
 			.collect()
 	}
@@ -161,7 +172,8 @@ impl PageDataBuilder {
 				),
 				PrivacyType::Private => (
 					page.connections().len(),
-					page.to_private_page_data(&dsnp_config, &self.resolved_key).unwrap(),
+					page.to_private_page_data(&dsnp_config, &self.resolved_key)
+						.expect("should write private page"),
 				),
 			})
 			.collect()

@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 use std::collections::hash_map::*;
 
 lazy_static! {
-	pub static ref PAGE_CAPACITIY_MAP: HashMap<ConnectionType, usize> = {
+	pub static ref PAGE_CAPACITY_MAP: HashMap<ConnectionType, usize> = {
 		let m = HashMap::from([
 			(Follow(Private), 88),
 			(Friendship(Public), 93),

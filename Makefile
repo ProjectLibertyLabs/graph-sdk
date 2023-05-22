@@ -44,7 +44,7 @@ capacities:
 	@cargo test --features=calculate-page-capacity calculate_page_capacities; cargo fmt
 
 .PHONY: all
-all: check test clippy fmt build doc
+all: check test clippy format build doc
 
 .PHONY: ci-local
 ci-local: all
@@ -56,3 +56,7 @@ bindgen:
 test-ffi:
 	@echo "Running FFI tests..."
 	@./scripts/run_ffi_tests.sh
+
+build-jni:
+	@echo "Build JNI ..."
+	@./scripts/build_jni.sh
