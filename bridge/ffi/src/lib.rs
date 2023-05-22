@@ -25,41 +25,35 @@ use std::ptr::NonNull;
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct DsnpGraphFFIResult<T, E> {
-	pub result: NonNull<T>,
-	pub error: NonNull<E>,
+	pub result: Option<NonNull<T>>,
+	pub error: Option<NonNull<E>>,
 }
 
 impl<T, E> DsnpGraphFFIResult<T, E> {
 	pub fn new(result: T) -> Self {
-		Self {
-			result: NonNull::new(Box::into_raw(Box::new(result))).unwrap(),
-			error: NonNull::dangling(),
-		}
+		Self { result: Some(NonNull::new(Box::into_raw(Box::new(result))).unwrap()), error: None }
 	}
 
 	pub fn new_error(error: E) -> Self {
-		Self {
-			result: NonNull::dangling(),
-			error: NonNull::new(Box::into_raw(Box::new(error))).unwrap(),
-		}
+		Self { result: None, error: Some(NonNull::new(Box::into_raw(Box::new(error))).unwrap()) }
 	}
 
 	pub fn new_mut(result: *mut T) -> Self {
-		Self { result: NonNull::new(result).unwrap(), error: NonNull::dangling() }
+		Self { result: Some(NonNull::new(result).unwrap()), error: None }
 	}
 
 	pub fn new_mut_error(error: *mut E) -> Self {
-		Self { result: NonNull::dangling(), error: NonNull::new(error).unwrap() }
+		Self { result: None, error: Some(NonNull::new(error).unwrap()) }
 	}
 }
 
 impl<T, E> Drop for DsnpGraphFFIResult<T, E> {
 	fn drop(&mut self) {
-		if !self.result.as_ptr().is_null() {
-			unsafe { Box::from_raw(self.result.as_ptr()) };
+		if let Some(result) = self.result.take() {
+			unsafe { Box::from_raw(result.as_ptr()) };
 		}
-		if !self.error.as_ptr().is_null() {
-			unsafe { Box::from_raw(self.error.as_ptr()) };
+		if let Some(error) = self.error.take() {
+			unsafe { Box::from_raw(error.as_ptr()) };
 		}
 	}
 }

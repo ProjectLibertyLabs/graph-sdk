@@ -302,10 +302,6 @@ pub unsafe extern "C" fn graph_get_connections_without_keys(
 			))
 		}
 		let graph_state = &mut *graph_state;
-		// let connections = graph_state.get_connections_without_keys().unwrap_or_default();
-		// let connections_len = connections.len();
-		// let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
-		// GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len }
 		match graph_state.get_connections_without_keys() {
 			Ok(connections) => {
 				let connections_len = connections.len();
@@ -402,7 +398,7 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
 		graph_states.retain(|x| !std::ptr::eq(x.as_ref(), unsafe { &*graph_state }));
 	});
-	result.unwrap_or(())
+	result.unwrap_or(());
 }
 
 // Free GraphStates
