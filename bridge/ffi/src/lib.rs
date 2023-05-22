@@ -24,12 +24,12 @@ use std::ptr::NonNull;
 
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
-pub struct GraphFFIResult<T, E> {
+pub struct DsnpGraphFFIResult<T, E> {
 	pub result: NonNull<T>,
 	pub error: NonNull<E>,
 }
 
-impl<T, E> GraphFFIResult<T, E> {
+impl<T, E> DsnpGraphFFIResult<T, E> {
 	pub fn new(result: T) -> Self {
 		Self {
 			result: NonNull::new(Box::into_raw(Box::new(result))).unwrap(),
@@ -53,7 +53,7 @@ impl<T, E> GraphFFIResult<T, E> {
 	}
 }
 
-impl<T, E> Drop for GraphFFIResult<T, E> {
+impl<T, E> Drop for DsnpGraphFFIResult<T, E> {
 	fn drop(&mut self) {
 		if !self.result.as_ptr().is_null() {
 			unsafe { Box::from_raw(self.result.as_ptr()) };
