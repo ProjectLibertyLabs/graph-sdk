@@ -52,6 +52,9 @@ pub enum DsnpGraphError {
 	#[error("Failed to acquire write lock on state manager")]
 	FailedtoWriteLockStateManager,
 
+	#[error("FFI error: {0}")]
+	FFIError(String),
+
 	#[error("Graph is full")]
 	GraphIsFull,
 
@@ -161,6 +164,7 @@ impl DsnpGraphError {
 			DsnpGraphError::Unknown(..) => 35,
 			DsnpGraphError::UserGraphNotImported(_) => 36,
 			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 37,
+			DsnpGraphError::FFIError(_) => 38,
 		}
 	}
 }

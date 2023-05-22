@@ -20,46 +20,46 @@ pub use utils::*;
 #[cfg(test)]
 mod tests;
 
-use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
+use std::ptr::NonNull;
 
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
-pub struct GraphFFIResult<T> {
-	pub result: *mut T,
-	pub error: *mut DsnpGraphError,
+pub struct GraphFFIResult<T, E> {
+	pub result: NonNull<T>,
+	pub error: NonNull<E>,
 }
 
-impl<T> GraphFFIResult<T> {
+impl<T, E> GraphFFIResult<T, E> {
 	pub fn new(result: T) -> Self {
-		let result_ptr = Box::into_raw(Box::new(result));
-		Self { result: result_ptr, error: std::ptr::null_mut() }
+		Self {
+			result: NonNull::new(Box::into_raw(Box::new(result))).unwrap(),
+			error: NonNull::dangling(),
+		}
 	}
 
-	pub fn new_error(error: DsnpGraphError) -> Self {
-		Self { result: std::ptr::null_mut(), error: Box::into_raw(Box::new(error)) }
+	pub fn new_error(error: E) -> Self {
+		Self {
+			result: NonNull::dangling(),
+			error: NonNull::new(Box::into_raw(Box::new(error))).unwrap(),
+		}
+	}
+
+	pub fn new_mut(result: *mut T) -> Self {
+		Self { result: NonNull::new(result).unwrap(), error: NonNull::dangling() }
+	}
+
+	pub fn new_mut_error(error: *mut E) -> Self {
+		Self { result: NonNull::dangling(), error: NonNull::new(error).unwrap() }
 	}
 }
 
-impl<T> Drop for GraphFFIResult<T> {
+impl<T, E> Drop for GraphFFIResult<T, E> {
 	fn drop(&mut self) {
-		if !self.result.is_null() {
-			unsafe {
-				Box::from_raw(self.result);
-			}
+		if !self.result.as_ptr().is_null() {
+			unsafe { Box::from_raw(self.result.as_ptr()) };
 		}
-		if !self.error.is_null() {
-			unsafe {
-				Box::from_raw(self.error);
-			}
-		}
-	}
-}
-
-impl<T> From<DsnpGraphResult<T>> for GraphFFIResult<T> {
-	fn from(result: DsnpGraphResult<T>) -> Self {
-		match result {
-			Ok(result) => Self::new(result),
-			Err(error) => Self::new_error(error),
+		if !self.error.as_ptr().is_null() {
+			unsafe { Box::from_raw(self.error.as_ptr()) };
 		}
 	}
 }
