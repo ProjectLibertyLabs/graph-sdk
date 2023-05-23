@@ -64,7 +64,14 @@ mod tests {
 			let count_after = *count_after;
 			assert_eq!(count_before - 1, count_after);
 
-			// let count_before_with_capacity = get_graph_states_count();
+			let count_before_with_capacity = get_graph_states_count();
+			assert!(count_before_with_capacity.error.is_none());
+			assert!(count_before_with_capacity.result.is_some());
+			let count_before_with_capacity = count_before_with_capacity.result.unwrap().as_ptr();
+			assert_ne!(count_before_with_capacity, ptr::null_mut());
+			let count_before_with_capacity = *count_before_with_capacity;
+			assert!(count_before_with_capacity > 0);
+			//free_graph_state(graph_state_with_capacity);
 			// assert_eq!(count_before_with_capacity.error.as_ptr(), ptr::null_mut());
 			// let count_before_with_capacity = *count_before_with_capacity.result.as_ref();
 			// free_graph_state(graph_state_with_capacity.as_ptr());

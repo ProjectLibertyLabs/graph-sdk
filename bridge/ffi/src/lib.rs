@@ -47,13 +47,13 @@ impl<T, E> DsnpGraphFFIResult<T, E> {
 	}
 }
 
+// drop only the error
 impl<T, E> Drop for DsnpGraphFFIResult<T, E> {
 	fn drop(&mut self) {
-		if let Some(result) = self.result.take() {
-			unsafe { Box::from_raw(result.as_ptr()) };
-		}
-		if let Some(error) = self.error.take() {
-			unsafe { Box::from_raw(error.as_ptr()) };
+		if let Some(error) = self.error {
+			unsafe {
+				let _ = Box::from_raw(error.as_ptr());
+			}
 		}
 	}
 }

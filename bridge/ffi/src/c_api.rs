@@ -12,7 +12,7 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
-static GRAPH_STATES: Mutex<Vec<GraphState>> = Mutex::new(Vec::new());
+static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
@@ -21,10 +21,10 @@ pub unsafe extern "C" fn initialize_graph_state(
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state = GraphState::new(rust_environment);
+		let graph_state = Box::new(GraphState::new(rust_environment));
+		let graph_state_ptr = Box::into_raw(graph_state);
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
-		graph_states.push(graph_state);
-		let graph_state_ptr = graph_states.last_mut().unwrap() as *mut _;
+		graph_states.push(Box::from_raw(graph_state_ptr));
 		DsnpGraphFFIResult::new_mut(graph_state_ptr)
 	});
 	result.unwrap_or_else(|error| {
@@ -44,10 +44,10 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
-		let graph_state = GraphState::with_capacity(rust_environment, capacity);
+		let graph_state = Box::new(GraphState::with_capacity(rust_environment, capacity));
+		let graph_state_ptr = Box::into_raw(graph_state);
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
-		graph_states.push(graph_state);
-		let graph_state_ptr = graph_states.last_mut().unwrap() as *mut _;
+		graph_states.push(Box::from_raw(graph_state_ptr));
 		DsnpGraphFFIResult::new_mut(graph_state_ptr)
 	});
 	result.unwrap_or_else(|error| {
@@ -390,7 +390,7 @@ pub unsafe extern "C" fn graph_get_public_keys(
 	})
 }
 
-// free graph state
+// Free graph state
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
@@ -398,10 +398,12 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 			return
 		}
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
-		let index = graph_states.iter().position(|x| x as *const _ == graph_state).unwrap();
+		let index =
+			graph_states.iter().position(|x| x.as_ref() as *const _ == graph_state).unwrap();
 		let _ = ManuallyDrop::new(graph_states.remove(index));
+		let _ = Box::from_raw(graph_state);
 	});
-	result.unwrap_or(());
+	result.unwrap_or(())
 }
 
 // Free GraphStates
