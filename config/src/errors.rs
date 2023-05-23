@@ -2,6 +2,7 @@
 //!
 use super::*;
 use thiserror::Error;
+
 pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 
 #[repr(C, u8)]
@@ -117,7 +118,7 @@ pub enum DsnpGraphError {
 	)]
 	PridsLenShouldBeEqualToConnectionsLen(PageId, usize, usize),
 
-	#[error(" unsupported schema: {0}")]
+	#[error("Unsupported schema: {0}")]
 	UnsupportedSchema(SchemaId),
 
 	#[error(transparent)]

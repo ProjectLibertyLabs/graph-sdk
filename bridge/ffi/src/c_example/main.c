@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdbool.h>
 #include "dsnp_graph_sdk_ffi.h"
 
 #define ASSERT(condition, message) \
@@ -12,66 +13,66 @@
 int test_graph_sdk_ffi() {
     Environment environment;
     
-    // Set the environment type
-    environment.tag = Dev;
-    
-    // Set the values of the Config struct
-    environment.dev.sdk_max_users_graph_size = 100;
-    environment.dev.sdk_max_stale_friendship_days = 30;
-    environment.dev.max_graph_page_size_bytes = 4096;
-    environment.dev.max_page_id = 1000;
-    environment.dev.max_key_page_size_bytes = 2048;
-    environment.dev.schema_map_len = 0;
-    environment.dev.schema_map = NULL;
-    environment.dev.dsnp_versions_len = 0;
-    environment.dev.dsnp_versions = NULL;
+    // ... setting up environment ...
 
-    GraphState* graph_state = initialize_graph_state(&environment);
-    ASSERT(graph_state != NULL, "Graph state initialization failed");
+    DsnpGraphFFIResult_GraphState__DsnpGraphError result = initialize_graph_state(&environment);
+    ASSERT(result.error == NULL, "Graph state initialization failed");
+    GraphState* graph_state = result.result;
 
     DsnpUserId user_id;
     // Set the value of the user_id
     // ...
 
-    bool contains_user = graph_contains_user(graph_state, &user_id);
+    DsnpGraphFFIResult_bool__DsnpGraphError contains_result = graph_contains_user(graph_state, &user_id);
+    ASSERT(contains_result.error == NULL, "Failed to check if graph contains user");
+    bool contains_user = *(contains_result.result);
     ASSERT(!contains_user, "Graph should not contain user before import");
 
-    size_t users_count = graph_users_count(graph_state);
+    DsnpGraphFFIResult_usize__DsnpGraphError count_result = graph_users_count(graph_state);
+    ASSERT(count_result.error == NULL, "Failed to count users in graph");
+    size_t users_count = *(count_result.result);
     ASSERT(users_count == 0, "Number of users in the graph should be zero");
 
-    // Test import and export functions
     ImportBundle import_bundle;
     // Set the values of the import_bundle struct
     // ...
 
-    // Failing because of dummy environment
-    bool imported = graph_import_users_data(graph_state, &import_bundle, 1);
-    ASSERT(!imported, "Graph data import failed");
+    DsnpGraphFFIResult_bool__DsnpGraphError import_result = graph_import_users_data(graph_state, &import_bundle, 1);
+    ASSERT(import_result.error == NULL, "Graph data import failed");
+    bool imported = *(import_result.result);
+    ASSERT(!imported, "Graph data import should have failed");
 
-    GraphUpdates graph_updates = graph_export_updates(graph_state);
+    DsnpGraphFFIResult_GraphUpdates__DsnpGraphError export_result = graph_export_updates(graph_state);
+    ASSERT(export_result.error == NULL, "Failed to export updates");
+    GraphUpdates graph_updates = *(export_result.result);
     ASSERT(graph_updates.updates_len == 0, "Graph export updates failed");
 
-    // Test connection retrieval functions
-    GraphConnections connections = graph_get_connections_for_user(graph_state, &user_id, NULL, true);
+    DsnpGraphFFIResult_GraphConnections__DsnpGraphError connections_result = graph_get_connections_for_user(graph_state, &user_id, NULL, true);
+    ASSERT(connections_result.error == NULL, "Failed to get connections for user");
+    GraphConnections connections = *(connections_result.result);
     ASSERT(connections.connections_len == 0, "Failed to get connections for user");
 
-    GraphConnectionsWithoutKeys connections_without_keys = graph_get_connections_without_keys(graph_state);
+    DsnpGraphFFIResult_GraphConnectionsWithoutKeys__DsnpGraphError connections_without_keys_result = graph_get_connections_without_keys(graph_state);
+    ASSERT(connections_without_keys_result.error == NULL, "Failed to get connections without keys");
+    GraphConnectionsWithoutKeys connections_without_keys = *(connections_without_keys_result.result);
     ASSERT(connections_without_keys.connections_len == 0, "Failed to get connections without keys");
 
-    GraphConnections one_sided_connections = graph_get_one_sided_private_friendship_connections(graph_state, &user_id);
+    DsnpGraphFFIResult_GraphConnections__DsnpGraphError one_sided_connections_result = graph_get_one_sided_private_friendship_connections(graph_state, &user_id);
+    ASSERT(one_sided_connections_result.error == NULL, "Failed to get one-sided private friendship connections");
+    GraphConnections one_sided_connections = *(one_sided_connections_result.result);
     ASSERT(one_sided_connections.connections_len == 0, "Failed to get one-sided private friendship connections");
 
-    DsnpPublicKeys public_keys = graph_get_public_keys(graph_state, &user_id);
+    DsnpGraphFFIResult_DsnpPublicKeys__DsnpGraphError public_keys_result = graph_get_public_keys(graph_state, &user_id);
+    ASSERT(public_keys_result.error == NULL, "Failed to get dsnp public keys");
+    DsnpPublicKeys public_keys = *(public_keys_result.result);
     ASSERT(public_keys.keys_len == 0, "Failed to get dsnp public keys");
 
-    // Clean up and free the graph state
     free_graph_state(graph_state);
 
     return 0;
 }
 
 int main() {
-    // Run the test for the graph SDK FFI
     int result = test_graph_sdk_ffi();
     if (result == 0) {
         printf("All tests passed!\n");
