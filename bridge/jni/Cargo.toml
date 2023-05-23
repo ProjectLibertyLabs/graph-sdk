@@ -15,3 +15,5 @@ dsnp-graph-config = { version = "0.1.0", path = "../../config" }
 jni = "0.21.1"
 async-trait = "0.1.68"
 cfg-if = "1.0.0"
+log = "^0.4.17"
+log-panics = { version = "^2.1.0", features = ["with-backtrace"]}

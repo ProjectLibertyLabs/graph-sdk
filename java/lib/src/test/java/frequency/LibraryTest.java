@@ -15,4 +15,8 @@ class LibraryTest {
     @Test void keep_alive_should_work() {
         Native.keepAlive(this);
     }
+
+    @Test void logger_init_should_work() {
+
+    }
 }
