@@ -16,6 +16,8 @@ mod bindings;
 pub use bindings::*;
 mod utils;
 pub use utils::*;
+mod errors;
+pub use errors::*;
 
 #[cfg(test)]
 mod tests;
@@ -44,16 +46,5 @@ impl<T, E> DsnpGraphFFIResult<T, E> {
 
 	pub fn new_mut_error(error: *mut E) -> Self {
 		Self { result: None, error: Some(NonNull::new(error).unwrap()) }
-	}
-}
-
-// drop only the error
-impl<T, E> Drop for DsnpGraphFFIResult<T, E> {
-	fn drop(&mut self) {
-		if let Some(error) = self.error {
-			unsafe {
-				let _ = Box::from_raw(error.as_ptr());
-			}
-		}
 	}
 }

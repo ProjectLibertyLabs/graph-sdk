@@ -20,7 +20,8 @@ include = [
     "Action",
     "DsnpGraphEdge",
     "SchemaId",
-    "Action"
+    "Action",
+    "DsnpGraphErrorHandle",
 ]
 item_types = [
     "enums",
