@@ -60,3 +60,11 @@ test-ffi:
 build-jni:
 	@echo "Build JNI ..."
 	@./scripts/build_jni.sh
+
+install-protos:
+	@echo "Install PROTO ..."
+	@brew install protobuf; cargo install protobuf-codegen; PATH="$HOME/.cargo/bin:$PATH"
+
+build-protos:
+	@echo "Build PROTO ..."
+	@./scripts/build_protos.sh
