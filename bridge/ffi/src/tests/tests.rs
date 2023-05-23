@@ -21,6 +21,10 @@ mod tests {
 		let environment = Environment::Dev(c_config);
 
 		unsafe {
+			// just to make sure we can call it multiple times
+			let _result1 = initialize_graph_state(&environment as *const Environment);
+			let _result2 = initialize_graph_state(&environment as *const Environment);
+
 			let result = initialize_graph_state(&environment as *const Environment);
 			assert!(result.error.is_none());
 			let graph_state = result.result;
@@ -71,14 +75,22 @@ mod tests {
 			assert_ne!(count_before_with_capacity, ptr::null_mut());
 			let count_before_with_capacity = *count_before_with_capacity;
 			assert!(count_before_with_capacity > 0);
-			//free_graph_state(graph_state_with_capacity);
-			// assert_eq!(count_before_with_capacity.error.as_ptr(), ptr::null_mut());
-			// let count_before_with_capacity = *count_before_with_capacity.result.as_ref();
-			// free_graph_state(graph_state_with_capacity.as_ptr());
-			// let count_after_with_capacity = get_graph_states_count();
-			// assert_eq!(count_after_with_capacity.error.as_ptr(), ptr::null_mut());
-			// let count_after_with_capacity = *count_after_with_capacity.result.as_ref();
-			// assert_eq!(count_before_with_capacity - 1, count_after_with_capacity);
+			free_graph_state(graph_state_with_capacity);
+			let count_after_with_capacity = get_graph_states_count();
+			assert!(count_after_with_capacity.error.is_none());
+			assert!(count_after_with_capacity.result.is_some());
+			let count_after_with_capacity = count_after_with_capacity.result.unwrap().as_ptr();
+			assert_ne!(count_after_with_capacity, ptr::null_mut());
+			let count_after_with_capacity = *count_after_with_capacity;
+			assert_eq!(count_before_with_capacity - 1, count_after_with_capacity);
+			free_graph_states();
+			let count_after_free = get_graph_states_count();
+			assert!(count_after_free.error.is_none());
+			assert!(count_after_free.result.is_some());
+			let count_after_free = count_after_free.result.unwrap().as_ptr();
+			assert_ne!(count_after_free, ptr::null_mut());
+			let count_after_free = *count_after_free;
+			assert_eq!(0, count_after_free);
 		}
 	}
 
