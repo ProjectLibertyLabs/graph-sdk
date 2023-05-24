@@ -62,7 +62,9 @@ int test_graph_sdk_ffi() {
    DsnpGraphConnectionsWithoutKeysResult_Error connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
     ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
     GraphConnectionsWithoutKeys connectionswithoutkeys = *(connectionswithoutkeysresult.result);
-    ASSERT(connectionswithoutkeys.connections_len == 0, "Failed to get connections without keys");
+    // print 
+    printf("Connections without keys: %zu\n", connectionswithoutkeys.connections_len);
+    ASSERT(connectionswithoutkeys.connections_len == 0, "Failed to get connections without keys len");
 
    DsnpGraphConnectionsResult_Error onesidedconnectionsresult = graph_get_one_sided_private_friendship_connections(graphstate, &userid);
     ASSERT(onesidedconnectionsresult.error != NULL, "Expected error to get one sided private friendship connections");
