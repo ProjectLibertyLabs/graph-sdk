@@ -2,7 +2,7 @@ use crate::mappings::map_to_environment;
 use dsnp_graph_core::api::api::GraphState;
 use jni::{
 	objects::{JByteArray, JClass, JObject, JString},
-	sys::jlong,
+	sys::{jboolean, jint, jlong},
 	JNIEnv,
 };
 use std::{panic, sync::Mutex};
@@ -72,4 +72,124 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 		let _ = unsafe { Box::from_raw(handle as *mut GraphState) };
 	});
 	result.unwrap_or(())
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConfig<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_environment: JByteArray,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getConfig")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+) -> jboolean {
+	unimplemented!("Java_io_amplica_graphsdk_Native_containsUserGraph")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+) -> jint {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getGraphUsersLength")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+) {
+	unimplemented!("Java_io_amplica_graphsdk_Native_removeUserGraph")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_import: JByteArray,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_importUserData")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_exportUpdates")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_actions: JByteArray,
+) {
+	unimplemented!("Java_io_amplica_graphsdk_Native_applyActions")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_forceCalculateGraphs")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+	_schema_id: jint,
+	_include_pending: jboolean,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getUsersWithoutKeys")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFriendshipConnections<
+	'local,
+>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph")
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
+	mut _env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	_handle: jlong,
+	_dsnp_user_id: jlong,
+) -> JByteArray<'local> {
+	unimplemented!("Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph")
 }
