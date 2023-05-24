@@ -21,7 +21,7 @@ include = [
     "DsnpGraphEdge",
     "SchemaId",
     "Action",
-    "DsnpGraphErrorHandle",
+    "GraphError",
 ]
 item_types = [
     "enums",

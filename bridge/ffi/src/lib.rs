@@ -26,12 +26,12 @@ use std::ptr::NonNull;
 
 #[repr(C)]
 #[derive(Debug, Clone, PartialEq)]
-pub struct DsnpGraphFFIResult<T, E> {
+pub struct FFIResult<T, E> {
 	pub result: Option<NonNull<T>>,
 	pub error: Option<NonNull<E>>,
 }
 
-impl<T, E> DsnpGraphFFIResult<T, E> {
+impl<T, E> FFIResult<T, E> {
 	pub fn new(result: T) -> Self {
 		Self { result: Some(NonNull::new(Box::into_raw(Box::new(result))).unwrap()), error: None }
 	}

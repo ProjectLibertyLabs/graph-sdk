@@ -1,4 +1,4 @@
-use crate::{bindings::*, utils::*, DsnpGraphErrorHandle, DsnpGraphFFIResult};
+use crate::{bindings::*, utils::*, FFIResult, GraphError};
 use dsnp_graph_config::{errors::DsnpGraphError, SchemaId};
 use dsnp_graph_core::{
 	api::api::{GraphAPI, GraphState},
@@ -22,7 +22,7 @@ static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
 	environment: *const Environment,
-) -> DsnpGraphFFIResult<GraphState, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphState, GraphError> {
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
@@ -30,15 +30,13 @@ pub unsafe extern "C" fn initialize_graph_state(
 		let graph_state_ptr = Box::into_raw(graph_state);
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
 		graph_states.push(Box::from_raw(graph_state_ptr));
-		DsnpGraphFFIResult::new_mut(graph_state_ptr)
+		FFIResult::new_mut(graph_state_ptr)
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to initialize graph state: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to initialize graph state: {:?}",
+			error
+		))))
 	})
 }
 
@@ -47,7 +45,7 @@ pub unsafe extern "C" fn initialize_graph_state(
 pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	environment: *const Environment,
 	capacity: usize,
-) -> DsnpGraphFFIResult<GraphState, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphState, GraphError> {
 	let result = panic::catch_unwind(|| {
 		let environment = &*environment;
 		let rust_environment = environment_from_ffi(environment);
@@ -55,15 +53,13 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 		let graph_state_ptr = Box::into_raw(graph_state);
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
 		graph_states.push(Box::from_raw(graph_state_ptr));
-		DsnpGraphFFIResult::new_mut(graph_state_ptr)
+		FFIResult::new_mut(graph_state_ptr)
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to initialize graph state with capacity: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to initialize graph state with capacity: {:?}",
+			error
+		))))
 	})
 }
 
@@ -71,38 +67,36 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_capacity(
 	graph_state: *mut GraphState,
-) -> DsnpGraphFFIResult<usize, DsnpGraphErrorHandle> {
+) -> FFIResult<usize, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
-		DsnpGraphFFIResult::new(graph_state.capacity())
+		FFIResult::new(graph_state.capacity())
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!("Failed to get graph capacity: {:?}", error)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to get graph capacity: {:?}",
+			error
+		))))
 	})
 }
 
 // Get total graph states in GRAPH_STATES
 #[no_mangle]
-pub unsafe extern "C" fn get_graph_states_count() -> DsnpGraphFFIResult<usize, DsnpGraphErrorHandle>
-{
+pub unsafe extern "C" fn get_graph_states_count() -> FFIResult<usize, GraphError> {
 	let result = panic::catch_unwind(|| {
 		let graph_states = GRAPH_STATES.lock().unwrap();
-		DsnpGraphFFIResult::new(graph_states.len())
+		FFIResult::new(graph_states.len())
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to get graph states count: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to get graph states count: {:?}",
+			error
+		))))
 	})
 }
 
@@ -111,24 +105,22 @@ pub unsafe extern "C" fn get_graph_states_count() -> DsnpGraphFFIResult<usize, D
 pub unsafe extern "C" fn graph_contains_user(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
-) -> DsnpGraphFFIResult<bool, DsnpGraphErrorHandle> {
+) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
-		DsnpGraphFFIResult::new(graph_state.contains_user_graph(user_id))
+		FFIResult::new(graph_state.contains_user_graph(user_id))
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to check graph state for user: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to check graph state for user: {:?}",
+			error
+		))))
 	})
 }
 
@@ -136,23 +128,21 @@ pub unsafe extern "C" fn graph_contains_user(
 #[no_mangle]
 pub unsafe extern "C" fn graph_users_count(
 	graph_state: *mut GraphState,
-) -> DsnpGraphFFIResult<usize, DsnpGraphErrorHandle> {
+) -> FFIResult<usize, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
-		DsnpGraphFFIResult::new(graph_state.len())
+		FFIResult::new(graph_state.len())
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to get users count from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to get users count from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -161,25 +151,23 @@ pub unsafe extern "C" fn graph_users_count(
 pub unsafe extern "C" fn graph_remove_user(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
-) -> DsnpGraphFFIResult<bool, DsnpGraphErrorHandle> {
+) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
 		graph_state.remove_user_graph(user_id);
-		DsnpGraphFFIResult::new(true)
+		FFIResult::new(true)
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to remove user from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to remove user from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -189,30 +177,27 @@ pub unsafe extern "C" fn graph_import_users_data(
 	graph_state: *mut GraphState,
 	payloads: *const ImportBundle,
 	payloads_len: usize,
-) -> DsnpGraphFFIResult<bool, DsnpGraphErrorHandle> {
+) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let payloads = std::slice::from_raw_parts(payloads, payloads_len);
 		let payloads = payloads_from_ffi(&payloads);
 		let imported = graph_state.import_users_data(&payloads);
 		match imported {
-			Ok(_) => DsnpGraphFFIResult::new(true),
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Ok(_) => FFIResult::new(true),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to import users data to graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to import users data to graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -220,12 +205,12 @@ pub unsafe extern "C" fn graph_import_users_data(
 #[no_mangle]
 pub unsafe extern "C" fn graph_export_updates(
 	graph_state: *mut GraphState,
-) -> DsnpGraphFFIResult<GraphUpdates, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphUpdates, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		match graph_state.export_updates() {
@@ -234,19 +219,16 @@ pub unsafe extern "C" fn graph_export_updates(
 				let updates_len = ffi_updates.len();
 				let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
 				let graph_updates = GraphUpdates { updates: updates_ptr, updates_len };
-				DsnpGraphFFIResult::new(graph_updates)
+				FFIResult::new(graph_updates)
 			},
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to export updates from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to export updates from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -256,29 +238,26 @@ pub unsafe extern "C" fn graph_apply_actions(
 	graph_state: *mut GraphState,
 	actions: *const Action,
 	actions_len: usize,
-) -> DsnpGraphFFIResult<bool, DsnpGraphErrorHandle> {
+) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let actions = std::slice::from_raw_parts(actions, actions_len);
 		let actions = actions_from_ffi(&actions);
 		match graph_state.apply_actions(&actions) {
-			Ok(_) => DsnpGraphFFIResult::new(true),
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Ok(_) => FFIResult::new(true),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed to apply actions to graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to apply actions to graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -289,12 +268,12 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 	user_id: *const DsnpUserId,
 	schema_id: *const SchemaId,
 	include_pending: bool,
-) -> DsnpGraphFFIResult<GraphConnections, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphConnections, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -305,19 +284,16 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 				let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 				let graph_connections =
 					GraphConnections { connections: connections_ptr, connections_len };
-				DsnpGraphFFIResult::new(graph_connections)
+				FFIResult::new(graph_connections)
 			},
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed get connections for user from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed get connections for user from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -325,12 +301,12 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_connections_without_keys(
 	graph_state: *mut GraphState,
-) -> DsnpGraphFFIResult<GraphConnectionsWithoutKeys, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphConnectionsWithoutKeys, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		match graph_state.get_connections_without_keys() {
@@ -339,19 +315,16 @@ pub unsafe extern "C" fn graph_get_connections_without_keys(
 				let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 				let graph_connections =
 					GraphConnectionsWithoutKeys { connections: connections_ptr, connections_len };
-				DsnpGraphFFIResult::new(graph_connections)
+				FFIResult::new(graph_connections)
 			},
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed get connections without keys from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed get connections without keys from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -360,12 +333,12 @@ pub unsafe extern "C" fn graph_get_connections_without_keys(
 pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
-) -> DsnpGraphFFIResult<GraphConnections, DsnpGraphErrorHandle> {
+) -> FFIResult<GraphConnections, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -375,19 +348,16 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 				let connections_ptr = ManuallyDrop::new(connections).as_mut_ptr();
 				let graph_connections =
 					GraphConnections { connections: connections_ptr, connections_len };
-				DsnpGraphFFIResult::new(graph_connections)
+				FFIResult::new(graph_connections)
 			},
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed get one sided private friendship connections from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed get one sided private friendship connections from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -396,12 +366,12 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 pub unsafe extern "C" fn graph_get_public_keys(
 	graph_state: *mut GraphState,
 	user_id: *const DsnpUserId,
-) -> DsnpGraphFFIResult<DsnpPublicKeys, DsnpGraphErrorHandle> {
+) -> FFIResult<DsnpPublicKeys, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-				DsnpGraphError::FFIError("Graph state is null".to_string()),
-			))
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -412,19 +382,16 @@ pub unsafe extern "C" fn graph_get_public_keys(
 				let keys_len = ffi_keys.len();
 				let keys_ptr = ManuallyDrop::new(ffi_keys).as_mut_ptr();
 				let public_keys = DsnpPublicKeys { keys: keys_ptr, keys_len };
-				DsnpGraphFFIResult::new(public_keys)
+				FFIResult::new(public_keys)
 			},
-			Err(error) =>
-				DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(error)),
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}
 	});
 	result.unwrap_or_else(|error| {
-		DsnpGraphFFIResult::new_mut_error(DsnpGraphErrorHandle::from_error(
-			DsnpGraphError::Unknown(anyhow::anyhow!(
-				"Failed get public keys from graph: {:?}",
-				error
-			)),
-		))
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed get public keys from graph: {:?}",
+			error
+		))))
 	})
 }
 
@@ -491,9 +458,9 @@ pub unsafe extern "C" fn free_graph_dsnp_public_keys(public_keys: *mut DsnpPubli
 	result.unwrap_or(())
 }
 
-// Free DsnpGraphErrorHandle
+// Free GraphError
 #[no_mangle]
-pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut DsnpGraphErrorHandle) {
+pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut GraphError) {
 	if !error.is_null() {
 		unsafe {
 			let _ = Box::from_raw(error);
@@ -503,7 +470,7 @@ pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut DsnpGraphErrorHandle)
 
 // Get error code
 #[no_mangle]
-pub unsafe extern "C" fn dsnp_graph_error_code(error: *const DsnpGraphErrorHandle) -> i32 {
+pub unsafe extern "C" fn dsnp_graph_error_code(error: *const GraphError) -> i32 {
 	if let Some(error) = unsafe { error.as_ref() } {
 		error.error_code()
 	} else {
@@ -513,9 +480,7 @@ pub unsafe extern "C" fn dsnp_graph_error_code(error: *const DsnpGraphErrorHandl
 
 // Get error message
 #[no_mangle]
-pub unsafe extern "C" fn dsnp_graph_error_message(
-	error: *const DsnpGraphErrorHandle,
-) -> *const c_char {
+pub unsafe extern "C" fn dsnp_graph_error_message(error: *const GraphError) -> *const c_char {
 	if let Some(error) = unsafe { error.as_ref() } {
 		let error_msg = CString::new(error.error_message()).unwrap_or_default();
 		error_msg.into_raw()

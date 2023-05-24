@@ -1,13 +1,13 @@
 use dsnp_graph_config::errors::DsnpGraphError;
 
 // Opaque handle for DsnpGraphError
-pub struct DsnpGraphErrorHandle {
+pub struct GraphError {
 	// to make errors opaque this field must be private
 	// it enables to create a pointer to the error
 	error: *mut DsnpGraphError,
 }
 
-impl DsnpGraphErrorHandle {
+impl GraphError {
 	pub fn from_error(error: DsnpGraphError) -> *mut Self {
 		// allocate memory for the error
 		let mut error_handle = Box::new(Self { error: std::ptr::null_mut() });
