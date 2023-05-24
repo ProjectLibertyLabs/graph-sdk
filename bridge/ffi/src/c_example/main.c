@@ -28,7 +28,7 @@ int test_graph_sdk_ffi() {
     bool containsuser = *(containsresult.result);
     ASSERT(!containsuser, "Graph should not contain user before import");
 
-   DsnpGraphUserCountResult_Error countresult = graph_users_count(graphstate);
+   DsnpGraphCountResult_Error countresult = graph_users_count(graphstate);
     ASSERT(countresult.error == NULL, "Failed to count users in graph");
     size_t userscount = *(countresult.result);
     ASSERT(userscount == 0, "Number of users in the graph should be zero");

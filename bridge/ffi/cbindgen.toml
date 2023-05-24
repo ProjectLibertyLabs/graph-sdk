@@ -37,7 +37,7 @@ remove_underscores = true
 
 [export.rename]
 "FFIResultGraphStateGraphError" = "DsnpGraphStateResult_Error"
-"FFIResultusizeGraphError" = "DsnpGraphUserCountResult_Error"
+"FFIResultusizeGraphError" = "DsnpGraphCountResult_Error"
 "FFIResultboolGraphError" = "DsnpGraphBooleanResult_Error"
 "FFIResultGraphUpdatesGraphError" = "DsnpGraphUpdatesResult_Error"
 "FFIResultGraphConnectionsGraphError" = "DsnpGraphConnectionsResult_Error"
