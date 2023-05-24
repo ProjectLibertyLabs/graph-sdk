@@ -39,12 +39,23 @@ int test_graph_sdk_ffi() {
 
     DsnpGraphFFIResult_bool__DsnpGraphErrorHandle import_result = graph_import_users_data(graph_state, &import_bundle, 1);
     ASSERT(import_result.error != NULL, "Expected error to import users data");
+    // get the error message
+    const char* error_message = dsnp_graph_error_message(import_result.error);
+    ASSERT(error_message != NULL, "Failed to get error message");
+    size_t error_code = dsnp_graph_error_code(import_result.error);
+    ASSERT(error_code  < 1000, "Error code should be less than 1000");
+    free_dsnp_graph_error(import_result.error);
 
     DsnpGraphFFIResult_GraphUpdates__DsnpGraphErrorHandle export_result = graph_export_updates(graph_state);
     ASSERT(export_result.error == NULL, "Failed to export updates");
 
     DsnpGraphFFIResult_GraphConnections__DsnpGraphErrorHandle connections_result = graph_get_connections_for_user(graph_state, &user_id, NULL, true);
     ASSERT(connections_result.error != NULL, "Expected error to get connections for user");
+    error_message = dsnp_graph_error_message(connections_result.error);
+    ASSERT(error_message != NULL, "Failed to get error message");
+    error_code = dsnp_graph_error_code(connections_result.error);
+    ASSERT(error_code  < 1000, "Error code should be less than 1000");
+    free_dsnp_graph_error(connections_result.error);
 
     DsnpGraphFFIResult_GraphConnectionsWithoutKeys__DsnpGraphErrorHandle connections_without_keys_result = graph_get_connections_without_keys(graph_state);
     ASSERT(connections_without_keys_result.error == NULL, "Failed to get connections without keys");
@@ -53,6 +64,10 @@ int test_graph_sdk_ffi() {
 
     DsnpGraphFFIResult_GraphConnections__DsnpGraphErrorHandle one_sided_connections_result = graph_get_one_sided_private_friendship_connections(graph_state, &user_id);
     ASSERT(one_sided_connections_result.error != NULL, "Expected error to get one sided private friendship connections");
+    error_message = dsnp_graph_error_message(one_sided_connections_result.error);
+    ASSERT(error_message != NULL, "Failed to get error message");
+    error_code = dsnp_graph_error_code(one_sided_connections_result.error);
+    free_dsnp_graph_error(one_sided_connections_result.error);
 
     DsnpGraphFFIResult_DsnpPublicKeys__DsnpGraphErrorHandle public_keys_result = graph_get_public_keys(graph_state, &user_id);
     ASSERT(public_keys_result.error == NULL, "Failed to get dsnp public keys");
