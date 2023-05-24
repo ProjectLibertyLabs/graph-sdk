@@ -493,7 +493,7 @@ pub unsafe extern "C" fn free_graph_dsnp_public_keys(public_keys: *mut DsnpPubli
 
 // Free DsnpGraphErrorHandle
 #[no_mangle]
-pub extern "C" fn free_dsnp_graph_error(error: *mut DsnpGraphErrorHandle) {
+pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut DsnpGraphErrorHandle) {
 	if !error.is_null() {
 		unsafe {
 			let _ = Box::from_raw(error);
@@ -503,17 +503,19 @@ pub extern "C" fn free_dsnp_graph_error(error: *mut DsnpGraphErrorHandle) {
 
 // Get error code
 #[no_mangle]
-pub extern "C" fn dsnp_graph_error_code(error: *const DsnpGraphErrorHandle) -> i32 {
+pub unsafe extern "C" fn dsnp_graph_error_code(error: *const DsnpGraphErrorHandle) -> i32 {
 	if let Some(error) = unsafe { error.as_ref() } {
 		error.error_code()
 	} else {
-		0
+		std::i32::MAX
 	}
 }
 
 // Get error message
 #[no_mangle]
-pub extern "C" fn dsnp_graph_error_message(error: *const DsnpGraphErrorHandle) -> *const c_char {
+pub unsafe extern "C" fn dsnp_graph_error_message(
+	error: *const DsnpGraphErrorHandle,
+) -> *const c_char {
 	if let Some(error) = unsafe { error.as_ref() } {
 		let error_msg = CString::new(error.error_message()).unwrap_or_default();
 		error_msg.into_raw()
