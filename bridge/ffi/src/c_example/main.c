@@ -58,7 +58,7 @@ int test_graph_sdk_ffi() {
     ASSERT(errorcode  < 1000, "Error code should be less than 1000");
     free_dsnp_graph_error(connectionsresult.error);
     free_dsnp_graph_error_message(errormessage);
-
+    
    DsnpGraphConnectionsWithoutKeysResult_Error connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
     ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
     GraphConnectionsWithoutKeys connectionswithoutkeys = *(connectionswithoutkeysresult.result);
