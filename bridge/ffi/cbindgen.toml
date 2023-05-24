@@ -35,6 +35,15 @@ item_types = [
 [export.mangle]
 remove_underscores = true
 
+[export.rename]
+"FFIResultGraphStateGraphError" = "DsnpGraphStateResult_Error"
+"FFIResultusizeGraphError" = "DsnpGraphUserCountResult_Error"
+"FFIResultboolGraphError" = "DsnpGraphBooleanResult_Error"
+"FFIResultGraphUpdatesGraphError" = "DsnpGraphUpdatesResult_Error"
+"FFIResultGraphConnectionsGraphError" = "DsnpGraphConnectionsResult_Error"
+"FFIResultGraphConnectionsWithoutKeysGraphError" = "DsnpGraphConnectionsWithoutKeysResult_Error"
+"FFIResultDsnpPublicKeysGraphError" = "DsnpGraphPublicKeysResult_Error"
+
 [fn]
 sort_by = "None"
 
