@@ -488,3 +488,13 @@ pub unsafe extern "C" fn dsnp_graph_error_message(error: *const GraphError) -> *
 		std::ptr::null()
 	}
 }
+
+// Free error message
+#[no_mangle]
+pub unsafe extern "C" fn free_dsnp_graph_error_message(error_message: *const c_char) {
+	if !error_message.is_null() {
+		unsafe {
+			let _ = CString::from_raw(error_message as *mut c_char);
+		}
+	}
+}

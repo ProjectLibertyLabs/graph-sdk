@@ -45,6 +45,7 @@ int test_graph_sdk_ffi() {
     size_t errorcode = dsnp_graph_error_code(importresult.error);
     ASSERT(errorcode  < 1000, "Error code should be less than 1000");
     free_dsnp_graph_error(importresult.error);
+    free_dsnp_graph_error_message(errormessage);
 
    DsnpGraphUpdatesResult_Error exportresult = graph_export_updates(graphstate);
     ASSERT(exportresult.error == NULL, "Failed to export updates");
@@ -56,6 +57,7 @@ int test_graph_sdk_ffi() {
     errorcode = dsnp_graph_error_code(connectionsresult.error);
     ASSERT(errorcode  < 1000, "Error code should be less than 1000");
     free_dsnp_graph_error(connectionsresult.error);
+    free_dsnp_graph_error_message(errormessage);
 
    DsnpGraphConnectionsWithoutKeysResult_Error connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
     ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
@@ -68,6 +70,7 @@ int test_graph_sdk_ffi() {
     ASSERT(errormessage != NULL, "Failed to get error message");
     errorcode = dsnp_graph_error_code(onesidedconnectionsresult.error);
     free_dsnp_graph_error(onesidedconnectionsresult.error);
+    free_dsnp_graph_error_message(errormessage);
 
    DsnpGraphPublicKeysResult_Error publickeysresult = graph_get_public_keys(graphstate, &userid);
     ASSERT(publickeysresult.error == NULL, "Failed to get dsnp public keys");
