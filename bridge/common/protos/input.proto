@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+option java_package = "io.amplica.graphsdk.models";
+option java_multiple_files = true;
+
+enum GraphKeyType {
+  X25519 = 0;
+}
+
+message KeyData {
+  uint32 index = 1;
+  bytes content = 2;
+}
+
+message PageData {
+  uint32 page_id = 1;
+  bytes content = 2;
+  uint32 content_hash = 3;
+}
+
+message DsnpKeys {
+  uint64 dsnp_user_id = 1;
+  uint32 keys_hash = 2;
+  repeated KeyData keys = 3;
+}
+
+message ImportBundles {
+  message ImportBundle {
+    message GraphKeyPair {
+      GraphKeyType key_type = 1;
+      bytes public_key = 2;
+      bytes secret_key = 3;
+    }
+
+    uint64 dsnp_user_id = 1;
+    uint32 schema_id = 2;
+    repeated GraphKeyPair key_pairs = 3;
+    DsnpKeys dsnp_keys = 4;
+    repeated PageData pages = 5;
+  }
+  repeated ImportBundle bundles = 1;
+}
+
+// Action related types
+message Connection {
+  uint64 dsnp_user_id = 1;
+  uint32 schema_id = 2;
+}
+
+message Actions {
+  message Action {
+    message ConnectAction {
+      uint64 owner_dsnp_user_id = 1;
+      Connection connection = 2;
+      optional DsnpKeys dsnp_keys = 3;
+    }
+
+    message DisconnectAction {
+      uint64 owner_dsnp_user_id = 1;
+      Connection connection = 2;
+    }
+
+    message AddGraphKey {
+      uint64 owner_dsnp_user_id = 1;
+      bytes new_public_key = 2;
+    }
+
+    oneof inner {
+      ConnectAction connect_action = 1;
+      DisconnectAction disconnect_action = 2;
+      AddGraphKey add_key_action = 3;
+    }
+  }
+  repeated Action actions = 1;
+}

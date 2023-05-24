@@ -1,10 +1,10 @@
-package frequency;
+package io.amplica.graphsdk;
 
 public class NativeHandleGuard implements AutoCloseable {
     /**
      * @see NativeHandleGuard
      */
-    public static interface Owner {
+    public interface Owner {
         long unsafeNativeHandleWithoutGuard();
     }
 

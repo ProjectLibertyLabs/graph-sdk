@@ -1,4 +1,4 @@
-package frequency;
+package io.amplica.graphsdk;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -57,4 +57,8 @@ public final class Native {
     public static native void keepAlive(Object obj);
 
     public static native String hello(String input);
+
+    public static native long initializeGraphState(byte[] environment);
+
+    public static native long freeGraphState(long handle);
 }

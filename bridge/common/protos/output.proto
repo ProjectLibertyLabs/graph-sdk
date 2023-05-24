@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+option java_package = "io.amplica.graphsdk.models";
+option java_multiple_files = true;
+
+enum PrivacyType {
+    Public = 0;
+    Private = 1;
+}
+
+enum ConnectionType {
+  FollowPublic = 0;
+  FollowPrivate = 1;
+  FriendshipPublic = 2;
+  FriendshipPrivate = 3;
+}
+
+enum DsnpVersion {
+    Version1_0 = 0 ;
+}
+
+message SchemaConfig {
+  DsnpVersion dsnp_version = 1;
+  ConnectionType connection_type = 2;
+}
+
+message Config {
+  uint32 sdk_max_users_graph_size = 1;
+  uint32 sdk_max_stale_friendship_days = 2;
+  uint32 max_graph_page_size_bytes = 3;
+  uint32 max_page_id = 4;
+  uint32 max_key_page_size_bytes = 5;
+  map<uint32, SchemaConfig> schema_map = 6;
+  repeated DsnpVersion dsnp_versions = 7;
+}
+
+enum EnvironmentType {
+  MainNet = 0;
+  Rococo = 1;
+  Dev = 2;
+}
+
+message Environment {
+  EnvironmentType environment_type = 1;
+  optional Config config = 2;
+}
+
+message Updates {
+  message Update {
+    message PersistPageUpdate {
+      uint64 owner_dsnp_user_id = 1;
+      uint32 schema_id = 2;
+      uint32 page_id = 3;
+      uint32 prev_hash = 4;
+      bytes payload = 5;
+    }
+
+    message DeletePageUpdate {
+      uint64 owner_dsnp_user_id = 1;
+      uint32 schema_id = 2;
+      uint32 page_id = 3;
+      uint32 prev_hash = 4;
+    }
+
+    message AddKeyUpdate {
+      uint64 owner_dsnp_user_id = 1;
+      uint32 prev_hash = 2;
+      bytes payload = 3;
+    }
+
+    oneof inner {
+      PersistPageUpdate persist = 1;
+      DeletePageUpdate delete = 2;
+      AddKeyUpdate add_key = 3;
+    }
+  }
+
+  repeated Update update = 1;
+}
+
+message DsnpGraphEdges {
+  message DsnpGraphEdge {
+    uint64 user_id = 1;
+    uint64 since = 2;
+  }
+  repeated DsnpGraphEdge edge = 1;
+}
+
+message DsnpUsers {
+  repeated uint64 user = 1;
+}
+
+message DsnpPublicKeys {
+  message DsnpPublicKey {
+    bytes key = 1;
+    uint64 key_id = 2;
+  }
+  repeated DsnpPublicKey public_key = 1;
+}
