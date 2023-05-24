@@ -202,6 +202,8 @@ pub unsafe extern "C" fn Java_frequency_Native_loggerSetMaxLevel(
 	abort_on_panic(|| set_max_level_from_slf4j_level(max_level));
 }
 
+/// Function mainly just for testing the Java side of this implementation.
+/// Can be called in production code, but there's really no reason to.
 #[no_mangle]
 pub unsafe extern "C" fn Java_frequency_LibraryTest_log(
 	mut env: JNIEnv,
