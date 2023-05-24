@@ -15,66 +15,66 @@ int test_graph_sdk_ffi() {
     
     // ... setting up environment ...
 
-   FFIResult_GraphState__GraphError result = initialize_graph_state(&environment);
+   FFIResultGraphStateGraphError result = initialize_graph_state(&environment);
     ASSERT(result.error == NULL, "Graph state initialization failed");
-    GraphState* graph_state = result.result;
+    GraphState* graphstate = result.result;
 
-    DsnpUserId user_id;
-    // Set the value of the user_id
+    DsnpUserId userid;
+    // Set the value of the userid
     // ...
 
-   FFIResult_bool__GraphError contains_result = graph_contains_user(graph_state, &user_id);
-    ASSERT(contains_result.error == NULL, "Failed to check if graph contains user");
-    bool contains_user = *(contains_result.result);
-    ASSERT(!contains_user, "Graph should not contain user before import");
+   FFIResultboolGraphError containsresult = graph_contains_user(graphstate, &userid);
+    ASSERT(containsresult.error == NULL, "Failed to check if graph contains user");
+    bool containsuser = *(containsresult.result);
+    ASSERT(!containsuser, "Graph should not contain user before import");
 
-   FFIResult_usize__GraphError count_result = graph_users_count(graph_state);
-    ASSERT(count_result.error == NULL, "Failed to count users in graph");
-    size_t users_count = *(count_result.result);
-    ASSERT(users_count == 0, "Number of users in the graph should be zero");
+   FFIResultusizeGraphError countresult = graph_users_count(graphstate);
+    ASSERT(countresult.error == NULL, "Failed to count users in graph");
+    size_t userscount = *(countresult.result);
+    ASSERT(userscount == 0, "Number of users in the graph should be zero");
 
-    ImportBundle import_bundle;
-    // Set the values of the import_bundle struct
+    ImportBundle importbundle;
+    // Set the values of the importbundle struct
     // ...
 
-   FFIResult_bool__GraphError import_result = graph_import_users_data(graph_state, &import_bundle, 1);
-    ASSERT(import_result.error != NULL, "Expected error to import users data");
+   FFIResultboolGraphError importresult = graph_import_users_data(graphstate, &importbundle, 1);
+    ASSERT(importresult.error != NULL, "Expected error to import users data");
     // get the error message
-    const char* error_message = dsnp_graph_error_message(import_result.error);
-    ASSERT(error_message != NULL, "Failed to get error message");
-    size_t error_code = dsnp_graph_error_code(import_result.error);
-    ASSERT(error_code  < 1000, "Error code should be less than 1000");
-    free_dsnp_graph_error(import_result.error);
+    const char* errormessage = dsnp_graph_error_message(importresult.error);
+    ASSERT(errormessage != NULL, "Failed to get error message");
+    size_t errorcode = dsnp_graph_error_code(importresult.error);
+    ASSERT(errorcode  < 1000, "Error code should be less than 1000");
+    free_dsnp_graph_error(importresult.error);
 
-   FFIResult_GraphUpdates__GraphError export_result = graph_export_updates(graph_state);
-    ASSERT(export_result.error == NULL, "Failed to export updates");
+   FFIResultGraphUpdatesGraphError exportresult = graph_export_updates(graphstate);
+    ASSERT(exportresult.error == NULL, "Failed to export updates");
 
-   FFIResult_GraphConnections__GraphError connections_result = graph_get_connections_for_user(graph_state, &user_id, NULL, true);
-    ASSERT(connections_result.error != NULL, "Expected error to get connections for user");
-    error_message = dsnp_graph_error_message(connections_result.error);
-    ASSERT(error_message != NULL, "Failed to get error message");
-    error_code = dsnp_graph_error_code(connections_result.error);
-    ASSERT(error_code  < 1000, "Error code should be less than 1000");
-    free_dsnp_graph_error(connections_result.error);
+   FFIResultGraphConnectionsGraphError connectionsresult = graph_get_connections_for_user(graphstate, &userid, NULL, true);
+    ASSERT(connectionsresult.error != NULL, "Expected error to get connections for user");
+    errormessage = dsnp_graph_error_message(connectionsresult.error);
+    ASSERT(errormessage != NULL, "Failed to get error message");
+    errorcode = dsnp_graph_error_code(connectionsresult.error);
+    ASSERT(errorcode  < 1000, "Error code should be less than 1000");
+    free_dsnp_graph_error(connectionsresult.error);
 
-   FFIResult_GraphConnectionsWithoutKeys__GraphError connections_without_keys_result = graph_get_connections_without_keys(graph_state);
-    ASSERT(connections_without_keys_result.error == NULL, "Failed to get connections without keys");
-    GraphConnectionsWithoutKeys connections_without_keys = *(connections_without_keys_result.result);
-    ASSERT(connections_without_keys.connections_len == 0, "Failed to get connections without keys");
+   FFIResultGraphConnectionsWithoutKeysGraphError connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
+    ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
+    GraphConnectionsWithoutKeys connectionswithoutkeys = *(connectionswithoutkeysresult.result);
+    ASSERT(connectionswithoutkeys.connections_len == 0, "Failed to get connections without keys");
 
-   FFIResult_GraphConnections__GraphError one_sided_connections_result = graph_get_one_sided_private_friendship_connections(graph_state, &user_id);
-    ASSERT(one_sided_connections_result.error != NULL, "Expected error to get one sided private friendship connections");
-    error_message = dsnp_graph_error_message(one_sided_connections_result.error);
-    ASSERT(error_message != NULL, "Failed to get error message");
-    error_code = dsnp_graph_error_code(one_sided_connections_result.error);
-    free_dsnp_graph_error(one_sided_connections_result.error);
+   FFIResultGraphConnectionsGraphError onesidedconnectionsresult = graph_get_one_sided_private_friendship_connections(graphstate, &userid);
+    ASSERT(onesidedconnectionsresult.error != NULL, "Expected error to get one sided private friendship connections");
+    errormessage = dsnp_graph_error_message(onesidedconnectionsresult.error);
+    ASSERT(errormessage != NULL, "Failed to get error message");
+    errorcode = dsnp_graph_error_code(onesidedconnectionsresult.error);
+    free_dsnp_graph_error(onesidedconnectionsresult.error);
 
-   FFIResult_DsnpPublicKeys__GraphError public_keys_result = graph_get_public_keys(graph_state, &user_id);
-    ASSERT(public_keys_result.error == NULL, "Failed to get dsnp public keys");
-    DsnpPublicKeys public_keys = *(public_keys_result.result);
-    ASSERT(public_keys.keys_len == 0, "Failed to get dsnp public keys");
+   FFIResultDsnpPublicKeysGraphError publickeysresult = graph_get_public_keys(graphstate, &userid);
+    ASSERT(publickeysresult.error == NULL, "Failed to get dsnp public keys");
+    DsnpPublicKeys publickeys = *(publickeysresult.result);
+    ASSERT(publickeys.keys_len == 0, "Failed to get dsnp public keys");
 
-    free_graph_state(graph_state);
+    free_graph_state(graphstate);
     return 0;
 }
 

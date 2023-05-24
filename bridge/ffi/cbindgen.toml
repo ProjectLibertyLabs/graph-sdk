@@ -33,7 +33,7 @@ item_types = [
 ]
 
 [export.mangle]
-remove_underscores = false
+remove_underscores = true
 
 [fn]
 sort_by = "None"
