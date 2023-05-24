@@ -1,5 +1,5 @@
 use jni::{
-	objects::{GlobalRef, JClass, JObject, JValue},
+	objects::{GlobalRef, JClass, JObject, JString, JValue},
 	sys::jint,
 	JNIEnv, JavaVM,
 };
@@ -78,8 +78,8 @@ struct SLF4JLogger {
 }
 
 impl SLF4JLogger {
-	fn new(env: JNIEnv, logger_class: JClass) -> jni::errors::Result<Self> {
-		Ok(Self { vm: env.get_java_vm()?, logger_class: env.new_global_ref(logger_class)? })
+	fn new(env: JNIEnv, logger_obj: JObject) -> jni::errors::Result<Self> {
+		Ok(Self { vm: env.get_java_vm()?, logger_class: env.new_global_ref(logger_obj)? })
 	}
 
 	fn log_impl(&self, record: &log::Record) -> jni::errors::Result<()> {
@@ -92,18 +92,26 @@ impl SLF4JLogger {
 			record.args(),
 		);
 
-		const SIGNATURE: &str = "(ILjava/lang/String;)V";
-		let jstr = env.new_string(message)?;
+		const SIGNATURE: &str = "(Ljava/lang/String;)V";
+		let jstr = env.new_string(message.clone())?;
 		let jobj = JObject::from(jstr);
 		let jvalue = JValue::Object(&jobj);
 		let args = [jvalue];
 
-		let result = env.call_static_method(&self.logger_class, level, SIGNATURE, args.as_slice());
+		let result = env.call_method(&self.logger_class, level, SIGNATURE, args.as_slice());
 
 		let throwable = env.exception_occurred()?;
 		if **throwable == *JObject::null() {
-			result?;
+			match result {
+				Ok(r) => Ok(r),
+				Err(e) => {
+					eprintln!("Error logging to JVM: {:?}\n{}", e, message);
+					Err(e)
+				},
+			}?;
+		// result?;
 		} else {
+			eprintln!("Exception occurred logging to JVM:\n{}", message);
 			env.exception_clear()?;
 		}
 		Ok(())
@@ -143,27 +151,22 @@ fn set_max_level_from_slf4j_level(max_level: jint) {
 		_ => panic!("invalid log level"),
 	};
 
-	log::set_max_level(log::Level::from(level).to_level_filter())
+	log::set_max_level(log::Level::from(level).to_level_filter());
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_org_signal_libsignal_internal_Native_Logger_1Initialize(
+pub unsafe extern "C" fn Java_frequency_Native_loggerInitialize(
 	env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
-	logger_class: JClass,
+	logger_obj: JObject,
 ) {
 	abort_on_panic(|| {
-		let logger = SLF4JLogger::new(env, logger_class).expect("could not initialize logging");
+		let logger = SLF4JLogger::new(env, logger_obj).expect("could not initialize logging");
 
-		match log::set_logger(Box::leak(Box::new(logger))) {
+		match log::set_boxed_logger(Box::new(logger)) {
 			Ok(_) => {
 				set_max_level_from_slf4j_level(max_level);
-				log::info!(
-					"Initializing {} version:{}",
-					env!("CARGO_PKG_NAME"),
-					env!("CARGO_PKG_VERSION")
-				);
 				let backtrace_mode = {
 					cfg_if::cfg_if! {
 						if #[cfg(target_os = "android")] {
@@ -174,6 +177,11 @@ pub unsafe extern "C" fn Java_org_signal_libsignal_internal_Native_Logger_1Initi
 					}
 				};
 				log_panics::Config::new().backtrace_mode(backtrace_mode).install_panic_hook();
+				log::info!(
+					"Initializing {} version:{}",
+					env!("CARGO_PKG_NAME"),
+					env!("CARGO_PKG_VERSION")
+				);
 			},
 			Err(_) => {
 				log::warn!(
@@ -186,10 +194,28 @@ pub unsafe extern "C" fn Java_org_signal_libsignal_internal_Native_Logger_1Initi
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_org_signal_libsignal_internal_Native_Logger_1SetMaxLevel(
+pub unsafe extern "C" fn Java_frequency_Native_loggerSetMaxLevel(
 	_env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
 ) {
 	abort_on_panic(|| set_max_level_from_slf4j_level(max_level));
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_frequency_LibraryTest_log(
+	mut env: JNIEnv,
+	_class: JClass,
+	level: jint,
+	message: JString,
+) {
+	let level: SLF4JLogLevel = match level.try_into() {
+		Ok(level) => level,
+		_ => SLF4JLogLevel::Info,
+	};
+
+	if let Ok(message_str) = env.get_string(&message) {
+		let rust_str: String = message_str.into();
+		log::log!(level.into(), "{}", rust_str);
+	}
 }
