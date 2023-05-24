@@ -3,13 +3,13 @@
  */
 package frequency;
 
+import frequency.Logger;
+
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 import nl.altindag.log.LogCaptor;
 
@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 class LibraryTest {
-    private static final Logger logger = LoggerFactory.getLogger(LibraryTest.class);
-    private static final LogCaptor logCaptor = LogCaptor.forClass(LibraryTest.class);
+    private static final LogCaptor logCaptor = LogCaptor.forName("dsnp-graph-sdk");
 
     private static boolean testLogsForPattern(Level level, String pattern_str) {
         List<String> logs = null;
@@ -55,8 +54,7 @@ class LibraryTest {
     public static void logger_init_should_work() {
         logCaptor.disableConsoleOutput();
 
-        assertDoesNotThrow(() -> Native.loggerInitialize(Level.DEBUG.toInt(),
-                logger));
+        assertDoesNotThrow(() -> Logger.initialize(Level.DEBUG));
         assertEquals(true, testLogsForPattern(Level.INFO, "Initializing dsnp-graph-sdk-jni"));
     }
 
@@ -67,19 +65,13 @@ class LibraryTest {
     }
 
     @Test
-    void hello_should_work() {
-        String result = Native.hello("Java");
-        assertEquals(result, "Hello, Java!");
-    }
-
-    @Test
     void keep_alive_should_work() {
         Native.keepAlive(this);
     }
 
     @Test
     void logger_double_initialize_should_fail() {
-        Native.loggerInitialize(Level.DEBUG.toInt(), logger);
+        Logger.initialize();
         assertEquals(true, testLogsForPattern(Level.WARN, "Duplicate logger initialization ignored"));
     }
 
