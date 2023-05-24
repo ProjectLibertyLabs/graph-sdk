@@ -438,8 +438,7 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
 		let index =
 			graph_states.iter().position(|x| x.as_ref() as *const _ == graph_state).unwrap();
-		let _ = ManuallyDrop::new(graph_states.remove(index));
-		let _ = Box::from_raw(graph_state);
+		graph_states.remove(index);
 	});
 	result.unwrap_or(())
 }
