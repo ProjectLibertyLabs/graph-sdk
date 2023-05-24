@@ -109,7 +109,6 @@ impl SLF4JLogger {
 					Err(e)
 				},
 			}?;
-		// result?;
 		} else {
 			eprintln!("Exception occurred logging to JVM:\n{}", message);
 			env.exception_clear()?;
