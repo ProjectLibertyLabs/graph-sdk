@@ -83,7 +83,7 @@ impl SLF4JLogger {
 	}
 
 	fn log_impl(&self, record: &log::Record) -> jni::errors::Result<()> {
-		let mut env = self.vm.attach_current_thread()?;
+		let mut env = self.vm.get_env()?;
 		let level: &str = SLF4JLogLevel::from(record.level()).into();
 		let message = format!(
 			"{}:{}: {}",
