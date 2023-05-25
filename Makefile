@@ -28,6 +28,9 @@ build:
 	@echo "Running Cargo build..."
 	@cargo build --all --all-features --all-targets
 
+.PHONY: dsnp-graph-sdk-jni
+	@cargo build -p dsnp-graph-sdk-jni --release
+
 .PHONY: doc
 doc:
 	@echo "Running Cargo doc..."
@@ -49,17 +52,25 @@ all: check test clippy format build doc
 .PHONY: ci-local
 ci-local: all
 
+.PHONY: bindgen
 bindgen:
 	@echo "Running bindgen..."
 	@./scripts/run_bindgen.sh
 
+.PHONY: test-ffi
 test-ffi:
 	@echo "Running FFI tests..."
 	@./scripts/run_ffi_tests.sh
 
+.PHONY: test-jni
+test-jni: build-jni
+	@( cd java ; ./gradlew test --rerun-tasks)
+
+.PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
-	@./scripts/build_jni.sh
+	cargo build -p dsnp-graph-sdk-jni --release
+	@./scripts/install_jni.sh
 
 install-protos:
 	@echo "Install PROTO ..."

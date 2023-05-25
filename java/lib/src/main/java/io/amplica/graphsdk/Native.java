@@ -41,23 +41,29 @@ public final class Native {
         System.load(tempFile.getAbsolutePath());
     }
 
-
     /**
      * Keeps an object from being garbage-collected until this call completes.
      * <p>
-     * This can be used to keep a Java wrapper around a Rust object handle alive while
-     * earlier calls use that Rust object handle. That is, you should call {@code keepAlive}
+     * This can be used to keep a Java wrapper around a Rust object handle alive
+     * while
+     * earlier calls use that Rust object handle. That is, you should call
+     * {@code keepAlive}
      * <em>after</em> the code where an object must not be garbage-collected.
      * However, most of the time {@link NativeHandleGuard} is a better choice,
      * since the lifetime of the guard is clear.
      * <p>
-     * Effectively equivalent to Java 9's <a href="https://docs.oracle.com/javase/9/docs/api/java/lang/ref/Reference.html#reachabilityFence-java.lang.Object-"><code>reachabilityFence()</code></a>.
-     * Uses {@code native} because the JVM can't look into the implementation of the method
-     * and optimize away the use of {@code obj}. (The actual implementation does nothing.)
+     * Effectively equivalent to Java 9's <a href=
+     * "https://docs.oracle.com/javase/9/docs/api/java/lang/ref/Reference.html#reachabilityFence-java.lang.Object-"><code>reachabilityFence()</code></a>.
+     * Uses {@code native} because the JVM can't look into the implementation of the
+     * method
+     * and optimize away the use of {@code obj}. (The actual implementation does
+     * nothing.)
      */
     public static native void keepAlive(Object obj);
 
-    public static native String hello(String input);
+    public static native void loggerInitialize(int max_level, Object loggerObject);
+
+    public static native void loggerSetMaxLevel(int max_level);
 
     public static native long initializeGraphState(byte[] environment);
 
@@ -79,7 +85,8 @@ public final class Native {
 
     public static native byte[] forceCalculateGraphs(long stateHandle, long dsnpUserId);
 
-    public static native byte[] getConnectionsForUserGraph(long stateHandle, long dsnpUserId, int schemaId, boolean includePending);
+    public static native byte[] getConnectionsForUserGraph(long stateHandle, long dsnpUserId, int schemaId,
+            boolean includePending);
 
     public static native byte[] getUsersWithoutKeys(long stateHandle);
 
