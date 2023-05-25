@@ -66,12 +66,6 @@ class LibraryTest {
     }
 
     @Test
-    void hello_should_work() {
-        String result = Native.hello("Java");
-        assertEquals(result, "Hello, Java!");
-    }
-
-    @Test
     void keep_alive_should_work() {
         Native.keepAlive(this);
     }

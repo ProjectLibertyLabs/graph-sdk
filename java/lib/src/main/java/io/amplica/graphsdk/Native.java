@@ -61,8 +61,6 @@ public final class Native {
      */
     public static native void keepAlive(Object obj);
 
-    public static native String hello(String input);
-
     public static native void loggerInitialize(int max_level, Object loggerObject);
 
     public static native void loggerSetMaxLevel(int max_level);
