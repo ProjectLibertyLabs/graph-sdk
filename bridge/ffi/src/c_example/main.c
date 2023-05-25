@@ -213,7 +213,6 @@ int test_graph_sdk_ffi() {
         // Clean up
         free_dsnp_graph_error(importresult.error);
         free_dsnp_graph_error(contains_result_1.error);
-        free_dsnp_graph_error(contains_result_2.error);
         free_dsnp_graph_error(contains_result_invalid.error);
         free_dsnp_graph_error(count_result.error);
         free_graph_state(state);
