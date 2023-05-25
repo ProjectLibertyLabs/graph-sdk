@@ -139,23 +139,25 @@ impl log::Log for SLF4JLogger {
 	fn flush(&self) {}
 }
 
-/// A low-level version of `run_ffi_safe` that just aborts on errors.
-///
-/// This is important for logging failures because we might want to log during the normal
-/// `run_ffi_safe`. This should *not* be used normally because we don't want to crash the app!
+/// This is important for logging failures. This should *not* be used normally because we don't want to crash the app!
 fn abort_on_panic(f: impl FnOnce()) {
-	catch_unwind(AssertUnwindSafe(f)).unwrap_or_else(|_e| {
-		eprintln!("fatal error");
-		// eprintln!("fatal error: {}", describe_panic(&e));
+	catch_unwind(AssertUnwindSafe(f)).unwrap_or_else(|e| {
+		let msg = {
+			if let Some(msg) = e.downcast_ref::<&str>() {
+				msg.to_string()
+			} else if let Some(msg) = e.downcast_ref::<String>() {
+				msg.to_string()
+			} else {
+				"unknown panic from native code".to_string()
+			}
+		};
+		eprintln!("fatal error: {}", msg);
 		abort();
 	});
 }
 
 fn set_max_level_from_slf4j_level(max_level: jint) {
-	let level: SLF4JLogLevel = match max_level.try_into() {
-		Ok(level) => level,
-		_ => panic!("invalid log level"),
-	};
+	let level: SLF4JLogLevel = max_level.try_into().unwrap_or(SLF4JLogLevel::Warn); // Default to warning if invalid log level passed
 
 	log::set_max_level(log::Level::from(level).to_level_filter());
 }
@@ -205,7 +207,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerSetMaxLevel(
 	_class: JClass,
 	max_level: jint,
 ) {
-	abort_on_panic(|| set_max_level_from_slf4j_level(max_level));
+	set_max_level_from_slf4j_level(max_level);
 }
 
 /// Function mainly just for testing the Java side of this implementation.

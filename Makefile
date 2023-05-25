@@ -69,7 +69,7 @@ test-jni: build-jni
 .PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
-	@cargo build -p dsnp-graph-sdk-jni --release
+	cargo build -p dsnp-graph-sdk-jni --release
 	@./scripts/install_jni.sh
 
 install-protos:
