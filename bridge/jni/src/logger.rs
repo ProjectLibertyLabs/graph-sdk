@@ -85,12 +85,19 @@ impl SLF4JLogger {
 	fn log_impl(&self, record: &log::Record) -> jni::errors::Result<()> {
 		let mut env = self.vm.get_env()?;
 		let level: &str = SLF4JLogLevel::from(record.level()).into();
-		let message = format!(
-			"{}:{}: {}",
-			record.file().unwrap_or("<unknown>"),
-			record.line().unwrap_or(0),
-			record.args(),
-		);
+		let message = match record.level() {
+			log::Level::Error =>
+				if let Some(file) = record.file() {
+					if let Some(line) = record.line() {
+						format!("{}:{}: {}", file, line, record.args())
+					} else {
+						format!("{}: {}", file, record.args())
+					}
+				} else {
+					format!("{}", record.args())
+				},
+			_ => format!("{}", record.args()),
+		};
 
 		const SIGNATURE: &str = "(Ljava/lang/String;)V";
 		let jstr = env.new_string(message.clone())?;
@@ -154,7 +161,7 @@ fn set_max_level_from_slf4j_level(max_level: jint) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_frequency_Native_loggerInitialize(
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerInitialize(
 	env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
@@ -193,7 +200,7 @@ pub unsafe extern "C" fn Java_frequency_Native_loggerInitialize(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_frequency_Native_loggerSetMaxLevel(
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerSetMaxLevel(
 	_env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
@@ -204,7 +211,7 @@ pub unsafe extern "C" fn Java_frequency_Native_loggerSetMaxLevel(
 /// Function mainly just for testing the Java side of this implementation.
 /// Can be called in production code, but there's really no reason to.
 #[no_mangle]
-pub unsafe extern "C" fn Java_frequency_LibraryTest_log(
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_LibraryTest_log(
 	mut env: JNIEnv,
 	_class: JClass,
 	level: jint,

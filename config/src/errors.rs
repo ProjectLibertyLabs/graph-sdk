@@ -2,9 +2,10 @@
 //!
 use super::*;
 use thiserror::Error;
+
 pub type DsnpGraphResult<T> = std::result::Result<T, DsnpGraphError>;
 
-#[repr(C, u8)]
+#[repr(u8)]
 #[derive(Debug, Error)]
 pub enum DsnpGraphError {
 	#[error(transparent)]
@@ -51,6 +52,9 @@ pub enum DsnpGraphError {
 
 	#[error("Failed to acquire write lock on state manager")]
 	FailedtoWriteLockStateManager,
+
+	#[error("FFI error: {0}")]
+	FFIError(String),
 
 	#[error("Graph is full")]
 	GraphIsFull,
@@ -114,7 +118,7 @@ pub enum DsnpGraphError {
 	)]
 	PridsLenShouldBeEqualToConnectionsLen(PageId, usize, usize),
 
-	#[error(" unsupported schema: {0}")]
+	#[error("Unsupported schema: {0}")]
 	UnsupportedSchema(SchemaId),
 
 	#[error(transparent)]
@@ -169,6 +173,7 @@ impl DsnpGraphError {
 			DsnpGraphError::Unknown(..) => 37,
 			DsnpGraphError::UserGraphNotImported(_) => 38,
 			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 39,
+			DsnpGraphError::FFIError(_) => 40,
 		}
 	}
 }
