@@ -301,6 +301,48 @@ int test_graph_sdk_ffi() {
         free_dsnp_graph_error(state_result.error);
         free_dsnp_graph_error(importresult.error);
     }
+    // Test 6 bad schema id should fail
+    {
+        Environment env;
+        env.tag = Mainnet;
+        GraphState* state = NULL;
+
+        // Set up import data
+        DsnpUserId dsnp_user_id_1 = 1;
+
+        // Bad pages 
+        uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+        size_t page_data_1_content_len = 13;
+        PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+
+        PageData pages[] = {page_data_1};
+        size_t pages_len = 1;
+
+        ImportBundle importbundle_1 = {
+            .dsnp_user_id = dsnp_user_id_1,
+            .schema_id = 1000,
+            .key_pairs = NULL,
+            .key_pairs_len = 0,
+            .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
+            .pages = &pages[0],
+            .pages_len = pages_len
+        };
+
+        ImportBundle importbundles[] = {importbundle_1};
+        size_t importbundles_len = 1;
+
+        // Initialize graph state
+        DsnpGraphStateResult_Error state_result = initialize_graph_state(&env);
+        ASSERT(state_result.error == NULL, "Graph state initialization failed");
+
+        // Import user data
+        DsnpGraphBooleanResult_Error importresult = graph_import_users_data(
+            state, &importbundles[0], importbundles_len);
+        ASSERT(importresult.error != NULL, "Expected import to fail due to bad schema id");
+        free_graph_state(state);
+        free_dsnp_graph_error(state_result.error);
+        free_dsnp_graph_error(importresult.error);
+    }
 
     return 0;
 }
