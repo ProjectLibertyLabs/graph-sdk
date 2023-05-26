@@ -165,9 +165,13 @@ int test_graph_sdk_ffi() {
         uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
         size_t page_data_1_content_len = 13;
         PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+        uint8_t page_data_2_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+        size_t page_data_2_content_len = 13;
+        PageData page_data_2 = {2, page_data_1_content, page_data_1_content_len, 0};
 
-        PageData pages[] = {page_data_1};
-        size_t pages_len = 1;
+
+        PageData pages[] = {page_data_1, page_data_2};
+        size_t pages_len = 2;
 
         ImportBundle importbundle_1 = {
             .dsnp_user_id = dsnp_user_id_1,
@@ -178,9 +182,18 @@ int test_graph_sdk_ffi() {
             .pages = &pages[0],
             .pages_len = pages_len
         };
-        ImportBundle importbundles[] = {importbundle_1};
+        ImportBundle importbundle_2 = {
+            .dsnp_user_id = dsnp_user_id_2,
+            .schema_id = 1,
+            .key_pairs = NULL,
+            .key_pairs_len = 0,
+            .dsnp_keys = {dsnp_user_id_2, 0, NULL, 0},
+            .pages = &pages[0],
+            .pages_len = pages_len
+        };
+        ImportBundle importbundles[] = {importbundle_1, importbundle_2};
 
-        size_t importbundles_len = 1;
+        size_t importbundles_len = 2;
 
         // Initialize graph state
         DsnpGraphStateResult_Error state_result = initialize_graph_state(&env);
@@ -197,12 +210,18 @@ int test_graph_sdk_ffi() {
         DsnpGraphCountResult_Error count_result = graph_users_count(state);
         ASSERT(count_result.error == NULL, "Failed to count users in graph");
         size_t userscount = *(count_result.result);
-        ASSERT(userscount == 1, "Number of users in the graph is incorrect");
+        ASSERT(userscount == 2, "Number of users in the graph is incorrect");
 
         DsnpGraphBooleanResult_Error contains_result_1 = graph_contains_user(state, &dsnp_user_id_1);
         ASSERT(contains_result_1.error == NULL, "Failed to check if graph contains user 1");
         bool contains_user_1 = *(contains_result_1.result);
         ASSERT(contains_user_1, "Graph should contain user 1");
+
+
+        DsnpGraphBooleanResult_Error contains_result_2 = graph_contains_user(state, &dsnp_user_id_2);
+        ASSERT(contains_result_2.error == NULL, "Failed to check if graph contains user 2");
+        bool contains_user_2 = *(contains_result_1.result);
+        ASSERT(contains_user_2, "Graph should contain user 2");
 
         DsnpUserId invalid_user_id = dsnp_user_id_2 + 1;
         DsnpGraphBooleanResult_Error contains_result_invalid = graph_contains_user(state, &invalid_user_id);
@@ -217,6 +236,70 @@ int test_graph_sdk_ffi() {
         free_dsnp_graph_error(count_result.error);
         free_graph_state(state);
         free_dsnp_graph_error(state_result.error);
+    }
+    // Test 5 add bad page get bad response
+    {
+        Environment env;
+        env.tag = Mainnet;
+        GraphState* state = NULL;
+
+        // Set up import data
+        DsnpUserId dsnp_user_id_1 = 1;
+        DsnpUserId dsnp_user_id_2 = 2;
+
+        Connection connections_1[] = {{2, 0}, {3, 0}, {4, 0}, {5, 0}};
+        size_t connections_1_len = sizeof(connections_1) / sizeof(Connection);
+
+        Connection connections_2[] = {{10, 0}, {11, 0}, {12, 0}, {13, 0}};
+        size_t connections_2_len = sizeof(connections_2) / sizeof(Connection);
+
+        Connection* connections_ptr_1 = connections_1;
+        Connection* connections_ptr_2 = connections_2;
+
+        // Bad pages 
+        uint8_t page_data_1_content[] = {1, 2, 4, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+        size_t page_data_1_content_len = 1;
+        PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+        uint8_t page_data_2_content[] = {24, 55, 96, 97, 96, 99, 55, 96, 224, 98, 96, 0, 0};
+        size_t page_data_2_content_len = 12;
+        PageData page_data_2 = {2, page_data_1_content, page_data_1_content_len, 0};
+
+        PageData pages[] = {page_data_1, page_data_2};
+        size_t pages_len = 2;
+
+        ImportBundle importbundle_1 = {
+            .dsnp_user_id = dsnp_user_id_1,
+            .schema_id = 1,
+            .key_pairs = NULL,
+            .key_pairs_len = 0,
+            .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
+            .pages = &pages[0],
+            .pages_len = pages_len
+        };
+        ImportBundle importbundle_2 = {
+            .dsnp_user_id = dsnp_user_id_2,
+            .schema_id = 1,
+            .key_pairs = NULL,
+            .key_pairs_len = 0,
+            .dsnp_keys = {dsnp_user_id_2, 0, NULL, 0},
+            .pages = &pages[0],
+            .pages_len = pages_len
+        };
+
+        ImportBundle importbundles[] = {importbundle_1, importbundle_2};
+        size_t importbundles_len = 2;
+
+        // Initialize graph state
+        DsnpGraphStateResult_Error state_result = initialize_graph_state(&env);
+        ASSERT(state_result.error == NULL, "Graph state initialization failed");
+        
+        // Import user data
+        DsnpGraphBooleanResult_Error importresult = graph_import_users_data(
+            state, &importbundles[0], importbundles_len);
+        ASSERT(importresult.error != NULL, "Failed to import users data");
+        free_graph_state(state);
+        free_dsnp_graph_error(state_result.error);
+        free_dsnp_graph_error(importresult.error);
     }
 
     return 0;
