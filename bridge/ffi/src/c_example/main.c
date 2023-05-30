@@ -650,6 +650,93 @@ int api_remove_user_graph_should_remove_user_successfully() {
     return 0;
 }
 
+int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
+    // Arrange
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = initialize_graph_state(&env).result;
+
+    DsnpUserId dsnp_user_id_1 = 1;
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = sizeof(page_data_1_content);
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = sizeof(pages) / sizeof(PageData);
+
+    ImportBundle import_bundle_1 = {
+        .dsnp_user_id = dsnp_user_id_1,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = NULL,
+        .key_pairs_len = 0,
+        .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
+        .pages = pages,
+        .pages_len = pages_len
+    };
+
+    DsnpGraphBooleanResult_Error import_result_1 = graph_import_users_data(state, &import_bundle_1, 1);
+    ASSERT(import_result_1.error == NULL, "Failed to import user data");
+
+    DsnpUserId dsnp_user_id_2 = 10;
+    Connection connection_1 = {dsnp_user_id_2, 1};
+
+    // Generate new public key using libsodium
+    unsigned char new_public_key[crypto_box_PUBLICKEYBYTES];
+    unsigned char new_secret_key[crypto_box_SECRETKEYBYTES];
+    crypto_box_keypair(new_public_key, new_secret_key);
+
+    Action add_graph_key_action = {
+        .tag = AddGraphKey,
+        .add_graph_key = {
+            .owner_dsnp_user_id = dsnp_user_id_1,
+            .new_public_key = new_public_key,
+            .new_public_key_len = crypto_box_PUBLICKEYBYTES
+        }
+    };
+    Action connect_action = {
+        .tag = Connect,
+        .connect = {
+            .owner_dsnp_user_id = dsnp_user_id_1,
+            .connection = connection_1,
+            .dsnp_keys = NULL
+        }
+    };
+    Action disconnect_action = {
+        .tag = Disconnect,
+        .disconnect = {
+            .owner_dsnp_user_id = dsnp_user_id_1,
+            .connection = {3, 1}
+        }
+    };
+    Action actions[] = {add_graph_key_action, connect_action, disconnect_action};
+    size_t actions_len = sizeof(actions) / sizeof(Action);
+
+    DsnpGraphBooleanResult_Error apply_result = graph_apply_actions(state, actions, actions_len);
+    ASSERT(apply_result.error == NULL, "Failed to apply actions");
+
+    DsnpGraphConnectionsResult_Error connections_result = graph_get_connections_for_user(state, &dsnp_user_id_1, &connection_1.schema_id, true);
+    ASSERT(connections_result.error == NULL, "Failed to get connections");
+    GraphConnections* connections = connections_result.result;
+    size_t expected_connections_len = 4;
+
+    DsnpGraphEdge expected_connections[] = {
+        {2, 1},
+        {dsnp_user_id_2, 0},
+        {4, 3},
+        {5, 4}
+    };
+    ASSERT(connections->connections_len == expected_connections_len, "Number of connections is incorrect");
+
+    // Clean up
+    free_graph_state(state);
+    free_dsnp_graph_error(import_result_1.error);
+    free_dsnp_graph_error(apply_result.error);
+    free_graph_connections(connections);
+
+    return 0;
+}
+
 int main() {
     int result = 0;
     
@@ -664,6 +751,7 @@ int main() {
     result += api_import_user_data_should_import_graph_for_private_follow_successfully();
     result += api_import_user_data_with_wrong_encryption_keys_should_fail();
     result += api_remove_user_graph_should_remove_user_successfully();
+    result += api_apply_actions_should_work_as_expected_and_include_changes_in_pending();
     
     if (result == 0) {
         printf("All tests passed!\n");
