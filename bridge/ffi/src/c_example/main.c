@@ -1,3 +1,4 @@
+#include <sodium.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include "dsnp_graph_sdk_ffi.h"
@@ -352,6 +353,127 @@ int test_bad_schema_id_should_fail() {
     return 0;
 }
 
+int test_import_user_data_with_invalid_serialized_public_key_should_fail() {
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = NULL;
+    
+    // Set up import data
+    
+    DsnpUserId dsnp_user_id = 1;
+    
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = 13;
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = 1;
+    
+    GraphKeyPair graph_key_pair = {
+        .key_type = X25519,
+        .secret_key = NULL,
+        .secret_key_len = 0,
+        .public_key = (const uint8_t[]){0, 1}, // invalid serialized public key
+        .public_key_len = 2
+    };
+    
+    ImportBundle import_bundle = {
+        .dsnp_user_id = dsnp_user_id,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = &graph_key_pair,
+        .key_pairs_len = 1,
+        .dsnp_keys = {dsnp_user_id, 0, NULL, 0},
+        .pages = &pages[0],
+        .pages_len = pages_len
+    };
+    
+    // Initialize graph state
+    
+    DsnpGraphStateResult_Error state_result = initialize_graph_state(&env);
+    ASSERT(state_result.error == NULL, "Graph state initialization failed");
+    state = state_result.result;
+    
+    // Import user data
+    
+    DsnpGraphBooleanResult_Error import_result = graph_import_users_data(state, &import_bundle, 1);
+    ASSERT(import_result.error != NULL, "Expected import to fail with invalid serialized public key");
+    
+    // Clean up
+    
+    free_graph_state(state);
+    free_dsnp_graph_error(state_result.error);
+    free_dsnp_graph_error(import_result.error);
+    
+    return 0;
+}
+
+int test_import_user_data_with_invalid_secret_fails(){
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = NULL;
+    
+    // Set up import data
+    
+    DsnpUserId dsnp_user_id = 1;
+    
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = 13;
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = 1;
+    if (sodium_init() < 0) {
+        printf("Failed to initialize libsodium\n");
+        return 1;
+    }
+    unsigned char public_key[crypto_box_PUBLICKEYBYTES];
+    unsigned char secret_key[crypto_box_SECRETKEYBYTES];
+    
+    if (crypto_box_keypair(public_key, secret_key) != 0) {
+        printf("Failed to generate X25519 key pair\n");
+        return 1;
+    }
+    
+    GraphKeyPair graph_key_pair = {
+        .key_type = X25519,
+        .secret_key = (const uint8_t[]){0, 1}, // invalid serialized secret key
+        .secret_key_len = 2,
+        .public_key = public_key,
+        .public_key_len = crypto_box_PUBLICKEYBYTES
+    };
+    
+    ImportBundle import_bundle = {
+        .dsnp_user_id = dsnp_user_id,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = &graph_key_pair,
+        .key_pairs_len = 1,
+        .dsnp_keys = {dsnp_user_id, 0, NULL, 0},
+        .pages = &pages[0],
+        .pages_len = pages_len
+    };
+    
+    // Initialize graph state
+    
+    DsnpGraphStateResult_Error state_result = initialize_graph_state(&env);
+    ASSERT(state_result.error == NULL, "Graph state initialization failed");
+    state = state_result.result;
+    
+    // Import user data
+    
+    DsnpGraphBooleanResult_Error import_result = graph_import_users_data(state, &import_bundle, 1);
+    ASSERT(import_result.error != NULL, "Expected import to fail with invalid serialized public key");
+    
+    // Clean up
+    
+    free_graph_state(state);
+    free_dsnp_graph_error(state_result.error);
+    free_dsnp_graph_error(import_result.error);
+    
+    return 0;
+}
+
 int main() {
     int result = 0;
     
@@ -361,6 +483,8 @@ int main() {
     result += test_import_user_data_for_public_follow();
     result += test_add_bad_page_get_bad_response();
     result += test_bad_schema_id_should_fail();
+    result += test_import_user_data_with_invalid_serialized_public_key_should_fail();
+    result += test_import_user_data_with_invalid_secret_fails();
     
     if (result == 0) {
         printf("All tests passed!\n");

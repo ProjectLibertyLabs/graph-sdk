@@ -128,7 +128,9 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
-      - name: Run tests for ffo
+      - name: Install libsodium
+        run: sudo apt-get install -y libsodium-dev
+      - name: Run tests for ffi
         run: make test-ffi
       - name: Upload artifacts dsnp_graph_sdk_ffi.h and libdsnp_graph_sdk_ffi.a
         uses: actions/upload-artifact@v2
