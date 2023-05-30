@@ -86,8 +86,11 @@ pub fn get_config_for_ffi(environment: &Environment) -> Config {
 
 // Function to convert C-compatible `Config` to a Rust `Config`
 pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
-	let schema_map_slice =
-		unsafe { std::slice::from_raw_parts(config.schema_map, config.schema_map_len) };
+	let schema_map_slice = if config.schema_map.is_null() {
+		&[]
+	} else {
+		unsafe { std::slice::from_raw_parts(config.schema_map, config.schema_map_len) }
+	};
 	let mut schema_map = HashMap::new();
 	for schema_config_tuple in schema_map_slice {
 		schema_map.insert(schema_config_tuple.schema_id, schema_config_tuple.schema_config.clone());
