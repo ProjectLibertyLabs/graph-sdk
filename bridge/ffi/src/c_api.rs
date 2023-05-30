@@ -20,6 +20,24 @@ pub extern "C" fn print_hello_graph() {
 static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 #[no_mangle]
+pub unsafe extern "C" fn get_graph_config(
+	environment: *const Environment,
+) -> FFIResult<Config, GraphError> {
+	let result = panic::catch_unwind(|| {
+		let env = &*environment;
+		let config_for_ffi = get_config_for_ffi(env);
+		FFIResult::new(config_for_ffi)
+	});
+
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to get graph config: {:?}",
+			error
+		))))
+	})
+}
+
+#[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
 	environment: *const Environment,
 ) -> FFIResult<GraphState, GraphError> {

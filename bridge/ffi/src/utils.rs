@@ -1,7 +1,88 @@
 use crate::bindings::*;
-use dsnp_graph_config::DsnpVersion;
+use dsnp_graph_config::{DsnpVersion, MAINNET_CONFIG, ROCOCO_CONFIG};
 use std::{collections::HashMap, mem::ManuallyDrop};
 
+// Function to convert Rust `Config` to C-compatible `Config`
+pub fn get_config_for_ffi(environment: &Environment) -> Config {
+	match environment {
+		Environment::Mainnet => {
+			let rust_config = &MAINNET_CONFIG;
+			let schema_map = rust_config
+				.schema_map
+				.iter()
+				.map(|(schema_id, schema_config)| SchemaConfigTuple {
+					schema_id: *schema_id,
+					schema_config: schema_config.clone(),
+				})
+				.collect::<Vec<SchemaConfigTuple>>();
+
+			let dsnp_versions = rust_config
+				.dsnp_versions
+				.iter()
+				.map(|version| match version {
+					dsnp_graph_config::DsnpVersion::Version1_0 => DsnpVersion::Version1_0,
+				})
+				.collect::<Vec<DsnpVersion>>();
+
+			Config {
+				sdk_max_users_graph_size: rust_config.sdk_max_users_graph_size,
+				sdk_max_stale_friendship_days: rust_config.sdk_max_stale_friendship_days,
+				max_graph_page_size_bytes: rust_config.max_graph_page_size_bytes,
+				max_page_id: rust_config.max_page_id,
+				max_key_page_size_bytes: rust_config.max_key_page_size_bytes,
+				schema_map_len: schema_map.len(),
+				schema_map: ManuallyDrop::new(schema_map).as_mut_ptr(),
+				dsnp_versions_len: dsnp_versions.len(),
+				dsnp_versions: ManuallyDrop::new(dsnp_versions).as_mut_ptr(),
+			}
+		},
+		Environment::Rococo => {
+			let rust_config = &ROCOCO_CONFIG;
+			let schema_map = rust_config
+				.schema_map
+				.iter()
+				.map(|(schema_id, schema_config)| SchemaConfigTuple {
+					schema_id: *schema_id,
+					schema_config: schema_config.clone(),
+				})
+				.collect::<Vec<SchemaConfigTuple>>();
+
+			let dsnp_versions = rust_config
+				.dsnp_versions
+				.iter()
+				.map(|version| match version {
+					dsnp_graph_config::DsnpVersion::Version1_0 => DsnpVersion::Version1_0,
+				})
+				.collect::<Vec<DsnpVersion>>();
+
+			Config {
+				sdk_max_users_graph_size: rust_config.sdk_max_users_graph_size,
+				sdk_max_stale_friendship_days: rust_config.sdk_max_stale_friendship_days,
+				max_graph_page_size_bytes: rust_config.max_graph_page_size_bytes,
+				max_page_id: rust_config.max_page_id,
+				max_key_page_size_bytes: rust_config.max_key_page_size_bytes,
+				schema_map_len: schema_map.len(),
+				schema_map: ManuallyDrop::new(schema_map).as_mut_ptr(),
+				dsnp_versions_len: dsnp_versions.len(),
+				dsnp_versions: ManuallyDrop::new(dsnp_versions).as_mut_ptr(),
+			}
+		},
+		Environment::Dev(config) => {
+			let dev_config = Config {
+				sdk_max_users_graph_size: config.sdk_max_users_graph_size,
+				sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
+				max_graph_page_size_bytes: config.max_graph_page_size_bytes,
+				max_page_id: config.max_page_id,
+				max_key_page_size_bytes: config.max_key_page_size_bytes,
+				schema_map_len: config.schema_map_len,
+				schema_map: config.schema_map,
+				dsnp_versions_len: config.dsnp_versions_len,
+				dsnp_versions: config.dsnp_versions,
+			};
+			dev_config
+		},
+	}
+}
 // Function to convert C-compatible `Config` to a Rust `Config`
 pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 	let schema_map_slice =
