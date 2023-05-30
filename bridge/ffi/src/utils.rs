@@ -83,6 +83,7 @@ pub fn get_config_for_ffi(environment: &Environment) -> Config {
 		},
 	}
 }
+
 // Function to convert C-compatible `Config` to a Rust `Config`
 pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 	let schema_map_slice =

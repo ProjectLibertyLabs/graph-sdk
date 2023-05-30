@@ -516,3 +516,12 @@ pub unsafe extern "C" fn free_dsnp_graph_error_message(error_message: *const c_c
 		}
 	}
 }
+
+// Free graph config
+#[no_mangle]
+pub unsafe extern "C" fn free_graph_config(config: *mut Config) {
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(config);
+	});
+	result.unwrap_or(())
+}
