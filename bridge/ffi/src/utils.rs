@@ -96,8 +96,12 @@ pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 		schema_map.insert(schema_config_tuple.schema_id, schema_config_tuple.schema_config.clone());
 	}
 
-	let dsnp_versions_slice =
-		unsafe { std::slice::from_raw_parts(config.dsnp_versions, config.dsnp_versions_len) };
+	let dsnp_versions_slice = if config.dsnp_versions.is_null() {
+		&[]
+	} else {
+		unsafe { std::slice::from_raw_parts(config.dsnp_versions, config.dsnp_versions_len) }
+	};
+
 	let mut dsnp_versions = Vec::new();
 	for version in dsnp_versions_slice {
 		let rust_version = match version {
