@@ -474,6 +474,182 @@ int test_import_user_data_with_invalid_secret_fails(){
     return 0;
 }
 
+int api_import_user_data_should_import_graph_for_private_follow_successfully() {
+    // Arrange
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = initialize_graph_state(&env).result;
+
+    unsigned char secret_key[crypto_box_SECRETKEYBYTES];
+    unsigned char public_key[crypto_box_PUBLICKEYBYTES];
+    crypto_box_keypair(public_key, secret_key);
+
+    DsnpUserId dsnp_user_id = 1;
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = 13;
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = 1;
+
+    GraphKeyPair graph_key_pair = {
+        .key_type = X25519,
+        .secret_key = secret_key,
+        .secret_key_len = sizeof(secret_key),
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key)
+    };
+    ImportBundle import_bundle = {
+        .dsnp_user_id = dsnp_user_id,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = &graph_key_pair,
+        .key_pairs_len = 1,
+        .dsnp_keys = {dsnp_user_id, 0, NULL, 0},
+        .pages = &pages[0],
+        .pages_len = pages_len
+    };
+
+    // Act
+    DsnpGraphBooleanResult_Error importresult = graph_import_users_data(state, &import_bundle, 1);
+
+    // Assert
+    ASSERT(importresult.error == NULL, "Failed to import users data");
+
+    DsnpGraphCountResult_Error count_result = graph_users_count(state);
+    ASSERT(count_result.error == NULL, "Failed to count users in graph");
+    size_t userscount = *(count_result.result);
+    ASSERT(userscount == 1, "Number of users in the graph is incorrect");
+
+    DsnpGraphBooleanResult_Error contains_result = graph_contains_user(state, &dsnp_user_id);
+    ASSERT(contains_result.error == NULL, "Failed to check if graph contains user");
+    bool contains_user = *(contains_result.result);
+    ASSERT(contains_user, "Graph should contain user");
+
+    DsnpUserId invalid_user_id = dsnp_user_id + 1;
+    DsnpGraphBooleanResult_Error contains_result_invalid = graph_contains_user(state, &invalid_user_id);
+    ASSERT(contains_result_invalid.error == NULL, "Failed to check if graph contains invalid user");
+    bool contains_invalid_user = *(contains_result_invalid.result);
+    ASSERT(!contains_invalid_user, "Graph should not contain invalid user");
+
+    // Clean up
+    free_graph_state(state);
+    free_dsnp_graph_error(importresult.error);
+    free_dsnp_graph_error(contains_result.error);
+    free_dsnp_graph_error(contains_result_invalid.error);
+    free_dsnp_graph_error(count_result.error);
+
+
+    return 0;
+}
+
+int api_import_user_data_with_wrong_encryption_keys_should_fail() {
+    // Arrange
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = initialize_graph_state(&env).result;
+
+    unsigned char resolved_key[crypto_secretbox_KEYBYTES];
+    unsigned char secret_key[crypto_box_SECRETKEYBYTES];
+    unsigned char public_key[crypto_box_PUBLICKEYBYTES];
+    crypto_box_keypair(public_key, secret_key);
+
+    DsnpUserId dsnp_user_id = 123;
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = sizeof(page_data_1_content);
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = sizeof(pages) / sizeof(PageData);
+
+    GraphKeyPair graph_key_pair = {
+        .key_type = X25519,
+        .secret_key = resolved_key,
+        .secret_key_len = sizeof(resolved_key),
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key)
+    };
+    ImportBundle import_bundle = {
+        .dsnp_user_id = dsnp_user_id,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = &graph_key_pair,
+        .key_pairs_len = 1,
+        .dsnp_keys = {dsnp_user_id, 0, NULL, 0},
+        .pages = pages,
+        .pages_len = pages_len
+    };
+
+    // Act
+    DsnpGraphBooleanResult_Error import_result = graph_import_users_data(state, &import_bundle, 1);
+
+    // Assert
+    ASSERT(import_result.error != NULL, "Import should fail");
+
+    DsnpGraphBooleanResult_Error contains_result = graph_contains_user(state, &dsnp_user_id);
+    ASSERT(contains_result.error == NULL, "Failed to check if graph contains user");
+    bool contains_user = *(contains_result.result);
+    ASSERT(!contains_user, "Graph should not contain user");
+
+    // Clean up
+    free_graph_state(state);
+    free_dsnp_graph_error(import_result.error);
+    free_dsnp_graph_error(contains_result.error);
+
+    return 0;
+}
+
+int api_remove_user_graph_should_remove_user_successfully() {
+    // Arrange
+    Environment env;
+    env.tag = Mainnet;
+    GraphState* state = initialize_graph_state(&env).result;
+
+    DsnpUserId dsnp_user_id_1 = 1;
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    size_t page_data_1_content_len = sizeof(page_data_1_content);
+
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    
+    PageData pages[] = {page_data_1};
+    size_t pages_len = sizeof(pages) / sizeof(PageData);
+
+    ImportBundle import_bundle_1 = {
+        .dsnp_user_id = dsnp_user_id_1,
+        .schema_id = 1, // Set the correct schema ID here
+        .key_pairs = NULL,
+        .key_pairs_len = 0,
+        .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
+        .pages = pages,
+        .pages_len = pages_len
+    };
+
+    // Act
+    DsnpGraphBooleanResult_Error import_result_1 = graph_import_users_data(state, &import_bundle_1, 1);
+    ASSERT(import_result_1.error == NULL, "Failed to import user data");
+
+    graph_remove_user(state, &dsnp_user_id_1);
+
+    // Assert
+    DsnpGraphCountResult_Error count_result = graph_users_count(state);
+    ASSERT(count_result.error == NULL, "Failed to count users in graph");
+    size_t users_count = *(count_result.result);
+    ASSERT(users_count == 0, "Number of users in the graph is incorrect");
+
+    DsnpGraphBooleanResult_Error contains_result = graph_contains_user(state, &dsnp_user_id_1);
+    ASSERT(contains_result.error == NULL, "Failed to check if graph contains user");
+    bool contains_user = *(contains_result.result);
+    ASSERT(!contains_user, "Graph should not contain user");
+
+    // Clean up
+    free_graph_state(state);
+    free_dsnp_graph_error(import_result_1.error);
+    free_dsnp_graph_error(count_result.error);
+    free_dsnp_graph_error(contains_result.error);
+
+    return 0;
+}
+
 int main() {
     int result = 0;
     
@@ -485,6 +661,9 @@ int main() {
     result += test_bad_schema_id_should_fail();
     result += test_import_user_data_with_invalid_serialized_public_key_should_fail();
     result += test_import_user_data_with_invalid_secret_fails();
+    result += api_import_user_data_should_import_graph_for_private_follow_successfully();
+    result += api_import_user_data_with_wrong_encryption_keys_should_fail();
+    result += api_remove_user_graph_should_remove_user_successfully();
     
     if (result == 0) {
         printf("All tests passed!\n");
