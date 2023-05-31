@@ -217,7 +217,9 @@ impl GraphAPI for GraphState {
 			Some(graph) => graph,
 			None => return Err(DsnpGraphError::UserGraphNotImported(*user_id)),
 		};
-		let graph = user_graph.graph(&private_friendship_schema_id);
+		let graph = user_graph
+			.graph(&private_friendship_schema_id)
+			.ok_or(DsnpGraphError::InvalidSchemaId(private_friendship_schema_id))?;
 		graph.get_one_sided_friendships()
 	}
 
@@ -302,7 +304,9 @@ impl GraphState {
 				user_key_manager.import_key_pairs(key_pairs.clone())?;
 			};
 
-			let graph = user_graph.graph_mut(&schema_id);
+			let graph = user_graph
+				.graph_mut(&schema_id)
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 			graph.clear();
 
 			match connection_type.privacy_type() {
