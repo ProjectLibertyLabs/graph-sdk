@@ -12,8 +12,8 @@ repositories {
 		name = "GithubPackages"
 		url = uri("https://maven.pkg.github.com/LibertyDSNP/substrate-client-java")
 		credentials {
-			username = project.findProperty("gpr.user") as String? ?: System.getenv("LIBERTY_READ_ACTOR")
-			password = project.findProperty("gpr.key") as String? ?: System.getenv("LIBERTY_READ_TOKEN")
+			username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
+			password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
 		}
 	}
 	mavenLocal()
