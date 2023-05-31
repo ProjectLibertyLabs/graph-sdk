@@ -7,7 +7,7 @@ plugins {
     id("maven-publish")
 }
 
-group = "io.amplica.frequency.graph-sdk"
+group = "io.amplica.graphsdk"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
