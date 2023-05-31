@@ -11,10 +11,10 @@ pub fn get_schema_from(env: Environment, connection_type: ConnectionType) -> Sch
 		.expect("get_schema_from connection_type should exist")
 }
 
-pub fn create_new_keys() -> (StackKeyPair, ResolvedKeyPair, GraphKeyPair) {
+pub fn create_new_keys(key_id: u64) -> (StackKeyPair, ResolvedKeyPair, GraphKeyPair) {
 	let key_pair_raw = StackKeyPair::gen();
 	let resolved_key =
-		ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 0 };
+		ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id };
 	let keypair = GraphKeyPair {
 		secret_key: key_pair_raw.secret_key.to_vec(),
 		public_key: key_pair_raw.public_key.to_vec(),

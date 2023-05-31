@@ -62,6 +62,9 @@ pub enum DsnpGraphError {
 	#[error("GraphState instance is full")]
 	GraphStateIsFull,
 
+	#[error("Invalid user id: {0}")]
+	InvalidDsnpUserId(DsnpUserId),
+
 	#[error("Invalid schema id: {0}")]
 	InvalidSchemaId(SchemaId),
 
@@ -76,6 +79,9 @@ pub enum DsnpGraphError {
 
 	#[error("Invalid secret key")]
 	InvalidSecretKey,
+
+	#[error("{0}")]
+	InvalidInput(String),
 
 	#[error("Imported key not found for user {0} and id {1}")]
 	ImportedKeyNotFound(DsnpUserId, String),
@@ -151,29 +157,31 @@ impl DsnpGraphError {
 			DsnpGraphError::FailedtoWriteLockStateManager => 15,
 			DsnpGraphError::GraphIsFull => 16,
 			DsnpGraphError::GraphStateIsFull => 17,
-			DsnpGraphError::InvalidSchemaId(_) => 18,
-			DsnpGraphError::InvalidPageId(_) => 19,
-			DsnpGraphError::InvalidPrivateSchemaId => 20,
-			DsnpGraphError::InvalidPublicKey => 21,
-			DsnpGraphError::InvalidSecretKey => 22,
-			DsnpGraphError::ImportedKeyNotFound(..) => 23,
-			DsnpGraphError::IncorrectConnectionType(_) => 24,
-			DsnpGraphError::IncompatiblePrivacyTypeForBlobExport => 25,
-			DsnpGraphError::KeyDerivationError(_) => 26,
-			DsnpGraphError::NoPrisImportedForUser(_) => 27,
-			DsnpGraphError::NoPublicKeyFoundForUser(_) => 28,
-			DsnpGraphError::NoResolvedActiveKeyFound => 29,
-			DsnpGraphError::NewPageForExistingPageId => 30,
-			DsnpGraphError::PageAggressivelyFull => 31,
-			DsnpGraphError::PageTriviallyFull => 32,
-			DsnpGraphError::PublicKeyAlreadyExists(_) => 33,
-			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 34,
-			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 35,
-			DsnpGraphError::UnsupportedSchema(_) => 36,
-			DsnpGraphError::Unknown(..) => 37,
-			DsnpGraphError::UserGraphNotImported(_) => 38,
-			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 39,
-			DsnpGraphError::FFIError(_) => 40,
+			DsnpGraphError::InvalidDsnpUserId(_) => 18,
+			DsnpGraphError::InvalidSchemaId(_) => 19,
+			DsnpGraphError::InvalidPageId(_) => 20,
+			DsnpGraphError::InvalidPrivateSchemaId => 21,
+			DsnpGraphError::InvalidPublicKey => 22,
+			DsnpGraphError::InvalidSecretKey => 23,
+			DsnpGraphError::InvalidInput(_) => 24,
+			DsnpGraphError::ImportedKeyNotFound(..) => 25,
+			DsnpGraphError::IncorrectConnectionType(_) => 26,
+			DsnpGraphError::IncompatiblePrivacyTypeForBlobExport => 27,
+			DsnpGraphError::KeyDerivationError(_) => 28,
+			DsnpGraphError::NoPrisImportedForUser(_) => 29,
+			DsnpGraphError::NoPublicKeyFoundForUser(_) => 30,
+			DsnpGraphError::NoResolvedActiveKeyFound => 31,
+			DsnpGraphError::NewPageForExistingPageId => 32,
+			DsnpGraphError::PageAggressivelyFull => 33,
+			DsnpGraphError::PageTriviallyFull => 34,
+			DsnpGraphError::PublicKeyAlreadyExists(_) => 35,
+			DsnpGraphError::PublicKeyNotCompatibleWithSecretKey => 36,
+			DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(..) => 37,
+			DsnpGraphError::UnsupportedSchema(_) => 38,
+			DsnpGraphError::Unknown(..) => 39,
+			DsnpGraphError::UserGraphNotImported(_) => 40,
+			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 41,
+			DsnpGraphError::FFIError(_) => 42,
 		}
 	}
 }

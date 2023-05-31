@@ -1,7 +1,15 @@
 use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
+use dsnp_graph_config::{
+	errors::{
+		DsnpGraphError::{
+			InvalidDsnpUserId, InvalidInput, InvalidPublicKey, InvalidSchemaId, InvalidSecretKey,
+		},
+		DsnpGraphResult,
+	},
+	GraphKeyType, InputValidation, SchemaId,
+};
 pub use dsnp_graph_config::{ConnectionType, PageId, PrivacyType};
-use dsnp_graph_config::{GraphKeyType, SchemaId};
-use std::{cmp::Ordering, fmt::Debug};
+use std::{cmp::Ordering, collections::HashSet, fmt::Debug};
 
 /// Page Hash type
 pub type PageHash = u32;
@@ -19,6 +27,20 @@ pub struct PageData {
 	pub content_hash: PageHash,
 }
 
+/// implementing input validation for Page Data
+impl InputValidation for PageData {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.content.len() > 0 && self.content_hash == PageHash::default() {
+			return DsnpGraphResult::Err(InvalidInput(format!(
+				"Imported Page Data and page hash {0} does not match!",
+				self.content_hash
+			)))
+		}
+
+		Ok(())
+	}
+}
+
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct KeyData {
 	/// index of the key stored on chain
@@ -26,6 +48,16 @@ pub struct KeyData {
 
 	/// raw content of key data
 	pub content: Vec<u8>,
+}
+
+/// implementing input validation for key Data
+impl InputValidation for KeyData {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.content.is_empty() {
+			return DsnpGraphResult::Err(InvalidInput("key_data content is empty!".to_string()))
+		}
+		Ok(())
+	}
 }
 
 /// Key Pair wrapper
@@ -39,6 +71,19 @@ pub struct GraphKeyPair {
 
 	/// secret key raw
 	pub secret_key: Vec<u8>,
+}
+
+/// implementing input validation for import bundle
+impl InputValidation for GraphKeyPair {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.public_key.is_empty() {
+			return DsnpGraphResult::Err(InvalidPublicKey)
+		}
+		if self.secret_key.is_empty() {
+			return DsnpGraphResult::Err(InvalidSecretKey)
+		}
+		Ok(())
+	}
 }
 
 /// A resolved KeyPair used for encryption and PRI calculations
@@ -70,6 +115,35 @@ pub struct ImportBundle {
 	pub pages: Vec<PageData>,
 }
 
+/// implementing input validation for import bundle
+impl InputValidation for ImportBundle {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.dsnp_user_id == 0 {
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+		}
+		if self.schema_id == 0 {
+			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id))
+		}
+
+		for k in &self.key_pairs {
+			k.validate()?;
+		}
+
+		self.dsnp_keys.validate()?;
+
+		for p in &self.pages {
+			p.validate()?;
+		}
+
+		let unique_pages: HashSet<_> = self.pages.iter().map(|p| p.page_id).collect();
+		if unique_pages.len() < self.pages.len() {
+			return DsnpGraphResult::Err(InvalidInput("Duplicated pageId in PageData".to_string()))
+		}
+
+		Ok(())
+	}
+}
+
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
 #[repr(C)]
@@ -85,6 +159,32 @@ pub struct DsnpKeys {
 	pub keys: Vec<KeyData>,
 }
 
+/// implementing input validation for Dsnp Keys
+impl InputValidation for DsnpKeys {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.dsnp_user_id == 0 {
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+		}
+
+		if self.keys.len() > 0 && self.keys_hash == PageHash::default() {
+			return DsnpGraphResult::Err(InvalidInput(format!(
+				"Imported Keys and page hash {0} does not match!",
+				self.keys_hash
+			)))
+		}
+
+		for k in &self.keys {
+			k.validate()?;
+		}
+		let unique_indices: HashSet<_> = self.keys.iter().map(|k| k.index).collect();
+		if unique_indices.len() < self.keys.len() {
+			return DsnpGraphResult::Err(InvalidInput("Duplicated key index in KeyData".to_string()))
+		}
+
+		Ok(())
+	}
+}
+
 /// A connection representation in graph sdk
 #[repr(C)]
 #[derive(Debug, Clone)]
@@ -94,6 +194,20 @@ pub struct Connection {
 
 	/// Schema id of imported data
 	pub schema_id: SchemaId,
+}
+
+/// implementing input validation for Connection
+impl InputValidation for Connection {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.dsnp_user_id == 0 {
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+		}
+		if self.schema_id == 0 {
+			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id))
+		}
+
+		Ok(())
+	}
 }
 
 /// Different kind of actions that can be applied to the graph
@@ -138,6 +252,34 @@ impl Action {
 			Action::Disconnect { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
 			Action::AddGraphKey { owner_dsnp_user_id, .. } => owner_dsnp_user_id,
 		}
+	}
+}
+
+/// implementing input validation for Action
+impl InputValidation for Action {
+	fn validate(&self) -> DsnpGraphResult<()> {
+		if self.owner_dsnp_user_id() == 0 {
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.owner_dsnp_user_id()))
+		}
+
+		match self {
+			Action::Connect { connection, dsnp_keys, .. } => {
+				connection.validate()?;
+
+				if let Some(keys) = dsnp_keys {
+					keys.validate()?;
+				}
+			},
+			Action::Disconnect { connection, .. } => {
+				connection.validate()?;
+			},
+			Action::AddGraphKey { new_public_key, .. } =>
+				if new_public_key.is_empty() {
+					return DsnpGraphResult::Err(InvalidPublicKey)
+				},
+		}
+
+		Ok(())
 	}
 }
 

@@ -17,6 +17,7 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
+#[allow(clippy::vec_box)]
 static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 #[no_mangle]
