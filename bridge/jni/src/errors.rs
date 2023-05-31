@@ -54,7 +54,7 @@ impl From<protobuf::Error> for SdkJniError {
 impl fmt::Display for SdkJniError {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			SdkJniError::DsnpGraph(s) => write!(f, "{}", s),
+			SdkJniError::DsnpGraph(s) => write!(f, "ErrorCode({}) {}", s.error_code(), s),
 			SdkJniError::Jni(s) => write!(f, "JNI error {}", s),
 			SdkJniError::InvalidProto(s) => write!(f, "invalid proto {}", s),
 			SdkJniError::InvalidRequest(s) => write!(f, "invalid request {}", s),

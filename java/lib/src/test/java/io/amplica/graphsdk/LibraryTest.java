@@ -214,6 +214,34 @@ class LibraryTest {
     }
 
     @Test
+    void graph_applyActions_addingConnection_with_incomplete_request_should_throw_exception() throws Exception {
+        // arrange
+        var schemaId = 1;
+        var connectionUserId = 1000;
+        // no dsnp user is set
+        var invalid_actions = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setConnectAction(
+                        Actions.Action.ConnectAction.newBuilder()
+                                .setConnection(
+                                        Connection.newBuilder().setDsnpUserId(connectionUserId)
+                                                .setSchemaId(schemaId)
+                                                .build()
+                                ).build())
+        ).build();
+        var graph = new Graph(Configuration.getMainNet());
+
+        // act
+        GraphSdkException exception = assertThrows(GraphSdkException.class, () -> {
+            graph.applyActions(invalid_actions);
+        });
+
+        // assert
+        String expectedMessage = "Invalid user id";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedMessage));
+    }
+
+    @Test
     void graph_applyActions_addingKey_should_work() throws Exception {
         // arrange
         var ownerUserId = 1;
@@ -281,7 +309,7 @@ class LibraryTest {
                                 .setSchemaId(schemaId)
                                 .setDsnpKeys(DsnpKeys.newBuilder()
                                         .setDsnpUserId(ownerUserId)
-                                        .setKeysHash(0)
+                                        .setKeysHash(1)
                                         .addKeys(KeyData.newBuilder().setIndex(0).setContent(ByteString.copyFrom(new byte[]{64, 15, -22, 44, -81, -85, -36, -125, 117, 43, -29, 111, -91, 52, -106, 64, -38, 44, -126, -118, -35, 10, 41, 13, -15, 60, -46, -40, 23, 62, -78, 73, 111})).build())
                                         .build())
                                 .addPages(

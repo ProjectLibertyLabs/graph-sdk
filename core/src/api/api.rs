@@ -13,7 +13,7 @@ use crate::{
 };
 use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
-	ConnectionType, Environment, SchemaId,
+	ConnectionType, Environment, InputValidation, SchemaId,
 };
 use std::{
 	cmp::min,
@@ -277,6 +277,10 @@ impl GraphState {
 	}
 
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
+		// pre validate all bundles
+		for bundle in payloads {
+			bundle.validate()?;
+		}
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
 			let connection_type = self
 				.environment
@@ -325,6 +329,10 @@ impl GraphState {
 	}
 
 	fn do_apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
+		// pre validate all actions
+		for action in actions {
+			action.validate()?;
+		}
 		for action in actions {
 			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
 			match action {
@@ -488,7 +496,7 @@ mod test {
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair.clone()])
-			.with_page(1, &connections, &vec![], 0)
+			.with_page(1, &connections, &vec![], 1000)
 			.build();
 
 		// act
@@ -533,7 +541,7 @@ mod test {
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections, &vec![], 0)
+			.with_page(1, &connections, &vec![], 100)
 			.build();
 
 		// act
@@ -575,7 +583,7 @@ mod test {
 			DsnpPrid::new(&[3, 2, 3, 4, 4, 6, 1, 4]),
 		];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_page(1, &connections, &prids, 0)
+			.with_page(1, &connections, &prids, 1000)
 			.build();
 
 		// act
