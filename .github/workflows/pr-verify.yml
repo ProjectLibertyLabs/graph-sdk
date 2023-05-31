@@ -163,7 +163,7 @@ jobs:
         run: RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
   
   build_gradlew_jvm:
-    name: Build jvm
+    name: Build and Publish JVM
     runs-on: ubuntu-latest
     needs: [verify, test, lint, build, test_binary]
     permissions:
@@ -178,14 +178,12 @@ jobs:
           distribution: 'adopt'
       - name: Build JNI package
         run: make build-jni
-      - name: Build with Gradle
-        run:  cd java && ./gradlew build
-      - name: Publish package
-        uses: gradle/gradle-build-action@749f47bda3e44aa060e82d7b3ef7e40d953bd629
-        with:
-          arguments: publish
+      - name: Build and Publish with Gradle
+        working-directory: java
+        run: ./gradlew publish
         env:
           GITHUB_ACTOR: ${{ secrets.GITHUB_ACTOR }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LIBERTY_READ_TOKEN: ${{ secrets.LIBERTY_READ_TOKEN }}
           LIBERTY_READ_ACTOR: ${{ secrets.LIBERTY_READ_ACTOR }}
+        
