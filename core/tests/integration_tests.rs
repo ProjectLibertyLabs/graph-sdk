@@ -88,10 +88,10 @@ mod integration_tests {
 		let connections_1 = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let connections_2 = vec![(10, 0), (11, 0), (12, 0), (13, 0)];
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 100)
 			.build();
 		let input2 = ImportBundleBuilder::new(env, dsnp_user_id_2, schema_id)
-			.with_page(1, &connections_2, &vec![], 0)
+			.with_page(1, &connections_2, &vec![], 200)
 			.build();
 
 		// act
@@ -259,7 +259,7 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, _, graph_key_pair) = create_new_keys();
+		let (_, _, graph_key_pair) = create_new_keys(0);
 		let dsnp_user_id = 1;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
@@ -280,13 +280,13 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections, &vec![], 0)
+			.with_page(1, &connections, &vec![], 1000)
 			.build();
 
 		// act
@@ -305,8 +305,8 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, _) = create_new_keys();
-		let (_, _, keypair) = create_new_keys();
+		let (_, resolved_key, _) = create_new_keys(0);
+		let (_, _, keypair) = create_new_keys(1);
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -329,7 +329,7 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let mut input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
@@ -337,7 +337,7 @@ mod integration_tests {
 			.with_encryption_key(resolved_key)
 			.with_page(1, &connections, &vec![], 0)
 			.build();
-		let (_, _, key_pair_2) = create_new_keys();
+		let (_, _, key_pair_2) = create_new_keys(1);
 		input.key_pairs = vec![key_pair_2];
 
 		// act
@@ -355,7 +355,7 @@ mod integration_tests {
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let dsnp_user_id = 123;
 		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids: Vec<_> =
@@ -363,7 +363,7 @@ mod integration_tests {
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			.with_page(1, &connections, &prids, 0)
+			.with_page(1, &connections, &prids, 1000)
 			.build();
 
 		// act
@@ -383,7 +383,7 @@ mod integration_tests {
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let dsnp_user_id = 123;
 		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let prids: Vec<_> =
@@ -411,7 +411,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("Should import!");
 
@@ -432,7 +432,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("should import!");
 
@@ -471,13 +471,13 @@ mod integration_tests {
 		let schema_id =
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let dsnp_user_id_1 = 1;
 		let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let prids: Vec<_> =
 			connections_1.iter().map(|(id, _)| DsnpPrid::new(&id.to_le_bytes())).collect();
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &prids, 0)
+			.with_page(1, &connections_1, &prids, 100)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
 			.build();
@@ -504,11 +504,11 @@ mod integration_tests {
 			let env = Environment::Mainnet;
 			let schema_id = get_schema_from(env.clone(), connection_type);
 			let mut state = GraphState::new(env.clone());
-			let (_, resolved_key, keypair) = create_new_keys();
+			let (_, resolved_key, keypair) = create_new_keys(0);
 			let dsnp_user_id_1 = 1;
 			let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 			let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-				.with_page(1, &connections_1, &vec![], 0)
+				.with_page(1, &connections_1, &vec![], 100)
 				.with_key_pairs(&vec![keypair])
 				.with_encryption_key(resolved_key)
 				.build();
@@ -532,9 +532,9 @@ mod integration_tests {
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id_1 = 1;
-		let (_, resolved_key_1, keypair_1) = create_new_keys();
-		let (_, resolved_key_2, keypair_2) = create_new_keys();
-		let (_, resolved_key_3, keypair_3) = create_new_keys();
+		let (_, resolved_key_1, keypair_1) = create_new_keys(0);
+		let (_, resolved_key_2, keypair_2) = create_new_keys(1);
+		let (_, resolved_key_3, keypair_3) = create_new_keys(2);
 		// --------- user 1 graph setup--------------
 		let connections_1: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0)];
 		let prids: Vec<_> = vec![
@@ -554,7 +554,7 @@ mod integration_tests {
 			.unwrap(),
 		];
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &prids, 0)
+			.with_page(1, &connections_1, &prids, 100)
 			.with_key_pairs(&vec![keypair_1])
 			.with_encryption_key(resolved_key_1.clone())
 			.build();
@@ -562,7 +562,7 @@ mod integration_tests {
 		let connections_2: Vec<(DsnpUserId, u64)> = vec![(3, 0)];
 		let prids_2: Vec<_> = vec![DsnpPrid::from(vec![0u8, 1, 2, 3, 4, 5, 6, 7])];
 		let mut input2 = ImportBundleBuilder::new(env.clone(), 2, schema_id)
-			.with_page(1, &connections_2, &prids_2, 0)
+			.with_page(1, &connections_2, &prids_2, 200)
 			.with_key_pairs(&vec![keypair_2])
 			.build();
 		input2.key_pairs = vec![];
@@ -576,7 +576,7 @@ mod integration_tests {
 		)
 		.unwrap()];
 		let mut input3 = ImportBundleBuilder::new(env.clone(), 3, schema_id)
-			.with_page(1, &connections_3, &prids_3, 0)
+			.with_page(1, &connections_3, &prids_3, 300)
 			.with_key_pairs(&vec![keypair_3])
 			.build();
 		input3.key_pairs = vec![];
@@ -601,7 +601,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("should import!");
 		let actions = vec![
@@ -643,7 +643,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("should import!");
 		let actions = vec![Action::Connect {
@@ -668,7 +668,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("should import!");
 		let actions = vec![Action::Disconnect {
@@ -692,7 +692,7 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
-			.with_page(1, &connections_1, &vec![], 0)
+			.with_page(1, &connections_1, &vec![], 1000)
 			.build();
 		state.import_users_data(&vec![input1]).expect("should import!");
 		let actions = vec![
@@ -721,7 +721,7 @@ mod integration_tests {
 	#[test]
 	fn api_apply_actions_with_duplicate_connection_for_user_fails() {
 		// arrange
-		let owner_dsnp_user_id: DsnpUserId = 0;
+		let owner_dsnp_user_id: DsnpUserId = 1000;
 		let env = Environment::Mainnet;
 		let schema_id = env
 			.get_config()
@@ -748,7 +748,7 @@ mod integration_tests {
 			.get_config()
 			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should exist");
-		let owner_dsnp_user_id: DsnpUserId = 0;
+		let owner_dsnp_user_id: DsnpUserId = 1;
 		let connect_action = Action::Connect {
 			owner_dsnp_user_id,
 			connection: Connection { dsnp_user_id: 1, schema_id },
@@ -851,7 +851,7 @@ mod integration_tests {
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let connections_2 = vec![(10, 1), (20, 2)];
 		let connections_3 = vec![(100, 1)];
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
 			.with_page(1, &connections_1, &vec![], 1)
 			.with_page(2, &connections_2, &vec![], 2)
@@ -908,10 +908,10 @@ mod integration_tests {
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 0), (3, 0)];
-		let (_, resolved_key, keypair) = create_new_keys();
-		let (_, resolved_key_2, keypair_2) = create_new_keys();
-		let (_, resolved_key_3, keypair_3) = create_new_keys();
-		let (_, _, keypair_4) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
+		let (_, resolved_key_2, keypair_2) = create_new_keys(1);
+		let (_, resolved_key_3, keypair_3) = create_new_keys(2);
+		let (_, _, keypair_4) = create_new_keys(3);
 		// --------------------------//
 		let prids: Vec<_> = vec![
 			DsnpPrid::create_prid(
@@ -944,7 +944,7 @@ mod integration_tests {
 		)
 		.unwrap()];
 		let mut input2 = ImportBundleBuilder::new(env.clone(), 2, schema_id)
-			.with_page(1, &connections_2, &prids_2, 0)
+			.with_page(1, &connections_2, &prids_2, 100)
 			.with_key_pairs(&vec![keypair_2])
 			.build();
 		input2.key_pairs = vec![];
@@ -958,7 +958,7 @@ mod integration_tests {
 		)
 		.unwrap()];
 		let mut input3 = ImportBundleBuilder::new(env.clone(), 3, schema_id)
-			.with_page(1, &connections_3, &prids_3, 0)
+			.with_page(1, &connections_3, &prids_3, 200)
 			.with_key_pairs(&vec![keypair_3])
 			.build();
 		input3.key_pairs = vec![];
@@ -971,7 +971,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 4, schema_id },
 				dsnp_keys: Some(DsnpKeys {
 					keys: KeyDataBuilder::new().with_key_pairs(&vec![keypair_4]).build(),
-					keys_hash: 0,
+					keys_hash: 1,
 					dsnp_user_id: 4,
 				}),
 			},
@@ -1034,7 +1034,7 @@ mod integration_tests {
 			get_schema_from(env.clone(), ConnectionType::Friendship(PrivacyType::Private));
 		let mut state = GraphState::new(env.clone());
 		let dsnp_user_id_1 = 1;
-		let (_, resolved_key, keypair) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
 		// --------------------------//
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
 			.with_page(1, &vec![], &vec![], 1)
@@ -1062,13 +1062,13 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
 		let mut state = GraphState::new(env.clone());
-		let (key_pair_raw, _, keypair) = create_new_keys();
-		let (key_pair_raw_2, _, keypair_2) = create_new_keys();
+		let (key_pair_raw, _, keypair) = create_new_keys(0);
+		let (key_pair_raw_2, _, keypair_2) = create_new_keys(1);
 		let dsnp_user_id = 123;
 		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair, keypair_2])
-			.with_page(1, &connections, &vec![], 0)
+			.with_page(1, &connections, &vec![], 100)
 			.build();
 		state.import_users_data(&vec![input]).expect("Import should work!");
 
@@ -1096,8 +1096,8 @@ mod integration_tests {
 		let dsnp_user_id_1 = 1;
 		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
 		let connections_2 = vec![(20, 1), (30, 2), (40, 3), (50, 4)];
-		let (_, resolved_key, keypair) = create_new_keys();
-		let (_, _, keypair_2) = create_new_keys();
+		let (_, resolved_key, keypair) = create_new_keys(0);
+		let (_, _, keypair_2) = create_new_keys(1);
 		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
 			.with_page(1, &connections_1, &vec![], 1)
 			.with_page(2, &connections_2, &vec![], 1)

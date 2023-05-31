@@ -107,13 +107,13 @@ impl UserGraph {
 	}
 
 	/// Getter for the user's graph for the specified ConnectionType
-	pub fn graph(&self, schema_id: &SchemaId) -> &Graph {
-		self.graphs.get(schema_id).expect("UserGraph local instance is corrupt")
+	pub fn graph(&self, schema_id: &SchemaId) -> Option<&Graph> {
+		self.graphs.get(schema_id)
 	}
 
 	/// Mutable getter for the user's graph for the specified ConnectionType
-	pub fn graph_mut(&mut self, schema_id: &SchemaId) -> &mut Graph {
-		self.graphs.get_mut(schema_id).expect("UserGraph local instance is corrupt")
+	pub fn graph_mut(&mut self, schema_id: &SchemaId) -> Option<&mut Graph> {
+		self.graphs.get_mut(schema_id)
 	}
 
 	/// Setter for the specified graph connection type
@@ -169,13 +169,16 @@ impl UserGraph {
 	) -> bool {
 		let add_event = &UpdateEvent::Add { schema_id, dsnp_user_id };
 
-		let graph_connection_exists = self.graph(&schema_id).has_connection(&dsnp_user_id);
-		let add_update_exists = include_pending && self.update_tracker.contains(add_event);
-		let remove_update_exists =
-			include_pending && self.update_tracker.contains_complement(add_event);
+		if let Some(graph) = self.graph(&schema_id) {
+			let graph_connection_exists = graph.has_connection(&dsnp_user_id);
+			let add_update_exists = include_pending && self.update_tracker.contains(add_event);
+			let remove_update_exists =
+				include_pending && self.update_tracker.contains_complement(add_event);
 
-		(graph_connection_exists && !remove_update_exists) ||
-			(!graph_connection_exists && add_update_exists)
+			return (graph_connection_exists && !remove_update_exists) ||
+				(!graph_connection_exists && add_update_exists)
+		}
+		false
 	}
 
 	pub fn get_all_connections_of(
@@ -276,7 +279,7 @@ mod test {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
 					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				assert_eq!(user_graph.graph(&schema_id).get_connection_type(), c);
+				assert_eq!(user_graph.graph(&schema_id).unwrap().get_connection_type(), c);
 			}
 		}
 	}
@@ -290,7 +293,7 @@ mod test {
 			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
 				let schema_id =
 					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				assert_eq!(user_graph.graph_mut(&schema_id).get_connection_type(), c);
+				assert_eq!(user_graph.graph_mut(&schema_id).unwrap().get_connection_type(), c);
 			}
 		}
 	}
@@ -317,9 +320,9 @@ mod test {
 		);
 		assert_eq!(new_graph.add_connection_to_page(&0, &2).is_ok(), true);
 
-		assert_ne!(*user_graph.graph(&schema_id), new_graph);
+		assert_ne!(*user_graph.graph(&schema_id).unwrap(), new_graph);
 		user_graph.set_graph(&schema_id, new_graph.clone());
-		assert_eq!(*user_graph.graph(&schema_id), new_graph);
+		assert_eq!(*user_graph.graph(&schema_id).unwrap(), new_graph);
 	}
 
 	#[test]
@@ -385,14 +388,14 @@ mod test {
 				key_type: GraphKeyType::X25519,
 			}])
 			.unwrap();
-		let graph = user_graph.graph_mut(&schema_id);
+		let graph = user_graph.graph_mut(&schema_id).unwrap();
 		graph.add_connection_to_page(&1000, &connection_dsnp).unwrap();
 
 		// act
 		user_graph.rollback();
 
 		// assert
-		let graph = user_graph.graph(&schema_id);
+		let graph = user_graph.graph(&schema_id).unwrap();
 		assert!(graph.find_connection(&connection_dsnp).is_none());
 		assert!(!user_graph.update_tracker.has_updates());
 		assert_eq!(user_graph.user_key_manager.read().unwrap().get_imported_keys().len(), 0);

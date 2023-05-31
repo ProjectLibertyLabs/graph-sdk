@@ -1,5 +1,6 @@
 pub mod builder;
 pub mod errors;
+use crate::errors::DsnpGraphResult;
 use apache_avro::Schema;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -12,6 +13,11 @@ pub type SchemaId = u16;
 pub type DsnpUserId = u64;
 /// PageId type
 pub type PageId = u16;
+
+/// a common trait to allow checks for api input types
+pub trait InputValidation {
+	fn validate(&self) -> DsnpGraphResult<()>;
+}
 
 lazy_static! {
 	// Schemas
