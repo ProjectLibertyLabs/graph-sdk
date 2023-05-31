@@ -1,22 +1,19 @@
 package io.amplica.graphsdk;
 
 import com.google.protobuf.ByteString;
-import com.google.protobuf.InvalidProtocolBufferException;
-import io.amplica.graphsdk.Graph;
-import io.amplica.graphsdk.Logger;
-import io.amplica.graphsdk.Native;
+import io.amplica.graphsdk.exceptions.GraphSdkException;
+import io.amplica.graphsdk.exceptions.InvalidHandleException;
 import io.amplica.graphsdk.models.*;
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
-
+import nl.altindag.log.LogCaptor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.event.Level;
-import nl.altindag.log.LogCaptor;
 
 import java.util.List;
 import java.util.regex.Pattern;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class LibraryTest {
     private static final LogCaptor logCaptor = LogCaptor.forName("dsnp-graph-sdk");
@@ -72,7 +69,7 @@ class LibraryTest {
     }
 
     @Test
-    void initiate_main_net_state_should_work() throws InvalidProtocolBufferException {
+    void initiate_main_net_state_should_work() throws Exception {
         // act
         var graph = new Graph(Configuration.getMainNet());
 
@@ -82,7 +79,7 @@ class LibraryTest {
     }
 
     @Test
-    void initiate_rococo_state_should_work() throws InvalidProtocolBufferException {
+    void initiate_rococo_state_should_work() throws Exception {
         // act
         var graph = new Graph(Configuration.getRococo());
 
@@ -92,7 +89,7 @@ class LibraryTest {
     }
 
     @Test
-    void initiate_dev_state_should_work() {
+    void initiate_dev_state_should_work() throws Exception {
         // arrange
         var config = new Configuration(Environment.newBuilder().getConfigBuilder()
                 .addDsnpVersions(DsnpVersion.Version1_0)
@@ -106,6 +103,23 @@ class LibraryTest {
         // assert
         assertNotEquals(0, graph.unsafeNativeHandleWithoutGuard());
         graph.finalize();
+    }
+
+    @Test
+    void invalid_handle_should_throw_InvalidHandleException() throws Exception {
+        // arrange
+        var graph = new Graph(Configuration.getMainNet());
+        graph.setUnsafeHandle(0);
+
+        // act
+        InvalidHandleException exception = assertThrows(InvalidHandleException.class, () -> {
+            var len = graph.getUsersLength();
+        });
+
+        // assert
+        String expectedMessage = "invalid handle";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
@@ -168,6 +182,35 @@ class LibraryTest {
         assertEquals(updates.get(0).getPersist().getPrevHash(), 0);
 
         assertNotEquals(0, graph.unsafeNativeHandleWithoutGuard());
+    }
+
+    @Test
+    void graph_applyActions_addingConnection_with_invalid_request_should_throw_exception() throws Exception {
+        // arrange
+        var ownerUserId = 1;
+        var schemaId = 1;
+        var connectionUserId = 1000;
+        var invalid_actions = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setDisconnectAction(
+                        Actions.Action.DisconnectAction.newBuilder()
+                                .setOwnerDsnpUserId(ownerUserId)
+                                .setConnection(
+                                        Connection.newBuilder().setDsnpUserId(connectionUserId)
+                                                .setSchemaId(schemaId)
+                                                .build()
+                                ).build())
+        ).build();
+        var graph = new Graph(Configuration.getMainNet());
+
+        // act
+        GraphSdkException exception = assertThrows(GraphSdkException.class, () -> {
+            graph.applyActions(invalid_actions);
+        });
+
+        // assert
+        String expectedMessage = "does not exist";
+        String actualMessage = exception.getMessage();
+        assertTrue(actualMessage.contains(expectedMessage));
     }
 
     @Test
