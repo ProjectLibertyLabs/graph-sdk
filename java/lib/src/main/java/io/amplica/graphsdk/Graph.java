@@ -21,54 +21,76 @@ public class Graph implements NativeHandleGuard.Owner {
     }
 
     public boolean containsUserGraph(long dsnpUserId) throws BaseGraphSdkException {
-        return Native.containsUserGraph(this.unsafeHandle, dsnpUserId);
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            return Native.containsUserGraph(guard.nativeHandle(), dsnpUserId);
+        }
     }
 
     public int getUsersLength() throws BaseGraphSdkException {
-        return Native.getGraphUsersLength(this.unsafeHandle);
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            return Native.getGraphUsersLength(guard.nativeHandle());
+        }
     }
 
     public void removeUserGraph(long dsnpUserId) throws BaseGraphSdkException {
-        Native.removeUserGraph(this.unsafeHandle, dsnpUserId);
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            Native.removeUserGraph(guard.nativeHandle(), dsnpUserId);
+        }
     }
 
     public void importUserData(ImportBundles bundle) throws BaseGraphSdkException {
-        Native.importUserData(this.unsafeHandle, bundle.toByteArray());
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            Native.importUserData(guard.nativeHandle(), bundle.toByteArray());
+        }
     }
 
     public List<Updates.Update> exportUpdates() throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.exportUpdates(this.unsafeHandle);
-        return Updates.parseFrom(raw).getUpdateList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.exportUpdates(guard.nativeHandle());
+            return Updates.parseFrom(raw).getUpdateList();
+        }
     }
 
     public void applyActions(Actions actions) throws BaseGraphSdkException {
-        Native.applyActions(this.unsafeHandle, actions.toByteArray());
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            Native.applyActions(guard.nativeHandle(), actions.toByteArray());
+        }
     }
 
     public List<Updates.Update> forceRecalculateGraph(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.forceCalculateGraphs(this.unsafeHandle, dsnpUserId);
-        return Updates.parseFrom(raw).getUpdateList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.forceCalculateGraphs(guard.nativeHandle(), dsnpUserId);
+            return Updates.parseFrom(raw).getUpdateList();
+        }
     }
 
     public List<DsnpGraphEdges.DsnpGraphEdge> getConnections(long dsnpUserId, ConnectionType connectionType, boolean includePending) throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.getConnectionsForUserGraph(this.unsafeHandle, dsnpUserId, this.configuration.getSchemaId(connectionType), includePending);
-        return DsnpGraphEdges.parseFrom(raw).getEdgeList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.getConnectionsForUserGraph(guard.nativeHandle(), dsnpUserId, this.configuration.getSchemaId(connectionType), includePending);
+            return DsnpGraphEdges.parseFrom(raw).getEdgeList();
+        }
     }
 
     public List<Long> getUsersWithoutImportedKeys() throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.getUsersWithoutKeys(this.unsafeHandle);
-        return DsnpUsers.parseFrom(raw).getUserList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.getUsersWithoutKeys(guard.nativeHandle());
+            return DsnpUsers.parseFrom(raw).getUserList();
+        }
     }
 
     // TODO: add test
     public List<DsnpGraphEdges.DsnpGraphEdge> getOneSidedPrivateFriendships(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.getOneSidedPrivateFriendshipConnections(this.unsafeHandle, dsnpUserId);
-        return DsnpGraphEdges.parseFrom(raw).getEdgeList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.getOneSidedPrivateFriendshipConnections(guard.nativeHandle(), dsnpUserId);
+            return DsnpGraphEdges.parseFrom(raw).getEdgeList();
+        }
     }
 
     public List<DsnpPublicKeys.DsnpPublicKey> getPublicKeys(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
-        var raw = Native.getPublicKeys(this.unsafeHandle, dsnpUserId);
-        return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.getPublicKeys(guard.nativeHandle(), dsnpUserId);
+            return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
+        }
     }
 
     @Override
@@ -78,7 +100,7 @@ public class Graph implements NativeHandleGuard.Owner {
 
     @Override
     @SuppressWarnings("deprecation")
-    public void finalize() {
+    protected void finalize() {
         Native.freeGraphState(this.unsafeHandle);
     }
 }
