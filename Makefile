@@ -72,10 +72,12 @@ build-jni:
 	cargo build -p dsnp-graph-sdk-jni --release
 	@./scripts/install_jni.sh
 
+.PHONY: install-protos
 install-protos:
 	@echo "Install PROTO ..."
 	@brew install protobuf; cargo install protobuf-codegen; PATH="$HOME/.cargo/bin:$PATH"
 
+.PHONY: build-protos
 build-protos:
 	@echo "Build PROTO ..."
 	@./scripts/build_protos.sh
