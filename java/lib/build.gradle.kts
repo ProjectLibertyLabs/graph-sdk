@@ -30,11 +30,6 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
     testImplementation("io.github.hakky54:logcaptor:2.9.0")
 
-    // This dependency is exported to consumers, that is to say found on their compile classpath.
-    api("org.apache.commons:commons-math3:3.6.1")
-
-    // These dependencies are used internally, and not exposed to consumers on their own compile classpath.
-    implementation("com.google.guava:guava:31.1-jre")
     implementation("org.slf4j:slf4j-api:2.0.7")
     implementation("com.google.protobuf:protobuf-java:3.23.0")
 }
