@@ -124,6 +124,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'loca
 		let user_id = u64::try_from(dsnp_user_id)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		let result = graph.deref().contains_user_graph(&user_id).into();
 
@@ -143,6 +145,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'lo
 	let result = panic::catch_unwind(|| {
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		let result = graph.deref().len() as jint;
 
@@ -165,6 +169,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>
 		let user_id = u64::try_from(dsnp_user_id)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
 
+		// locking to write in state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
 		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		graph.deref_mut().remove_user_graph(&user_id);
 
@@ -186,6 +192,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
 		let rust_imports = map_to_imports(&env, &imports)?;
 
+		// locking to write in state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
 		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -209,6 +217,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
 	let result = panic::catch_unwind(|| {
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -235,6 +245,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
 		let actions = map_to_actions(&env, &actions)?;
 
+		// locking to write in state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
 		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph.deref_mut().apply_actions(&actions).map_err(|e| SdkJniError::from(e));
@@ -258,6 +270,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'l
 		let dsnp_user_id = DsnpUserId::try_from(dsnp_user_id)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -291,6 +305,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGr
 		let include_pending = convert_jboolean(include_pending)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid include_pending"))?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -315,6 +331,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'lo
 	let result = panic::catch_unwind(|| {
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -344,6 +362,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFrien
 		let user_id = u64::try_from(dsnp_user_id)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
@@ -371,6 +391,8 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
 		let user_id = u64::try_from(dsnp_user_id)
 			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
 
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
 		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
 		let result = graph
