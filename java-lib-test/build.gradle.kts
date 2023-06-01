@@ -37,10 +37,13 @@ dependencies {
     implementation("org.slf4j:slf4j-api:1.7.25")
 
     // Declare the dependency for JUnit for your tests
-    testImplementation("junit:junit:4.12")
+    testImplementation("io.github.hakky54:logcaptor:2.9.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
 
     // Add your own dependency for the library from GitHub Packages
     implementation("io.amplica.graphsdk:lib:0.0.1-SNAPSHOT")
+
+
 }
 
 // Use the 'test' task to run tests
