@@ -165,7 +165,7 @@ int test_import_user_data_for_public_follow() {
     
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 13;
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -259,7 +259,7 @@ int test_add_bad_page_get_bad_response() {
     
     uint8_t page_data_1_content[] = {1, 2, 4, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 1;
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -316,7 +316,7 @@ int test_bad_schema_id_should_fail() {
     
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 13;
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -365,7 +365,7 @@ int test_import_user_data_with_invalid_serialized_public_key_should_fail() {
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 13;
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -420,7 +420,7 @@ int test_import_user_data_with_invalid_secret_fails(){
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 13;
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -488,7 +488,7 @@ int api_import_user_data_should_import_graph_for_private_follow_successfully() {
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = 13;
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
@@ -558,7 +558,7 @@ int api_import_user_data_with_wrong_encryption_keys_should_fail() {
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = sizeof(page_data_1_content);
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = sizeof(pages) / sizeof(PageData);
@@ -609,7 +609,7 @@ int api_remove_user_graph_should_remove_user_successfully() {
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = sizeof(page_data_1_content);
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = sizeof(pages) / sizeof(PageData);
@@ -660,7 +660,7 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = sizeof(page_data_1_content);
 
-    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 0};
+    PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
     
     PageData pages[] = {page_data_1};
     size_t pages_len = sizeof(pages) / sizeof(PageData);
