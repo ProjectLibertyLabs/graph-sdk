@@ -10,7 +10,7 @@
 plugins {
     // Apply the kotlin-jvm plugin for Kotlin JVM projects.
     kotlin("jvm") version "1.6.21"
-    id("java")
+    id("java-library")
 }
 java.sourceCompatibility = JavaVersion.VERSION_17
 
@@ -31,20 +31,16 @@ repositories {
 	}
 }
 
-// In this section, you declare the dependencies for your production and test code
 dependencies {
-    // The production code uses the SLF4J logging API at compile time
-    implementation("org.slf4j:slf4j-api:1.7.25")
-
-    // Declare the dependency for JUnit for your tests
-    testImplementation("io.github.hakky54:logcaptor:2.9.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
-
-    // Add your own dependency for the library from GitHub Packages
+    implementation("org.slf4j:slf4j-api:1.7.32")
     implementation("io.amplica.graphsdk:lib:0.0.1-SNAPSHOT")
-
-
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
+    testImplementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.6.21")
+    testImplementation("org.jetbrains.kotlin:kotlin-script-runtime:1.6.21")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
 }
+
 
 // Use the 'test' task to run tests
 tasks.test {
