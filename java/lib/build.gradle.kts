@@ -5,6 +5,8 @@ plugins {
     kotlin("jvm") version "1.6.21"
     // Apply the maven-publish plugin for publishing the library.
     id("maven-publish")
+    id("java-library")
+    id("signing")
 }
 
 group = "io.amplica.graphsdk"
