@@ -187,4 +187,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
   
-        
+  test_java_lib_gradle:
+    name: Test Java Library
+    runs-on: ubuntu-latest
+    needs: [verify, test, lint, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Java
+        uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
+        with:
+          java-version: '17'
+          distribution: 'adopt'
+      - name: Test Java Library
+        working-directory: java-lib-test
+        run: ./gradlew test
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}

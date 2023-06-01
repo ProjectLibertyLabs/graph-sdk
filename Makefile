@@ -66,6 +66,9 @@ test-ffi:
 test-jni: build-jni
 	@( cd java ; ./gradlew test --rerun-tasks)
 
+test-java-lib:
+	@( cd java-lib-test ; ./gradlew test --rerun-tasks)
+
 .PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
