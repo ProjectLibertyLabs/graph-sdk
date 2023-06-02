@@ -414,6 +414,33 @@ pub unsafe extern "C" fn graph_get_public_keys(
 	})
 }
 
+/// Returns the deserialized dsnp keys
+#[no_mangle]
+pub unsafe extern "C" fn graph_deserialize_dsnp_keys(
+	dsnp_keys: *const DsnpKeys,
+) -> FFIResult<DsnpPublicKeys, GraphError> {
+	let result = panic::catch_unwind(|| {
+		let dsnp_keys = &*dsnp_keys;
+		let rust_dsnp_keys = dsnp_keys_from_ffi(dsnp_keys);
+		match GraphState::deserialize_dsnp_keys(&rust_dsnp_keys) {
+			Ok(keys) => {
+				let ffi_keys = dsnp_public_keys_to_ffi(keys);
+				let keys_len = ffi_keys.len();
+				let keys_ptr = ManuallyDrop::new(ffi_keys).as_mut_ptr();
+				let public_keys = DsnpPublicKeys { keys: keys_ptr, keys_len };
+				FFIResult::new(public_keys)
+			},
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
+		}
+	});
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to deserialized dsnp keys: {:?}",
+			error
+		))))
+	})
+}
+
 // Free graph state
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {

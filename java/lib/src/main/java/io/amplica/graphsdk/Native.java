@@ -93,4 +93,6 @@ public final class Native {
     public static native byte[] getOneSidedPrivateFriendshipConnections(long stateHandle, long dsnpUserId);
 
     public static native byte[] getPublicKeys(long stateHandle, long dsnpUserId);
+
+    public static native byte[] deserializeDsnpKeys(byte[] dsnpKeys);
 }

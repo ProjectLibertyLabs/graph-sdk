@@ -2,8 +2,8 @@ use crate::{
 	errors::SdkJniError,
 	helper::{handle_result, validate_handle},
 	mappings::{
-		convert_jboolean, map_to_actions, map_to_environment, map_to_imports, serialize_config,
-		serialize_dsnp_users, serialize_graph_edges, serialize_graph_updates,
+		convert_jboolean, map_to_actions, map_to_dsnp_keys, map_to_environment, map_to_imports,
+		serialize_config, serialize_dsnp_users, serialize_graph_edges, serialize_graph_updates,
 		serialize_public_keys,
 	},
 };
@@ -404,6 +404,21 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
 		// pulling out of the box as raw so that memory stays allocated
 		let _ = Box::into_raw(graph) as jlong;
 		result
+	});
+	handle_result(&mut env, result)
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_deserializeDsnpKeys<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	dsnp_keys: JByteArray,
+) -> JByteArray<'local> {
+	let result = panic::catch_unwind(|| {
+		let rust_dsnp_keys = map_to_dsnp_keys(&env, &dsnp_keys)?;
+		GraphState::deserialize_dsnp_keys(&rust_dsnp_keys)
+			.map_err(|e| SdkJniError::from(e))
+			.and_then(|public_keys| serialize_public_keys(&env, &public_keys))
 	});
 	handle_result(&mut env, result)
 }

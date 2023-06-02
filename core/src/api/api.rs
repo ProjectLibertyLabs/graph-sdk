@@ -31,6 +31,9 @@
 //! - `get_one_sided_private_friendship_connections` the main use-case for this api is also for Private
 //! Friendship graph and returns broken friendships
 //! - `get_public_keys` returns the raw public keys imported for a certain dsnp user.
+//! - `deserialize_dsnp_keys` returns deserialized public keys from published on chain DSNP keys without
+//! importing them. One use-case might be for wallets to know which key-pairs should be included in
+//! `ImportBundle`, when importing graph data.
 //!
 //! ## Export updates
 //! After applying any changes to the graph using API's mentioned in previous step, we can use the
@@ -46,9 +49,11 @@
 
 use crate::{
 	dsnp::{
-		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
+		api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
 		dsnp_types::{DsnpGraphEdge, DsnpPublicKey, DsnpUserId},
+		reader_writer::DsnpReader,
 	},
+	frequency::Frequency,
 	graph::{
 		key_manager::UserKeyProvider,
 		shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
@@ -120,6 +125,9 @@ pub trait GraphAPI {
 
 	/// Get a list published and imported public keys associated with a user
 	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
+
+	/// Returns the deserialized dsnp keys
+	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
 }
 
 impl Transactional for GraphState {
@@ -276,6 +284,23 @@ impl GraphAPI for GraphState {
 			.read()
 			.map_err(|_| DsnpGraphError::FailedtoReadLockStateManager)?
 			.get_public_keys(user_id))
+	}
+
+	/// Returns the deserialized dsnp keys
+	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
+		// sorting by index in ascending mode
+		let mut sorted_keys = keys.keys.clone().to_vec();
+		sorted_keys.sort();
+
+		let mut dsnp_keys = vec![];
+		for key in sorted_keys {
+			let mut k =
+				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
+			// key id is the itemized index of the key stored in Frequency
+			k.key_id = Some(key.index.into());
+			dsnp_keys.push(k);
+		}
+		Ok(dsnp_keys)
 	}
 }
 
