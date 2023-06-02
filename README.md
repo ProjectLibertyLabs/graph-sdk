@@ -14,7 +14,7 @@
 
 # Overview
 
-This repository contains whe following modules
+This repository contains the following modules
 - [Core](core) : `DSNP` compatible social graph implementation in Rust
 - [Config](config) : All supported environments and their configuration details
 - [Bridge](bridge) : Graph SDK bridges for other languages
@@ -46,8 +46,8 @@ This repository contains whe following modules
     make test-jni
     ```
 #### Protobuf code generation
-We are using `Protobuf` to serialize and deserialize between JNI and Rust types. 
-- If any of the proto definitions are changed you need to run the following
+When modifying any of the protobuf definitions, it is important to perform the following steps to ensure proper 
+serialization and deserialization between JNI and Rust types.
 ```sh
 make build-protos
 ```
