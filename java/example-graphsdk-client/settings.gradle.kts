@@ -7,4 +7,4 @@
  * in the user manual at https://docs.gradle.org/8.1.1/userguide/multi_project_builds.html
  */
 
-rootProject.name = "java-lib-test"
+rootProject.name = "example-graphsdk-client"

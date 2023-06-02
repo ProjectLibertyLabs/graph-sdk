@@ -202,7 +202,7 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
       - name: Test Java Library
-        working-directory: java-lib-test
+        working-directory: java/example-graphsdk-client
         run: ./gradlew test
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
