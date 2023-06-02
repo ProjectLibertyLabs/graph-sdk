@@ -67,7 +67,7 @@ make install-protos
     ```sh
     make test-ffi
     ```
-   - in case of errors you'll need to install `libsodium`
+   - FFI tests have a dependency on `libsodium-dev` and expect it to be installed
     ```sh
      apt-get install -y libsodium-dev
     ```
