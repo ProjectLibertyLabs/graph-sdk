@@ -1,3 +1,49 @@
+//! Graph SDK API allows easy interactions and modification on the social graph
+//! # API Design
+//! The design of this api is such that it is isolated, meaning all the necessary data should be
+//! imported via provided API functions.
+//! There are three main steps that encapsulates the typical usage of this SDK
+//! - Import all graph related data into the SDK
+//! - Read or apply changes to desired graph
+//! - Export updates
+//!
+//! ## Importing data
+//! There are two categories of data that can be imported
+//! - Raw graph data and public keys stored on Frequency Blockchain
+//! - Key-pairs of graph owner to allow encryption/description for private data
+//!
+//! Following Apis are defined to support importing of data into SDK
+//! - `import_users_data` is the main api that provides support to import both type of above mentioned data
+//! - `apply_actions` when used with `Connect` action to add a new connection to the graph also allows
+//! optional importing of keys associated with new connection
+//!
+//! ## Graph Interactions
+//! After importing the desired graph data we can start reading or updating the graph using following APIs
+//! - `contains_user_graph` checks if a specific dsnp user's graph is imported or exists in SDK
+//! - `len` returns the number of DSNP users that their graph is imported or exits right now in SDK
+//! - `remove_user_graph` allows removal of the graph data from SDK and can be used as a cleanup step
+//! - `apply_action` is the main api that allows updating the graph by adding new connections or removing old ones
+//! - `get_connections_for_user_graph` exposes imported graph data for a certain user and can be used to read
+//! data out SDK
+//! - `get_connections_without_keys` the main use-case for this api is for Private Friendship graph and
+//! it's to inform the SDK consumer about the connections that their published public keys are not imported.
+//! Importing their published public keys are required to determine friendship existence or update the PRId.
+//! - `get_one_sided_private_friendship_connections` the main use-case for this api is also for Private
+//! Friendship graph and returns broken friendships
+//! - `get_public_keys` returns the raw public keys imported for a certain dsnp user.
+//!
+//! ## Export updates
+//! After applying any changes to the graph using API's mentioned in previous step, we can use the
+//! following ones to export the updated graph and key data, so it can be stored on chain
+//! - `export_updates` this is the main API that returns any updates to the graph or newly added keys
+//! - `force_recalculate_graphs` this API can be used to recalculate the graph using the latest published
+//! graph key which can be used for encryption or PRId calculation.
+//!
+//! # Transactional Support
+//! All the batch APIs that modify SDK's inner state such as `import_users_data` or `apply_action`
+//! are transactional. If one of the imported data or updated actions failed, the inner state will
+//! be reverted to before failed call state.
+
 use crate::{
 	dsnp::{
 		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
