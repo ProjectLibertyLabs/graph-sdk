@@ -78,6 +78,28 @@ int test_initialize_and_clear_states() {
     DsnpPublicKeys publickeys = *(publickeysresult.result);
     ASSERT(publickeys.keys_len == 0, "Failed to get dsnp public keys");
 
+    DsnpKeys keys;
+    // Set the values of the keys struct
+    // ...
+    KeyData keydata;
+    // Set the values of the keydata struct
+    // ...
+    keydata.index = 0;
+    keydata.content = NULL;
+    keydata.content_len = 0;
+
+    keys.dsnp_user_id = userid;
+    keys.keys = &keydata;
+    keys.keys_len = 1;
+    keys.keys_hash = 10;
+    DsnpGraphPublicKeysResult_Error deserializepublickeysresult = graph_deserialize_dsnp_keys(&keys);
+    ASSERT(deserializepublickeysresult.error != NULL, "Expected error to deserialize public keys");
+    errormessage = dsnp_graph_error_message(deserializepublickeysresult.error);
+    ASSERT(errormessage != NULL, "Failed to get error message");
+    errorcode = dsnp_graph_error_code(deserializepublickeysresult.error);
+    free_dsnp_graph_error(deserializepublickeysresult.error);
+    free_dsnp_graph_error_message(errormessage);
+
     free_graph_state(graphstate);
 
     return 0;
