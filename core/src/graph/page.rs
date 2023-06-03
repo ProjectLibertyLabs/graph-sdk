@@ -13,7 +13,6 @@ use crate::{
 		schema::SchemaHandler,
 	},
 	frequency::Frequency,
-	types::PrivateGraphChunk,
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 

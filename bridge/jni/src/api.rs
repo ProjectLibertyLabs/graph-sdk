@@ -8,7 +8,7 @@ use crate::{
 	},
 };
 use dsnp_graph_config::{DsnpUserId, SchemaId};
-use dsnp_graph_core::api::api::{GraphAPI, GraphState};
+use dsnp_graph_core::api::{GraphAPI, GraphState};
 use jni::{
 	objects::{JByteArray, JClass, JObject, JString},
 	sys::{jboolean, jint, jlong},

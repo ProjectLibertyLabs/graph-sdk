@@ -3,7 +3,7 @@ mod common;
 use crate::common::get_schema_from;
 use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, Environment, PrivacyType};
 use dsnp_graph_core::{
-	api::api::{GraphAPI, GraphState},
+	api::{GraphAPI, GraphState},
 	dsnp::api_types::{PageData, PageId},
 	util::builders::ImportBundleBuilder,
 };
