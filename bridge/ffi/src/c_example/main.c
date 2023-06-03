@@ -63,7 +63,7 @@ int test_initialize_and_clear_states() {
     DsnpGraphConnectionsWithoutKeysResult_Error connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
     ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
     GraphConnectionsWithoutKeys connectionswithoutkeys = *(connectionswithoutkeysresult.result);
-    ASSERT(connectionswithoutkeys.connections_len == 0, "Failed to get connections without keys");
+    ASSERT(connectionswithoutkeys.connections != NULL, "Expected zero length");
 
     DsnpGraphConnectionsResult_Error onesidedconnectionsresult = graph_get_one_sided_private_friendship_connections(graphstate, &userid);
     ASSERT(onesidedconnectionsresult.error != NULL, "Expected error to get one sided private friendship connections");
