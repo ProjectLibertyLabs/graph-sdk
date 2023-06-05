@@ -20,21 +20,25 @@ pub trait InputValidation {
 }
 
 lazy_static! {
-	// Schemas
+	/// Schema for public key
 	pub static ref PUBLIC_KEY_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/public_key_schema.json")).unwrap();
+	/// Schema for public graph chunk
 	pub static ref PUBLIC_GRAPH_CHUNK_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/user_public_graph_chunk.json"))
 			.unwrap();
+	/// Schema for public graph
 	pub static ref PUBLIC_GRAPH_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/public_graph.json")).unwrap();
+	/// Schema for private graph chunk
 	pub static ref PRIVATE_GRAPH_CHUNK_SCHEMA: Schema =
 		Schema::parse_str(include_str!("../resources/schemas/user_private_graph_chunk.json"))
 			.unwrap();
 
-	// Configurations
+	/// Mainnet `Config`
 	pub static ref MAINNET_CONFIG: Config = include_str!("../resources/configs/frequency.json")
 		.try_into().unwrap();
+	/// Rococo `Config`
 	pub static ref ROCOCO_CONFIG: Config = include_str!("../resources/configs/frequency-rococo.json")
 		.try_into().unwrap();
 }
@@ -115,6 +119,8 @@ pub enum DsnpVersion {
 	Version1_0,
 }
 
+/// Schema config
+/// This is used to map schema id to dsnp version and connection type
 #[repr(C)]
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub struct SchemaConfig {
@@ -122,28 +128,37 @@ pub struct SchemaConfig {
 	pub connection_type: ConnectionType,
 }
 
+/// Config
+/// This is used to configure the graph state
 #[serde_as]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Config {
+	/// Maximum number of users in the graph
 	#[serde(rename = "sdkMaxUsersGraphSize")]
 	pub sdk_max_users_graph_size: u32,
 
+	/// Maximum number of days a friendship can be stale before it is removed
 	#[serde(rename = "sdkMaxStaleFriendshipDays")]
 	pub sdk_max_stale_friendship_days: u32,
 
+	/// Maximum size of a graph page in bytes
 	#[serde(rename = "maxGraphPageSizeBytes")]
 	pub max_graph_page_size_bytes: u32,
 
+	/// Maximum page id
 	#[serde(rename = "maxPageId")]
 	pub max_page_id: u32,
 
+	/// Maximum size of a key page in bytes
 	#[serde(rename = "maxKeyPageSizeBytes")]
 	pub max_key_page_size_bytes: u32,
 
+	/// Schema map
 	#[serde(rename = "schemaMap")]
 	#[serde_as(as = "Vec<(_, _)>")]
 	pub schema_map: HashMap<SchemaId, SchemaConfig>,
 
+	/// DSNP versions
 	#[serde(rename = "dsnpVersions")]
 	pub dsnp_versions: Vec<DsnpVersion>,
 }
@@ -156,6 +171,7 @@ impl TryFrom<&str> for Config {
 }
 
 impl Config {
+	/// Returns the DSNP version for the given schema id
 	pub fn get_dsnp_version_from_schema_id(&self, schema_id: SchemaId) -> Option<DsnpVersion> {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
 			return Some(schema_config.dsnp_version)
@@ -163,6 +179,7 @@ impl Config {
 		None
 	}
 
+	/// Returns the connection type for the given schema id
 	pub fn get_connection_type_from_schema_id(
 		&self,
 		schema_id: SchemaId,
@@ -173,6 +190,7 @@ impl Config {
 		None
 	}
 
+	/// Returns the schema id for the given DSNP version and connection type
 	pub fn get_schema_id_from_connection_type(
 		&self,
 		connection_type: ConnectionType,
