@@ -1,5 +1,4 @@
 //! Defines and implements [DSNP](https://spec.dsnp.org/DSNP/Graph.html) specification of social graph.
-pub mod api_types;
 pub mod compression;
 pub mod dsnp_configs;
 pub mod dsnp_types;

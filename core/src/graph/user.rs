@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-use crate::{
-	dsnp::{api_types::*, dsnp_types::*},
-	graph::updates::UpdateTracker,
-};
+use crate::{api::api_types::*, dsnp::dsnp_types::*, graph::updates::UpdateTracker};
 use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	Environment, SchemaId,

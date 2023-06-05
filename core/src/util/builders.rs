@@ -1,9 +1,8 @@
 use crate::{
+	api::api_types::{
+		DsnpKeys, GraphKeyPair, ImportBundle, KeyData, PageData, PageId, ResolvedKeyPair, Update,
+	},
 	dsnp::{
-		api_types::{
-			DsnpKeys, GraphKeyPair, ImportBundle, KeyData, PageData, PageId, ResolvedKeyPair,
-			Update,
-		},
 		dsnp_configs::{DsnpVersionConfig, KeyPairType},
 		dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 		reader_writer::DsnpWriter,

@@ -1,7 +1,9 @@
-use crate::dsnp::{
-	api_types::GraphKeyPair,
-	dsnp_types::DsnpPublicKey,
-	encryption::{EncryptionBehavior, SealBox},
+use crate::{
+	api::api_types::GraphKeyPair,
+	dsnp::{
+		dsnp_types::DsnpPublicKey,
+		encryption::{EncryptionBehavior, SealBox},
+	},
 };
 use dryoc::keypair::{PublicKey, SecretKey, StackKeyPair};
 use dsnp_graph_config::{

@@ -1,7 +1,7 @@
 use crate::{bindings::*, utils::*, FFIResult, GraphError};
 use dsnp_graph_config::{errors::DsnpGraphError, SchemaId};
 use dsnp_graph_core::{
-	api::{GraphAPI, GraphState},
+	api::api::{GraphAPI, GraphState},
 	dsnp::dsnp_types::DsnpUserId,
 };
 use std::{

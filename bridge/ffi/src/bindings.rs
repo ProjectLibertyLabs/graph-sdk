@@ -1,7 +1,7 @@
 use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig, SchemaId};
-use dsnp_graph_core::dsnp::{
-	api_types::{Connection, PageHash, PageId},
-	dsnp_types::{DsnpGraphEdge, DsnpUserId},
+use dsnp_graph_core::{
+	api::api_types::{Connection, PageHash, PageId},
+	dsnp::dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 use libc::size_t;
 

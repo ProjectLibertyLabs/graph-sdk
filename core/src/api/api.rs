@@ -48,8 +48,8 @@
 //! be reverted to before failed call state.
 
 use crate::{
+	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
 	dsnp::{
-		api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
 		dsnp_types::{DsnpGraphEdge, DsnpPublicKey, DsnpUserId},
 		reader_writer::DsnpReader,
 	},
@@ -486,11 +486,8 @@ impl GraphState {
 #[cfg(test)]
 mod test {
 	use crate::{
-		dsnp::{
-			api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
-			dsnp_configs::KeyPairType,
-			dsnp_types::DsnpPrid,
-		},
+		api::api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
+		dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpPrid},
 		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
 	use dryoc::keypair::StackKeyPair;

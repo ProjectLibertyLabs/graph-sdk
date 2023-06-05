@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 use crate::{
-	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
+	api::api_types::*,
+	dsnp::{dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::{
 		key_manager::UserKeyManagerBase,
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
