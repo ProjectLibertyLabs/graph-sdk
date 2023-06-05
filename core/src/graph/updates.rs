@@ -10,14 +10,19 @@ use dsnp_graph_config::{
 };
 use std::cmp::Ordering;
 
+/// Update event for a schema
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
+	/// Add event
 	Add { dsnp_user_id: DsnpUserId, schema_id: SchemaId },
+	/// Remove event
 	Remove { dsnp_user_id: DsnpUserId, schema_id: SchemaId },
 }
 
+/// Update tracker for a  schema
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct UpdateTracker {
+	/// map of schema id to update events
 	updates: TransactionalHashMap<SchemaId, Vec<UpdateEvent>>,
 }
 
@@ -33,10 +38,12 @@ impl Transactional for UpdateTracker {
 }
 
 impl UpdateTracker {
+	/// creates a new update tracker
 	pub fn new() -> Self {
 		Self { updates: TransactionalHashMap::new() }
 	}
 
+	/// registers an update event
 	pub fn register_update(&mut self, event: &UpdateEvent) -> DsnpGraphResult<()> {
 		if self.contains(event) {
 			return Err(DsnpGraphError::EventExists)
@@ -52,6 +59,7 @@ impl UpdateTracker {
 		Ok(())
 	}
 
+	/// registers multiple update events
 	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> DsnpGraphResult<()> {
 		if events.iter().any(|e| self.contains(e)) {
 			return Err(DsnpGraphError::DuplicateUpdateEvents)
@@ -64,14 +72,17 @@ impl UpdateTracker {
 		Ok(())
 	}
 
+	/// returns true if there are any updates
 	pub fn has_updates(&self) -> bool {
 		self.updates.inner().iter().any(|(_, v)| !v.is_empty())
 	}
 
+	/// returns update events for the schema id
 	pub fn get_updates_for_schema_id(&self, schema_id: SchemaId) -> Option<&Vec<UpdateEvent>> {
 		self.updates.inner().get(&schema_id)
 	}
 
+	/// returns true if there are any updates for the schema id
 	pub fn contains(&self, event: &UpdateEvent) -> bool {
 		match self.updates.inner().get(event.get_schema_id()) {
 			Some(arr) => arr.contains(event),
@@ -79,10 +90,12 @@ impl UpdateTracker {
 		}
 	}
 
+	/// returns true if there are any updates for the complement of the event
 	pub fn contains_complement(&self, event: &UpdateEvent) -> bool {
 		self.contains(&event.get_complement())
 	}
 
+	/// removes the update event
 	fn remove(&mut self, event: &UpdateEvent) {
 		if let Some(arr) = self.updates.get(event.get_schema_id()) {
 			let mut updates = arr.clone();
@@ -94,20 +107,24 @@ impl UpdateTracker {
 		}
 	}
 
+	/// adds the update event
 	fn add(&mut self, event: &UpdateEvent) {
 		self.updates.entry(*event.get_schema_id()).or_default().push(event.clone());
 	}
 }
 
 impl UpdateEvent {
+	/// creates an add event
 	pub fn create_add(dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
 		UpdateEvent::Add { dsnp_user_id, schema_id }
 	}
 
+	/// creates a remove event
 	pub fn create_remove(dsnp_user_id: DsnpUserId, schema_id: SchemaId) -> Self {
 		UpdateEvent::Remove { dsnp_user_id, schema_id }
 	}
 
+	/// returns the complement of the event
 	pub fn get_complement(&self) -> Self {
 		match self {
 			Add { dsnp_user_id, schema_id } =>
@@ -117,6 +134,7 @@ impl UpdateEvent {
 		}
 	}
 
+	/// returns the schema id of the event
 	pub fn get_schema_id(&self) -> &SchemaId {
 		match self {
 			Add { schema_id, .. } => schema_id,
@@ -124,6 +142,8 @@ impl UpdateEvent {
 		}
 	}
 
+	/// function to order the events
+	/// removes are prioritized over adds
 	pub fn type_ordering(a: &UpdateEvent, b: &UpdateEvent) -> Ordering {
 		match (a, b) {
 			(Remove { .. }, Add { .. }) => Ordering::Less,
