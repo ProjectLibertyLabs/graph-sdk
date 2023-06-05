@@ -334,6 +334,43 @@ pub unsafe extern "C" fn graph_export_updates(
 	})
 }
 
+/// Force recalculate graph updates from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to the graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `GraphUpdates` - the pointer to the graph updates
+/// # Errors
+/// * `GraphError` - if the graph updates cannot be retrieved
+#[no_mangle]
+pub unsafe extern "C" fn graph_force_recalculate_updates(
+	graph_state: *mut GraphState,
+	user_id: *const DsnpUserId,
+) -> FFIResult<GraphUpdates, GraphError> {
+	let result = panic::catch_unwind(|| {
+		let graph_state = &mut *graph_state;
+		match graph_state.force_recalculate_graphs(&*user_id) {
+			Ok(updates) => {
+				let ffi_updates = updates_to_ffi(updates);
+				let updates_len = ffi_updates.len();
+				let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
+				let graph_updates = GraphUpdates { updates: updates_ptr, updates_len };
+				FFIResult::new(graph_updates)
+			},
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
+		}
+	});
+
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to force recalculate updates from graph: {:?}",
+			error
+		))))
+	})
+}
+
 /// Apply actions to graph state
 /// # Safety
 /// This function is unsafe because it dereferences a raw pointer
