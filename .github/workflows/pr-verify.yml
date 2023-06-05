@@ -162,7 +162,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build Docs
         run: |
-          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --features frequency
+          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
       - name: Upload Docs
         uses: actions/upload-pages-artifact@v1
         with:
