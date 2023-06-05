@@ -20,6 +20,15 @@ pub extern "C" fn print_hello_graph() {
 #[allow(clippy::vec_box)]
 static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
+/// Get the graph config for the given environment
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `environment` - a pointer to an environment
+/// # Returns
+/// * `Config` - the graph config
+/// # Errors
+/// * `GraphError` - if the graph config cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_config(
 	environment: *const Environment,
@@ -38,6 +47,15 @@ pub unsafe extern "C" fn get_graph_config(
 	})
 }
 
+/// Initialize a graph state with the given environment
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `environment` - a pointer to an environment
+/// # Returns
+/// * `GraphState` - the pointer to the graph state
+/// # Errors
+/// * `GraphError` - if the graph state cannot be initialized
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
 	environment: *const Environment,
@@ -59,7 +77,16 @@ pub unsafe extern "C" fn initialize_graph_state(
 	})
 }
 
-// Intialize GraphState with capacity
+/// Intialize GraphState with capacity and environment
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `environment` - a pointer to an environment
+/// * `capacity` - the capacity of the graph state
+/// # Returns
+/// * `GraphState` - the pointer to the graph state
+/// # Errors
+/// * `GraphError` - if the graph state cannot be initialized
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	environment: *const Environment,
@@ -82,7 +109,15 @@ pub unsafe extern "C" fn initialize_graph_state_with_capacity(
 	})
 }
 
-// Get Capacity
+/// Get capacity of graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `usize` - the capacity of the graph state
+/// # Errors
+/// * `GraphError` - if the graph state fails to get capacity
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_capacity(
 	graph_state: *mut GraphState,
@@ -104,7 +139,11 @@ pub unsafe extern "C" fn get_graph_capacity(
 	})
 }
 
-// Get total graph states in GRAPH_STATES
+/// Get total graph states in GRAPH_STATES collection
+/// # Returns
+/// * `usize` - the total graph states in GRAPH_STATES collection
+/// # Errors
+/// * `GraphError` - if the count of graph states cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn get_graph_states_count() -> FFIResult<usize, GraphError> {
 	let result = panic::catch_unwind(|| {
@@ -119,7 +158,16 @@ pub unsafe extern "C" fn get_graph_states_count() -> FFIResult<usize, GraphError
 	})
 }
 
-// State contains user graph
+/// Check if a given state contains user graph
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `bool` - true if the user graph exists, false otherwise
+/// # Errors
+/// * `GraphError` - if state fails to check if user graph exists
 #[no_mangle]
 pub unsafe extern "C" fn graph_contains_user(
 	graph_state: *mut GraphState,
@@ -143,7 +191,15 @@ pub unsafe extern "C" fn graph_contains_user(
 	})
 }
 
-// Count of users in current graph
+/// Count of users in current graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `usize` - the count of users in the graph state
+/// # Errors
+/// * `GraphError` - if state fails to get users count
 #[no_mangle]
 pub unsafe extern "C" fn graph_users_count(
 	graph_state: *mut GraphState,
@@ -165,7 +221,16 @@ pub unsafe extern "C" fn graph_users_count(
 	})
 }
 
-// Remove user
+/// Remove user from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `bool` - true if the user was removed, false otherwise
+/// # Errors
+/// * `GraphError` - if the graph state fails to remove user
 #[no_mangle]
 pub unsafe extern "C" fn graph_remove_user(
 	graph_state: *mut GraphState,
@@ -190,7 +255,17 @@ pub unsafe extern "C" fn graph_remove_user(
 	})
 }
 
-// Graph import users data
+/// Import users data to graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `payloads` - a pointer to an array of payloads
+/// * `payloads_len` - the length of the payloads array
+/// # Returns
+/// * `bool` - true if the users data was imported, false otherwise
+/// # Errors
+/// * `GraphError` - if the graph state fails to import users data
 #[no_mangle]
 pub unsafe extern "C" fn graph_import_users_data(
 	graph_state: *mut GraphState,
@@ -220,7 +295,15 @@ pub unsafe extern "C" fn graph_import_users_data(
 	})
 }
 
-// Graph export updates
+/// Export updates from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `GraphUpdates` - the pointer to the graph updates
+/// # Errors
+/// * `GraphError` - if the graph updates cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_export_updates(
 	graph_state: *mut GraphState,
@@ -251,7 +334,54 @@ pub unsafe extern "C" fn graph_export_updates(
 	})
 }
 
-// Graph apply actions
+/// Force recalculate graph updates from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to the graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `GraphUpdates` - the pointer to the graph updates
+/// # Errors
+/// * `GraphError` - if the graph updates cannot be retrieved
+#[no_mangle]
+pub unsafe extern "C" fn graph_force_recalculate_updates(
+	graph_state: *mut GraphState,
+	user_id: *const DsnpUserId,
+) -> FFIResult<GraphUpdates, GraphError> {
+	let result = panic::catch_unwind(|| {
+		let graph_state = &mut *graph_state;
+		match graph_state.force_recalculate_graphs(&*user_id) {
+			Ok(updates) => {
+				let ffi_updates = updates_to_ffi(updates);
+				let updates_len = ffi_updates.len();
+				let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
+				let graph_updates = GraphUpdates { updates: updates_ptr, updates_len };
+				FFIResult::new(graph_updates)
+			},
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
+		}
+	});
+
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to force recalculate updates from graph: {:?}",
+			error
+		))))
+	})
+}
+
+/// Apply actions to graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `actions` - a pointer to an array of actions
+/// * `actions_len` - the length of the actions array
+/// # Returns
+/// * `bool` - true if the actions were applied, false otherwise
+/// # Errors
+/// * `GraphError` - if the actions cannot be applied to the graph state
 #[no_mangle]
 pub unsafe extern "C" fn graph_apply_actions(
 	graph_state: *mut GraphState,
@@ -280,7 +410,18 @@ pub unsafe extern "C" fn graph_apply_actions(
 	})
 }
 
-// Graph get connections for user
+/// Get connections for user from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `user_id` - a pointer to a user id
+/// * `schema_id` - a pointer to a schema id
+/// * `include_pending` - a boolean to include pending connections
+/// # Returns
+/// * `GraphConnections` - the pointer to the graph connections
+/// # Errors
+/// * `GraphError` - if the connections cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_connections_for_user(
 	graph_state: *mut GraphState,
@@ -316,7 +457,15 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 	})
 }
 
-// Get connections without keys
+/// Get user connections without keys from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `GraphConnectionsWithoutKeys` - the pointer to the graph connections without keys
+/// # Errors
+/// * `GraphError` - if the connections cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_connections_without_keys(
 	graph_state: *mut GraphState,
@@ -347,7 +496,16 @@ pub unsafe extern "C" fn graph_get_connections_without_keys(
 	})
 }
 
-// Get one sided private friendship connections
+/// Get one sided private friendship connections for a user from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `GraphConnections` - the pointer to the graph connections
+/// # Errors
+/// * `GraphError` - if the connections cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	graph_state: *mut GraphState,
@@ -380,7 +538,16 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 	})
 }
 
-// Get a list published and imported public keys associated with a user
+/// Get a list of published and imported public keys associated with a user
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to the graph state
+/// * `user_id` - a pointer to a user id
+/// # Returns
+/// * `DsnpPublicKeys` - the pointer to the public keys
+/// # Errors
+/// * `GraphError` - if the public keys cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_get_public_keys(
 	graph_state: *mut GraphState,
@@ -415,6 +582,14 @@ pub unsafe extern "C" fn graph_get_public_keys(
 }
 
 /// Returns the deserialized dsnp keys
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `dsnp_keys` - a pointer to the dsnp keys
+/// # Returns
+/// * `DsnpPublicKeys` - the pointer to the public keys
+/// # Errors
+/// * `GraphError` - if the public keys cannot be retrieved
 #[no_mangle]
 pub unsafe extern "C" fn graph_deserialize_dsnp_keys(
 	dsnp_keys: *const DsnpKeys,
@@ -441,7 +616,9 @@ pub unsafe extern "C" fn graph_deserialize_dsnp_keys(
 	})
 }
 
-// Free graph state
+/// Free graph state
+/// # Arguments
+/// * `graph_state` - a pointer to the graph state
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
@@ -456,7 +633,9 @@ pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	result.unwrap_or(())
 }
 
-// Free GraphStates
+/// Free GraphStates
+/// # Errors
+/// * `GraphError` - if the graph states cannot be freed
 #[no_mangle]
 pub extern "C" fn free_graph_states() {
 	let result = panic::catch_unwind(|| {
@@ -466,7 +645,9 @@ pub extern "C" fn free_graph_states() {
 	result.unwrap_or(())
 }
 
-// Free GraphUpdates
+/// Free GraphUpdates
+/// # Arguments
+/// * `graph_updates` - a pointer to the graph updates
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_updates(graph_updates: *mut GraphUpdates) {
 	let result = panic::catch_unwind(|| {
@@ -475,7 +656,9 @@ pub unsafe extern "C" fn free_graph_updates(graph_updates: *mut GraphUpdates) {
 	result.unwrap_or(())
 }
 
-// Free GraphConnections
+/// Free GraphConnections
+/// # Arguments
+/// * `graph_connections` - a pointer to the graph connections
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_connections(graph_connections: *mut GraphConnections) {
 	let result = panic::catch_unwind(|| {
@@ -484,7 +667,9 @@ pub unsafe extern "C" fn free_graph_connections(graph_connections: *mut GraphCon
 	result.unwrap_or(())
 }
 
-// Free GraphConnectionsWithoutKeys
+/// Free GraphConnectionsWithoutKeys
+/// # Arguments
+/// * `graph_connections` - a pointer to the graph connections
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_connections_without_keys(
 	graph_connections: *mut GraphConnectionsWithoutKeys,
@@ -495,7 +680,9 @@ pub unsafe extern "C" fn free_graph_connections_without_keys(
 	result.unwrap_or(())
 }
 
-// Free DsnpPublicKeys
+/// Free DsnpPublicKeys
+/// # Arguments
+/// * `public_keys` - a pointer to the public keys
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_dsnp_public_keys(public_keys: *mut DsnpPublicKeys) {
 	let result = panic::catch_unwind(|| {
@@ -504,7 +691,9 @@ pub unsafe extern "C" fn free_graph_dsnp_public_keys(public_keys: *mut DsnpPubli
 	result.unwrap_or(())
 }
 
-// Free GraphError
+/// Free GraphError
+/// # Arguments
+/// * `error` - a pointer to the graph error
 #[no_mangle]
 pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut GraphError) {
 	if !error.is_null() {
@@ -514,7 +703,11 @@ pub unsafe extern "C" fn free_dsnp_graph_error(error: *mut GraphError) {
 	}
 }
 
-// Get error code
+/// Get error code from graph error
+/// # Arguments
+/// * `error` - a pointer to the graph error
+/// # Returns
+/// * `i32` - the error code or std::i32::MAX
 #[no_mangle]
 pub unsafe extern "C" fn dsnp_graph_error_code(error: *const GraphError) -> i32 {
 	if let Some(error) = unsafe { error.as_ref() } {
@@ -524,7 +717,11 @@ pub unsafe extern "C" fn dsnp_graph_error_code(error: *const GraphError) -> i32 
 	}
 }
 
-// Get error message
+/// Get error message from graph error
+/// # Arguments
+/// * `error` - a pointer to the graph error
+/// # Returns
+/// * `*const c_char` - the error message or null
 #[no_mangle]
 pub unsafe extern "C" fn dsnp_graph_error_message(error: *const GraphError) -> *const c_char {
 	if let Some(error) = unsafe { error.as_ref() } {
@@ -535,7 +732,9 @@ pub unsafe extern "C" fn dsnp_graph_error_message(error: *const GraphError) -> *
 	}
 }
 
-// Free error message
+/// Free error message
+/// # Arguments
+/// * `error_message` - a pointer to the error message
 #[no_mangle]
 pub unsafe extern "C" fn free_dsnp_graph_error_message(error_message: *const c_char) {
 	if !error_message.is_null() {
@@ -545,7 +744,9 @@ pub unsafe extern "C" fn free_dsnp_graph_error_message(error_message: *const c_c
 	}
 }
 
-// Free graph config
+/// Free graph config
+/// # Arguments
+/// * `config` - a pointer to the graph config
 #[no_mangle]
 pub unsafe extern "C" fn free_graph_config(config: *mut Config) {
 	let result = panic::catch_unwind(|| {
