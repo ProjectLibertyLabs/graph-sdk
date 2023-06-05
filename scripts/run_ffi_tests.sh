@@ -8,7 +8,7 @@ cp target/release/libdsnp_graph_sdk_ffi.a bridge/ffi/src/c_example/
 
 # Build main binary
 cd bridge/ffi/src/c_example/
-gcc main.c -L. -ldsnp_graph_sdk_ffi -lm -o main
+gcc main.c -L. -Wl,-rpath=. -ldsnp_graph_sdk_ffi -lsodium -lm -o main
 
 # Run main binary
 export LD_LIBRARY_PATH=bridge/ffi/src/c_example/

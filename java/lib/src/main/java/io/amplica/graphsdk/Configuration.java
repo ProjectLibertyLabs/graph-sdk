@@ -8,27 +8,29 @@ import io.amplica.graphsdk.models.EnvironmentType;
 
 import java.util.HashMap;
 
-// TODO: create tests after jni implementation
 public class Configuration {
     private static Configuration MAIN_NET_INSTANCE;
     private static Configuration ROCOCO_INSTANCE;
 
     private final Config inner;
+    private final Environment environment;
     private final HashMap<ConnectionType, Integer> schemaIdMap = new HashMap<>();
 
     public Configuration(Config config) {
         this.inner = config;
-        fillSchemaMap();
+        this.environment = Environment.newBuilder().setEnvironmentType(EnvironmentType.Dev).
+                setConfig(this.inner).build();
+        fillSchemaIdMap();
     }
 
     private Configuration(EnvironmentType environmentType) throws InvalidProtocolBufferException {
-        var env = Environment.newBuilder().setEnvironmentType(environmentType).build();
-        var rawConfig = Native.getConfig(env.toByteArray());
+        this.environment = Environment.newBuilder().setEnvironmentType(environmentType).build();
+        var rawConfig = Native.getConfig(this.environment.toByteArray());
         this.inner = Config.parseFrom(rawConfig);
-        fillSchemaMap();
+        fillSchemaIdMap();
     }
 
-    private void fillSchemaMap() {
+    private void fillSchemaIdMap() {
         for (var entry : this.inner.getSchemaMapMap().entrySet()) {
             this.schemaIdMap.put(entry.getValue().getConnectionType(), entry.getKey());
         }
@@ -36,6 +38,10 @@ public class Configuration {
 
     public int getSchemaId(ConnectionType connectionType) {
         return this.schemaIdMap.get(connectionType);
+    }
+
+    public Environment getEnvironment() {
+        return this.environment;
     }
 
     public static Configuration getMainNet() throws InvalidProtocolBufferException {

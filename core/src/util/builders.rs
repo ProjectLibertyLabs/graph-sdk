@@ -229,9 +229,13 @@ impl ImportBundleBuilder {
 		let key_pairs = self.key_builder.get_key_pairs().clone();
 		let pages: Vec<PageData> = self.page_data_builder.build();
 		let keys: Vec<KeyData> = self.key_builder.build();
+		let keys_hash = match keys.is_empty() {
+			true => 0,
+			false => 232,
+		};
 
 		ImportBundle {
-			dsnp_keys: DsnpKeys { keys, keys_hash: 232, dsnp_user_id: self.dsnp_user_id },
+			dsnp_keys: DsnpKeys { keys, keys_hash, dsnp_user_id: self.dsnp_user_id },
 			dsnp_user_id: self.dsnp_user_id,
 			schema_id: self.schema_id,
 			key_pairs,
@@ -256,7 +260,7 @@ impl ImportBundleBuilder {
 						continue
 					}
 					let new_page =
-						PageData { content_hash: 0, content: payload.clone(), page_id: *page_id };
+						PageData { content_hash: 1, content: payload.clone(), page_id: *page_id };
 					match original.pages.iter().position(|p| p.page_id == *page_id) {
 						Some(ind) => {
 							let old_page = original.pages.get(ind).unwrap();
@@ -289,7 +293,7 @@ impl ImportBundleBuilder {
 						continue
 					}
 					assert_eq!(original.dsnp_keys.keys_hash, *prev_hash);
-					new_bundle.dsnp_keys.keys_hash = 0;
+					new_bundle.dsnp_keys.keys_hash = 1;
 					new_bundle.dsnp_keys.keys.push(KeyData {
 						content: payload.clone(),
 						index: original.dsnp_keys.keys.len() as u16,

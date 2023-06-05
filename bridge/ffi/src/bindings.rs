@@ -158,6 +158,7 @@ pub struct SchemaConfigTuple {
 
 // `dsnp_graph_config::Config` type
 #[repr(C)]
+#[derive(Debug, Clone)]
 pub struct Config {
 	pub sdk_max_users_graph_size: u32,
 	pub sdk_max_stale_friendship_days: u32,

@@ -17,7 +17,26 @@ pub extern "C" fn print_hello_graph() {
 }
 
 // Collection of GraphStates
+#[allow(clippy::vec_box)]
 static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
+
+#[no_mangle]
+pub unsafe extern "C" fn get_graph_config(
+	environment: *const Environment,
+) -> FFIResult<Config, GraphError> {
+	let result = panic::catch_unwind(|| {
+		let env = &*environment;
+		let config_for_ffi = get_config_for_ffi(env);
+		FFIResult::new(config_for_ffi)
+	});
+
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to get graph config: {:?}",
+			error
+		))))
+	})
+}
 
 #[no_mangle]
 pub unsafe extern "C" fn initialize_graph_state(
@@ -497,4 +516,13 @@ pub unsafe extern "C" fn free_dsnp_graph_error_message(error_message: *const c_c
 			let _ = CString::from_raw(error_message as *mut c_char);
 		}
 	}
+}
+
+// Free graph config
+#[no_mangle]
+pub unsafe extern "C" fn free_graph_config(config: *mut Config) {
+	let result = panic::catch_unwind(|| {
+		let _ = Box::from_raw(config);
+	});
+	result.unwrap_or(())
 }
