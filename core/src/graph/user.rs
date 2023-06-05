@@ -22,6 +22,7 @@ use crate::{
 
 use super::graph::Graph;
 
+/// Map of Graphs, keyed by SchemaId
 pub type GraphMap = TransactionalHashMap<SchemaId, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
@@ -158,6 +159,7 @@ impl UserGraph {
 		Ok(result)
 	}
 
+	/// Check if graph with specified schema_id has a connection with the specified dsnp_user_id
 	pub fn graph_has_connection(
 		&self,
 		schema_id: SchemaId,
@@ -178,6 +180,7 @@ impl UserGraph {
 		false
 	}
 
+	/// Get all the connections for the specified schema_id
 	pub fn get_all_connections_of(
 		&self,
 		schema_id: SchemaId,
@@ -218,6 +221,7 @@ impl UserGraph {
 		connections.into_iter().collect()
 	}
 
+	/// get dsnp config for a schema id
 	pub fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
 		let config = self.environment.get_config();
 		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {

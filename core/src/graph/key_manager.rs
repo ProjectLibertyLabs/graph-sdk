@@ -159,6 +159,7 @@ impl Transactional for UserKeyManager {
 }
 
 impl UserKeyManager {
+	/// creates a new instance of `UserKeyManager`
 	pub fn new(
 		dsnp_user_id: DsnpUserId,
 		public_key_manager: Arc<RwLock<SharedStateManager>>,
