@@ -3,8 +3,10 @@ mod common;
 use crate::common::get_schema_from;
 use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, Environment, PrivacyType};
 use dsnp_graph_core::{
-	api::api::{GraphAPI, GraphState},
-	dsnp::api_types::{PageData, PageId},
+	api::{
+		api::{GraphAPI, GraphState},
+		api_types::{PageData, PageId},
+	},
 	util::builders::ImportBundleBuilder,
 };
 
@@ -15,8 +17,8 @@ mod integration_tests {
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig};
 	use dsnp_graph_core::{
+		api::api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 		dsnp::{
-			api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 			dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 			pseudo_relationship_identifier::PridProvider,
 		},

@@ -96,6 +96,19 @@ pub struct DsnpUserPrivateGraphChunk {
 	pub encrypted_compressed_private_graph: Vec<u8>,
 }
 
+/// Deserialized Private Graph Chunk
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrivateGraphChunk {
+	/// User-Assigned Key Identifier
+	pub key_id: u64,
+
+	/// User-Assigned Key Identifier
+	pub prids: Vec<DsnpPrid>,
+
+	/// connections
+	pub inner_graph: DsnpInnerGraph,
+}
+
 impl DsnpPrid {
 	/// Construct a new `DsnpPrid`
 	pub fn new(data: &[u8]) -> Self {

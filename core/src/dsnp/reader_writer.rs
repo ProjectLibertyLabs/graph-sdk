@@ -1,9 +1,6 @@
-use crate::{
-	dsnp::{
-		dsnp_configs::{DsnpVersionConfig, PublicKeyType, SecretKeyType},
-		dsnp_types::{DsnpInnerGraph, DsnpPublicKey},
-	},
-	types::PrivateGraphChunk,
+use crate::dsnp::{
+	dsnp_configs::{DsnpVersionConfig, PublicKeyType, SecretKeyType},
+	dsnp_types::{DsnpInnerGraph, DsnpPublicKey, PrivateGraphChunk},
 };
 use dsnp_graph_config::errors::DsnpGraphResult;
 

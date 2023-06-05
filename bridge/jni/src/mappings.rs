@@ -7,14 +7,14 @@ use dsnp_graph_config::{
 	Environment as RustEnvironment, GraphKeyType as RustGraphKeyType, PageId,
 	SchemaConfig as RustSchemaConfig, SchemaConfig, SchemaId,
 };
-use dsnp_graph_core::dsnp::{
-	api_types::{
+use dsnp_graph_core::{
+	api::api_types::{
 		Action as RustAction, Connection as RustConnection, ConnectionType as RustConnectionType,
 		DsnpKeys as RustDsnpKeys, GraphKeyPair as RustGraphKeyPair,
 		ImportBundle as RustImportBundle, KeyData as RustKeyData, PageData as RustPageData,
 		PrivacyType as RustPrivacyType, Update as RustUpdate,
 	},
-	dsnp_types::{DsnpGraphEdge as RustDsnpGraphEdge, DsnpPublicKey as RustDsnpPublicKey},
+	dsnp::dsnp_types::{DsnpGraphEdge as RustDsnpGraphEdge, DsnpPublicKey as RustDsnpPublicKey},
 };
 use dsnp_graph_sdk_common::proto_types::{
 	input as proto_input,

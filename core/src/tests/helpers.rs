@@ -1,6 +1,6 @@
 use crate::{
+	api::api_types::*,
 	dsnp::{
-		api_types::*,
 		dsnp_configs::{DsnpVersionConfig, KeyPairType},
 		dsnp_types::*,
 	},

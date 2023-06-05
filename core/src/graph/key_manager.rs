@@ -1,6 +1,6 @@
 use crate::{
+	api::api_types::{GraphKeyPair, PageData, ResolvedKeyPair},
 	dsnp::{
-		api_types::{GraphKeyPair, PageData, ResolvedKeyPair},
 		dsnp_configs::{KeyPairType, SecretKeyType},
 		dsnp_types::{DsnpPrid, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
@@ -180,11 +180,8 @@ impl UserKeyManager {
 mod tests {
 	use super::*;
 	use crate::{
-		dsnp::{
-			api_types::{DsnpKeys, KeyData},
-			dsnp_types::DsnpPublicKey,
-			reader_writer::DsnpWriter,
-		},
+		api::api_types::{DsnpKeys, KeyData},
+		dsnp::{dsnp_types::DsnpPublicKey, reader_writer::DsnpWriter},
 		frequency::Frequency,
 	};
 	use dryoc::keypair::StackKeyPair;

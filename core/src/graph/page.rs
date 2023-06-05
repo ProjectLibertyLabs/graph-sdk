@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-use crate::{
-	dsnp::{api_types::*, dsnp_types::*},
-	util::time::time_in_ksecs,
-};
+use crate::{api::api_types::*, dsnp::dsnp_types::*, util::time::time_in_ksecs};
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::borrow::Borrow;
 
@@ -13,7 +10,6 @@ use crate::{
 		schema::SchemaHandler,
 	},
 	frequency::Frequency,
-	types::PrivateGraphChunk,
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 

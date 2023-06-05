@@ -1,6 +1,6 @@
 use crate::{
+	api::api_types::{DsnpKeys, PageData, PageHash, Update},
 	dsnp::{
-		api_types::{DsnpKeys, PageData, PageHash, Update},
 		dsnp_configs::{PublicKeyType, SecretKeyType},
 		dsnp_types::{DsnpPrid, DsnpPublicKey, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
@@ -331,10 +331,8 @@ impl SharedStateManager {
 mod tests {
 	use super::*;
 	use crate::{
-		dsnp::{
-			api_types::{KeyData, ResolvedKeyPair},
-			dsnp_configs::KeyPairType,
-		},
+		api::api_types::{KeyData, ResolvedKeyPair},
+		dsnp::dsnp_configs::KeyPairType,
 		util::builders::PageDataBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;
