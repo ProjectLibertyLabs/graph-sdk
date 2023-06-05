@@ -160,6 +160,15 @@ jobs:
 
       - name: Build Rust Docs
         run: RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/doc
+          publish_branch: gh-pages
+          force_orphan: true
+          enable_jekyll: true
+          cname: docs.graphsdk.amplica.io
   
   build_gradlew_jvm:
     name: Build and Publish JVM
