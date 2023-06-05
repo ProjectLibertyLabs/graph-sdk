@@ -240,6 +240,7 @@ impl Transactional for SharedStateManager {
 }
 
 impl SharedStateManager {
+	/// creates a new instance of `SharedStateManager`
 	pub fn new() -> Self {
 		Self {
 			new_keys: TransactionalHashMap::new(),
@@ -248,6 +249,7 @@ impl SharedStateManager {
 		}
 	}
 
+	/// returns all the imported pri keys for a user
 	pub fn get_prid_associated_public_keys(
 		&self,
 		dsnp_user_id: DsnpUserId,
@@ -280,6 +282,7 @@ impl SharedStateManager {
 			.collect()
 	}
 
+	/// returns all the public keys for a user
 	pub fn get_public_keys(&self, dsnp_user_id: &DsnpUserId) -> Vec<DsnpPublicKey> {
 		match self.dsnp_user_to_keys.get(dsnp_user_id) {
 			Some((keys, _)) => keys.iter().cloned().collect(),
@@ -287,6 +290,7 @@ impl SharedStateManager {
 		}
 	}
 
+	/// get the next key id for a user
 	fn get_next_key_id(&self, dsnp_user_id: DsnpUserId) -> u64 {
 		self.get_imported_keys(dsnp_user_id)
 			.iter()

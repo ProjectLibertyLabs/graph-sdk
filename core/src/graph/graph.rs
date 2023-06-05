@@ -128,6 +128,7 @@ impl Graph {
 		self.pages.clear();
 	}
 
+	/// Get connection type of this graph
 	pub fn get_connection_type(&self) -> ConnectionType {
 		self.environment
 			.get_config()
@@ -135,10 +136,12 @@ impl Graph {
 			.expect("Connection type should exist!")
 	}
 
+	/// Get schema id of this graph
 	pub fn get_schema_id(&self) -> SchemaId {
 		self.schema_id
 	}
 
+	/// Get user id of this graph
 	pub fn get_dsnp_user_id(&self) -> DsnpUserId {
 		self.user_id
 	}
@@ -217,6 +220,7 @@ impl Graph {
 		Ok(())
 	}
 
+	/// Calculate updates to be sent to the network
 	pub fn calculate_updates(
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
