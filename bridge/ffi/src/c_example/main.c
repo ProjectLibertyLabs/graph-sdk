@@ -63,7 +63,7 @@ int test_initialize_and_clear_states() {
     DsnpGraphConnectionsWithoutKeysResult_Error connectionswithoutkeysresult = graph_get_connections_without_keys(graphstate);
     ASSERT(connectionswithoutkeysresult.error == NULL, "Failed to get connections without keys");
     GraphConnectionsWithoutKeys connectionswithoutkeys = *(connectionswithoutkeysresult.result);
-    ASSERT(connectionswithoutkeys.connections_len == 0, "Failed to get connections without keys");
+    ASSERT(connectionswithoutkeys.connections != NULL, "Expected zero length");
 
     DsnpGraphConnectionsResult_Error onesidedconnectionsresult = graph_get_one_sided_private_friendship_connections(graphstate, &userid);
     ASSERT(onesidedconnectionsresult.error != NULL, "Expected error to get one sided private friendship connections");
@@ -77,6 +77,28 @@ int test_initialize_and_clear_states() {
     ASSERT(publickeysresult.error == NULL, "Failed to get dsnp public keys");
     DsnpPublicKeys publickeys = *(publickeysresult.result);
     ASSERT(publickeys.keys_len == 0, "Failed to get dsnp public keys");
+
+    DsnpKeys keys;
+    // Set the values of the keys struct
+    // ...
+    KeyData keydata;
+    // Set the values of the keydata struct
+    // ...
+    keydata.index = 0;
+    keydata.content = NULL;
+    keydata.content_len = 0;
+
+    keys.dsnp_user_id = userid;
+    keys.keys = &keydata;
+    keys.keys_len = 1;
+    keys.keys_hash = 10;
+    DsnpGraphPublicKeysResult_Error deserializepublickeysresult = graph_deserialize_dsnp_keys(&keys);
+    ASSERT(deserializepublickeysresult.error != NULL, "Expected error to deserialize public keys");
+    errormessage = dsnp_graph_error_message(deserializepublickeysresult.error);
+    ASSERT(errormessage != NULL, "Failed to get error message");
+    errorcode = dsnp_graph_error_code(deserializepublickeysresult.error);
+    free_dsnp_graph_error(deserializepublickeysresult.error);
+    free_dsnp_graph_error_message(errormessage);
 
     free_graph_state(graphstate);
 

@@ -97,6 +97,16 @@ pub fn map_to_imports<'local>(
 	Ok(result)
 }
 
+pub fn map_to_dsnp_keys<'local>(
+	env: &JNIEnv<'local>,
+	dsnp_keys: &JByteArray,
+) -> SdkJniResult<RustDsnpKeys> {
+	let bytes = env.convert_byte_array(dsnp_keys).map_err(|e| SdkJniError::from(e))?;
+	let dsnp_keys_proto =
+		proto_input::DsnpKeys::parse_from_bytes(&bytes).map_err(|e| SdkJniError::from(e))?;
+	map_dsnp_keys_to_rust(&dsnp_keys_proto)
+}
+
 pub fn serialize_public_keys<'local>(
 	env: &JNIEnv<'local>,
 	public_keys: &[RustDsnpPublicKey],

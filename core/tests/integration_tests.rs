@@ -1154,4 +1154,42 @@ mod integration_tests {
 		assert_eq!(updates.len(), 1);
 		assert!(matches!(updates[0], Update::DeletePage { .. }));
 	}
+
+	#[test]
+	fn deserialize_dsnp_keys_should_return_deserialized_public_keys() {
+		// arrange
+		let (key_pair_raw_1, _, keypair_1) = create_new_keys(0);
+		let (key_pair_raw_2, _, keypair_2) = create_new_keys(1);
+		let keys = KeyDataBuilder::new().with_key_pairs(&vec![keypair_1, keypair_2]).build();
+		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
+
+		// act
+		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+
+		// assert
+		assert!(res.is_ok());
+		let keys = res.unwrap();
+		assert_eq!(
+			keys,
+			vec![
+				DsnpPublicKey { key: key_pair_raw_1.public_key.to_vec(), key_id: Some(0) },
+				DsnpPublicKey { key: key_pair_raw_2.public_key.to_vec(), key_id: Some(1) }
+			]
+		);
+	}
+
+	#[test]
+	fn deserialize_dsnp_keys_with_invalid_key_should_fail() {
+		// arrange
+		let (_, _, keypair_1) = create_new_keys(0);
+		let mut keys = KeyDataBuilder::new().with_key_pairs(&vec![keypair_1]).build();
+		keys.get_mut(0).unwrap().content.pop();
+		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
+
+		// act
+		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+
+		// assert
+		assert!(res.is_err());
+	}
 }

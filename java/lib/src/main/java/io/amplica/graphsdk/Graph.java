@@ -93,6 +93,11 @@ public class Graph implements NativeHandleGuard.Owner {
         }
     }
 
+    public static List<DsnpPublicKeys.DsnpPublicKey> deserializeDsnpKeys(DsnpKeys keys) throws BaseGraphSdkException, InvalidProtocolBufferException {
+        var raw = Native.deserializeDsnpKeys(keys.toByteArray());
+        return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
+    }
+
     @Override
     public long unsafeNativeHandleWithoutGuard() {
         return this.unsafeHandle;

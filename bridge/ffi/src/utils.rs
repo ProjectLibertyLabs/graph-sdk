@@ -111,7 +111,7 @@ fn key_data_from_ffi(key_data: &KeyData) -> dsnp_graph_core::dsnp::api_types::Ke
 	dsnp_graph_core::dsnp::api_types::KeyData { index: key_data.index, content: content.to_vec() }
 }
 
-fn dsnp_keys_from_ffi(dsnp_keys: &DsnpKeys) -> dsnp_graph_core::dsnp::api_types::DsnpKeys {
+pub fn dsnp_keys_from_ffi(dsnp_keys: &DsnpKeys) -> dsnp_graph_core::dsnp::api_types::DsnpKeys {
 	let keys = unsafe { std::slice::from_raw_parts(dsnp_keys.keys, dsnp_keys.keys_len) };
 	let key_data = keys.iter().map(|key| key_data_from_ffi(key)).collect();
 
