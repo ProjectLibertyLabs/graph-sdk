@@ -1,3 +1,4 @@
+//! DSNP graph related data types based on DSNP [spec](https://spec.dsnp.org/DSNP/UserData.html)
 use anyhow::Result;
 pub use dsnp_graph_config::DsnpUserId;
 use serde::{

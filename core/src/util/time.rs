@@ -1,3 +1,4 @@
+//! Module that defines helpers to create or read timestamps
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 pub const SECS_PER_DAY: u64 = 60 * 60 * 24;

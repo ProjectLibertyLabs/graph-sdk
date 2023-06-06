@@ -1,3 +1,5 @@
+//! Builder utility to help creating a new Config
+//!
 #![allow(dead_code)]
 use crate::{Config, DsnpVersion, SchemaConfig, SchemaId};
 use std::collections::HashMap;

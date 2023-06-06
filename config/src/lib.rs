@@ -1,3 +1,6 @@
+//! Config module contains all the settings and different environments that is supported by the
+//! Graph SDk
+//!
 pub mod builder;
 pub mod errors;
 use crate::errors::DsnpGraphResult;
@@ -80,6 +83,7 @@ impl ConnectionType {
 	}
 }
 
+/// a list of all supported Graphs and connections types
 pub const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
 	ConnectionType::Follow(PrivacyType::Public),
 	ConnectionType::Friendship(PrivacyType::Public),
@@ -112,6 +116,7 @@ impl Environment {
 	}
 }
 
+/// Supported Dsnp Versions
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
 pub enum DsnpVersion {

@@ -1,3 +1,5 @@
+//! Implementation of transactional Vec which tracks all changes before committing, and allows
+//! rollbacks
 use crate::util::transactional_hashmap::Transactional;
 
 #[derive(Debug, Eq, PartialEq, Clone)]

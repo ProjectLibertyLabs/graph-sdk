@@ -1,3 +1,4 @@
+//! Definition and implementations to support compression/decompression to store data
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use miniz_oxide::{
 	deflate::{compress_to_vec, CompressionLevel},

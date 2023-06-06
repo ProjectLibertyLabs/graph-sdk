@@ -1,3 +1,5 @@
+//! Implementation of transactional HashMap which tracks all changes before committing, and allows
+//! rollbacks
 use std::{
 	borrow::Borrow,
 	collections::{hash_map::Entry, HashMap},

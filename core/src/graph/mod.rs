@@ -1,3 +1,4 @@
+//! Im memory graph structure
 pub mod graph;
 pub mod key_manager;
 pub mod page;
