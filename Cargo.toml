@@ -4,6 +4,7 @@ members = [
     "config",
     "bridge/ffi",
     "bridge/jni",
+    "log-result-proc-macro",
 ]
 
 default-members = [
@@ -11,6 +12,7 @@ default-members = [
     "config",
     "bridge/ffi",
     "bridge/jni",
+    "log-result-proc-macro",
 ]
 
 [profile.release]

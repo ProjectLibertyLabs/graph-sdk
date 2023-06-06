@@ -12,9 +12,12 @@ use crate::{
 	types::PrivateGraphChunk,
 };
 use dsnp_graph_config::errors::DsnpGraphResult;
+use log_result_proc_macro::log_result;
+use log::Level;
 
 /// implementing DsnpReader for Frequency
 impl DsnpReader for Frequency {
+	#[log_result(Level::Info)]
 	fn read_public_key(data: &[u8]) -> DsnpGraphResult<DsnpPublicKey> {
 		SchemaHandler::read_public_key(data)
 	}

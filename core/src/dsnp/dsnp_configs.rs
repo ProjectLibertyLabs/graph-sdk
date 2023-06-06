@@ -8,6 +8,8 @@ use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	DsnpVersion, GraphKeyType,
 };
+use log::Level;
+use log_result_proc_macro::log_result;
 
 /// Dsnp versions hardcoded configuration
 #[derive(Clone, PartialEq, Debug, Eq, Hash)]
@@ -118,6 +120,7 @@ impl Into<DsnpVersionConfig> for &PublicKeyType {
 impl TryInto<PublicKeyType> for &'_ DsnpPublicKey {
 	type Error = DsnpGraphError;
 
+	#[log_result(Level::Info)]
 	fn try_into(self) -> DsnpGraphResult<PublicKeyType> {
 		let public_key =
 			PublicKey::try_from(&self.key[..]).map_err(|_| DsnpGraphError::InvalidPublicKey)?;
@@ -138,6 +141,7 @@ impl Into<Vec<u8>> for PublicKeyType {
 impl TryInto<KeyPairType> for GraphKeyPair {
 	type Error = DsnpGraphError;
 
+	#[log_result(Level::Info)]
 	fn try_into(self) -> DsnpGraphResult<KeyPairType> {
 		match self.key_type {
 			GraphKeyType::X25519 => {

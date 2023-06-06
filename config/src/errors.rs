@@ -185,3 +185,46 @@ impl DsnpGraphError {
 		}
 	}
 }
+
+/// Macro to replicate Option<T>::ok_or, but logging if the returned
+/// Result is an Err variant.
+// (note: could have been implemented as a trait, but then the resulting log
+// event would not contain the correct file:line, since the std::file! macro records
+// the location only from an enclosing macro call)
+#[macro_export]
+macro_rules! ok_or_log {
+	($target:expr, $error:expr, $level:expr) => {{
+		$target.ok_or_else(|| {
+			log::log!($level, "{}", $error);
+			$error
+		})
+	}};
+	($target:expr, $error:expr, $level:expr, $context:expr) => {{
+		$target.ok_or_else(|| {
+			log::log!($level, "{}: {}", $context, $error);
+			$error
+		})
+	}};
+}
+
+/// Macro to log a Result::Err.
+// (note: could have been implemented as a trait, but then the resulting log
+// event would not contain the correct file:line, since the std::file! macro records
+// the location only from an enclosing macro call)
+#[macro_export]
+macro_rules! log_err {
+	($target:expr) => {{
+		let r = $target;
+		if let Some(err) = r.as_ref().err() {
+			log::error!("{}", err);
+		}
+		r
+	}};
+	($target:expr, $context:expr) => {{
+		let r = $target;
+		if let Some(err) = r.as_ref().err() {
+			log::error!("{}:\n{}", $context, err);
+		}
+		r
+	}};
+}

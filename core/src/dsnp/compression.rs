@@ -1,4 +1,6 @@
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
+use log::Level;
+use log_result_proc_macro::log_result;
 use miniz_oxide::{
 	deflate::{compress_to_vec, CompressionLevel},
 	inflate::decompress_to_vec,
@@ -17,10 +19,12 @@ pub trait CompressionBehavior {
 pub struct DeflateCompression;
 
 impl CompressionBehavior for DeflateCompression {
+	#[log_result(Level::Info)]
 	fn compress(obj: &[u8]) -> DsnpGraphResult<Vec<u8>> {
 		Ok(compress_to_vec(obj, CompressionLevel::BestCompression as u8))
 	}
 
+	#[log_result(Level::Info)]
 	fn decompress(data: &[u8]) -> DsnpGraphResult<Vec<u8>> {
 		let val =
 			decompress_to_vec(data).map_err(|e| DsnpGraphError::DecompressError(e.to_string()))?;

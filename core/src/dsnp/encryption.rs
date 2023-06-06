@@ -5,6 +5,8 @@ use dryoc::{
 	dryocbox::ByteArray,
 };
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
+use log::Level;
+use log_result_proc_macro::log_result;
 
 /// Common trait for different encryption algorithms
 pub trait EncryptionBehavior {
@@ -20,6 +22,7 @@ pub trait EncryptionBehavior {
 pub struct SealBox;
 
 impl EncryptionBehavior for SealBox {
+	#[log_result(Level::Info)]
 	fn encrypt(&self, plain_data: &[u8], input: &PublicKeyType) -> DsnpGraphResult<Vec<u8>> {
 		match input {
 			PublicKeyType::Version1_0(key) => {
@@ -32,6 +35,7 @@ impl EncryptionBehavior for SealBox {
 		}
 	}
 
+	#[log_result(Level::Info)]
 	fn decrypt(&self, encrypted_data: &[u8], input: &SecretKeyType) -> DsnpGraphResult<Vec<u8>> {
 		match input {
 			SecretKeyType::Version1_0(key) => {

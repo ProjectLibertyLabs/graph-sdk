@@ -20,6 +20,13 @@ use base64::{engine::general_purpose, Engine as _};
 use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{DsnpVersion, Environment, GraphKeyType};
 use std::sync::{Arc, RwLock};
+use ctor::ctor;
+
+#[ctor]
+fn test_harness_init() {
+	const IS_TEST: bool = true; // set to false to see log output in tests
+	let _ = env_logger::builder().is_test(IS_TEST).try_init();
+}
 
 pub fn create_graph_edge(id: &DsnpUserId) -> DsnpGraphEdge {
 	DsnpGraphEdge { user_id: *id, since: time_in_ksecs() }

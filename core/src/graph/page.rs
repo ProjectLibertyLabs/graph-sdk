@@ -16,6 +16,8 @@ use crate::{
 	types::PrivateGraphChunk,
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
+use log_result_proc_macro::log_result;
+use log::Level;
 
 /// A traits that returns a removed page binary payload according to the DSNP Graph schema
 pub trait RemovedPageDataProvider {
@@ -55,6 +57,7 @@ pub struct GraphPage {
 impl TryFrom<&PageData> for GraphPage {
 	type Error = DsnpGraphError;
 
+	#[log_result(Level::Info)]
 	fn try_from(PageData { content_hash, content, page_id }: &PageData) -> DsnpGraphResult<Self> {
 		Ok(Self {
 			page_id: *page_id,
@@ -70,6 +73,7 @@ impl TryFrom<&PageData> for GraphPage {
 impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPage {
 	type Error = DsnpGraphError;
 
+	#[log_result(Level::Info)]
 	fn try_from(
 		(PageData { content_hash, content, page_id }, dsnp_version_config, keys): (
 			&PageData,
@@ -126,6 +130,7 @@ impl RemovedPageDataProvider for GraphPage {
 }
 
 impl PublicPageDataProvider for GraphPage {
+	#[log_result(Level::Info)]
 	fn to_public_page_data(&self) -> DsnpGraphResult<PageData> {
 		if self.privacy_type != PrivacyType::Public {
 			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport)
@@ -140,6 +145,7 @@ impl PublicPageDataProvider for GraphPage {
 }
 
 impl PrivatePageDataProvider for GraphPage {
+	#[log_result(Level::Info)]
 	fn to_private_page_data(
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
@@ -241,6 +247,7 @@ impl GraphPage {
 	}
 
 	/// Add a connection to the page. Fail if the connection is already present.
+	#[log_result(Level::Info)]
 	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if self.contains(connection_id) {
 			return Err(DsnpGraphError::DuplicateConnectionDetected)
@@ -252,6 +259,7 @@ impl GraphPage {
 	}
 
 	/// Remove a connection from the page. Error if connection not found in page.
+	#[log_result(Level::Info)]
 	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if !self.contains(connection_id) {
 			return Err(DsnpGraphError::ConnectionNotFound)
@@ -267,6 +275,7 @@ impl GraphPage {
 	}
 
 	/// Refresh PRIds based on latest
+	#[log_result(Level::Info)]
 	pub fn set_prids(&mut self, prids: Vec<DsnpPrid>) -> DsnpGraphResult<()> {
 		if self.connections.len() != prids.len() {
 			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
@@ -281,6 +290,7 @@ impl GraphPage {
 	}
 
 	/// verifies that the size of prids should be the same as connection in private friendship
+	#[log_result(Level::Info)]
 	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> DsnpGraphResult<()> {
 		if connection_type == ConnectionType::Friendship(PrivacyType::Private) &&
 			self.connections.len() != self.prids.len()
