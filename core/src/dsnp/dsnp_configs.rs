@@ -1,3 +1,4 @@
+//! DSNP version specific algorithms and Key types
 use crate::{
 	api::api_types::GraphKeyPair,
 	dsnp::{

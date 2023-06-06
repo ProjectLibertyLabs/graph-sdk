@@ -1,3 +1,4 @@
+//! Implementation of [PRIds](https://spec.dsnp.org/DSNP/UserData.html#private-connection-prids) defined in DSNP spec
 use crate::dsnp::{
 	dsnp_configs::{PublicKeyType, SecretKeyType},
 	dsnp_types::{DsnpPrid, DsnpUserId},
