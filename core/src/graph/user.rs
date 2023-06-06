@@ -104,6 +104,16 @@ impl UserGraph {
 		&mut self.update_tracker
 	}
 
+	/// Getter for UpdateTracker
+	pub fn sync_updates(&mut self, schema_id: SchemaId) {
+		let non_pending_connections: HashSet<DsnpUserId> = self
+			.get_all_connections_of(schema_id, false)
+			.iter()
+			.map(|c| c.user_id)
+			.collect();
+		self.update_tracker.sync_updates(schema_id, &non_pending_connections);
+	}
+
 	/// Getter for the user's graph for the specified ConnectionType
 	pub fn graph(&self, schema_id: &SchemaId) -> Option<&Graph> {
 		self.graphs.get(schema_id)

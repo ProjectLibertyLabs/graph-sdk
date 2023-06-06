@@ -8,7 +8,7 @@ use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	SchemaId,
 };
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::HashSet};
 
 /// Update event for a schema
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
@@ -93,6 +93,28 @@ impl UpdateTracker {
 	/// returns true if there are any updates for the complement of the event
 	pub fn contains_complement(&self, event: &UpdateEvent) -> bool {
 		self.contains(&event.get_complement())
+	}
+
+	pub fn sync_updates(
+		&mut self,
+		schema_id: SchemaId,
+		existing_connections: &HashSet<DsnpUserId>,
+	) {
+		if let Some(arr) = self.updates.get(&schema_id) {
+			let mut synced_updates = arr.clone();
+			synced_updates.retain(|e| match e {
+				UpdateEvent::Add { dsnp_user_id, .. }
+					if existing_connections.contains(&dsnp_user_id) =>
+					false,
+				UpdateEvent::Remove { dsnp_user_id, .. }
+					if !existing_connections.contains(&dsnp_user_id) =>
+					false,
+				_ => true,
+			});
+			if synced_updates.len() != arr.len() {
+				self.updates.insert(schema_id, synced_updates);
+			}
+		}
 	}
 
 	/// removes the update event
@@ -240,5 +262,27 @@ mod test {
 			events,
 			vec![UpdateEvent::create_remove(2, schema_id), UpdateEvent::create_add(1, schema_id),]
 		)
+	}
+
+	#[test]
+	fn tracker_event_sync_updates_should_remove_redundant_events() {
+		// arrange
+		let mut tracker = UpdateTracker::new();
+		let schema_1 = 4;
+		let events = vec![
+			UpdateEvent::create_add(1, schema_1),
+			UpdateEvent::create_remove(2, schema_1),
+			UpdateEvent::create_add(3, schema_1),
+			UpdateEvent::create_remove(4, schema_1),
+		];
+		let existing_connections = HashSet::from([3, 2]);
+		tracker.register_updates(&events).expect("should register");
+
+		// act
+		tracker.sync_updates(schema_1, &existing_connections);
+
+		// assert
+		let schema_1_events = tracker.updates.get(&schema_1).unwrap();
+		assert_eq!(schema_1_events.as_slice(), &events[..2]);
 	}
 }
