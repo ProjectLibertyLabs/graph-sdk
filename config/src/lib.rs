@@ -6,7 +6,7 @@ pub mod errors;
 use crate::errors::DsnpGraphResult;
 use apache_avro::Schema;
 use lazy_static::lazy_static;
-use neon::{object::PropertyKey, prelude::*, types::JsObject};
+use neon::{prelude::*, types::JsObject};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::hash_map::HashMap;
@@ -139,6 +139,7 @@ pub enum Environment {
 }
 
 impl Environment {
+	/// Returns the config for the environment
 	pub fn get_config(&self) -> &Config {
 		match self {
 			Environment::Mainnet => &MAINNET_CONFIG,
@@ -224,7 +225,7 @@ impl TryFrom<&str> for Config {
 
 impl Config {
 	/// Returns JS object with all the config values
-	pub fn to_js_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
+	pub fn to_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
 		let obj = cx.empty_object();
 
 		let sdk_max_users_graph_size = cx.number(self.sdk_max_users_graph_size);

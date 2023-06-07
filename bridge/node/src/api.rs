@@ -23,7 +23,9 @@ fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// # Returns
 /// * `JsResult<JsObject>` - Neon JsObject containing the graph config
 pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
-	return cx.throw_error("Not implemented")
+	let environment_from_js = cx.argument::<JsObject>(0)?;
+	let config_object = cx.empty_object();
+	Ok(config_object)
 }
 
 /// Create a new graph state
