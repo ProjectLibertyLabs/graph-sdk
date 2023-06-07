@@ -1,17 +1,13 @@
-use dsnp_graph_config::{errors::DsnpGraphError, Config as RustConfig, SchemaId};
-use dsnp_graph_core::{
-	api::api::{GraphAPI, GraphState},
-	dsnp::dsnp_types::DsnpUserId,
-};
+use crate::helper::*;
+use dsnp_graph_config::Config;
 use neon::prelude::*;
-use std::{panic, sync::Mutex};
 
 // Collection of GraphStates
-#[allow(clippy::vec_box)]
-static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
+//#[allow(clippy::vec_box)]
+//static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 /// Neon implementation of print_hello_graph function
-fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	println!("Hello, Graph!");
 	Ok(cx.undefined())
 }
@@ -23,11 +19,16 @@ fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// # Returns
 /// * `JsResult<JsObject>` - Neon JsObject containing the graph config
 pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
-	let environment_from_js = cx.argument::<JsObject>(0)?;
-	let config_object = cx.empty_object();
-	Ok(config_object)
-}
+	let environment_obj = cx.argument::<JsObject>(0)?;
 
+	let environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let config: &Config = environment.get_config();
+
+	// Convert Config to JsObject
+	let config_js = config.to_object(&mut cx)?;
+
+	Ok(config_js)
+}
 /// Create a new graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext

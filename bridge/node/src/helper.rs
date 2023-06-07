@@ -1,12 +1,10 @@
-use dsnp_graph_config::{Config, DsnpVersion, Environment, SchemaConfig};
+use dsnp_graph_config::{Config, Environment};
 use neon::{
 	handle::Handle,
 	object::Object,
 	prelude::{Context, FunctionContext},
-	result::JsResult,
-	types::{JsArray, JsNumber, JsObject, JsString, Value},
+	types::{JsObject, JsString, Value},
 };
-use std::collections::HashMap;
 
 /// Convert environment from JSObject to Environment
 /// # Arguments
@@ -18,19 +16,19 @@ use std::collections::HashMap;
 /// * Throws a Neon error if the environment cannot be converted
 /// # Safety
 pub unsafe fn environment_from_js(
-	mut cx: FunctionContext,
+	cx: &mut FunctionContext,
 	environment_from_js: Handle<JsObject>,
 ) -> Environment {
 	let environment_type_str: Handle<JsString> =
-		environment_from_js.get(&mut cx, "environmentType").unwrap_or(cx.string(""));
+		environment_from_js.get(cx, "environmentType").unwrap_or(cx.string(""));
 
 	match environment_type_str.value().as_str() {
 		"mainnet" => Environment::Mainnet,
 		"rococo" => Environment::Rococo,
 		"dev" => {
 			let config: Handle<JsObject> =
-				environment_from_js.get(&mut cx, "config").unwrap_or(cx.empty_object());
-			let config = config_from_js(&mut cx, config);
+				environment_from_js.get(cx, "config").unwrap_or(cx.empty_object());
+			let config = config_from_js(cx, config);
 			Environment::Dev(config)
 		},
 		_ => Environment::Rococo,
