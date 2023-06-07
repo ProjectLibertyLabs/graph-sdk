@@ -63,12 +63,12 @@ pub enum DsnpGraphError {
 	FailedToRetrieveGraphPage,
 
 	/// Failed to acquire read lock on state manager
-	#[error("Failed to acquire read lock on state manager")]
-	FailedtoReadLockStateManager,
+	#[error("Failed to acquire read lock on {0}")]
+	FailedtoReadLock(String),
 
 	/// Failed to acquire write lock on state manager
-	#[error("Failed to acquire write lock on state manager")]
-	FailedtoWriteLockStateManager,
+	#[error("Failed to acquire write lock on {0}")]
+	FailedtoWriteLock(String),
 
 	/// FFI error
 	#[error("FFI error: {0}")]
@@ -198,8 +198,8 @@ impl DsnpGraphError {
 			DsnpGraphError::EventExists => 11,
 			DsnpGraphError::EncryptionError(_) => 12,
 			DsnpGraphError::FailedToRetrieveGraphPage => 13,
-			DsnpGraphError::FailedtoReadLockStateManager => 14,
-			DsnpGraphError::FailedtoWriteLockStateManager => 15,
+			DsnpGraphError::FailedtoReadLock(_) => 14,
+			DsnpGraphError::FailedtoWriteLock(_) => 15,
 			DsnpGraphError::GraphIsFull => 16,
 			DsnpGraphError::GraphStateIsFull => 17,
 			DsnpGraphError::InvalidDsnpUserId(_) => 18,

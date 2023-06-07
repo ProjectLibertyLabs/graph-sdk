@@ -405,6 +405,93 @@ mod integration_tests {
 	}
 
 	#[test]
+	fn api_import_user_data_for_public_graph_after_applying_changes_should_sync_updates_successfully(
+	) {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 100)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import first");
+		let actions = vec![
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+				dsnp_keys: None,
+			},
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 3, schema_id },
+			},
+		];
+		state.apply_actions(&actions).expect("should apply actions");
+		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
+		let input2 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &re_imported_connections, &vec![], 200)
+			.build();
+
+		// act
+		let res = state.import_users_data(&vec![input2]);
+
+		// assert
+		assert!(res.is_ok());
+
+		let updates = state.export_updates();
+		assert!(updates.is_ok());
+		assert_eq!(updates.unwrap(), vec![]);
+	}
+
+	#[test]
+	fn api_import_user_data_for_private_graph_after_applying_changes_should_sync_updates_successfully(
+	) {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
+		let mut state = GraphState::new(env.clone());
+		let (_, resolved_key, keypair) = create_new_keys(0);
+		let dsnp_user_id = 123;
+		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_encryption_key(resolved_key.clone())
+			.with_page(1, &connections, &[], 1000)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import first");
+		let actions = vec![
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+				dsnp_keys: None,
+			},
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id,
+				connection: Connection { dsnp_user_id: 3, schema_id },
+			},
+		];
+		state.apply_actions(&actions).expect("should apply actions");
+		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
+		let input2 = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.with_page(1, &re_imported_connections, &vec![], 200)
+			.build();
+
+		// act
+		let res = state.import_users_data(&vec![input2]);
+
+		// assert
+		assert!(res.is_ok());
+
+		let updates = state.export_updates();
+		assert!(updates.is_ok());
+		assert_eq!(updates.unwrap(), vec![]);
+	}
+
+	#[test]
 	fn api_remove_user_graph_should_remove_user_successfully() {
 		// arrange
 		let env = Environment::Mainnet;
