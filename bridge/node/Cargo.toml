@@ -10,9 +10,9 @@ name = "dsnp_graph_sdk_node"
 crate-type = ["cdylib"]
 
 [dependencies]
-dsnp-graph-core = { version = "0.1.0", path = "../../core" }
-dsnp-graph-config = { version = "0.1.0", path = "../../config" }
 libc = "0.2.0"
 lazy_static = "1.4.0"
 anyhow = "1.0.40"
-neon = "0.10.1"
+neon = { version = "0.10.1", default-features = false, features = ["napi-6"] }
+dsnp-graph-core = { version = "0.1.0", path = "../../core" }
+dsnp-graph-config = { version = "0.1.0", path = "../../config" }
