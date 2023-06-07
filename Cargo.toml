@@ -4,6 +4,7 @@ members = [
     "config",
     "bridge/ffi",
     "bridge/jni",
+    "bridge/node",
 ]
 
 default-members = [
