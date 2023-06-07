@@ -51,8 +51,6 @@ class LibraryTest {
 
     @BeforeAll
     public static void logger_init_should_work() {
-        logCaptor.disableConsoleOutput();
-
         assertDoesNotThrow(() -> Logger.initialize(Level.DEBUG));
         assertEquals(true, testLogsForPattern(Level.INFO, "Initializing dsnp-graph-sdk-jni"));
     }

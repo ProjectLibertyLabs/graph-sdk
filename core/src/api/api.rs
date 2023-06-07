@@ -168,6 +168,7 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
+	#[log_result(Level::Error)]
 	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		let result = self.do_import_users_data(payloads);
 		match result {
@@ -195,6 +196,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Apply actions (Connect, Disconnect) to imported users graph
+	#[log_result(Level::Error)]
 	fn apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		let result = self.do_apply_actions(actions);
 		match result {
