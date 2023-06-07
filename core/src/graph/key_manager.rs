@@ -5,14 +5,19 @@ use crate::{
 		dsnp_types::{DsnpPrid, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
 	},
-	graph::shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
+	graph::shared_state_manager::{
+		PriProvider, PublicKeyProvider, SharedStateManager, SHARED_STATE_MANAGER,
+	},
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
-use dsnp_graph_config::errors::DsnpGraphResult;
+use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::{
 	fmt::Debug,
 	sync::{Arc, RwLock},
 };
+
+/// constant used in errors
+pub const USER_KEY_MANAGER: &str = "UserKeyManager";
 
 /// Common trait that manages public and private keys for each user
 pub trait UserKeyProvider {
@@ -103,7 +108,10 @@ impl UserKeyProvider for UserKeyManager {
 
 impl PriProvider for UserKeyManager {
 	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()> {
-		self.shared_state_manager.write().unwrap().import_pri(dsnp_user_id, pages)
+		self.shared_state_manager
+			.write()
+			.map_err(|_| DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string()))?
+			.import_pri(dsnp_user_id, pages)
 	}
 
 	fn contains(&self, dsnp_user_id: DsnpUserId, prid: DsnpPrid) -> bool {
@@ -116,7 +124,10 @@ impl PriProvider for UserKeyManager {
 		to: DsnpUserId,
 		from_secret: SecretKeyType,
 	) -> DsnpGraphResult<DsnpPrid> {
-		self.shared_state_manager.read().unwrap().calculate_prid(from, to, from_secret)
+		self.shared_state_manager
+			.read()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
+			.calculate_prid(from, to, from_secret)
 	}
 }
 
@@ -125,7 +136,7 @@ impl ConnectionVerifier for UserKeyManager {
 		let from_public_keys: Vec<_> = self
 			.shared_state_manager
 			.read()
-			.unwrap()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
 			.get_prid_associated_public_keys(from)?;
 		let to_resolved_keys = self.get_all_resolved_keys();
 
@@ -137,7 +148,14 @@ impl ConnectionVerifier for UserKeyManager {
 					&private.key_pair.clone().into(),
 					&public,
 				)?;
-				if self.shared_state_manager.read().unwrap().contains(from, prid) {
+				if self
+					.shared_state_manager
+					.read()
+					.map_err(|_| {
+						DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string())
+					})?
+					.contains(from, prid)
+				{
 					return Ok(true)
 				}
 			}

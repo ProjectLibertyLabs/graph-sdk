@@ -13,6 +13,9 @@ use crate::{
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use std::{borrow::Borrow, collections::HashSet};
 
+/// Constant used in errors
+pub const SHARED_STATE_MANAGER: &str = "SharedStateManager";
+
 /// A trait that defines all the functionality that a pri manager should implement.
 pub trait PriProvider {
 	/// imports pri for a user and replaces the older ones if exists
@@ -125,7 +128,7 @@ impl PublicKeyProvider for SharedStateManager {
 			let mut k =
 				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
 
-			// make sure it can deserializes correctly
+			// make sure it can deserialize correctly
 			let _: PublicKeyType = k.borrow().try_into()?;
 			// key id is the itemized index of the key stored in Frequency
 			k.key_id = Some(key.index.into());
