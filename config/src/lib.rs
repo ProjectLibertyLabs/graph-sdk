@@ -79,14 +79,10 @@ impl Display for ConnectionType {
 			f,
 			"{}",
 			match self {
-				Follow(p) => match p {
-					Public => "Follow(Public)",
-					Private => "Follow(Private)",
-				},
-				Friendship(p) => match p {
-					Public => "Friendship(Public)",
-					Private => "Friendship(Private)",
-				},
+				Follow(PrivacyType::Public) => "Follow(Public)",
+				Follow(PrivacyType::Private) => "Follow(Private)",
+				Friendship(PrivacyType::Public) => "Friendship(Public)",
+				Friendship(PrivacyType::Private) => "Friendship(Private)",
 			}
 		)
 	}
