@@ -412,6 +412,7 @@ dependencies = [
  "anyhow",
  "apache-avro",
  "lazy_static",
+ "neon",
  "pretty_assertions",
  "serde",
  "serde_json",
@@ -462,7 +463,6 @@ dependencies = [
  "dsnp-graph-core",
  "lazy_static",
  "libc",
- "neon",
 ]
 
 [[package]]
