@@ -4,6 +4,7 @@ use dsnp_graph_core::{
 	dsnp::dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 use libc::size_t;
+use neon::{prelude::*, types::JsObject};
 
 /// `dsnp_graph_core::dsnp::api_types::KeyData` type
 #[repr(C)]

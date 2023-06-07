@@ -462,6 +462,7 @@ dependencies = [
  "dsnp-graph-core",
  "lazy_static",
  "libc",
+ "neon",
 ]
 
 [[package]]
