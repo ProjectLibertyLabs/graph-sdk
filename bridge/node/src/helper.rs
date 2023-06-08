@@ -108,59 +108,21 @@ pub fn schema_config_to_js<'a, C: Context<'a>>(
 	let dsnp_version = cx.number(schema_config.dsnp_version as u32);
 	obj.set(cx, "dsnpVersion", dsnp_version)?;
 
-	let connection_type = connection_type_to_js(cx, &schema_config.connection_type)?;
-	obj.set(cx, "connectionType", connection_type)?;
-
-	Ok(obj)
-}
-
-/// Convert rust `ConnectionType` to JSObject
-/// # Arguments
-/// * `cx` - Neon FunctionContext
-/// * `connection_type` - ConnectionType object
-/// # Returns
-/// * `JsResult<JsObject>` - Neon JsObject containing the connection type
-/// # Errors
-/// * Throws a Neon error if the connection type cannot be converted
-pub fn connection_type_to_js<'a, C: Context<'a>>(
-	cx: &mut C,
-	connection_type: &ConnectionType,
-) -> JsResult<'a, JsObject> {
-	let obj = cx.empty_object();
-
-	let connection_type_str = match connection_type {
+	let connection_type_str = match schema_config.connection_type {
 		ConnectionType::Follow(_) => cx.string("follow"),
 		ConnectionType::Friendship(_) => cx.string("friendship"),
 	};
 	obj.set(cx, "connectionType", connection_type_str)?;
 
-	let privacy_type = match connection_type {
-		ConnectionType::Follow(privacy) | ConnectionType::Friendship(privacy) =>
-			privacy_type_to_js(cx, privacy)?,
-	};
-	obj.set(cx, "privacy", privacy_type)?;
-	Ok(obj)
-}
-
-/// Convert rust `PrivacyType` to JSObject
-/// # Arguments
-/// * `cx` - Neon FunctionContext
-/// * `privacy_type` - PrivacyType object
-/// # Returns
-/// * `JsResult<JsObject>` - Neon JsObject containing the privacy type
-/// # Errors
-/// * Throws a Neon error if the privacy type cannot be converted
-pub fn privacy_type_to_js<'a, C: Context<'a>>(
-	cx: &mut C,
-	privacy_type: &dsnp_graph_config::PrivacyType,
-) -> JsResult<'a, JsObject> {
-	let obj = cx.empty_object();
-
-	let privacy_type_str = match privacy_type {
-		dsnp_graph_config::PrivacyType::Public => cx.string("public"),
-		dsnp_graph_config::PrivacyType::Private => cx.string("private"),
+	let privacy_type_str = match schema_config.connection_type {
+		ConnectionType::Follow(privacy) | ConnectionType::Friendship(privacy) => {
+			let privacy_type_str = match privacy {
+				dsnp_graph_config::PrivacyType::Public => cx.string("public"),
+				dsnp_graph_config::PrivacyType::Private => cx.string("private"),
+			};
+			privacy_type_str
+		},
 	};
 	obj.set(cx, "privacyType", privacy_type_str)?;
-
 	Ok(obj)
 }

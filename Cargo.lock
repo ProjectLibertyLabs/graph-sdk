@@ -480,6 +480,8 @@ dependencies = [
  "lazy_static",
  "libc",
  "neon",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
