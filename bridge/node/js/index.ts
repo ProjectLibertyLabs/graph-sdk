@@ -15,7 +15,7 @@ function loadNative() {
         return require(path.join(__dirname, '/../../dsnp_graph_sdk.node'))
     }
     throw new Error(
-      `Unable to load @cubejs-backend/native, probably your system (${process.arch}-${process.platform}) with Node.js ${process.version} is not supported.`
+      `Unable to load dsnp_graph_sdk.node, probably your system (${process.arch}-${process.platform}) with Node.js ${process.version} is not supported.`
     );
 }
 
