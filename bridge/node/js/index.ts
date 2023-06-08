@@ -1,4 +1,3 @@
-
 /*
     @dsnp/graphsdk-node
     Entry point for graphsdk.node bindings. This file exposes types and functions
@@ -12,12 +11,15 @@ import path from 'path';
 function loadNative() {
     // Development version
     if (fs.existsSync(path.join(__dirname, '/../../dsnp_graph_sdk.node'))) {
-        return require(path.join(__dirname, '/../../dsnp_graph_sdk.node'))
+        return require(path.join(__dirname, '/../../dsnp_graph_sdk.node'));
     }
     throw new Error(
-      `Unable to load dsnp_graph_sdk.node, probably your system (${process.arch}-${process.platform}) with Node.js ${process.version} is not supported.`
+        `Unable to load dsnp_graph_sdk.node, probably your system (${process.arch}-${process.platform}) with Node.js ${process.version} is not supported.`
     );
 }
 
 // load the native module
 const native = loadNative();
+
+// Export the printHelloGraph function
+export const printHelloGraph = native.printHelloGraph;

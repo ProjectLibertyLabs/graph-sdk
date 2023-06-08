@@ -13,8 +13,8 @@
     "native:build-debug": "npm run native:build --",
     "native:build-release": "npm run native:build -- --release",
     "test:cargo": "cargo test",
-    "lint": "eslint test/ --ext .ts",
-    "lint:fix": "eslint --fix test/ --ext .ts"
+    "lint": "eslint js/ --ext .ts",
+    "lint:fix": "eslint --fix js/ --ext .ts"
   },
   "engines": {
     "node": "^14.0.0 || ^16.0.0 || >=17.0.0"
@@ -24,7 +24,10 @@
   ],
   "devDependencies": {
     "@types/node": "^20.2.5",
-    "cargo-cp-artifact": "^0.1"
+    "@typescript-eslint/eslint-plugin": "^5.59.9",
+    "@typescript-eslint/parser": "^5.59.9",
+    "cargo-cp-artifact": "^0.1",
+    "eslint": "^8.42.0"
   },
   "repository": {
     "type": "git",
