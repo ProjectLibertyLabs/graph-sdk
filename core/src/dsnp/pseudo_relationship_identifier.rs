@@ -13,7 +13,7 @@ use dryoc::{
 };
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use log::Level;
-use log_result_proc_macro::log_result;
+use log_result_proc_macro::log_result_err;
 use std::ops::Deref;
 use zeroize::Zeroizing;
 
@@ -43,7 +43,7 @@ pub trait PridProvider {
 impl PridProvider for DsnpPrid {
 	type DsnpPrid = DsnpPrid;
 
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn create_prid(
 		a: DsnpUserId,
 		b: DsnpUserId,
@@ -72,7 +72,7 @@ impl PridProvider for DsnpPrid {
 		Ok(Self::DsnpPrid::new(&result))
 	}
 
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn create_shared_context(
 		b: DsnpUserId,
 		a_secret_key: &SecretKeyType,

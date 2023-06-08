@@ -9,7 +9,7 @@ use syn::parse_macro_input;
 /// to a function that returns a Result enum, and it returns an Err.
 /// Note: Returned E of Result<T, E> must implment the Display trait.
 /// Also, crate must have the log crate as a dependency.
-pub fn log_result(attr: TokenStream, item: TokenStream) -> TokenStream {
+pub fn log_result_err(attr: TokenStream, item: TokenStream) -> TokenStream {
 	let log_level = parse_macro_input!(attr as syn::Expr);
 	let input = parse_macro_input!(item as syn::ItemFn);
 

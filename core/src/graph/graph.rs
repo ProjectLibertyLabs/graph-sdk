@@ -16,13 +16,13 @@ use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	Environment, SchemaId,
 };
+use log::Level;
+use log_result_proc_macro::log_result_err;
 use std::{
 	collections::{BTreeMap, HashMap, HashSet},
 	iter::Peekable,
 	sync::{Arc, RwLock},
 };
-use log_result_proc_macro::log_result;
-use log::Level;
 
 use super::page::GraphPage;
 
@@ -145,7 +145,7 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Public Graph
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn import_public(
 		&mut self,
 		connection_type: ConnectionType,
@@ -181,7 +181,7 @@ impl Graph {
 	}
 
 	/// Import bundle of pages as a Private Graph
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn import_private(
 		&mut self,
 		dsnp_version_config: &DsnpVersionConfig,
@@ -220,7 +220,7 @@ impl Graph {
 		Ok(())
 	}
 
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn calculate_updates(
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
@@ -381,7 +381,7 @@ impl Graph {
 
 	/// Function to take a vec of updated & removed pages, and return a vec
 	/// of Update payloads.
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn pages_to_updates(
 		&self,
 		updated_pages: &mut BTreeMap<PageId, GraphPage>,
@@ -438,7 +438,7 @@ impl Graph {
 
 	/// recalculates and export pages, can be used to rotate keys or refresh PRID or remove empty
 	/// pages
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn force_recalculate(
 		&self,
 		dsnp_version_config: &DsnpVersionConfig,
@@ -494,7 +494,7 @@ impl Graph {
 	/// If Some(Page) supplied, insert the given page.
 	/// Otherwise, create a new empty page.
 	#[cfg(test)]
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	pub fn create_page(
 		&mut self,
 		page_id: &PageId,
@@ -559,7 +559,7 @@ impl Graph {
 	/// This is used internally by the Graph Update Manager or Import
 	/// If the specified page does not exist, a new page will be created
 	/// and the connection inserted into it.
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn add_connection_to_page(
 		&mut self,
 		page_id: &PageId,
@@ -585,7 +585,7 @@ impl Graph {
 	/// Returns Ok(Option<PageId>) containing the PageId of the page
 	/// the connection was removed from, or Ok(None) if the connection
 	/// was not found.
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn remove_connection(
 		&mut self,
 		connection_id: &DsnpUserId,
@@ -605,7 +605,7 @@ impl Graph {
 	}
 
 	/// returns one sided friendship connections
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn get_one_sided_friendships(&self) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
 			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph)
@@ -621,7 +621,7 @@ impl Graph {
 	}
 
 	/// verifies prids for friendship from other party and calculates for own side
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn apply_prids(
 		&self,
 		updated_page: &mut GraphPage,
@@ -667,7 +667,7 @@ impl Graph {
 	/// Determine if page is full
 	///  aggressive:false -> use a simple heuristic based on the number of connections
 	///  aggressive:true  -> do actual compression to determine resulting actual page size
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn try_add_connection_to_page(
 		&self,
 		page: &mut GraphPage,
@@ -1163,7 +1163,7 @@ mod test {
 
 	/// Helper for testing calculating updates when all existing pages are
 	/// aggressively full.
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn calculate_updates_adding_new_page(connection_type: ConnectionType) -> DsnpGraphResult<()> {
 		// arrange
 		let (_, dsnp_version_config) = get_env_and_config();
@@ -1255,7 +1255,7 @@ mod test {
 	}
 
 	/// Helper for testing calculating updates when at least one page is not aggressively full
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	fn calculate_updates_existing_page(connection_type: ConnectionType) -> DsnpGraphResult<()> {
 		// arrange
 		let (_, dsnp_version_config) = get_env_and_config();

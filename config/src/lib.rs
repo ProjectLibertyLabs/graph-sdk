@@ -74,7 +74,6 @@ pub enum ConnectionType {
 impl Display for ConnectionType {
 	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
 		use ConnectionType::*;
-		use PrivacyType::*;
 		write!(
 			f,
 			"{}",

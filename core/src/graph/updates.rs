@@ -8,9 +8,9 @@ use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	SchemaId,
 };
-use std::cmp::Ordering;
-use log_result_proc_macro::log_result;
 use log::Level;
+use log_result_proc_macro::log_result_err;
+use std::cmp::Ordering;
 
 #[derive(Clone, PartialEq, Ord, Eq, PartialOrd, Debug)]
 pub enum UpdateEvent {
@@ -39,7 +39,7 @@ impl UpdateTracker {
 		Self { updates: TransactionalHashMap::new() }
 	}
 
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn register_update(&mut self, event: &UpdateEvent) -> DsnpGraphResult<()> {
 		if self.contains(event) {
 			return Err(DsnpGraphError::EventExists)
@@ -55,7 +55,7 @@ impl UpdateTracker {
 		Ok(())
 	}
 
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> DsnpGraphResult<()> {
 		if events.iter().any(|e| self.contains(e)) {
 			return Err(DsnpGraphError::DuplicateUpdateEvents)

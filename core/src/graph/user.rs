@@ -24,8 +24,8 @@ use crate::{
 };
 
 use super::graph::Graph;
-use log_result_proc_macro::log_result;
 use log::Level;
+use log_result_proc_macro::log_result_err;
 
 pub type GraphMap = TransactionalHashMap<SchemaId, Graph>;
 
@@ -132,7 +132,7 @@ impl UserGraph {
 	}
 
 	/// Calculate pending updates for all graphs for this user
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn calculate_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result: Vec<Update> = Vec::new();
 		for (schema_id, graph) in self.graphs.inner().iter() {
@@ -150,7 +150,7 @@ impl UserGraph {
 	}
 
 	// force calculates all imported graphs which will use the latest encryption key
-	#[log_result(Level::Info)]
+	#[log_result_err(Level::Info)]
 	pub fn force_calculate_graphs(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = vec![];
 		for (schema_id, graph) in self.graphs.inner().iter() {

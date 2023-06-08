@@ -62,7 +62,7 @@ use dsnp_graph_config::{
 	ConnectionType, Environment, InputValidation, SchemaId,
 };
 use log::Level;
-use log_result_proc_macro::log_result;
+use log_result_proc_macro::log_result_err;
 use std::{
 	cmp::min,
 	collections::{hash_map::Entry, HashSet},
@@ -168,7 +168,7 @@ impl GraphAPI for GraphState {
 	/// Import raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		let result = self.do_import_users_data(payloads);
 		match result {
@@ -180,7 +180,7 @@ impl GraphAPI for GraphState {
 
 	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed or added keys
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = self.shared_state_manager.read().unwrap().export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
@@ -196,7 +196,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Apply actions (Connect, Disconnect) to imported users graph
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		let result = self.do_apply_actions(actions);
 		match result {
@@ -207,7 +207,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Export the graph pages for a certain user encrypted using the latest published key
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>> {
 		let user_graph = self
 			.user_map
@@ -218,7 +218,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Get a list of all connections of the indicated type for the user
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn get_connections_for_user_graph(
 		&self,
 		user_id: &DsnpUserId,
@@ -234,7 +234,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// return a list dsnp user ids that require keys
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn get_connections_without_keys(&self) -> DsnpGraphResult<Vec<DsnpUserId>> {
 		let private_friendship_schema_id = self
 			.environment
@@ -258,7 +258,7 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Get a list of all private friendship connections that are only valid from users side
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn get_one_sided_private_friendship_connections(
 		&self,
 		user_id: &DsnpUserId,
@@ -333,7 +333,7 @@ impl GraphState {
 		}
 	}
 
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		// pre validate all bundles
 		for bundle in payloads {
@@ -388,7 +388,7 @@ impl GraphState {
 		Ok(())
 	}
 
-	#[log_result(Level::Error)]
+	#[log_result_err(Level::Error)]
 	fn do_apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		// pre validate all actions
 		for action in actions {
