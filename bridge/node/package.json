@@ -1,10 +1,11 @@
 {
-  "name": "dsnp_graph_sdk_node",
+  "name": "@dsnp/dsnp_graph_sdk_node",
   "version": "0.0.1",
   "author": "Amplica Labs",
   "license": "ISC",
   "description": "dsnp-graph-sdk-node",
-  "main": "dsnp_graph_sdk.node",
+  "main": "dist/js/index.js",
+  "typings": "dist/js/index.d.ts",
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
@@ -22,6 +23,7 @@
     "dist/js"
   ],
   "devDependencies": {
+    "@types/node": "^20.2.5",
     "cargo-cp-artifact": "^0.1"
   },
   "repository": {
