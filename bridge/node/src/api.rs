@@ -39,7 +39,7 @@ pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # Errors
 /// * Throws a Neon error if the graph state cannot be created
 /// # Safety
-pub unsafe fn create_graph_state(mut cx: FunctionContext) -> JsResult<JsObject> {
+pub fn create_graph_state(mut cx: FunctionContext) -> JsResult<JsObject> {
 	return cx.throw_error("Not implemented")
 }
 
@@ -51,6 +51,15 @@ pub unsafe fn create_graph_state(mut cx: FunctionContext) -> JsResult<JsObject> 
 /// * `JsResult<JsObject>` - Neon JsObject containing the graph state
 /// # Errors
 /// * Throws a Neon error if the graph state cannot be created
-pub unsafe fn create_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult<JsObject> {
+pub fn create_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult<JsObject> {
 	return cx.throw_error("Not implemented")
+}
+
+#[neon::main]
+fn main(mut cx: ModuleContext) -> NeonResult<()> {
+	cx.export_function("printHelloGraph", print_hello_graph)?;
+	cx.export_function("getGraphConfig", get_graph_config)?;
+	cx.export_function("createGraphState", create_graph_state)?;
+	cx.export_function("createGraphStateWithCapacity", create_graph_state_with_capacity)?;
+	Ok(())
 }
