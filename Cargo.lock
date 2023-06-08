@@ -403,7 +403,6 @@ dependencies = [
  "anyhow",
  "apache-avro",
  "lazy_static",
- "neon",
  "pretty_assertions",
  "serde",
  "serde_json",

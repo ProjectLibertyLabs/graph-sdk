@@ -25,10 +25,11 @@ pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 	let config: &Config = environment.get_config();
 
 	// Convert Config to JsObject
-	let config_js = config.to_object(&mut cx)?;
+	let config_js = config_to_js(&mut cx, config)?;
 
 	Ok(config_js)
 }
+
 /// Create a new graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext

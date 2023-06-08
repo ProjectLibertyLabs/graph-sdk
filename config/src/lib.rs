@@ -6,7 +6,6 @@ pub mod errors;
 use crate::errors::DsnpGraphResult;
 use apache_avro::Schema;
 use lazy_static::lazy_static;
-use neon::{prelude::*, types::JsObject};
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 use std::collections::hash_map::HashMap;
@@ -61,20 +60,6 @@ pub enum PrivacyType {
 	Private,
 }
 
-impl PrivacyType {
-	fn to_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
-		let obj = cx.empty_object();
-
-		let privacy_type = match self {
-			Self::Public => cx.string("public"),
-			Self::Private => cx.string("private"),
-		};
-		obj.set(cx, "privacyType", privacy_type)?;
-
-		Ok(obj)
-	}
-}
-
 /// Different connection type in social graph
 #[repr(C)]
 #[derive(Clone, Copy, PartialEq, Ord, Eq, PartialOrd, Debug, Hash, Serialize, Deserialize)]
@@ -91,23 +76,6 @@ pub enum ConnectionType {
 }
 
 impl ConnectionType {
-	fn to_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
-		let obj = cx.empty_object();
-
-		let connection_type = match self {
-			Self::Follow(_) => cx.string("follow"),
-			Self::Friendship(_) => cx.string("friendship"),
-		};
-		obj.set(cx, "connectionType", connection_type)?;
-
-		let privacy_type = match self {
-			Self::Follow(privacy) | Self::Friendship(privacy) => privacy.to_object(cx)?,
-		};
-		obj.set(cx, "privacyType", privacy_type)?;
-
-		Ok(obj)
-	}
-
 	pub const fn privacy_type(&self) -> PrivacyType {
 		match self {
 			Self::Follow(privacy) | Self::Friendship(privacy) => *privacy,
@@ -166,21 +134,6 @@ pub struct SchemaConfig {
 	pub connection_type: ConnectionType,
 }
 
-/// implementation to object type for SchemaConfig
-impl SchemaConfig {
-	fn to_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
-		let obj = cx.empty_object();
-
-		let dsnp_version = cx.number(self.dsnp_version as u32);
-		obj.set(cx, "dsnpVersion", dsnp_version)?;
-
-		let connection_type = self.connection_type.to_object(cx)?;
-		obj.set(cx, "connectionType", connection_type)?;
-
-		Ok(obj)
-	}
-}
-
 /// Config
 /// This is used to configure the graph state
 #[serde_as]
@@ -224,43 +177,6 @@ impl TryFrom<&str> for Config {
 }
 
 impl Config {
-	/// Returns JS object with all the config values
-	pub fn to_object<'a, C: Context<'a>>(&self, cx: &mut C) -> JsResult<'a, JsObject> {
-		let obj = cx.empty_object();
-
-		let sdk_max_users_graph_size = cx.number(self.sdk_max_users_graph_size);
-		obj.set(cx, "sdkMaxUsersGraphSize", sdk_max_users_graph_size)?;
-
-		let sdk_max_stale_friendship_days = cx.number(self.sdk_max_stale_friendship_days);
-		obj.set(cx, "sdkMaxStaleFriendshipDays", sdk_max_stale_friendship_days)?;
-
-		let max_graph_page_size_bytes = cx.number(self.max_graph_page_size_bytes);
-		obj.set(cx, "maxGraphPageSizeBytes", max_graph_page_size_bytes)?;
-
-		let max_page_id = cx.number(self.max_page_id);
-		obj.set(cx, "maxPageId", max_page_id)?;
-
-		let max_key_page_size_bytes = cx.number(self.max_key_page_size_bytes);
-		obj.set(cx, "maxKeyPageSizeBytes", max_key_page_size_bytes)?;
-
-		let schema_map = cx.empty_object();
-		for (schema_id, schema_config) in &self.schema_map {
-			let schema_id_val = cx.number(*schema_id);
-			let schema_config_obj = schema_config.to_object(cx)?;
-			schema_map.set(cx, schema_id_val, schema_config_obj)?;
-		}
-		obj.set(cx, "schemaMap", schema_map)?;
-
-		let dsnp_versions = cx.empty_array();
-		for (i, version) in self.dsnp_versions.iter().enumerate() {
-			let version_val = cx.number(*version as u32);
-			dsnp_versions.set(cx, i as u32, version_val)?;
-		}
-		obj.set(cx, "dsnpVersions", dsnp_versions)?;
-
-		Ok(obj)
-	}
-
 	/// Returns the DSNP version for the given schema id
 	pub fn get_dsnp_version_from_schema_id(&self, schema_id: SchemaId) -> Option<DsnpVersion> {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
