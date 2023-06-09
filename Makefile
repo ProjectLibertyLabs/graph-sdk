@@ -27,6 +27,10 @@ format-check:
 build:
 	@echo "Running Cargo build..."
 	@cargo build --all --all-features --all-targets
+build-node:
+	@echo "Build Neon Node Bridge for GraphSDK..."
+	@cd bridge/node && npm install && npm run native:build-release && npx jest --verbose
+
 
 .PHONY: dsnp-graph-sdk-jni
 	@cargo build -p dsnp-graph-sdk-jni --release

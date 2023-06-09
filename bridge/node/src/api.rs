@@ -7,9 +7,9 @@ use neon::prelude::*;
 //static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
 
 /// Neon implementation of print_hello_graph function
-pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsString> {
 	println!("Hello, Graph!");
-	Ok(cx.undefined())
+	Ok(cx.string("Hello, Graph!"))
 }
 
 /// Get graph config from the environment
