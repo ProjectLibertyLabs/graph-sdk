@@ -11,15 +11,16 @@
       "module": "commonjs",
       "baseUrl": ".",
       "paths": {
-        "@dsnpgraphsdk/*": [
-          "bridge/node/src/*"
+        "@dsnp/dsnp_graph_sdk_node": [
+          "bridge/node/*",
+          "bridge/node/src/*",
+          "bridge/node/js/*"
         ]
       },
       "composite": true,
       "declaration": true,
       "declarationMap": true,
       "sourceMap": true,
-      //
       "strict": true,
       "noImplicitAny": true,
       "strictNullChecks": true,
