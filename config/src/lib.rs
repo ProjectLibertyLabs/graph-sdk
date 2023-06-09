@@ -107,6 +107,7 @@ pub enum Environment {
 }
 
 impl Environment {
+	/// Returns the config for the environment
 	pub fn get_config(&self) -> &Config {
 		match self {
 			Environment::Mainnet => &MAINNET_CONFIG,

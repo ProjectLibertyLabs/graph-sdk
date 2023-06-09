@@ -201,7 +201,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
-  
+
+  build_test_node_bridge:
+    name: Build and Test Node Bridge
+    runs-on: ubuntu-latest
+    needs: [verify, test, lint, build]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Build Node Bridge
+        run: make build-node
+
   test_java_lib_gradle:
     name: Test Java Library
     runs-on: ubuntu-latest
