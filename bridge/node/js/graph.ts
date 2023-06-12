@@ -15,6 +15,10 @@ export class Graph {
         }
     }
 
+    public getGraphConfig(environment: EnvironmentInterface): Config {
+        return graphsdkModule.getGraphConfig();
+    }
+    
     public printHelloGraph(): void {
         console.log( graphsdkModule.printHelloGraph() );
     }

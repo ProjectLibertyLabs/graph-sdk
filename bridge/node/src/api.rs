@@ -1,10 +1,12 @@
 use crate::helper::*;
 use dsnp_graph_config::Config;
+use dsnp_graph_core::api::api::GraphState;
 use neon::prelude::*;
+use std::sync::{Arc, Mutex};
 
 // Collection of GraphStates
-//#[allow(clippy::vec_box)]
-//static GRAPH_STATES: Mutex<Vec<Box<GraphState>>> = Mutex::new(Vec::new());
+#[allow(clippy::vec_box)]
+static GRAPH_STATES: Mutex<Vec<Arc<Mutex<GraphState>>>> = Mutex::new(Vec::new());
 
 /// Neon implementation of print_hello_graph function
 pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsString> {
@@ -39,8 +41,20 @@ pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # Errors
 /// * Throws a Neon error if the graph state cannot be created
 /// # Safety
-pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsObject> {
-	return cx.throw_error("Not implemented")
+pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsNumber> {
+	let environment_obj = cx.argument::<JsObject>(0)?;
+	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let graph_state = GraphState::new(rust_environment);
+
+	// Generate a unique identifier for the graph state
+	let graph_state_id = {
+		let mut states = GRAPH_STATES.lock().unwrap();
+		let next_id = states.len();
+		states.insert(next_id, Arc::new(Mutex::new(graph_state)));
+		next_id
+	};
+
+	Ok(cx.number(graph_state_id as f64))
 }
 
 /// Create graph state with capacity
@@ -51,8 +65,22 @@ pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// * `JsResult<JsObject>` - Neon JsObject containing the graph state
 /// # Errors
 /// * Throws a Neon error if the graph state cannot be created
-pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult<JsObject> {
-	return cx.throw_error("Not implemented")
+pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult<JsNumber> {
+	let environment_obj = cx.argument::<JsObject>(0)?;
+	let capacity = cx.argument::<JsNumber>(1)?;
+	let capacity = capacity.value(&mut cx) as usize;
+	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let graph_state = GraphState::with_capacity(rust_environment, capacity);
+
+	// Generate a unique identifier for the graph state
+	let graph_state_id = {
+		let mut states = GRAPH_STATES.lock().unwrap();
+		let next_id = states.len();
+		states.insert(next_id, Arc::new(Mutex::new(graph_state)));
+		next_id
+	};
+
+	Ok(cx.number(graph_state_id as f64))
 }
 
 #[neon::main]
