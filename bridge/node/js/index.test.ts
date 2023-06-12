@@ -1,11 +1,10 @@
-import { printHelloGraph } from './index';
+import { Graph } from './graph';
 
 test('printHelloGraph should print "Hello, Graph!"', () => {
     // Mock the console.log function
     const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
-  
-    // Call the printHelloGraph function
-    printHelloGraph();
-
+    let graph = new Graph();
+    graph.printHelloGraph();
+    expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
   });
   
