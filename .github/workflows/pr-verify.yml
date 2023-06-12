@@ -238,3 +238,31 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+
+  publish_npm_package_github:
+    name: Publish NPM Package
+    runs-on: ubuntu-latest
+    needs: [verify, test, lint, build, build_test_node_bridge]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install NPM Dependencies
+        working-directory: node
+        run: npm install
+      - name: Build NPM Package
+        working-directory: node
+        run: npm run build:native-release
+      - name: Publish NPM Package
+        working-directory: node
+        run: |
+          npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
+          npm publish --access public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
