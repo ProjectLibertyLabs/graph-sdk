@@ -8,6 +8,7 @@ console.log("Loaded graphsdk.node bindings");
 // Define the Native interface
 export interface Native {
     printHelloGraph(): void;
+    getGraphConfig(): any; // Replace `any` with the appropriate type
     initializeGraphState(environment: string): number;
     containsUserGraph(handle: number, dsnpUserId: number): boolean;
     getGraphUsersLength(handle: number): number;
