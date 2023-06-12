@@ -1,5 +1,6 @@
 import path from "path";
 import { EnvironmentInterface } from "./models/environment";
+import { Config } from "./models/config";
 
 // Load the native neon graphsdk module
 function loadNativeModule(): any {
@@ -17,7 +18,7 @@ console.log("Loaded graphsdk.node bindings");
 // Define the Native interface
 export interface Native {
     printHelloGraph(): void;
-    getGraphConfig(): any; // Replace `any` with the appropriate type
+    getGraphConfig(): Config;
     initializeGraphState(environment: EnvironmentInterface): number;
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number;
     containsUserGraph(handle: number, dsnpUserId: number): boolean;
