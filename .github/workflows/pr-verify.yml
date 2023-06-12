@@ -252,17 +252,15 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18'
+          registry-url: https://npm.pkg.github.com/
+          scope: '@dsnp'
       - name: Install NPM Dependencies
-        working-directory: node
+        working-directory: bridge/node
         run: npm install
       - name: Build NPM Package
-        working-directory: node
+        working-directory: bridge/node
         run: npm run build:native-release
       - name: Publish NPM Package
-        working-directory: node
-        run: |
-          npm config set //npm.pkg.github.com/:_authToken ${{ secrets.GITHUB_TOKEN }}
-          npm publish --access public
+        run: npm publish
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
