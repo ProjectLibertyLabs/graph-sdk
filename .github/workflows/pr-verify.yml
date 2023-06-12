@@ -259,7 +259,7 @@ jobs:
         run: npm install
       - name: Build NPM Package
         working-directory: bridge/node
-        run: npm run build:native-release
+        run: npm run native:build-release
       - name: Publish NPM Package
         run: npm publish
         env:
