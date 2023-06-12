@@ -16,7 +16,7 @@ export class Graph {
     }
 
     public getGraphConfig(environment: EnvironmentInterface): Config {
-        return graphsdkModule.getGraphConfig();
+        return graphsdkModule.getGraphConfig(environment);
     }
     
     public printHelloGraph(): void {

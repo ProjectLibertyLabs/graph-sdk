@@ -18,7 +18,7 @@ console.log("Loaded graphsdk.node bindings");
 // Define the Native interface
 export interface Native {
     printHelloGraph(): void;
-    getGraphConfig(): Config;
+    getGraphConfig(environment: EnvironmentInterface): Config;
     initializeGraphState(environment: EnvironmentInterface): number;
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number;
     containsUserGraph(handle: number, dsnpUserId: number): boolean;
