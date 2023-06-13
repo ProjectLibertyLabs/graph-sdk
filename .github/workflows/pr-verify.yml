@@ -260,7 +260,7 @@ jobs:
         working-directory: bridge/node
         run: npm run native:build-release
       - name: Publish NPM Package
-        working-directory: bridge/node
-        run: npm publish
+        working-directory: bridge/node/dist
+        run: npm publish --tag latest --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
