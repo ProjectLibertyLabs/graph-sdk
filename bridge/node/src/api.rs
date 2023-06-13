@@ -2,11 +2,16 @@ use crate::helper::*;
 use dsnp_graph_config::Config;
 use dsnp_graph_core::api::api::GraphState;
 use neon::prelude::*;
-use std::sync::{Arc, Mutex};
+use once_cell::sync::Lazy;
+use std::{
+	collections::HashMap,
+	sync::{Arc, Mutex},
+};
 
 // Collection of GraphStates
 #[allow(clippy::vec_box)]
-static GRAPH_STATES: Mutex<Vec<Arc<Mutex<GraphState>>>> = Mutex::new(Vec::new());
+static GRAPH_STATES: Lazy<Mutex<HashMap<usize, Arc<Mutex<GraphState>>>>> =
+	Lazy::new(|| Mutex::new(HashMap::new()));
 
 /// Neon implementation of print_hello_graph function
 pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsString> {
