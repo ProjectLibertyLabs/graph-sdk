@@ -257,6 +257,7 @@ jobs:
         working-directory: bridge/node
         run: npm install
       - name: Version ⬆️
+        working-directory: bridge/node
         run: npm version --new-version "v0.0.0-${FULL_SHA:0:6}" --no-git-tag-version
         env:
           FULL_SHA: ${{ github.sha }}
