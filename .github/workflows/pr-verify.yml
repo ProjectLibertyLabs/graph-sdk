@@ -253,7 +253,6 @@ jobs:
         with:
           node-version: '18'
           registry-url: https://npm.pkg.github.com/
-          scope: '@dsnp'
       - name: Install NPM Dependencies
         working-directory: bridge/node
         run: npm install
@@ -261,6 +260,7 @@ jobs:
         working-directory: bridge/node
         run: npm run native:build-release
       - name: Publish NPM Package
+        working-directory: bridge/node
         run: npm publish
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
