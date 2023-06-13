@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2021"
 license = "Apache-2.0"
 publish = false
-exclude = ["grapsdk.node"]
+exclude = ["graphsdk.node"]
 
 [lib]
-name = "grapsdk"
+name = "graphsdk"
 crate-type = ["cdylib"]
 
 [dependencies]

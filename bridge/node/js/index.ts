@@ -5,9 +5,9 @@ import { Config } from "./models/config";
 // Load the native neon graphsdk module
 function loadNativeModule(): any {
     try {
-        return require(path.join(__dirname, "/grapsdk.node"));
+        return require(path.join(__dirname, "/graphsdk.node"));
     } catch (error) {
-        throw new Error("Unable to load the native module grapsdk.node");
+        throw new Error("Unable to load the native module graphsdk.node");
     }
 }
 
