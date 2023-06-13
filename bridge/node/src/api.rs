@@ -8,7 +8,10 @@ use std::{
 	sync::{Arc, Mutex},
 };
 
-// Collection of GraphStates
+/// Global counter for graph state ids
+static NEXT_GRAPH_STATE_ID: Lazy<Mutex<usize>> = Lazy::new(|| Mutex::new(0));
+
+/// Collection of GraphStates
 #[allow(clippy::vec_box)]
 static GRAPH_STATES: Lazy<Mutex<HashMap<usize, Arc<Mutex<GraphState>>>>> =
 	Lazy::new(|| Mutex::new(HashMap::new()));
@@ -53,11 +56,16 @@ pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
 	// Generate a unique identifier for the graph state
 	let graph_state_id = {
-		let mut states = GRAPH_STATES.lock().unwrap();
-		let next_id = states.len();
-		states.insert(next_id, Arc::new(Mutex::new(graph_state)));
-		next_id
+		let mut next_id = NEXT_GRAPH_STATE_ID.lock().unwrap();
+		let id = *next_id;
+		*next_id += 1;
+		id
 	};
+
+	{
+		let mut states = GRAPH_STATES.lock().unwrap();
+		states.insert(graph_state_id, Arc::new(Mutex::new(graph_state)));
+	}
 
 	Ok(cx.number(graph_state_id as f64))
 }
@@ -79,11 +87,16 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 
 	// Generate a unique identifier for the graph state
 	let graph_state_id = {
-		let mut states = GRAPH_STATES.lock().unwrap();
-		let next_id = states.len();
-		states.insert(next_id, Arc::new(Mutex::new(graph_state)));
-		next_id
+		let mut next_id = NEXT_GRAPH_STATE_ID.lock().unwrap();
+		let id = *next_id;
+		*next_id += 1;
+		id
 	};
+
+	{
+		let mut states = GRAPH_STATES.lock().unwrap();
+		states.insert(graph_state_id, Arc::new(Mutex::new(graph_state)));
+	}
 
 	Ok(cx.number(graph_state_id as f64))
 }
