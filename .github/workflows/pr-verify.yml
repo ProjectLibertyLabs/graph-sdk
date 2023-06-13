@@ -252,15 +252,19 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          registry-url: https://npm.pkg.github.com/
+          registry-url: https://registry.npmjs.org/
       - name: Install NPM Dependencies
         working-directory: bridge/node
         run: npm install
+      - name: Version ⬆️
+        run: npm version --new-version "v0.0.0-${FULL_SHA:0:6}" --no-git-tag-version
+        env:
+          FULL_SHA: ${{ github.sha }}
       - name: Build NPM Package
         working-directory: bridge/node
         run: npm run native:build-release
       - name: Publish NPM Package
         working-directory: bridge/node
-        run: npm publish --tag latest --access public
+        run: npm publish --tag next --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
