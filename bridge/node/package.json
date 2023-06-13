@@ -1,5 +1,5 @@
 {
-  "name": "@dsnp/dsnp_graph_sdk_node",
+  "name": "@dsnp/grapsdk",
   "version": "0.0.1",
   "author": "Amplica Labs",
   "license": "ISC",
@@ -9,10 +9,10 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
-    "cp:dsnp_graph_sdk.node": "cp dsnp_graph_sdk.node dist/js/ && cp dsnp_graph_sdk.node js/",
-    "native:build": "tsc && cargo-cp-artifact -nc dsnp_graph_sdk.node -- cargo build --message-format=json-render-diagnostics && npm run cp:dsnp_graph_sdk.node",
+    "cp:grapsdk.node": "cp grapsdk.node dist/js/ && cp grapsdk.node js/",
+    "native:build": "tsc && cargo-cp-artifact -nc grapsdk.node -- cargo build --message-format=json-render-diagnostics",
     "native:build-debug": "npm run native:build --",
-    "native:build-release": "npm run native:build -- --release",
+    "native:build-release": "npm run native:build -- --release && npm run cp:grapsdk.node",
     "test:cargo": "cargo test",
     "lint": "eslint js/ --ext .ts",
     "lint:fix": "eslint --fix js/ --ext .ts"
