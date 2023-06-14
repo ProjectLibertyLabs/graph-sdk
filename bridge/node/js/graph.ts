@@ -76,11 +76,7 @@ export class Graph {
         throw new Error("Method not implemented.");
     }
 
-    freeGraphState(handle: number): Promise<void> {
-        throw new Error("Method not implemented.");
-    }
-
-    freeAllGraphStates(): Promise<void> {
+    freeGraphState(): Promise<void> {
         throw new Error("Method not implemented.");
     }
 
