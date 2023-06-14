@@ -1,9 +1,9 @@
 import path from "path";
-import { EnvironmentInterface } from "./models/environment";
-import { Config } from "./models/config";
+import { Action, Config, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, Update } from "./models";
+
 
 // Load the native neon graphsdk module
-function loadNativeModule(): any {
+function loadNativeModule(): Native {
     try {
         return require(path.join(__dirname, "/graphsdk.node"));
     } catch (error) {
@@ -11,30 +11,29 @@ function loadNativeModule(): any {
     }
 }
 
-const graphsdk =  loadNativeModule();
-
-console.log("Loaded graphsdk.node bindings");
-
 // Define the Native interface
 export interface Native {
     printHelloGraph(): void;
     initializeGraphState(environment: EnvironmentInterface): number;
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number;
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
-    containsUserGraph(handle: number, dsnpUserId: number): boolean;
-    getGraphUsersLength(handle: number): number;
-    removeUserGraph(handle: number, dsnpUserId: number): void;
-    importUserData(handle: number, data: any): void;
-    exportUpdates(handle: number): any; // Replace `any` with the appropriate type
-    applyActions(handle: number, actions: any): void; // Replace `any` with the appropriate type
-    forceCalculateGraphs(handle: number, dsnpUserId: number): any; // Replace `any` with the appropriate type
-    getConnectionsForUserGraph(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean): any; // Replace `any` with the appropriate type
-    getUsersWithoutKeys(handle: number): any; // Replace `any` with the appropriate type
-    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): any; // Replace `any` with the appropriate type
-    getPublicKeys(handle: number, dsnpUserId: number): any; // Replace `any` with the appropriate type
-    deserializeDsnpKeys(keys: any): any; // Replace `any` with the appropriate type
-    freeGraphState(handle: number): void;
+    getGraphCapacity(handle: number): Promise<number>;
+    getGraphSize(handle: number): Promise<number>;
+    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
+    getGraphUsersCount(handle: number): Promise<number>;
+    removeUserGraph(handle: number, dsnpUserId: number): Promise<void>;
+    importUserData(handle: number, payload: [ImportBundle]): Promise<void>;
+    exportUpdates(handle: number): Promise<Update>;
+    getConnectionsForUserGraphUpdates(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
+    applyActions(handle: number, actions: [Action]): Promise<void>;
+    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update>;
+    getConnectionsWithoutKeys(handle: number): Promise<[number]>;
+    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<[DsnpGraphEdge]>;
+    getPublicKeys(handle: number, dsnpUserId: number): Promise<[DsnpPublicKey]>;
+    deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]>;
+    freeGraphState(handle: number): Promise<void>;
+    freeAllGraphStates(): Promise<void>;
 }
 
 // Export the graphsdk module
-export const graphsdkModule: Native = graphsdk;
+export const graphsdkModule: Native = loadNativeModule();

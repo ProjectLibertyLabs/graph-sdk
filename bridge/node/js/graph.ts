@@ -1,6 +1,6 @@
 
 import { graphsdkModule } from "./index";
-import {Config, SchemaConfig, DsnpVersion} from "./models/config";
+import {Config} from "./models/config";
 import { EnvironmentInterface } from "./models/environment";
 
 export class Graph {

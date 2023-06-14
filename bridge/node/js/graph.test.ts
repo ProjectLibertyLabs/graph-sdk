@@ -1,6 +1,6 @@
 import { Graph } from './graph';
 import { Config } from './models/config';
-import { DevEnvironment, Environment, EnvironmentType } from './models/environment';
+import { DevEnvironment, EnvironmentType } from './models/environment';
 
 
 test('printHelloGraph should print "Hello, Graph!"', async () => {
