@@ -4,8 +4,8 @@ export interface KeyData {
 }
   
 export interface DsnpKeys {
-    dsnp_user_id: number;
-    keys_hash: number;
+    dsnpUserId: number;
+    keysHash: Uint8Array;
     keys: KeyData[];
 }
 
@@ -14,21 +14,21 @@ export enum GraphKeyType {
 }
 
 export interface GraphKeyPair {
-    key_type: GraphKeyType;
-    public_key: Uint8Array;
-    secret_key: Uint8Array;
+    keyType: GraphKeyType;
+    publicKey: Uint8Array;
+    secretKey: Uint8Array;
 }
 
 export interface PageData {
     page_id: string;
     content: Uint8Array;
-    content_hash: Uint8Array;
+    contentHash: Uint8Array;
 }
   
 export interface ImportBundle {
-    dsnp_user_id: number;
-    schema_id: number
-    key_pairs: GraphKeyPair[];
-    dsnp_keys: DsnpKeys;
+    dsnpUserId: number;
+    schemaId: number;
+    keyPairs: GraphKeyPair[];
+    dsnpKeys: DsnpKeys;
     pages: PageData[];
 }

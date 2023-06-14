@@ -1,6 +1,6 @@
 import { Graph } from './graph';
 import { Config } from './models/config';
-import { DevEnvironment, EnvironmentType } from './models/environment';
+import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
 
 test('printHelloGraph should print "Hello, Graph!"', async () => {
@@ -10,11 +10,28 @@ test('printHelloGraph should print "Hello, Graph!"', async () => {
     const graph = new Graph(environment);
     await graph.printHelloGraph();
     expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
-  });
+});
 
 test('getGraphConfig should return the graph config', async () => {
     const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-  });
+    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+});
+
+test('getGraphConfig with Mainnet environment should return the graph config', async () => {
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const config = await graph.getGraphConfig(environment);
+    expect(config).toBeDefined();
+    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+});
+
+test('getGraphConfig with Rococo environment should return the graph config', async () => {
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType.Rococo };
+  const graph = new Graph(environment);
+  const config = await graph.getGraphConfig(environment);
+  expect(config).toBeDefined();
+  expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+});
