@@ -35,3 +35,11 @@ test('getGraphConfig with Rococo environment should return the graph config', as
   expect(config).toBeDefined();
   expect(config.sdkMaxUsersGraphSize).toEqual(1000);
 });
+
+test('initialize graph with low capacity of 100 should return the same capacity', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment, 100);
+    const handle = graph.getGraphHandle();
+    const capacity = await graph.getGraphCapacity(handle);
+    expect(capacity).toEqual(100);
+});

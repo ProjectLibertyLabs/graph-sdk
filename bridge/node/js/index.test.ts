@@ -10,4 +10,3 @@ test('printHelloGraph should print "Hello, Graph!"', async () => {
     await graph.printHelloGraph();
     expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
 });
-  

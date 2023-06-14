@@ -15,7 +15,7 @@ function loadNativeModule(): Native {
 export interface Native {
     printHelloGraph(): void;
     initializeGraphState(environment: EnvironmentInterface): number;
-    initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number;
+    initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number):number
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
     getGraphCapacity(handle: number): Promise<number>;
     getGraphSize(handle: number): Promise<number>;
