@@ -18,9 +18,9 @@ export interface Native {
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number):number
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
     getGraphCapacity(handle: number): Promise<number>;
-    getGraphSize(handle: number): Promise<number>;
-    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
+    getGraphStatesCount(): Promise<number>;
     getGraphUsersCount(handle: number): Promise<number>;
+    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
     removeUserGraph(handle: number, dsnpUserId: number): Promise<void>;
     importUserData(handle: number, payload: [ImportBundle]): Promise<void>;
     exportUpdates(handle: number): Promise<Update>;

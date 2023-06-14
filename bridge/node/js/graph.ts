@@ -25,8 +25,8 @@ export class Graph {
         return graphsdkModule.getGraphCapacity(this.handle);
     }
 
-    getGraphSize(): Promise<number> {
-        return graphsdkModule.getGraphSize(this.handle);
+    getGraphStatesCount(): Promise<number> {
+        return graphsdkModule.getGraphStatesCount();
     }
 
     containsUserGraph(dsnpUserId: number): Promise<boolean> {
