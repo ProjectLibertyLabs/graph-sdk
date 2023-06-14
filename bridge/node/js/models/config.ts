@@ -23,7 +23,7 @@ enum DsnpVersion {
     sdkMaxStaleFriendshipDays: number;
     maxGraphPageSizeBytes: number;
     maxPageId: number;
-    max_key_page_size_bytes: number;
+    maxKeyPageSizeBytes: number;
     schemaMap: { [key: string]: SchemaConfig };
     dsnpVersions: DsnpVersion[];
   }
