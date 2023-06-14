@@ -1,4 +1,3 @@
-
 import { graphsdkModule } from "./index";
 import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys } from "./models";
 import { Config } from "./models/config";
@@ -7,13 +6,16 @@ import { EnvironmentInterface } from "./models/environment";
 export class Graph {
     /// The handle to the native graph state
     private handle: number;
-    
-    constructor( environment: EnvironmentInterface , capacity?: number ) {
-        if ( capacity ) {
-            this.handle = graphsdkModule.initializeGraphStateWithCapacity( environment, capacity );
+
+    constructor(environment: EnvironmentInterface, capacity?: number) {
+        if (capacity) {
+            this.handle = graphsdkModule.initializeGraphStateWithCapacity(environment, capacity);
         } else {
-            this.handle = graphsdkModule.initializeGraphState( environment );
+            this.handle = graphsdkModule.initializeGraphState(environment);
         }
+
+        // Register the finalizer
+        this.registerFinalizer();
     }
 
     getGraphHandle(): number {
@@ -56,7 +58,7 @@ export class Graph {
         return graphsdkModule.applyActions(this.handle, actions);
     }
 
-    forceCalculateGraphs( dsnpUserId: number): Promise<Update> {
+    forceCalculateGraphs(dsnpUserId: number): Promise<Update> {
         return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 
@@ -79,13 +81,31 @@ export class Graph {
     public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
         return graphsdkModule.getGraphConfig(environment);
     }
-    
-    // finalizer: TODO figure out a better way to do this
-    public freeGraphState(): void {
+
+    // Finalizer to free the graph state
+    private registerFinalizer(): void {
+        const finalizer = () => {
+            this.freeGraphState();
+        };
+
+        // Register the finalizer
+        if (typeof FinalizationRegistry !== "undefined") {
+            const registry = new FinalizationRegistry<Graph>(() => {
+                finalizer();
+            });
+            registry.register({}, this);
+        } else if (typeof process !== "undefined" && typeof process.on === "function") {
+            process.on("exit", finalizer);
+        } else {
+            console.warn("Unable to register finalizer. Memory may not be freed correctly.");
+        }
+    }
+
+    private freeGraphState(): void {
         graphsdkModule.freeGraphState(this.handle);
     }
 
     public printHelloGraph(): void {
-        console.log( graphsdkModule.printHelloGraph() );
+        console.log(graphsdkModule.printHelloGraph());
     }
 }
