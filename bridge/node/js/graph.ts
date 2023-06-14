@@ -76,14 +76,15 @@ export class Graph {
         throw new Error("Method not implemented.");
     }
 
-    freeGraphState(): Promise<void> {
-        throw new Error("Method not implemented.");
-    }
-
     public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
         return graphsdkModule.getGraphConfig(environment);
     }
     
+    // finalizer: TODO figure out a better way to do this
+    public freeGraphState(): void {
+        graphsdkModule.freeGraphState(this.handle);
+    }
+
     public printHelloGraph(): void {
         console.log( graphsdkModule.printHelloGraph() );
     }
