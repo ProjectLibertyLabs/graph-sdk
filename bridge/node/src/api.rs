@@ -58,10 +58,9 @@ pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let graph_state_id = {
 		let mut next_id = NEXT_GRAPH_STATE_ID.lock().unwrap();
 		let id = *next_id;
-		*next_id += 1;
+		*next_id = next_id.wrapping_add(1);
 		id
 	};
-
 	{
 		let mut states = GRAPH_STATES.lock().unwrap();
 		states.insert(graph_state_id, Arc::new(Mutex::new(graph_state)));
@@ -89,7 +88,7 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 	let graph_state_id = {
 		let mut next_id = NEXT_GRAPH_STATE_ID.lock().unwrap();
 		let id = *next_id;
-		*next_id += 1;
+		*next_id = next_id.wrapping_add(1);
 		id
 	};
 
