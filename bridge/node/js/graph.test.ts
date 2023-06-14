@@ -10,6 +10,7 @@ test('printHelloGraph should print "Hello, Graph!"', async () => {
     const graph = new Graph(environment);
     await graph.printHelloGraph();
     expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
+    await graph.freeGraphState();
 });
 
 test('getGraphConfig should return the graph config', async () => {
@@ -18,6 +19,7 @@ test('getGraphConfig should return the graph config', async () => {
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
     expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    await graph.freeGraphState();
 });
 
 test('getGraphConfig with Mainnet environment should return the graph config', async () => {
@@ -26,14 +28,16 @@ test('getGraphConfig with Mainnet environment should return the graph config', a
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
     expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    await graph.freeGraphState();
 });
 
 test('getGraphConfig with Rococo environment should return the graph config', async () => {
-  const environment: EnvironmentInterface = { environmentType: EnvironmentType.Rococo };
-  const graph = new Graph(environment);
-  const config = await graph.getGraphConfig(environment);
-  expect(config).toBeDefined();
-  expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Rococo };
+    const graph = new Graph(environment);
+    const config = await graph.getGraphConfig(environment);
+    expect(config).toBeDefined();
+    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    await graph.freeGraphState();
 });
 
 test('initialize graph with low capacity of 100 should return the same capacity', async () => {
@@ -43,4 +47,5 @@ test('initialize graph with low capacity of 100 should return the same capacity'
     expect(handle).toBeDefined();
     const capacity = await graph.getGraphCapacity();
     expect(capacity).toEqual(100);
+    await graph.freeGraphState();
 });

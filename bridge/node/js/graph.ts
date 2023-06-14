@@ -100,7 +100,7 @@ export class Graph {
         }
     }
 
-    private freeGraphState(): void {
+    public async freeGraphState(): Promise<void> {
         graphsdkModule.freeGraphState(this.handle);
     }
 
