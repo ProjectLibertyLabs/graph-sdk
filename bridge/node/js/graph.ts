@@ -1,5 +1,5 @@
 
-import { graphsdkModule, Native } from "./index";
+import { graphsdkModule } from "./index";
 import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys } from "./models";
 import { Config } from "./models/config";
 import { EnvironmentInterface } from "./models/environment";

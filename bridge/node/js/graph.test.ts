@@ -40,6 +40,7 @@ test('initialize graph with low capacity of 100 should return the same capacity'
     const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
     const graph = new Graph(environment, 100);
     const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
     const capacity = await graph.getGraphCapacity();
     expect(capacity).toEqual(100);
 });
