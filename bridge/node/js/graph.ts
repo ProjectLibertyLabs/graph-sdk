@@ -15,7 +15,7 @@ export class Graph {
         }
     }
 
-    public getGraphConfig(environment: EnvironmentInterface): Config {
+    public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
         return graphsdkModule.getGraphConfig(environment);
     }
     
