@@ -1,9 +1,10 @@
 
-import { graphsdkModule } from "./index";
+import { graphsdkModule, Native } from "./index";
+import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys } from "./models";
 import {Config} from "./models/config";
 import { EnvironmentInterface } from "./models/environment";
 
-export class Graph {
+export class Graph implements Native {
     /// The handle to the native graph state
     private handle: number;
     
@@ -13,6 +14,60 @@ export class Graph {
         } else {
             this.handle = graphsdkModule.initializeGraphState( environment );
         }
+    }
+    initializeGraphState(environment: EnvironmentInterface): number {
+        throw new Error("Method not implemented.");
+    }
+    initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number {
+        throw new Error("Method not implemented.");
+    }
+    getGraphCapacity(handle: number): Promise<number> {
+        throw new Error("Method not implemented.");
+    }
+    getGraphSize(handle: number): Promise<number> {
+        throw new Error("Method not implemented.");
+    }
+    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean> {
+        throw new Error("Method not implemented.");
+    }
+    getGraphUsersCount(handle: number): Promise<number> {
+        throw new Error("Method not implemented.");
+    }
+    removeUserGraph(handle: number, dsnpUserId: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    importUserData(handle: number, payload: [ImportBundle]): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    exportUpdates(handle: number): Promise<Update> {
+        throw new Error("Method not implemented.");
+    }
+    getConnectionsForUserGraphUpdates(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
+        throw new Error("Method not implemented.");
+    }
+    applyActions(handle: number, actions: [Action]): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update> {
+        throw new Error("Method not implemented.");
+    }
+    getConnectionsWithoutKeys(handle: number): Promise<[number]> {
+        throw new Error("Method not implemented.");
+    }
+    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<[DsnpGraphEdge]> {
+        throw new Error("Method not implemented.");
+    }
+    getPublicKeys(handle: number, dsnpUserId: number): Promise<[DsnpPublicKey]> {
+        throw new Error("Method not implemented.");
+    }
+    deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]> {
+        throw new Error("Method not implemented.");
+    }
+    freeGraphState(handle: number): Promise<void> {
+        throw new Error("Method not implemented.");
+    }
+    freeAllGraphStates(): Promise<void> {
+        throw new Error("Method not implemented.");
     }
 
     public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
