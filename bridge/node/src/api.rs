@@ -91,7 +91,6 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 		*next_id = next_id.wrapping_add(1);
 		id
 	};
-
 	{
 		let mut states = GRAPH_STATES.lock().unwrap();
 		states.insert(graph_state_id, Arc::new(Mutex::new(graph_state)));
