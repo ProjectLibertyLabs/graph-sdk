@@ -21,6 +21,10 @@ export class Graph {
         return this.handle;
     }
 
+    getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
+        return graphsdkModule.getGraphConfig(environment);
+    }
+
     getGraphCapacity(): Promise<number> {
         return graphsdkModule.getGraphCapacity(this.handle);
     }
@@ -77,10 +81,6 @@ export class Graph {
         return graphsdkModule.deserializeDsnpKeys(keys);
     }
 
-    public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
-        return graphsdkModule.getGraphConfig(environment);
-    }
-
     // Finalizer to free the graph state
     private registerFinalizer(): void {
         const finalizer = () => {
@@ -100,11 +100,11 @@ export class Graph {
         }
     }
 
-    public async freeGraphState(): Promise<void> {
-        graphsdkModule.freeGraphState(this.handle);
+    freeGraphState(): Promise<void> {
+        return graphsdkModule.freeGraphState(this.handle);
     }
-
-    public printHelloGraph(): void {
+    
+    printHelloGraph(): void {
         console.log(graphsdkModule.printHelloGraph());
     }
 }
