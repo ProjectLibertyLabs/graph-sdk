@@ -1,6 +1,9 @@
 use crate::helper::*;
 use dsnp_graph_config::{Config, DsnpUserId};
-use dsnp_graph_core::api::api::{GraphState, GraphAPI};
+use dsnp_graph_core::api::{
+	api::{GraphAPI, GraphState},
+	api_types::ImportBundle,
+};
 use neon::prelude::*;
 use once_cell::sync::Lazy;
 use std::{
@@ -122,6 +125,7 @@ pub fn get_graph_capacity(mut cx: FunctionContext) -> JsResult<JsNumber> {
 
 	Ok(cx.number(capacity as f64))
 }
+
 /// Get graph users count for given graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -173,7 +177,6 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	Ok(cx.boolean(contains_user))
 }
 
-
 /// Function to remove user graph from the graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -199,6 +202,36 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	graph_state.remove_user_graph(&dsnp_user_id);
 
 	Ok(cx.undefined())
+}
+
+/// Function to import user data
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `payload` - JSON object for `ImportBundle`
+/// # Returns
+/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let payload = cx.argument::<JsArray>(1)?;
+	let rust_payload: Vec<ImportBundle> = import_bundle_from_js(&mut cx, payload);
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let mut graph_state = graph_state.lock().unwrap();
+
+	let import_result = graph_state.import_users_data(&rust_payload);
+	match import_result {
+		Ok(_) => Ok(cx.undefined()),
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to free the graph state

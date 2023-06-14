@@ -93,7 +93,7 @@ pub const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
 
 /// Graph Key type
 #[repr(C)]
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub enum GraphKeyType {
 	X25519 = 0,
 }

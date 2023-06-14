@@ -1,10 +1,11 @@
 use dsnp_graph_config::{Config, ConnectionType, Environment, SchemaConfig};
+use dsnp_graph_core::api::api_types::ImportBundle;
 use neon::{
 	handle::Handle,
 	object::Object,
 	prelude::{Context, FunctionContext},
 	result::JsResult,
-	types::{JsObject, JsString, Value},
+	types::{JsArray, JsObject, JsString, Value},
 };
 
 /// Convert environment from JSObject to Environment
@@ -125,4 +126,27 @@ pub fn schema_config_to_js<'a, C: Context<'a>>(
 	};
 	obj.set(cx, "privacyType", privacy_type_str)?;
 	Ok(obj)
+}
+
+/// Function to convert ImportBundle JsObject to ImportBundle struct
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `import_bundle_js` - Neon JsObject containing the import bundle
+/// # Returns
+/// * `JsResult<Vec<ImportBundle>>` - rust ImportBundle struct
+/// # Errors
+/// * Throws a Neon error if the import bundle cannot be converted
+pub fn import_bundle_from_js(
+	cx: &mut FunctionContext,
+	import_bundle_js: Handle<JsArray>,
+) -> Vec<ImportBundle> {
+	let mut import_bundles: Vec<ImportBundle> = Vec::new();
+	for i in 0..import_bundle_js.len(cx) {
+		let import_bundle = import_bundle_js.get(cx, i).unwrap_or(cx.empty_object());
+		let import_bundle_str: Handle<JsString> =
+			import_bundle.to_string(cx).unwrap_or(cx.string(""));
+		let import_bundle_str = import_bundle_str.value(cx);
+		import_bundles.push(ImportBundle::try_from(import_bundle_str.as_str()).unwrap());
+	}
+	import_bundles
 }
