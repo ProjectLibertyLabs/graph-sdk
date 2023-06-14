@@ -20,60 +20,60 @@ export class Graph {
         return this.handle;
     }
 
-    getGraphCapacity(handle: number): Promise<number> {
-        return graphsdkModule.getGraphCapacity(handle);
+    getGraphCapacity(): Promise<number> {
+        return graphsdkModule.getGraphCapacity(this.handle);
     }
 
-    getGraphSize(handle: number): Promise<number> {
-        throw new Error("Method not implemented.");
+    getGraphSize(): Promise<number> {
+        return graphsdkModule.getGraphSize(this.handle);
     }
 
-    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean> {
-        throw new Error("Method not implemented.");
+    containsUserGraph(dsnpUserId: number): Promise<boolean> {
+        return graphsdkModule.containsUserGraph(this.handle, dsnpUserId);
     }
 
-    getGraphUsersCount(handle: number): Promise<number> {
-        throw new Error("Method not implemented.");
+    getGraphUsersCount(): Promise<number> {
+        return graphsdkModule.getGraphUsersCount(this.handle);
     }
 
-    removeUserGraph(handle: number, dsnpUserId: number): Promise<void> {
-        throw new Error("Method not implemented.");
+    removeUserGraph(dsnpUserId: number): Promise<void> {
+        return graphsdkModule.removeUserGraph(this.handle, dsnpUserId);
     }
 
-    importUserData(handle: number, payload: [ImportBundle]): Promise<void> {
-        throw new Error("Method not implemented.");
+    importUserData(payload: [ImportBundle]): Promise<void> {
+        return graphsdkModule.importUserData(this.handle, payload);
     }
 
-    exportUpdates(handle: number): Promise<Update> {
-        throw new Error("Method not implemented.");
+    exportUpdates(): Promise<Update> {
+        return graphsdkModule.exportUpdates(this.handle);
     }
 
-    getConnectionsForUserGraphUpdates(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
-        throw new Error("Method not implemented.");
+    getConnectionsForUserGraphUpdates(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
+        return graphsdkModule.getConnectionsForUserGraphUpdates(this.handle, dsnpUserId, schemaId, includePending);
     }
 
-    applyActions(handle: number, actions: [Action]): Promise<void> {
-        throw new Error("Method not implemented.");
+    applyActions(actions: [Action]): Promise<void> {
+        return graphsdkModule.applyActions(this.handle, actions);
     }
 
-    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update> {
-        throw new Error("Method not implemented.");
+    forceCalculateGraphs( dsnpUserId: number): Promise<Update> {
+        return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 
-    getConnectionsWithoutKeys(handle: number): Promise<[number]> {
-        throw new Error("Method not implemented.");
+    getConnectionsWithoutKeys(): Promise<[number]> {
+        return graphsdkModule.getConnectionsWithoutKeys(this.handle);
     }
 
-    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<[DsnpGraphEdge]> {
-        throw new Error("Method not implemented.");
+    getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<[DsnpGraphEdge]> {
+        return graphsdkModule.getOneSidedPrivateFriendshipConnections(this.handle, dsnpUserId);
     }
 
-    getPublicKeys(handle: number, dsnpUserId: number): Promise<[DsnpPublicKey]> {
-        throw new Error("Method not implemented.");
+    getPublicKeys(dsnpUserId: number): Promise<[DsnpPublicKey]> {
+        return graphsdkModule.getPublicKeys(this.handle, dsnpUserId);
     }
 
     deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]> {
-        throw new Error("Method not implemented.");
+        return graphsdkModule.deserializeDsnpKeys(keys);
     }
 
     public getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
