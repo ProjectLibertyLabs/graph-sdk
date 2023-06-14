@@ -1,15 +1,26 @@
 import path from "path";
+import { EnvironmentInterface } from "./models/environment";
+import { Config } from "./models/config";
 
 // Load the native neon graphsdk module
-const graphsdk = require(path.join(__dirname, "/dsnp_graph_sdk.node"));
+function loadNativeModule(): any {
+    try {
+        return require(path.join(__dirname, "/graphsdk.node"));
+    } catch (error) {
+        throw new Error("Unable to load the native module graphsdk.node");
+    }
+}
+
+const graphsdk =  loadNativeModule();
 
 console.log("Loaded graphsdk.node bindings");
 
 // Define the Native interface
 export interface Native {
     printHelloGraph(): void;
-    getGraphConfig(): any; // Replace `any` with the appropriate type
-    initializeGraphState(environment: string): number;
+    getGraphConfig(environment: EnvironmentInterface): Config;
+    initializeGraphState(environment: EnvironmentInterface): number;
+    initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number): number;
     containsUserGraph(handle: number, dsnpUserId: number): boolean;
     getGraphUsersLength(handle: number): number;
     removeUserGraph(handle: number, dsnpUserId: number): void;
