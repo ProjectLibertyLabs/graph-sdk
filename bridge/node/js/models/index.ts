@@ -3,7 +3,7 @@ export * from "./action";
 export * from "./connection";
 export * from "./graph_edge";
 export * from "./import_bundle";
-export * from "./keys";
+export * from "./public_keys";
 export * from "./update";
 export * from "./config";
 export * from "./environment";
