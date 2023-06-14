@@ -1,6 +1,5 @@
 import { graphsdkModule } from "./index";
-import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys } from "./models";
-import { Config } from "./models/config";
+import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys, Config } from "./models";
 import { EnvironmentInterface } from "./models/environment";
 
 export class Graph {
