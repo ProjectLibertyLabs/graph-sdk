@@ -116,7 +116,7 @@ pub fn get_graph_capacity(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
