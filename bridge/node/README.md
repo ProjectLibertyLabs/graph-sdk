@@ -61,18 +61,18 @@ Creates a new instance of the Graph class.
 - `getGraphHandle(): number`: Returns the handle to the native graph state.
 - `getGraphCapacity(): Promise<number>`: Retrieves the capacity of the graph.
 - `getGraphSize(): Promise<number>`: Retrieves the current size of the graph.
-- `containsUserGraph(dsnpUserId: number): Promise<boolean>`: Checks if the graph contains the user graph for the specified dsnp user id.
+- `containsUserGraph(dsnpUserId: number): Promise<boolean>`: Checks if the graph contains the user graph for the specified DSNP user ID.
 - `getGraphUsersCount(): Promise<number>`: Retrieves the count of user graphs in the graph.
-- `removeUserGraph(dsnpUserId: number): Promise<void>`: Removes the user graph for the specified dsnp user id from the graph.
-- `importUserData(payload: [ImportBundle]): Promise<void>`: Imports user data into the graph.
+- `removeUserGraph(dsnpUserId: number): Promise<void>`: Removes the user graph for the specified DSNP user ID from the graph.
+- `importUserData(payload: ImportBundle[]): Promise<void>`: Imports user data into the graph.
 - `exportUpdates(): Promise<Update>`: Retrieves the graph updates.
-- `getConnectionsForUserGraphUpdates(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]>`: Retrieves the connections for a user graph.
-- `applyActions(actions: [Action]): Promise<void>`: Applies actions to the graph.
-- `forceCalculateGraphs(dsnpUserId: number): Promise<Update>`: Forces the calculation of graphs for the specified dsnp user id.
-- `getConnectionsWithoutKeys(): Promise<[number]>`: Retrieves the connections without keys in the graph.
-- `getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<[DsnpGraphEdge]>`: Retrieves the one-sided private friendship connections for the specified dsnp user id.
-- `getPublicKeys(dsnpUserId: number): Promise<[DsnpPublicKey]>`: Retrieves the public keys for the specified dsnp user id.
-- `deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]>`: Deserializes DSNP keys.
+- `getConnectionsForUserGraphUpdates(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<DsnpGraphEdge[]>`: Retrieves the connections for a user graph.
+- `applyActions(actions: Action[]): Promise<void>`: Applies actions to the graph.
+- `forceCalculateGraphs(dsnpUserId: number): Promise<Update>`: Forces the calculation of graphs for the specified DSNP user ID.
+- `getConnectionsWithoutKeys(): Promise<number[]>`: Retrieves the connections without keys in the graph.
+- `getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<DsnpGraphEdge[]>`: Retrieves the one-sided private friendship connections for the specified DSNP user ID.
+- `getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]>`: Retrieves the public keys for the specified DSNP user ID.
+- `deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>`: Deserializes DSNP keys.
 - `getGraphConfig(environment: EnvironmentInterface): Promise<Config>`: Retrieves the graph configuration.
 - `freeGraphState(): void`: Frees the graph state.
 
