@@ -83,6 +83,24 @@ test('getGraphUsersCount should be zero on initialized graph', async () => {
     }).rejects.toThrow('Graph state not found');
 });
 
-  
+test('containsUserGraph should return false on initialized graph', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const contains = await graph.containsUserGraph(1);
+    expect(contains).toEqual(false);
+    await graph.freeGraphState();
+});
+
+test('removeUserGraph should pass through on initialized graph', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    await graph.removeUserGraph(1);
+    await graph.freeGraphState();
+});
+
 
   
