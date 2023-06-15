@@ -59,3 +59,30 @@ test('getGraphStatesCount should be zero after previous graph is freed', async (
     const count = await graph.getGraphStatesCount();
     expect(count).toEqual(0);
 });
+
+test('getGraphStatesCount should be one after graph is initialized', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const count = await graph.getGraphStatesCount();
+    expect(count).toEqual(1);
+    await graph.freeGraphState();
+});
+
+test('getGraphUsersCount should be zero on initialized graph', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const count = await graph.getGraphUsersCount();
+    expect(count).toEqual(0);
+    await graph.freeGraphState();
+    await expect(async () => {
+      await graph.getGraphUsersCount();
+    }).rejects.toThrow('Graph state not found');
+});
+
+  
+
+  
