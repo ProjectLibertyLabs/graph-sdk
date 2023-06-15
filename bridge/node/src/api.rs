@@ -112,7 +112,7 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 /// # Returns
 /// * `JsResult<JsNumber>` - Neon JsNumber containing the capacity of the graph state
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_graph_capacity(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -136,7 +136,7 @@ pub fn get_graph_capacity(mut cx: FunctionContext) -> JsResult<JsNumber> {
 /// # Returns
 /// * `JsResult<JsNumber>` - Neon JsNumber containing the graph users count
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_graph_users_count(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -161,7 +161,7 @@ pub fn get_graph_users_count(mut cx: FunctionContext) -> JsResult<JsNumber> {
 /// # Returns
 /// * `JsResult<JsBoolean>` - Neon JsBoolean
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -188,7 +188,7 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 /// # Returns
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -215,7 +215,7 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// # Returns
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -244,7 +244,7 @@ pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the exported updates
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -275,7 +275,7 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -312,7 +312,7 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 /// # Returns
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -342,7 +342,7 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 /// # Returns
 /// * `JsResult<JsObject>` - Neon JsObject containing the exported updates
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -374,7 +374,7 @@ pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -409,7 +409,7 @@ pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -442,7 +442,7 @@ pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> 
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the public keys which is list of DSNPGraphEdge
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
@@ -474,7 +474,7 @@ pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray containing the public keys which is list of DSNPGraphEdge
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let keys = cx.argument::<JsObject>(0)?;
 	let try_keys_str = keys.to_string(&mut cx)?;
@@ -494,7 +494,7 @@ pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// # Returns
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
-/// * Throws a Neon error if the graph state cannot be found
+/// * Throws a Neon error
 pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
