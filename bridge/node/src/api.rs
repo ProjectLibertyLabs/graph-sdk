@@ -105,6 +105,20 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 	Ok(cx.number(graph_state_id as f64))
 }
 
+/// Get total count of graph states
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// # Returns
+/// * `JsResult<JsNumber>` - Neon JsNumber containing the total count of graph states
+/// # Errors
+/// * Throws a Neon error
+pub fn get_graph_states_count(mut cx: FunctionContext) -> JsResult<JsNumber> {
+	let states = GRAPH_STATES.lock().unwrap();
+	let states_count = states.len();
+
+	Ok(cx.number(states_count as f64))
+}
+
 /// Get the capacity of the graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -517,6 +531,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("getGraphConfig", get_graph_config)?;
 	cx.export_function("initializeGraphState", initialize_graph_state)?;
 	cx.export_function("initializeGraphStateWithCapacity", initialize_graph_state_with_capacity)?;
+	cx.export_function("getGraphStatesCount", get_graph_states_count)?;
 	cx.export_function("getGraphCapacity", get_graph_capacity)?;
 	cx.export_function("getGraphUsersCount", get_graph_users_count)?;
 	cx.export_function("containsUserGraph", contains_user_graph)?;

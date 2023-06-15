@@ -49,3 +49,13 @@ test('initialize graph with low capacity of 100 should return the same capacity'
     expect(capacity).toEqual(100);
     await graph.freeGraphState();
 });
+
+test('getGraphStatesCount should be zero after previous graph is freed', async () => {
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    await graph.freeGraphState();
+    const count = await graph.getGraphStatesCount();
+    expect(count).toEqual(0);
+});
