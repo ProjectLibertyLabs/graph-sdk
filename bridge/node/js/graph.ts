@@ -12,9 +12,6 @@ export class Graph {
         } else {
             this.handle = graphsdkModule.initializeGraphState(environment);
         }
-
-        // Register the finalizer
-        this.registerFinalizer();
     }
 
     getGraphHandle(): number {
@@ -79,25 +76,6 @@ export class Graph {
 
     deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]> {
         return graphsdkModule.deserializeDsnpKeys(keys);
-    }
-
-    // Finalizer to free the graph state
-    private registerFinalizer(): void {
-        const finalizer = () => {
-            this.freeGraphState();
-        };
-
-        // Register the finalizer
-        if (typeof FinalizationRegistry !== "undefined") {
-            const registry = new FinalizationRegistry<Graph>(() => {
-                finalizer();
-            });
-            registry.register({}, this);
-        } else if (typeof process !== "undefined" && typeof process.on === "function") {
-            process.on("exit", finalizer);
-        } else {
-            console.warn("Unable to register finalizer. Memory may not be freed correctly.");
-        }
     }
 
     freeGraphState(): Promise<void> {
