@@ -475,11 +475,8 @@ dependencies = [
 name = "dsnp-graph-sdk-node"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "dsnp-graph-config",
  "dsnp-graph-core",
- "lazy_static",
- "libc",
  "neon",
  "once_cell",
  "serde",
