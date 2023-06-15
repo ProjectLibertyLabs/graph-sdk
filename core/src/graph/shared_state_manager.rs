@@ -11,6 +11,8 @@ use crate::{
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
+use log::Level;
+use log_result_proc_macro::log_result_err;
 use std::{borrow::Borrow, collections::HashSet};
 
 /// Constant used in errors
@@ -78,6 +80,7 @@ pub struct SharedStateManager {
 }
 
 impl PriProvider for SharedStateManager {
+	#[log_result_err(Level::Info)]
 	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()> {
 		let mut prids = vec![];
 		for p in pages {
@@ -97,6 +100,7 @@ impl PriProvider for SharedStateManager {
 			.any(|(p, _)| p == &prid)
 	}
 
+	#[log_result_err(Level::Info)]
 	fn calculate_prid(
 		&self,
 		from: DsnpUserId,
@@ -115,6 +119,7 @@ impl PriProvider for SharedStateManager {
 impl PublicKeyProvider for SharedStateManager {
 	/// importing dsnp keys as they are retrieved from blockchain
 	/// sorting indices since ids might not be unique but indices definitely should be
+	#[log_result_err(Level::Info)]
 	fn import_dsnp_keys(&mut self, keys: &DsnpKeys) -> DsnpGraphResult<()> {
 		self.dsnp_user_to_keys.remove(&keys.dsnp_user_id);
 		self.new_keys.remove(&keys.dsnp_user_id);
@@ -139,6 +144,7 @@ impl PublicKeyProvider for SharedStateManager {
 		Ok(())
 	}
 
+	#[log_result_err(Level::Info)]
 	fn add_new_key(
 		&mut self,
 		dsnp_user_id: DsnpUserId,
@@ -161,6 +167,7 @@ impl PublicKeyProvider for SharedStateManager {
 		Ok(())
 	}
 
+	#[log_result_err(Level::Info)]
 	fn export_new_key_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = vec![];
 		for (dsnp_user_id, key) in self.new_keys.inner() {
@@ -253,6 +260,7 @@ impl SharedStateManager {
 	}
 
 	/// returns all the imported pri keys for a user
+	#[log_result_err(Level::Info)]
 	pub fn get_prid_associated_public_keys(
 		&self,
 		dsnp_user_id: DsnpUserId,
@@ -304,6 +312,7 @@ impl SharedStateManager {
 	}
 
 	#[cfg(test)]
+	#[log_result_err(Level::Error)]
 	pub fn import_keys_test(
 		&mut self,
 		dsnp_user_id: DsnpUserId,
@@ -320,6 +329,7 @@ impl SharedStateManager {
 
 	#[cfg(test)]
 	#[allow(unused)]
+	#[log_result_err(Level::Error)]
 	pub fn import_prids_test(
 		&mut self,
 		dsnp_user_id: DsnpUserId,
