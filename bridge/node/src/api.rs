@@ -257,10 +257,14 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let updates = graph_state.export_updates().unwrap();
-	let updates_js = updates_to_js(&mut cx, updates)?;
-
-	Ok(updates_js)
+	let updates = graph_state.export_updates();
+	match updates {
+		Ok(updates) => {
+			let updates_js = updates_to_js(&mut cx, updates)?;
+			Ok(updates_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to get connections for user from the graph state (getConnectionsForUserGraph)
@@ -289,12 +293,15 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let connections = graph_state
-		.get_connections_for_user_graph(&dsnp_user_id, &schema_id, include_pending)
-		.unwrap();
-	let connections_js = connections_to_js(&mut cx, connections)?;
-
-	Ok(connections_js)
+	let connections =
+		graph_state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, include_pending);
+	match connections {
+		Ok(connections) => {
+			let connections_js = connections_to_js(&mut cx, connections)?;
+			Ok(connections_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to applyActions to the graph state
@@ -350,10 +357,14 @@ pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let update = graph_state.force_recalculate_graphs(&dsnp_user_id).unwrap();
-	let update_js = updates_to_js(&mut cx, update)?;
-
-	Ok(update_js)
+	let update = graph_state.force_recalculate_graphs(&dsnp_user_id);
+	match update {
+		Ok(update) => {
+			let update_js = updates_to_js(&mut cx, update)?;
+			Ok(update_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to get connections for user from the graph state (getConnectionsWithoutKeys)
@@ -376,13 +387,18 @@ pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let connections = graph_state.get_connections_without_keys().unwrap();
-	let connections_js = cx.empty_array();
-	for (i, connection) in connections.iter().enumerate() {
-		let dsnp_user_id = cx.number(*connection as f64);
-		connections_js.set(&mut cx, i as u32, dsnp_user_id)?;
+	let connections = graph_state.get_connections_without_keys();
+	match connections {
+		Ok(connections) => {
+			let connections_js = cx.empty_array();
+			for (i, connection) in connections.iter().enumerate() {
+				let dsnp_user_id = cx.number(*connection as f64);
+				connections_js.set(&mut cx, i as u32, dsnp_user_id)?;
+			}
+			Ok(connections_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
 	}
-	Ok(connections_js)
 }
 
 /// Function to get one sided private friendship connections for user from the graph state (getOneSidedPrivateFriendshipConnections)
@@ -408,11 +424,14 @@ pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> 
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let connections =
-		graph_state.get_one_sided_private_friendship_connections(&dsnp_user_id).unwrap();
-	let connections_js = connections_to_js(&mut cx, connections)?;
-
-	Ok(connections_js)
+	let connections = graph_state.get_one_sided_private_friendship_connections(&dsnp_user_id);
+	match connections {
+		Ok(connections) => {
+			let connections_js = connections_to_js(&mut cx, connections)?;
+			Ok(connections_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to get public keys for user from the graph state (getPublicKeys)
@@ -438,10 +457,14 @@ pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
 
-	let public_keys = graph_state.get_public_keys(&dsnp_user_id).unwrap();
-	let public_keys_js = public_keys_to_js(&mut cx, public_keys)?;
-
-	Ok(public_keys_js)
+	let public_keys = graph_state.get_public_keys(&dsnp_user_id);
+	match public_keys {
+		Ok(keys) => {
+			let public_keys_js = public_keys_to_js(&mut cx, keys)?;
+			Ok(public_keys_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
 }
 
 /// Function to deserialize DSNP keys
