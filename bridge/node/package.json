@@ -1,0 +1,52 @@
+{
+  "name": "@dsnp/graph-sdk",
+  "version": "0.0.1",
+  "author": "Amplica Labs",
+  "license": "ISC",
+  "description": "dsnp-graph-sdk-node",
+  "main": "dist/js/index.js",
+  "typings": "dist/js/index.d.ts",
+  "scripts": {
+    "tsc": "tsc",
+    "build": "tsc",
+    "cp:graphsdk.node": "cp graphsdk.node dist/js/ && cp graphsdk.node js/",
+    "native:build": "tsc && cargo-cp-artifact -a cdylib graphsdk graphsdk.node -- cargo build --message-format=json-render-diagnostics",
+    "native:build-debug": "npm run native:build --",
+    "native:build-release": "npm run native:build -- --release && npm run cp:graphsdk.node",
+    "test:cargo": "cargo test",
+    "lint": "eslint js/ --ext .ts",
+    "lint:fix": "eslint --fix js/ --ext .ts"
+  },
+  "engines": {
+    "node": "^14.0.0 || ^16.0.0 || >=17.0.0"
+  },
+  "files": [
+    "dist/js"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.2",
+    "@types/node": "^20.2.5",
+    "@typescript-eslint/eslint-plugin": "^5.59.9",
+    "@typescript-eslint/parser": "^5.59.9",
+    "cargo-cp-artifact": "^0.1",
+    "eslint": "^8.42.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LibertyDSNP/graph-sdk.git"
+  },
+  "keywords": [
+    "Graph",
+    "DSNP",
+    "Frequency",
+    "Blockchain",
+    "Security",
+    "Encryption"
+  ],
+  "bugs": {
+    "url": "https://github.com/LibertyDSNP/graph-sdk/issues"
+  },
+  "homepage": "https://github.com/LibertyDSNP/graph-sdk#readme"
+}

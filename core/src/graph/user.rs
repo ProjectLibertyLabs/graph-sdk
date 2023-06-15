@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-use crate::{
-	dsnp::{api_types::*, dsnp_types::*},
-	graph::updates::UpdateTracker,
-};
+use crate::{api::api_types::*, dsnp::dsnp_types::*, graph::updates::UpdateTracker};
 use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	Environment, SchemaId,
@@ -27,6 +24,7 @@ use super::graph::Graph;
 use log::Level;
 use log_result_proc_macro::log_result_err;
 
+/// Map of Graphs, keyed by SchemaId
 pub type GraphMap = TransactionalHashMap<SchemaId, Graph>;
 
 /// Structure to hold all of a User's Graphs, mapped by ConnectionType
@@ -108,6 +106,16 @@ impl UserGraph {
 		&mut self.update_tracker
 	}
 
+	/// Getter for UpdateTracker
+	pub fn sync_updates(&mut self, schema_id: SchemaId) {
+		let non_pending_connections: HashSet<DsnpUserId> = self
+			.get_all_connections_of(schema_id, false)
+			.iter()
+			.map(|c| c.user_id)
+			.collect();
+		self.update_tracker.sync_updates(schema_id, &non_pending_connections);
+	}
+
 	/// Getter for the user's graph for the specified ConnectionType
 	pub fn graph(&self, schema_id: &SchemaId) -> Option<&Graph> {
 		self.graphs.get(schema_id)
@@ -165,6 +173,7 @@ impl UserGraph {
 		Ok(result)
 	}
 
+	/// Check if graph with specified schema_id has a connection with the specified dsnp_user_id
 	pub fn graph_has_connection(
 		&self,
 		schema_id: SchemaId,
@@ -185,6 +194,7 @@ impl UserGraph {
 		false
 	}
 
+	/// Get all the connections for the specified schema_id
 	pub fn get_all_connections_of(
 		&self,
 		schema_id: SchemaId,
@@ -225,6 +235,7 @@ impl UserGraph {
 		connections.into_iter().collect()
 	}
 
+	/// get dsnp config for a schema id
 	pub fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
 		let config = self.environment.get_config();
 		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {

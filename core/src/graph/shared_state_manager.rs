@@ -1,6 +1,6 @@
 use crate::{
+	api::api_types::{DsnpKeys, PageData, PageHash, Update},
 	dsnp::{
-		api_types::{DsnpKeys, PageData, PageHash, Update},
 		dsnp_configs::{PublicKeyType, SecretKeyType},
 		dsnp_types::{DsnpPrid, DsnpPublicKey, DsnpUserId},
 		pseudo_relationship_identifier::PridProvider,
@@ -14,6 +14,9 @@ use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use log::Level;
 use log_result_proc_macro::log_result_err;
 use std::{borrow::Borrow, collections::HashSet};
+
+/// Constant used in errors
+pub const SHARED_STATE_MANAGER: &str = "SharedStateManager";
 
 /// A trait that defines all the functionality that a pri manager should implement.
 pub trait PriProvider {
@@ -130,7 +133,7 @@ impl PublicKeyProvider for SharedStateManager {
 			let mut k =
 				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
 
-			// make sure it can deserializes correctly
+			// make sure it can deserialize correctly
 			let _: PublicKeyType = k.borrow().try_into()?;
 			// key id is the itemized index of the key stored in Frequency
 			k.key_id = Some(key.index.into());
@@ -247,6 +250,7 @@ impl Transactional for SharedStateManager {
 }
 
 impl SharedStateManager {
+	/// creates a new instance of `SharedStateManager`
 	pub fn new() -> Self {
 		Self {
 			new_keys: TransactionalHashMap::new(),
@@ -255,6 +259,7 @@ impl SharedStateManager {
 		}
 	}
 
+	/// returns all the imported pri keys for a user
 	#[log_result_err(Level::Info)]
 	pub fn get_prid_associated_public_keys(
 		&self,
@@ -288,6 +293,7 @@ impl SharedStateManager {
 			.collect()
 	}
 
+	/// returns all the public keys for a user
 	pub fn get_public_keys(&self, dsnp_user_id: &DsnpUserId) -> Vec<DsnpPublicKey> {
 		match self.dsnp_user_to_keys.get(dsnp_user_id) {
 			Some((keys, _)) => keys.iter().cloned().collect(),
@@ -295,6 +301,7 @@ impl SharedStateManager {
 		}
 	}
 
+	/// get the next key id for a user
 	fn get_next_key_id(&self, dsnp_user_id: DsnpUserId) -> u64 {
 		self.get_imported_keys(dsnp_user_id)
 			.iter()
@@ -341,10 +348,8 @@ impl SharedStateManager {
 mod tests {
 	use super::*;
 	use crate::{
-		dsnp::{
-			api_types::{KeyData, ResolvedKeyPair},
-			dsnp_configs::KeyPairType,
-		},
+		api::api_types::{KeyData, ResolvedKeyPair},
+		dsnp::dsnp_configs::KeyPairType,
 		util::builders::PageDataBuilder,
 	};
 	use dryoc::keypair::StackKeyPair;

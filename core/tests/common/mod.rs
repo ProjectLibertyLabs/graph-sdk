@@ -1,8 +1,8 @@
 use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{ConnectionType, Environment, GraphKeyType, SchemaId};
-use dsnp_graph_core::dsnp::{
-	api_types::{GraphKeyPair, ResolvedKeyPair},
-	dsnp_configs::KeyPairType,
+use dsnp_graph_core::{
+	api::api_types::{GraphKeyPair, ResolvedKeyPair},
+	dsnp::dsnp_configs::KeyPairType,
 };
 
 pub fn get_schema_from(env: Environment, connection_type: ConnectionType) -> SchemaId {

@@ -1,8 +1,9 @@
 #![allow(dead_code)]
 use crate::{
-	dsnp::{api_types::*, dsnp_configs::DsnpVersionConfig, dsnp_types::*},
+	api::api_types::*,
+	dsnp::{dsnp_configs::DsnpVersionConfig, dsnp_types::*},
 	graph::{
-		key_manager::UserKeyManagerBase,
+		key_manager::{UserKeyManagerBase, USER_KEY_MANAGER},
 		page::{PrivatePageDataProvider, PublicPageDataProvider, RemovedPageDataProvider},
 		page_capacities::PAGE_CAPACITY_MAP,
 		updates::UpdateEvent,
@@ -129,6 +130,7 @@ impl Graph {
 		self.pages.clear();
 	}
 
+	/// Get connection type of this graph
 	pub fn get_connection_type(&self) -> ConnectionType {
 		self.environment
 			.get_config()
@@ -136,10 +138,12 @@ impl Graph {
 			.expect("Connection type should exist!")
 	}
 
+	/// Get schema id of this graph
 	pub fn get_schema_id(&self) -> SchemaId {
 		self.schema_id
 	}
 
+	/// Get user id of this graph
 	pub fn get_dsnp_user_id(&self) -> DsnpUserId {
 		self.user_id
 	}
@@ -197,7 +201,11 @@ impl Graph {
 		}
 
 		let max_page_id = self.environment.get_config().max_page_id;
-		let keys = self.user_key_manager.read().unwrap().get_all_resolved_keys();
+		let keys = self
+			.user_key_manager
+			.read()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+			.get_all_resolved_keys();
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
@@ -220,6 +228,7 @@ impl Graph {
 		Ok(())
 	}
 
+	/// Calculate updates to be sent to the network
 	#[log_result_err(Level::Info)]
 	pub fn calculate_updates(
 		&self,
@@ -228,8 +237,11 @@ impl Graph {
 	) -> DsnpGraphResult<Vec<Update>> {
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
-			PrivacyType::Private =>
-				self.user_key_manager.read().unwrap().get_resolved_active_key(self.user_id),
+			PrivacyType::Private => self
+				.user_key_manager
+				.read()
+				.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+				.get_resolved_active_key(self.user_id),
 		};
 
 		let ids_to_remove: Vec<DsnpUserId> = updates
@@ -446,8 +458,11 @@ impl Graph {
 		// get latest encryption key
 		let encryption_key = match self.get_connection_type().privacy_type() {
 			PrivacyType::Public => None,
-			PrivacyType::Private =>
-				self.user_key_manager.read().unwrap().get_resolved_active_key(self.user_id),
+			PrivacyType::Private => self
+				.user_key_manager
+				.read()
+				.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+				.get_resolved_active_key(self.user_id),
 		};
 
 		let mut updates = vec![];
@@ -613,7 +628,12 @@ impl Graph {
 
 		let mut result = vec![];
 		for c in self.pages.inner().values().flat_map(|g| g.connections()) {
-			if !self.user_key_manager.read().unwrap().verify_connection(c.user_id)? {
+			if !self
+				.user_key_manager
+				.read()
+				.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+				.verify_connection(c.user_id)?
+			{
 				result.push(*c)
 			}
 		}
@@ -642,7 +662,11 @@ impl Graph {
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
 			if duration_days_since(c.since) > max_allowed_stale_days &&
-				!self.user_key_manager.read().unwrap().verify_connection(c.user_id)?
+				!self
+					.user_key_manager
+					.read()
+					.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+					.verify_connection(c.user_id)?
 			{
 				// connection is removed from the other side
 				updated_page.remove_connection(&c.user_id)?;
@@ -654,11 +678,10 @@ impl Graph {
 			.connections()
 			.iter()
 			.map(|c| {
-				self.user_key_manager.read().unwrap().calculate_prid(
-					self.user_id,
-					c.user_id,
-					encryption_key.key_pair.clone().into(),
-				)
+				self.user_key_manager
+					.read()
+					.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
+					.calculate_prid(self.user_id, c.user_id, encryption_key.key_pair.clone().into())
 			})
 			.collect();
 		updated_page.set_prids(prid_result?)

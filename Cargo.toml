@@ -5,6 +5,7 @@ members = [
     "bridge/ffi",
     "bridge/jni",
     "log-result-proc-macro",
+    "bridge/node",
 ]
 
 default-members = [

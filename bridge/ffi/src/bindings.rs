@@ -1,7 +1,7 @@
 use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig, SchemaId};
-use dsnp_graph_core::dsnp::{
-	api_types::{Connection, PageHash, PageId},
-	dsnp_types::{DsnpGraphEdge, DsnpUserId},
+use dsnp_graph_core::{
+	api::api_types::{Connection, PageHash, PageId},
+	dsnp::dsnp_types::{DsnpGraphEdge, DsnpUserId},
 };
 use libc::size_t;
 
@@ -21,7 +21,7 @@ pub struct DsnpPublicKey {
 	pub content_len: size_t,
 }
 
-// Output type for DsnpPublicKey list
+/// Output type for `dsnp_graph_core::dsnp::api_types::DsnpPublicKey` list
 #[repr(C)]
 pub struct DsnpPublicKeys {
 	pub keys: *mut DsnpPublicKey,
@@ -47,7 +47,7 @@ pub struct GraphKeyPair {
 	pub secret_key_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::PageData` type
+/// `dsnp_graph_core::dsnp::api_types::PageData` type
 #[repr(C)]
 pub struct PageData {
 	// Id of the page
@@ -61,7 +61,7 @@ pub struct PageData {
 	pub content_hash: PageHash,
 }
 
-// `dsnp_graph_core::dsnp::api_types::DsnpKeys` type
+/// `dsnp_graph_core::dsnp::api_types::DsnpKeys` type
 #[repr(C)]
 pub struct DsnpKeys {
 	pub dsnp_user_id: DsnpUserId,
@@ -70,7 +70,7 @@ pub struct DsnpKeys {
 	pub keys_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::ImportBundle` type
+/// `dsnp_graph_core::dsnp::api_types::ImportBundle` type
 #[repr(C)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
@@ -91,7 +91,7 @@ pub struct ImportBundle {
 	pub pages_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update::PersistPage` type
+/// `dsnp_graph_core::dsnp::api_types::Update::PersistPage` type
 #[repr(C)]
 pub struct PersistPage {
 	/// owner of the social graph
@@ -111,7 +111,7 @@ pub struct PersistPage {
 	pub payload_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update::DeletePage` type
+/// `dsnp_graph_core::dsnp::api_types::Update::DeletePage` type
 #[repr(C)]
 pub struct DeletePage {
 	/// owner of the social graph
@@ -141,7 +141,7 @@ pub struct AddKey {
 	pub payload_len: size_t,
 }
 
-// `dsnp_graph_core::dsnp::api_types::Update` type
+//// `dsnp_graph_core::dsnp::api_types::Update` type
 #[repr(C)]
 pub enum Update {
 	Persist(PersistPage),
@@ -149,14 +149,14 @@ pub enum Update {
 	Add(AddKey),
 }
 
-// SchemaConfig tuple type
+/// `dsnp_graph_core::dsnp::api_types::SchemaConfig` type
 #[repr(C)]
 pub struct SchemaConfigTuple {
 	pub schema_id: SchemaId,
 	pub schema_config: SchemaConfig,
 }
 
-// `dsnp_graph_config::Config` type
+/// `dsnp_graph_config::Config` type
 #[repr(C)]
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -171,7 +171,7 @@ pub struct Config {
 	pub dsnp_versions: *mut DsnpVersion,
 }
 
-// EnvironmentType for `Config`
+/// `Environment` type for `Config`
 #[repr(C)]
 pub enum Environment {
 	Mainnet,
@@ -179,21 +179,21 @@ pub enum Environment {
 	Dev(Config),
 }
 
-// Output type for GraphConnection list
+/// Output type for`dsnp_graph_core::dsnp::dsn_types::DsnpGraphEdge` list
 #[repr(C)]
 pub struct GraphConnections {
 	pub connections: *mut DsnpGraphEdge,
 	pub connections_len: usize,
 }
 
-// Output type for GraphConnectionsWithoutKeys list
+/// Output type for `dsnp_graph_core::dsnp::dsn_types::DsnpUserId` list
 #[repr(C)]
 pub struct GraphConnectionsWithoutKeys {
 	pub connections: *mut DsnpUserId,
 	pub connections_len: usize,
 }
 
-// Output type for GraphUpdates list
+/// Output type for `dsnp_graph_core::dsnp::api_types::Update`
 #[repr(C)]
 pub struct GraphUpdates {
 	pub updates: *mut Update,

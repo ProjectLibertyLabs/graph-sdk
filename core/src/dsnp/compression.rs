@@ -1,3 +1,4 @@
+//! Definition and implementations to support compression/decompression to store data
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use log::Level;
 use log_result_proc_macro::log_result_err;

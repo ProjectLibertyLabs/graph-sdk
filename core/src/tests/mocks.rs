@@ -1,6 +1,6 @@
 use crate::{
+	api::api_types::{GraphKeyPair, PageData, ResolvedKeyPair},
 	dsnp::{
-		api_types::{GraphKeyPair, PageData, ResolvedKeyPair},
 		dsnp_configs::SecretKeyType,
 		dsnp_types::{DsnpPrid, DsnpUserId},
 	},

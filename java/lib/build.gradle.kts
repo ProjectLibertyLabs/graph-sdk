@@ -33,7 +33,7 @@ dependencies {
     testImplementation("io.github.hakky54:logcaptor:2.9.0")
 
     implementation("org.slf4j:slf4j-api:2.0.7")
-    implementation("com.google.protobuf:protobuf-java:3.23.0")
+    api("com.google.protobuf:protobuf-java:3.23.0")
 }
 
 java {

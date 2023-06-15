@@ -401,6 +401,27 @@ class LibraryTest {
     }
 
     @Test
+    void Graph_deserializeDsnpKeys_should_work() throws Exception {
+        // arrange
+        var ownerUserId = 20;
+        var publicKey = ByteString.fromHex("0fea2cafabdc83752be36fa5349640da2c828add0a290df13cd2d8173eb2496f");
+        var index = 4;
+        var dsnpKeys = DsnpKeys.newBuilder()
+                .setDsnpUserId(ownerUserId)
+                .setKeysHash(1)
+                .addKeys(KeyData.newBuilder().setIndex(index).setContent(ByteString.copyFrom(new byte[]{64, 15, -22, 44, -81, -85, -36, -125, 117, 43, -29, 111, -91, 52, -106, 64, -38, 44, -126, -118, -35, 10, 41, 13, -15, 60, -46, -40, 23, 62, -78, 73, 111})).build())
+                .build();
+
+        // act
+        var keys = Graph.deserializeDsnpKeys(dsnpKeys);
+
+        // assert
+        assertEquals(1, keys.size());
+        assertEquals(publicKey, keys.get(0).getKey());
+        assertEquals(index, keys.get(0).getKeyId());
+    }
+
+    @Test
     void logger_double_initialize_should_fail() {
         Logger.initialize();
         assertEquals(true, testLogsForPattern(Level.WARN, "Duplicate logger initialization ignored"));

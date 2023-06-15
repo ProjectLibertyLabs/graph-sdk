@@ -1,3 +1,4 @@
+//! Different structs and types used in API
 use crate::dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpUserId};
 use dsnp_graph_config::{
 	errors::{
@@ -44,6 +45,7 @@ impl InputValidation for PageData {
 	}
 }
 
+/// Represents a published graph key
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct KeyData {
 	/// index of the key stored on chain
@@ -64,7 +66,7 @@ impl InputValidation for KeyData {
 	}
 }
 
-/// Key Pair wrapper
+/// Key-pair wrapper provided by wallet
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct GraphKeyPair {
 	/// key pair type

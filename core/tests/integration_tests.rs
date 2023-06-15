@@ -3,8 +3,10 @@ mod common;
 use crate::common::get_schema_from;
 use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, Environment, PrivacyType};
 use dsnp_graph_core::{
-	api::api::{GraphAPI, GraphState},
-	dsnp::api_types::{PageData, PageId},
+	api::{
+		api::{GraphAPI, GraphState},
+		api_types::{PageData, PageId},
+	},
 	util::builders::ImportBundleBuilder,
 };
 
@@ -15,8 +17,8 @@ mod integration_tests {
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig};
 	use dsnp_graph_core::{
+		api::api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 		dsnp::{
-			api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 			dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 			pseudo_relationship_identifier::PridProvider,
 		},
@@ -400,6 +402,93 @@ mod integration_tests {
 		// assert
 		assert!(res.is_err());
 		assert!(!state.contains_user_graph(&dsnp_user_id));
+	}
+
+	#[test]
+	fn api_import_user_data_for_public_graph_after_applying_changes_should_sync_updates_successfully(
+	) {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 100)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import first");
+		let actions = vec![
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+				dsnp_keys: None,
+			},
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 3, schema_id },
+			},
+		];
+		state.apply_actions(&actions).expect("should apply actions");
+		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
+		let input2 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &re_imported_connections, &vec![], 200)
+			.build();
+
+		// act
+		let res = state.import_users_data(&vec![input2]);
+
+		// assert
+		assert!(res.is_ok());
+
+		let updates = state.export_updates();
+		assert!(updates.is_ok());
+		assert_eq!(updates.unwrap(), vec![]);
+	}
+
+	#[test]
+	fn api_import_user_data_for_private_graph_after_applying_changes_should_sync_updates_successfully(
+	) {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Private));
+		let mut state = GraphState::new(env.clone());
+		let (_, resolved_key, keypair) = create_new_keys(0);
+		let dsnp_user_id = 123;
+		let connections: Vec<(DsnpUserId, u64)> = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_encryption_key(resolved_key.clone())
+			.with_page(1, &connections, &[], 1000)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import first");
+		let actions = vec![
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+				dsnp_keys: None,
+			},
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id,
+				connection: Connection { dsnp_user_id: 3, schema_id },
+			},
+		];
+		state.apply_actions(&actions).expect("should apply actions");
+		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
+		let input2 = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.with_page(1, &re_imported_connections, &vec![], 200)
+			.build();
+
+		// act
+		let res = state.import_users_data(&vec![input2]);
+
+		// assert
+		assert!(res.is_ok());
+
+		let updates = state.export_updates();
+		assert!(updates.is_ok());
+		assert_eq!(updates.unwrap(), vec![]);
 	}
 
 	#[test]
@@ -1153,5 +1242,43 @@ mod integration_tests {
 		let updates = result.unwrap();
 		assert_eq!(updates.len(), 1);
 		assert!(matches!(updates[0], Update::DeletePage { .. }));
+	}
+
+	#[test]
+	fn deserialize_dsnp_keys_should_return_deserialized_public_keys() {
+		// arrange
+		let (key_pair_raw_1, _, keypair_1) = create_new_keys(0);
+		let (key_pair_raw_2, _, keypair_2) = create_new_keys(1);
+		let keys = KeyDataBuilder::new().with_key_pairs(&vec![keypair_1, keypair_2]).build();
+		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
+
+		// act
+		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+
+		// assert
+		assert!(res.is_ok());
+		let keys = res.unwrap();
+		assert_eq!(
+			keys,
+			vec![
+				DsnpPublicKey { key: key_pair_raw_1.public_key.to_vec(), key_id: Some(0) },
+				DsnpPublicKey { key: key_pair_raw_2.public_key.to_vec(), key_id: Some(1) }
+			]
+		);
+	}
+
+	#[test]
+	fn deserialize_dsnp_keys_with_invalid_key_should_fail() {
+		// arrange
+		let (_, _, keypair_1) = create_new_keys(0);
+		let mut keys = KeyDataBuilder::new().with_key_pairs(&vec![keypair_1]).build();
+		keys.get_mut(0).unwrap().content.pop();
+		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
+
+		// act
+		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+
+		// assert
+		assert!(res.is_err());
 	}
 }

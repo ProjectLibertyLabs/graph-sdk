@@ -2,8 +2,8 @@ use crate::{
 	errors::SdkJniError,
 	helper::{handle_result, validate_handle},
 	mappings::{
-		convert_jboolean, map_to_actions, map_to_environment, map_to_imports, serialize_config,
-		serialize_dsnp_users, serialize_graph_edges, serialize_graph_updates,
+		convert_jboolean, map_to_actions, map_to_dsnp_keys, map_to_environment, map_to_imports,
+		serialize_config, serialize_dsnp_users, serialize_graph_edges, serialize_graph_updates,
 		serialize_public_keys,
 	},
 };
@@ -50,6 +50,15 @@ pub extern "C" fn Java_io_amplica_graphsdk_Native_keepAlive<'local>(
 ) {
 }
 
+/// Initializes the graph state and returns a handle to it.
+/// The handle is a pointer to the memory location of the state.
+/// The memory will be freed when `freeGraphState` is called.
+/// # Arguments
+/// * `environment` - the environment to initialize the graph state with
+/// # Returns
+/// * `jlong` - the handle to the graph state
+/// # Errors
+/// * `SdkJniError` - if initializing graph state fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_initializeGraphState<'local>(
 	mut env: JNIEnv<'local>,
@@ -71,6 +80,11 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_initializeGraphState<'l
 	handle_result(&mut env, result)
 }
 
+/// Frees the graph state memory.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// # Errors
+/// * `SdkJniError` - if freeing graph state fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 	mut env: JNIEnv<'local>,
@@ -96,6 +110,13 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 	handle_result(&mut env, result);
 }
 
+/// Get config for an environment.
+/// # Arguments
+/// * `environment` - the environment to get config for
+/// # Returns
+/// * `jbyteArray` - the serialized config
+/// # Errors
+/// * `SdkJniError` - if getting config fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConfig<'local>(
 	mut env: JNIEnv<'local>,
@@ -111,6 +132,14 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConfig<'local>(
 	handle_result(&mut env, result)
 }
 
+/// Check if user graph exists.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to check
+/// # Returns
+/// * `jboolean` - true if user graph exists
+/// # Errors
+/// * `SdkJniError` - if checking user graph fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'local>(
 	mut env: JNIEnv<'local>,
@@ -136,6 +165,13 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'loca
 	handle_result(&mut env, result)
 }
 
+/// Get user graph length.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// # Returns
+/// * `jint` - the length of the user graph
+/// # Errors
+/// * `SdkJniError` - if getting user graph length fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'local>(
 	mut env: JNIEnv<'local>,
@@ -157,6 +193,12 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'lo
 	handle_result(&mut env, result)
 }
 
+/// Remove user from graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to remove
+/// # Errors
+/// * `SdkJniError` - if removing user fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>(
 	mut env: JNIEnv<'local>,
@@ -181,6 +223,12 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>
 	handle_result(&mut env, result)
 }
 
+/// Import user data into graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `imports` - the serialized imports
+/// # Errors
+/// * `SdkJniError` - if imports are invalid
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
 	mut env: JNIEnv<'local>,
@@ -208,6 +256,13 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
 	handle_result(&mut env, result)
 }
 
+/// Export updates to graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// # Returns
+/// * `jbyteArray` - the serialized updates
+/// # Errors
+/// * `SdkJniError` - if exporting updates fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
 	mut env: JNIEnv<'local>,
@@ -234,6 +289,12 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
 	handle_result(&mut env, result)
 }
 
+/// Apply actions to graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `actions` - the serialized actions
+/// # Errors
+/// * `SdkJniError` - if applying actions fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 	mut env: JNIEnv<'local>,
@@ -258,6 +319,14 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 	handle_result(&mut env, result)
 }
 
+/// Force calculate graph updates.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to calculate updates for
+/// # Returns
+/// * `jbyteArray` - the serialized updates
+/// # Errors
+/// * `SdkJniError` - if calculating updates fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'local>(
 	mut env: JNIEnv<'local>,
@@ -287,6 +356,16 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'l
 	handle_result(&mut env, result)
 }
 
+/// Get connections for a user graph.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to get connections for
+/// * `schema_id` - the schema id to get connections for
+/// * `include_pending` - whether to include pending connections
+/// # Returns
+/// * `jbyteArray` - the serialized connections
+/// # Errors
+/// * `SdkJniError` - if getting connections fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph<'local>(
 	mut env: JNIEnv<'local>,
@@ -322,6 +401,13 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGr
 	handle_result(&mut env, result)
 }
 
+/// Get users connections without keys.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// # Returns
+/// * `jbyteArray` - the serialized users
+/// # Errors
+/// * `SdkJniError` - if getting users fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'local>(
 	mut env: JNIEnv<'local>,
@@ -348,6 +434,14 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'lo
 	handle_result(&mut env, result)
 }
 
+/// Get one sided private friendship connections.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to get connections for
+/// # Returns
+/// * `jbyteArray` - the serialized connections
+/// # Errors
+/// * `SdkJniError` - if getting connections fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFriendshipConnections<
 	'local,
@@ -379,6 +473,14 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFrien
 	handle_result(&mut env, result)
 }
 
+/// Get public keys for a user.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id to get public keys for
+/// # Returns
+/// * `jbyteArray` - the serialized public keys
+/// # Errors
+/// * `SdkJniError` - if getting public keys fails
 #[no_mangle]
 pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
 	mut env: JNIEnv<'local>,
@@ -404,6 +506,28 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
 		// pulling out of the box as raw so that memory stays allocated
 		let _ = Box::into_raw(graph) as jlong;
 		result
+	});
+	handle_result(&mut env, result)
+}
+
+/// Deserialize DSNP keys.
+/// # Arguments
+/// * `dsnp_keys` - the serialized DSNP keys
+/// # Returns
+/// * `jbyteArray` - the deserialized public keys
+/// # Errors
+/// * `SdkJniError` - if deserializing DSNP keys fails
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_deserializeDsnpKeys<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	dsnp_keys: JByteArray,
+) -> JByteArray<'local> {
+	let result = panic::catch_unwind(|| {
+		let rust_dsnp_keys = map_to_dsnp_keys(&env, &dsnp_keys)?;
+		GraphState::deserialize_dsnp_keys(&rust_dsnp_keys)
+			.map_err(|e| SdkJniError::from(e))
+			.and_then(|public_keys| serialize_public_keys(&env, &public_keys))
 	});
 	handle_result(&mut env, result)
 }

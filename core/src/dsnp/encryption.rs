@@ -1,3 +1,4 @@
+//! Definition and implementations to support encryption/decryption for private data
 use crate::dsnp::dsnp_configs::{PublicKeyType, SecretKeyType};
 use dryoc::{
 	classic::crypto_box::{crypto_box_seal, crypto_box_seal_open},

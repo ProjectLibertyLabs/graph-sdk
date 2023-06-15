@@ -7,14 +7,14 @@ use dsnp_graph_config::{
 	Environment as RustEnvironment, GraphKeyType as RustGraphKeyType, PageId,
 	SchemaConfig as RustSchemaConfig, SchemaConfig, SchemaId,
 };
-use dsnp_graph_core::dsnp::{
-	api_types::{
+use dsnp_graph_core::{
+	api::api_types::{
 		Action as RustAction, Connection as RustConnection, ConnectionType as RustConnectionType,
 		DsnpKeys as RustDsnpKeys, GraphKeyPair as RustGraphKeyPair,
 		ImportBundle as RustImportBundle, KeyData as RustKeyData, PageData as RustPageData,
 		PrivacyType as RustPrivacyType, Update as RustUpdate,
 	},
-	dsnp_types::{DsnpGraphEdge as RustDsnpGraphEdge, DsnpPublicKey as RustDsnpPublicKey},
+	dsnp::dsnp_types::{DsnpGraphEdge as RustDsnpGraphEdge, DsnpPublicKey as RustDsnpPublicKey},
 };
 use dsnp_graph_sdk_common::proto_types::{
 	input as proto_input,
@@ -95,6 +95,16 @@ pub fn map_to_imports<'local>(
 		});
 	}
 	Ok(result)
+}
+
+pub fn map_to_dsnp_keys<'local>(
+	env: &JNIEnv<'local>,
+	dsnp_keys: &JByteArray,
+) -> SdkJniResult<RustDsnpKeys> {
+	let bytes = env.convert_byte_array(dsnp_keys).map_err(|e| SdkJniError::from(e))?;
+	let dsnp_keys_proto =
+		proto_input::DsnpKeys::parse_from_bytes(&bytes).map_err(|e| SdkJniError::from(e))?;
+	map_dsnp_keys_to_rust(&dsnp_keys_proto)
 }
 
 pub fn serialize_public_keys<'local>(

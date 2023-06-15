@@ -1,0 +1,38 @@
+{
+    "exclude": [
+      "node_modules",
+      "dist",
+    ],
+    "files": [],
+    "compilerOptions": {
+      "incremental": true,
+      "lib": ["es2021"],
+      "target": "es2021",
+      "module": "commonjs",
+      "baseUrl": ".",
+      "paths": {
+        "@dsnp/dsnp_graph_sdk_node": [
+          "bridge/node/*",
+          "bridge/node/src/*",
+          "bridge/node/js/*"
+        ]
+      },
+      "composite": true,
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true,
+      "strict": true,
+      "noImplicitAny": true,
+      "strictNullChecks": true,
+      "strictFunctionTypes": true,
+      "strictBindCallApply": true,
+      "strictPropertyInitialization": true,
+      "noImplicitThis": true,
+      "alwaysStrict": true,
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "allowSyntheticDefaultImports": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true
+    }
+}

@@ -31,6 +31,9 @@
 //! - `get_one_sided_private_friendship_connections` the main use-case for this api is also for Private
 //! Friendship graph and returns broken friendships
 //! - `get_public_keys` returns the raw public keys imported for a certain dsnp user.
+//! - `deserialize_dsnp_keys` returns deserialized public keys from published on chain DSNP keys without
+//! importing them. One use-case might be for wallets to know which key-pairs should be included in
+//! `ImportBundle`, when importing graph data.
 //!
 //! ## Export updates
 //! After applying any changes to the graph using API's mentioned in previous step, we can use the
@@ -45,13 +48,17 @@
 //! be reverted to before failed call state.
 
 use crate::{
+	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
 	dsnp::{
-		api_types::{Action, Connection, ImportBundle, PrivacyType, Update},
 		dsnp_types::{DsnpGraphEdge, DsnpPublicKey, DsnpUserId},
+		reader_writer::DsnpReader,
 	},
+	frequency::Frequency,
 	graph::{
-		key_manager::UserKeyProvider,
-		shared_state_manager::{PriProvider, PublicKeyProvider, SharedStateManager},
+		key_manager::{UserKeyProvider, USER_KEY_MANAGER},
+		shared_state_manager::{
+			PriProvider, PublicKeyProvider, SharedStateManager, SHARED_STATE_MANAGER,
+		},
 		updates::UpdateEvent,
 		user::UserGraph,
 	},
@@ -69,41 +76,53 @@ use std::{
 	sync::{Arc, RwLock},
 };
 
+/// Root data structure that stores all underlying data structures inside
 #[derive(Debug)]
 pub struct GraphState {
+	/// stores the capacity of this GraphState which limits the number of dsnp users and their graph
+	/// that can be imported and used.
+	/// This is only to encourage short lived SDK initiation and usage
 	capacity: usize,
+
+	/// Environment of this `GraphState`
 	environment: Environment,
+
+	/// Stores all shared states between different users, it can be used for PRId calculations or
+	/// a repository for published public keys
 	shared_state_manager: Arc<RwLock<SharedStateManager>>,
+
+	/// Dsnp users and their corresponding social graphs
 	user_map: TransactionalHashMap<DsnpUserId, UserGraph>,
 }
 
+/// Defines the main API to interact with Graph
 pub trait GraphAPI {
-	/// Check if graph state contains a user
+	/// Checks if graph state contains a user
 	fn contains_user_graph(&self, user_id: &DsnpUserId) -> bool;
 
-	/// Return number of users in the current graph state
+	/// Returns number of users in the current graph state
 	fn len(&self) -> usize;
 
-	/// Remove the user graph from an SDK instance
+	/// Removes the user graph from an SDK instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId);
 
-	/// Import raw data retrieved from the blockchain into users graph.
+	/// Imports raw data retrieved from the blockchain into users graph.
 	/// Will overwrite any existing graph data for any existing user,
 	/// but pending updates will be preserved.
 	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()>;
 
-	/// Calculate the necessary page updates for all imported users and graph using their active
+	/// Calculates the necessary page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
 	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
-	/// Apply Actions (Connect or Disconnect) to the list of pending actions for a users graph
+	/// Applies Actions (Connect or Disconnect) to the list of pending actions for a users graph
 	fn apply_actions(&mut self, action: &[Action]) -> DsnpGraphResult<()>;
 
 	/// Force re-calculates the imported graphs. This is useful to ensure the pages are using the
 	/// latest encryption key or refresh calculated PRIds or remove any empty pages and ...
 	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>>;
 
-	/// Get a list of all connections of the indicated type for the user
+	/// Gets a list of all connections of the indicated type for the user
 	fn get_connections_for_user_graph(
 		&self,
 		user_id: &DsnpUserId,
@@ -111,20 +130,25 @@ pub trait GraphAPI {
 		include_pending: bool,
 	) -> DsnpGraphResult<Vec<DsnpGraphEdge>>;
 
-	/// return a list dsnp user ids that require keys
+	/// returns a list dsnp user ids that require keys
 	fn get_connections_without_keys(&self) -> DsnpGraphResult<Vec<DsnpUserId>>;
 
-	/// Get a list of all private friendship connections that are only valid from users side
+	/// Gets a list of all private friendship connections that are only valid from users side
 	fn get_one_sided_private_friendship_connections(
 		&self,
 		user_id: &DsnpUserId,
 	) -> DsnpGraphResult<Vec<DsnpGraphEdge>>;
 
-	/// Get a list published and imported public keys associated with a user
+	/// Gets a list published and imported public keys associated with a user
 	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
+
+	/// Returns the deserialized dsnp keys without importing
+	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
 }
 
+/// Provides transactional operation support on `GraphState`
 impl Transactional for GraphState {
+	/// Commits all underlying changes
 	fn commit(&mut self) {
 		let ids: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for uid in ids {
@@ -136,6 +160,7 @@ impl Transactional for GraphState {
 		self.shared_state_manager.write().unwrap().commit();
 	}
 
+	/// Rollbacks all underlying changes
 	fn rollback(&mut self) {
 		self.user_map.rollback();
 		let ids: Vec<_> = self.user_map.inner().keys().copied().collect();
@@ -148,24 +173,25 @@ impl Transactional for GraphState {
 	}
 }
 
+/// Implementing GraphAPI functionalities on GraphState
 impl GraphAPI for GraphState {
-	/// Check if graph state contains a user
+	/// Checks if graph state contains a user
 	fn contains_user_graph(&self, user_id: &DsnpUserId) -> bool {
 		self.user_map.inner().contains_key(user_id)
 	}
 
-	/// Return number of users in the current graph state
+	/// Returns number of users in the current graph state
 	fn len(&self) -> usize {
 		self.user_map.len()
 	}
 
-	/// Remove the user graph from an instance
+	/// Removes the user graph from an instance
 	fn remove_user_graph(&mut self, user_id: &DsnpUserId) {
 		self.user_map.remove(user_id);
 		self.user_map.commit();
 	}
 
-	/// Import raw data retrieved from the blockchain into a user graph.
+	/// Imports raw data retrieved from the blockchain into a user graph.
 	/// Will overwrite any existing graph data for the user,
 	/// but pending updates will be preserved.
 	#[log_result_err(Level::Error)]
@@ -178,11 +204,15 @@ impl GraphAPI for GraphState {
 		result
 	}
 
-	/// Calculate the necessary page updates for all users graphs and return as a map of pages to
+	/// Calculates the necessary page updates for all users graphs and return as a map of pages to
 	/// be updated and/or removed or added keys
 	#[log_result_err(Level::Error)]
 	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>> {
-		let mut result = self.shared_state_manager.read().unwrap().export_new_key_updates()?;
+		let mut result = self
+			.shared_state_manager
+			.read()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
+			.export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
 			let user_graph = self
@@ -195,7 +225,7 @@ impl GraphAPI for GraphState {
 		Ok(result)
 	}
 
-	/// Apply actions (Connect, Disconnect) to imported users graph
+	/// Applies actions (Connect, Disconnect) to imported users graph
 	#[log_result_err(Level::Error)]
 	fn apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		let result = self.do_apply_actions(actions);
@@ -206,7 +236,7 @@ impl GraphAPI for GraphState {
 		result
 	}
 
-	/// Export the graph pages for a certain user encrypted using the latest published key
+	/// Exports the graph pages for a certain user encrypted using the latest published key
 	#[log_result_err(Level::Error)]
 	fn force_recalculate_graphs(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>> {
 		let user_graph = self
@@ -217,7 +247,7 @@ impl GraphAPI for GraphState {
 		user_graph.force_calculate_graphs()
 	}
 
-	/// Get a list of all connections of the indicated type for the user
+	/// Gets a list of all connections of the indicated type for the user
 	#[log_result_err(Level::Error)]
 	fn get_connections_for_user_graph(
 		&self,
@@ -233,7 +263,7 @@ impl GraphAPI for GraphState {
 		Ok(user_graph.get_all_connections_of(*schema_id, include_pending))
 	}
 
-	/// return a list dsnp user ids that require keys
+	/// returns a list dsnp user ids that require keys
 	#[log_result_err(Level::Error)]
 	fn get_connections_without_keys(&self) -> DsnpGraphResult<Vec<DsnpUserId>> {
 		let private_friendship_schema_id = self
@@ -253,11 +283,11 @@ impl GraphAPI for GraphState {
 		Ok(self
 			.shared_state_manager
 			.read()
-			.unwrap()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
 			.find_users_without_keys(all_connections.into_iter().collect()))
 	}
 
-	/// Get a list of all private friendship connections that are only valid from users side
+	/// Gets a list of all private friendship connections that are only valid from users side
 	#[log_result_err(Level::Error)]
 	fn get_one_sided_private_friendship_connections(
 		&self,
@@ -278,17 +308,36 @@ impl GraphAPI for GraphState {
 		graph.get_one_sided_friendships()
 	}
 
-	/// Get a list published and imported public keys associated with a user
+	/// Gets a list published and imported public keys associated with a user
 	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
 		Ok(self
 			.shared_state_manager
 			.read()
-			.map_err(|_| DsnpGraphError::FailedtoReadLockStateManager)?
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
 			.get_public_keys(user_id))
+	}
+
+	/// Returns the deserialized dsnp keys
+	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
+		// sorting by index in ascending mode
+		let mut sorted_keys = keys.keys.clone().to_vec();
+		sorted_keys.sort();
+
+		let mut dsnp_keys = vec![];
+		for key in sorted_keys {
+			let mut k =
+				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
+			// key id is the itemized index of the key stored in Frequency
+			k.key_id = Some(key.index.into());
+			dsnp_keys.push(k);
+		}
+		Ok(dsnp_keys)
 	}
 }
 
+/// inner functions for `GraphState`
 impl GraphState {
+	/// creates a new graph state with the given `Environment`
 	pub fn new(environment: Environment) -> Self {
 		Self {
 			capacity: environment.get_config().sdk_max_users_graph_size as usize,
@@ -298,6 +347,8 @@ impl GraphState {
 		}
 	}
 
+	/// creates a new graph state with the given `Environment` and capacity
+	/// the final capacity is the lower of `capacity` argument and `sdk_max_users_graph_size` in configuration
 	pub fn with_capacity(environment: Environment, capacity: usize) -> Self {
 		let size = min(capacity, environment.get_config().sdk_max_users_graph_size as usize);
 		Self {
@@ -308,6 +359,7 @@ impl GraphState {
 		}
 	}
 
+	/// returns maximum supported capacity for this graph state
 	pub fn capacity(&self) -> usize {
 		self.capacity
 	}
@@ -333,19 +385,24 @@ impl GraphState {
 		}
 	}
 
+	/// main data importing logic
 	#[log_result_err(Level::Error)]
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
 		// pre validate all bundles
 		for bundle in payloads {
 			bundle.validate()?;
 		}
+		// import bundles
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
 			let connection_type = self
 				.environment
 				.get_config()
 				.get_connection_type_from_schema_id(*schema_id)
 				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
-			self.shared_state_manager.write().unwrap().import_dsnp_keys(&dsnp_keys)?;
+			self.shared_state_manager
+				.write()
+				.map_err(|_| DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string()))?
+				.import_dsnp_keys(&dsnp_keys)?;
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 			let dsnp_config = user_graph
@@ -354,7 +411,10 @@ impl GraphState {
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
-				let mut user_key_manager = user_graph.user_key_manager.write().unwrap();
+				let mut user_key_manager = user_graph
+					.user_key_manager
+					.write()
+					.map_err(|_| DsnpGraphError::FailedtoWriteLock(USER_KEY_MANAGER.to_string()))?;
 
 				// import key-pairs inside user key manager
 				user_key_manager.import_key_pairs(key_pairs.clone())?;
@@ -366,34 +426,40 @@ impl GraphState {
 			graph.clear();
 
 			match connection_type.privacy_type() {
-				PrivacyType::Public => graph.import_public(connection_type, pages),
+				PrivacyType::Public => {
+					graph.import_public(connection_type, pages)?;
+					user_graph.sync_updates(*schema_id);
+				},
 				PrivacyType::Private => {
 					// private keys are provided try to import the graph
 					if include_secret_keys {
 						graph.import_private(&dsnp_config, connection_type, pages)?;
+						user_graph.sync_updates(*schema_id);
 					}
 
 					// since it's a private friendship import provided PRIs
 					if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
 						self.shared_state_manager
 							.write()
-							.unwrap()
+							.map_err(|_| {
+								DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string())
+							})?
 							.import_pri(*dsnp_user_id, pages)?;
 					}
-
-					Ok(())
 				},
-			}?;
+			};
 		}
 		Ok(())
 	}
 
+	/// main updating logic
 	#[log_result_err(Level::Error)]
 	fn do_apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
 		// pre validate all actions
 		for action in actions {
 			action.validate()?;
 		}
+		// apply actions
 		for action in actions {
 			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
 			match action {
@@ -414,7 +480,9 @@ impl GraphState {
 					if let Some(inner_keys) = dsnp_keys {
 						self.shared_state_manager
 							.write()
-							.map_err(|_| DsnpGraphError::FailedtoWriteLockStateManager)?
+							.map_err(|_| {
+								DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string())
+							})?
 							.import_dsnp_keys(inner_keys)?;
 					}
 				},
@@ -435,7 +503,9 @@ impl GraphState {
 				Action::AddGraphKey { new_public_key, .. } => {
 					self.shared_state_manager
 						.write()
-						.unwrap()
+						.map_err(|_| {
+							DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string())
+						})?
 						.add_new_key(action.owner_dsnp_user_id(), new_public_key.clone())?;
 				},
 			}
@@ -447,11 +517,8 @@ impl GraphState {
 #[cfg(test)]
 mod test {
 	use crate::{
-		dsnp::{
-			api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
-			dsnp_configs::KeyPairType,
-			dsnp_types::DsnpPrid,
-		},
+		api::api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
+		dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpPrid},
 		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
 	use dryoc::keypair::StackKeyPair;

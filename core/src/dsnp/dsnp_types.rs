@@ -1,3 +1,4 @@
+//! DSNP graph related data types based on DSNP [spec](https://spec.dsnp.org/DSNP/UserData.html)
 use anyhow::Result;
 pub use dsnp_graph_config::DsnpUserId;
 use serde::{
@@ -94,6 +95,19 @@ pub struct DsnpUserPrivateGraphChunk {
 	#[serde(rename = "encryptedCompressedPrivateGraph")]
 	#[serde(with = "serde_bytes")]
 	pub encrypted_compressed_private_graph: Vec<u8>,
+}
+
+/// Deserialized Private Graph Chunk
+#[derive(Debug, Clone, PartialEq)]
+pub struct PrivateGraphChunk {
+	/// User-Assigned Key Identifier
+	pub key_id: u64,
+
+	/// User-Assigned Key Identifier
+	pub prids: Vec<DsnpPrid>,
+
+	/// connections
+	pub inner_graph: DsnpInnerGraph,
 }
 
 impl DsnpPrid {

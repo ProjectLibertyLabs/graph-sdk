@@ -1,15 +1,13 @@
 use super::*;
-use crate::{
-	dsnp::{
-		compression::{CompressionBehavior, DeflateCompression},
-		dsnp_configs::{DsnpVersionConfig, PublicKeyType, SecretKeyType},
-		dsnp_types::{
-			DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
-		},
-		reader_writer::{DsnpReader, DsnpWriter},
-		schema::SchemaHandler,
+use crate::dsnp::{
+	compression::{CompressionBehavior, DeflateCompression},
+	dsnp_configs::{DsnpVersionConfig, PublicKeyType, SecretKeyType},
+	dsnp_types::{
+		DsnpInnerGraph, DsnpPublicKey, DsnpUserPrivateGraphChunk, DsnpUserPublicGraphChunk,
+		PrivateGraphChunk,
 	},
-	types::PrivateGraphChunk,
+	reader_writer::{DsnpReader, DsnpWriter},
+	schema::SchemaHandler,
 };
 use dsnp_graph_config::errors::DsnpGraphResult;
 use log::Level;
@@ -88,7 +86,6 @@ mod test {
 			encryption::SealBox,
 		},
 		frequency::Frequency,
-		types::PrivateGraphChunk,
 	};
 	use dryoc::keypair::StackKeyPair;
 	use rand::Rng;
