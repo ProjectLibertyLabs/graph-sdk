@@ -26,13 +26,12 @@ export interface Native {
     exportUpdates(handle: number): Promise<[Update]>;
     getConnectionsForUserGraph(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
     applyActions(handle: number, actions: [Action]): Promise<void>;
-    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update>;
+    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<[Update]>;
     getConnectionsWithoutKeys(handle: number): Promise<[number]>;
     getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<[DsnpGraphEdge]>;
     getPublicKeys(handle: number, dsnpUserId: number): Promise<[DsnpPublicKey]>;
     deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]>;
     freeGraphState(handle: number): Promise<void>;
-    freeAllGraphStates(): Promise<void>;
 }
 
 // Export the graphsdk module

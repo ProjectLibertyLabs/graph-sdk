@@ -1,8 +1,11 @@
 use crate::helper::*;
 use dsnp_graph_config::{Config, DsnpUserId};
-use dsnp_graph_core::api::{
-	api::{GraphAPI, GraphState},
-	api_types::{Action, ImportBundle},
+use dsnp_graph_core::{
+	api::{
+		api::{GraphAPI, GraphState},
+		api_types::{Action, DsnpKeys, ImportBundle},
+	},
+	dsnp::dsnp_types::DsnpPublicKey,
 };
 use neon::prelude::*;
 use once_cell::sync::Lazy;
@@ -324,6 +327,143 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	}
 }
 
+/// Function to force calculate graphs for user
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `dsnp_user_id` - DSNP user id
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject containing the exported updates
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
+	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let update = graph_state.force_recalculate_graphs(&dsnp_user_id).unwrap();
+	let update_js = updates_to_js(&mut cx, update)?;
+
+	Ok(update_js)
+}
+
+/// Function to get connections for user from the graph state (getConnectionsWithoutKeys)
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let connections = graph_state.get_connections_without_keys().unwrap();
+	let connections_js = cx.empty_array();
+	for (i, connection) in connections.iter().enumerate() {
+		let dsnp_user_id = cx.number(*connection as f64);
+		connections_js.set(&mut cx, i as u32, dsnp_user_id)?;
+	}
+	Ok(connections_js)
+}
+
+/// Function to get one sided private friendship connections for user from the graph state (getOneSidedPrivateFriendshipConnections)
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `dsnp_user_id` - DSNP user id
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
+	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let connections =
+		graph_state.get_one_sided_private_friendship_connections(&dsnp_user_id).unwrap();
+	let connections_js = connections_to_js(&mut cx, connections)?;
+
+	Ok(connections_js)
+}
+
+/// Function to get public keys for user from the graph state (getPublicKeys)
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `dsnp_user_id` - DSNP user id
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the public keys which is list of DSNPGraphEdge
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
+	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let public_keys = graph_state.get_public_keys(&dsnp_user_id).unwrap();
+	let public_keys_js = public_keys_to_js(&mut cx, public_keys)?;
+
+	Ok(public_keys_js)
+}
+
+/// Function to deserialize DSNP keys
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `keys` - DSNP keys
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the public keys which is list of DSNPGraphEdge
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let keys = cx.argument::<JsObject>(0)?;
+	let try_keys_str = keys.to_string(&mut cx)?;
+	let keys_str = try_keys_str.value(&mut cx);
+	let rust_keys: DsnpKeys = DsnpKeys::try_from(keys_str.as_str()).unwrap();
+	let deserialized_keys: Vec<DsnpPublicKey> =
+		GraphState::deserialize_dsnp_keys(&rust_keys).unwrap_or_default();
+	let keys_js = public_keys_to_js(&mut cx, deserialized_keys)?;
+
+	Ok(keys_js)
+}
+
 /// Function to free the graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -361,6 +501,15 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("importUserData", import_user_data)?;
 	cx.export_function("exportUpdates", export_graph_updates)?;
 	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
+	cx.export_function("applyActions", apply_actions)?;
+	cx.export_function("forceCalculateGraphs", force_calculate_graphs)?;
+	cx.export_function("getConnectionsWithoutKeys", get_connections_without_keys)?;
+	cx.export_function(
+		"getOneSidedPrivateFriendshipConnections",
+		get_one_sided_private_friendship_connections,
+	)?;
+	cx.export_function("getPublicKeys", get_public_keys)?;
+	cx.export_function("deserializeDsnpKeys", deserialize_dsnp_keys)?;
 	cx.export_function("freeGraphState", free_graph_state)?;
 	Ok(())
 }

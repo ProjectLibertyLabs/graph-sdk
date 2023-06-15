@@ -61,7 +61,7 @@ export class Graph {
         return graphsdkModule.applyActions(this.handle, actions);
     }
 
-    forceCalculateGraphs(dsnpUserId: number): Promise<Update> {
+    forceCalculateGraphs(dsnpUserId: number): Promise<[Update]> {
         return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 

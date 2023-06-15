@@ -1,7 +1,7 @@
 use dsnp_graph_config::{Config, ConnectionType, Environment, SchemaConfig};
 use dsnp_graph_core::{
 	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, Update},
-	dsnp::dsnp_types::DsnpGraphEdge,
+	dsnp::dsnp_types::{DsnpGraphEdge, DsnpPublicKey},
 };
 use neon::{
 	handle::Handle,
@@ -358,6 +358,47 @@ pub fn actions_from_js(cx: &mut FunctionContext, actions_js: Handle<JsArray>) ->
 	actions
 }
 
+/// Function to convert Vec<DsnpPublicKey> to JsArray of JsObjects
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `public_keys` - Vec<DsnpPublicKey>
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray of JsObjects
+/// # Errors
+/// * Throws a Neon error if the public keys cannot be converted
+pub fn public_keys_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	public_keys: Vec<DsnpPublicKey>,
+) -> JsResult<'a, JsArray> {
+	let public_keys_js = cx.empty_array();
+	for (i, public_key) in public_keys.iter().enumerate() {
+		let public_key_js = public_key_to_js(cx, public_key)?;
+		public_keys_js.set(cx, i as u32, public_key_js)?;
+	}
+	Ok(public_keys_js)
+}
+
+/// Function to convert DsnpPublicKey to JsObject
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `public_key` - DsnpPublicKey
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject
+/// # Errors
+/// * Throws a Neon error if the public key cannot be converted
+pub fn public_key_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	public_key: &DsnpPublicKey,
+) -> JsResult<'a, JsObject> {
+	let obj = cx.empty_object();
+	let key: Handle<JsArray> = vec_u8_to_js_array(cx, &public_key.key);
+	obj.set(cx, "key", key)?;
+	let key_id = cx.number(public_key.key_id.unwrap_or(0) as f64);
+	obj.set(cx, "keyId", key_id)?;
+	Ok(obj)
+}
+
+/// Function to convert J
 /// Function to convert Vec<u8> to JsArray
 /// # Arguments
 /// * `cx` - Neon FunctionContext
