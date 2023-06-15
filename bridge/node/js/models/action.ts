@@ -5,7 +5,7 @@ export interface ConnectAction {
     type: "Connect";
     ownerDsnpUserId: number;
     connection: Connection;
-    dsnpKeys: DsnpKeys;
+    dsnpKeys?: DsnpKeys;
 }
   
 export interface DisconnectAction {

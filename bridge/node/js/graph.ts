@@ -49,12 +49,12 @@ export class Graph {
         return graphsdkModule.importUserData(this.handle, payload);
     }
 
-    exportUpdates(): Promise<Update> {
+    exportUpdates(): Promise<[Update]> {
         return graphsdkModule.exportUpdates(this.handle);
     }
 
-    getConnectionsForUserGraphUpdates(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
-        return graphsdkModule.getConnectionsForUserGraphUpdates(this.handle, dsnpUserId, schemaId, includePending);
+    getConnectionsForUserGraph(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
+        return graphsdkModule.getConnectionsForUserGraph(this.handle, dsnpUserId, schemaId, includePending);
     }
 
     applyActions(actions: [Action]): Promise<void> {

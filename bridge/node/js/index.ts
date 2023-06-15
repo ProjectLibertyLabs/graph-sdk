@@ -23,8 +23,8 @@ export interface Native {
     containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
     removeUserGraph(handle: number, dsnpUserId: number): Promise<void>;
     importUserData(handle: number, payload: [ImportBundle]): Promise<void>;
-    exportUpdates(handle: number): Promise<Update>;
-    getConnectionsForUserGraphUpdates(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
+    exportUpdates(handle: number): Promise<[Update]>;
+    getConnectionsForUserGraph(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
     applyActions(handle: number, actions: [Action]): Promise<void>;
     forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update>;
     getConnectionsWithoutKeys(handle: number): Promise<[number]>;

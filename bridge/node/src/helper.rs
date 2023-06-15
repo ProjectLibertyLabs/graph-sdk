@@ -1,11 +1,14 @@
 use dsnp_graph_config::{Config, ConnectionType, Environment, SchemaConfig};
-use dsnp_graph_core::api::api_types::ImportBundle;
+use dsnp_graph_core::{
+	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, Update},
+	dsnp::dsnp_types::DsnpGraphEdge,
+};
 use neon::{
 	handle::Handle,
 	object::Object,
 	prelude::{Context, FunctionContext},
 	result::JsResult,
-	types::{JsArray, JsObject, JsString, Value},
+	types::{JsArray, JsNumber, JsObject, JsString, Value},
 };
 
 /// Convert environment from JSObject to Environment
@@ -149,4 +152,243 @@ pub fn import_bundle_from_js(
 		import_bundles.push(ImportBundle::try_from(import_bundle_str.as_str()).unwrap());
 	}
 	import_bundles
+}
+
+/// Function to convert rust Vec<Update> to JsArray of JsObjects
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `updates` - rust Vec<Update>
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray of JsObjects
+/// # Errors
+/// * Throws a Neon error if the updates cannot be converted
+pub fn updates_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	updates: Vec<Update>,
+) -> JsResult<'a, JsArray> {
+	let updates_js = cx.empty_array();
+	for (i, update) in updates.iter().enumerate() {
+		let update_js = update_to_js(cx, update)?;
+		updates_js.set(cx, i as u32, update_js)?;
+	}
+	Ok(updates_js)
+}
+
+/// Function to convert rust Update to JsObject
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `update` - rust Update
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject
+/// # Errors
+/// * Throws a Neon error if the update cannot be converted
+pub fn update_to_js<'a, C: Context<'a>>(cx: &mut C, update: &Update) -> JsResult<'a, JsObject> {
+	let obj = cx.empty_object();
+	match update {
+		Update::AddKey { owner_dsnp_user_id, prev_hash, payload } => {
+			let type_update = cx.string("AddKey");
+			obj.set(cx, "type", type_update)?;
+			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
+
+			let prev_hash = cx.number(*prev_hash);
+			obj.set(cx, "prevHash", prev_hash)?;
+			let payload_array: Handle<JsArray> = vec_u8_to_js_array(cx, payload);
+			obj.set(cx, "payload", payload_array)?;
+		},
+		Update::PersistPage { owner_dsnp_user_id, schema_id, page_id, prev_hash, payload } => {
+			let type_update = cx.string("PersistPage");
+			obj.set(cx, "type", type_update)?;
+			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
+
+			let schema_id = cx.number(*schema_id);
+			obj.set(cx, "schemaId", schema_id)?;
+
+			let page_id = cx.number(*page_id);
+			obj.set(cx, "pageId", page_id)?;
+
+			let prev_hash = cx.number(*prev_hash);
+			obj.set(cx, "prevHash", prev_hash)?;
+
+			let payload_array: Handle<JsArray> = vec_u8_to_js_array(cx, payload);
+			obj.set(cx, "payload", payload_array)?;
+		},
+		Update::DeletePage { owner_dsnp_user_id, schema_id, page_id, prev_hash } => {
+			let type_update = cx.string("DeletePage");
+			obj.set(cx, "type", type_update)?;
+			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
+
+			let schema_id = cx.number(*schema_id);
+			obj.set(cx, "schemaId", schema_id)?;
+
+			let page_id = cx.number(*page_id);
+			obj.set(cx, "pageId", page_id)?;
+
+			let prev_hash = cx.number(*prev_hash);
+			obj.set(cx, "prevHash", prev_hash)?;
+		},
+	};
+	Ok(obj)
+}
+
+/// Function to convert Vec<DsnpGraphEdge> to JsArray of JsObjects
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `edges` - Vec<DsnpGraphEdge>
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray of JsObjects
+/// # Errors
+/// * Throws a Neon error if the edges cannot be converted
+pub fn connections_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	edges: Vec<DsnpGraphEdge>,
+) -> JsResult<'a, JsArray> {
+	let edges_js = cx.empty_array();
+	for (i, edge) in edges.iter().enumerate() {
+		let edge_js = connection_to_js(cx, edge)?;
+		edges_js.set(cx, i as u32, edge_js)?;
+	}
+	Ok(edges_js)
+}
+
+/// Function to convert DsnpGraphEdge to JsObject
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `edge` - DsnpGraphEdge
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject
+/// # Errors
+/// * Throws a Neon error if the edge cannot be converted
+pub fn connection_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	edge: &DsnpGraphEdge,
+) -> JsResult<'a, JsObject> {
+	let obj = cx.empty_object();
+	let dsnp_user_id = cx.number(edge.user_id as f64);
+	obj.set(cx, "userId", dsnp_user_id)?;
+	let since = cx.number(edge.since as f64);
+	obj.set(cx, "since", since)?;
+	Ok(obj)
+}
+
+/// Function to convert JSArray of Action to Vec<Action>
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `actions_js` - Neon JsArray of JsObjects
+/// # Returns
+/// * `Vec<Action>` - Vec<Action>
+/// # Errors
+/// * Throws a Neon error if the actions cannot be converted
+pub fn actions_from_js(cx: &mut FunctionContext, actions_js: Handle<JsArray>) -> Vec<Action> {
+	let mut actions: Vec<Action> = Vec::new();
+	for i in 0..actions_js.len(cx) {
+		let action = actions_js.get(cx, i).unwrap_or(cx.empty_object());
+		let action_type = action.get(cx, "type").unwrap_or(cx.string(""));
+		let action_type = action_type.value(cx);
+
+		match action_type.as_str() {
+			"Connect" => {
+				let action_type = Action::Connect {
+					owner_dsnp_user_id: action
+						.get(cx, "ownerDsnpUserId")
+						.unwrap_or(cx.number(0.0))
+						.value(cx) as u64,
+					dsnp_keys: Some(
+						DsnpKeys::try_from(
+							action
+								.get(cx, "dsnpKeys")
+								.unwrap_or(cx.empty_object())
+								.to_string(cx)
+								.unwrap_or(cx.string(""))
+								.value(cx)
+								.as_str(),
+						)
+						.unwrap(),
+					),
+					connection: Connection::try_from(
+						action
+							.get(cx, "connection")
+							.unwrap_or(cx.empty_object())
+							.to_string(cx)
+							.unwrap_or(cx.string(""))
+							.value(cx)
+							.as_str(),
+					)
+					.unwrap(),
+				};
+				actions.push(action_type);
+			},
+			"Disconnect" => {
+				let action_type = Action::Disconnect {
+					owner_dsnp_user_id: action
+						.get(cx, "ownerDsnpUserId")
+						.unwrap_or(cx.number(0.0))
+						.value(cx) as u64,
+					connection: Connection::try_from(
+						action
+							.get(cx, "connection")
+							.unwrap_or(cx.empty_object())
+							.to_string(cx)
+							.unwrap_or(cx.string(""))
+							.value(cx)
+							.as_str(),
+					)
+					.unwrap(),
+				};
+				actions.push(action_type);
+			},
+			"AddGraphKey" => {
+				let public_key = action.get(cx, "newPublicKey").unwrap_or(cx.empty_array());
+				let action_type = Action::AddGraphKey {
+					owner_dsnp_user_id: action
+						.get(cx, "ownerDsnpUserId")
+						.unwrap_or(cx.number(0.0))
+						.value(cx) as u64,
+					// JsArray<u8> to Vec<u8>
+					new_public_key: vec_u8_from_js(cx, public_key),
+				};
+				actions.push(action_type);
+			},
+
+			_ => (),
+		}
+	}
+	actions
+}
+
+/// Function to convert Vec<u8> to JsArray
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `data` - Vec<u8> to convert
+/// # Returns
+/// * `Handle<JsArray>` - JsArray containing the converted data
+fn vec_u8_to_js_array<'a, C: Context<'a>>(cx: &mut C, data: &[u8]) -> Handle<'a, JsArray> {
+	let js_array = JsArray::new(cx, data.len() as u32);
+
+	for (index, value) in data.iter().enumerate() {
+		let js_number = JsNumber::new(cx, *value as f64);
+		js_array.set(cx, index as u32, js_number).unwrap();
+	}
+
+	js_array
+}
+
+/// Function to convert JSArray to Vec<u8>
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `data` - JsArray to convert
+/// # Returns
+/// * `Vec<u8>` - Vec<u8> containing the converted data
+/// # Errors
+/// * Throws a Neon error if the data cannot be converted
+pub fn vec_u8_from_js<'a, C: Context<'a>>(cx: &mut C, data: Handle<'a, JsArray>) -> Vec<u8> {
+	let mut vec: Vec<u8> = Vec::new();
+	for i in 0..data.len(cx) {
+		let value = data.get(cx, i).unwrap_or(cx.number(0.0));
+		let value = value.value(cx) as u8;
+		vec.push(value);
+	}
+	vec
 }

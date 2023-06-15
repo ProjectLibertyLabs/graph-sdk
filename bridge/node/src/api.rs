@@ -2,7 +2,7 @@ use crate::helper::*;
 use dsnp_graph_config::{Config, DsnpUserId};
 use dsnp_graph_core::api::{
 	api::{GraphAPI, GraphState},
-	api_types::ImportBundle,
+	api_types::{Action, ImportBundle},
 };
 use neon::prelude::*;
 use once_cell::sync::Lazy;
@@ -234,6 +234,96 @@ pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	}
 }
 
+/// Function to export graph updates
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the exported updates
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let updates = graph_state.export_updates().unwrap();
+	let updates_js = updates_to_js(&mut cx, updates)?;
+
+	Ok(updates_js)
+}
+
+/// Function to get connections for user from the graph state (getConnectionsForUserGraph)
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `dsnp_user_id` - DSNP user id
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the connections which is list of DSNPGraphEdge
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
+	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let schema_id = cx.argument::<JsNumber>(2)?;
+	let schema_id = schema_id.value(&mut cx) as u16;
+	let include_pending = cx.argument::<JsBoolean>(3)?;
+	let include_pending = include_pending.value(&mut cx);
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let connections = graph_state
+		.get_connections_for_user_graph(&dsnp_user_id, &schema_id, include_pending)
+		.unwrap();
+	let connections_js = connections_to_js(&mut cx, connections)?;
+
+	Ok(connections_js)
+}
+
+/// Function to applyActions to the graph state
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// * `actions` - JSArray containing the actions to apply
+/// # Returns
+/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// # Errors
+/// * Throws a Neon error if the graph state cannot be found
+pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let actions = cx.argument::<JsArray>(1)?;
+	let rust_actions: Vec<Action> = actions_from_js(&mut cx, actions);
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let mut graph_state = graph_state.lock().unwrap();
+
+	let apply_result = graph_state.apply_actions(&rust_actions);
+	match apply_result {
+		Ok(_) => Ok(cx.undefined()),
+		Err(e) => cx.throw_error(e.to_string()),
+	}
+}
+
 /// Function to free the graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -268,6 +358,9 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("getGraphUsersCount", get_graph_users_count)?;
 	cx.export_function("containsUserGraph", contains_user_graph)?;
 	cx.export_function("removeUserGraph", remove_user_graph)?;
+	cx.export_function("importUserData", import_user_data)?;
+	cx.export_function("exportUpdates", export_graph_updates)?;
+	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
 	cx.export_function("freeGraphState", free_graph_state)?;
 	Ok(())
 }

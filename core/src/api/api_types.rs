@@ -185,6 +185,13 @@ pub struct DsnpKeys {
 	pub keys: Vec<KeyData>,
 }
 
+impl DsnpKeys {
+	/// function to deserialize a DsnpKeys from a string
+	pub fn try_from(s: &str) -> DsnpGraphResult<Self> {
+		serde_json::from_str(s).map_err(|_| InvalidInput("Invalid DsnpKeys".to_string()))
+	}
+}
+
 /// implementing input validation for Dsnp Keys
 impl InputValidation for DsnpKeys {
 	fn validate(&self) -> DsnpGraphResult<()> {
@@ -213,15 +220,23 @@ impl InputValidation for DsnpKeys {
 
 /// A connection representation in graph sdk
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
+	#[serde(rename = "dsnpUserId")]
 	pub dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
+	#[serde(rename = "schemaId")]
 	pub schema_id: SchemaId,
 }
 
+impl Connection {
+	/// function to deserialize a connection from a string
+	pub fn try_from(s: &str) -> DsnpGraphResult<Self> {
+		serde_json::from_str(s).map_err(|_| InvalidInput("Invalid Connection".to_string()))
+	}
+}
 /// implementing input validation for Connection
 impl InputValidation for Connection {
 	fn validate(&self) -> DsnpGraphResult<()> {
@@ -238,35 +253,42 @@ impl InputValidation for Connection {
 
 /// Different kind of actions that can be applied to the graph
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
 	/// an action that defines adding a connection in the social graph
 	Connect {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// connection details
+		#[serde(rename = "connection")]
 		connection: Connection,
 
 		/// optional keys to import for the connection. Mostly useful for private friendships.
+		#[serde(rename = "dsnpKeys")]
 		dsnp_keys: Option<DsnpKeys>,
 	},
 
 	/// an action that defines removing an existing connection from social graph
 	Disconnect {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// connection details
+		#[serde(rename = "connection")]
 		connection: Connection,
 	},
 
 	/// an action that defines adding a new key to chain
 	AddGraphKey {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// public key
+		#[serde(rename = "newPublicKey")]
 		new_public_key: Vec<u8>,
 	},
 }
