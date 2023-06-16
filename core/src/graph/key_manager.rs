@@ -11,6 +11,8 @@ use crate::{
 	util::{transactional_hashmap::Transactional, transactional_vec::TransactionalVec},
 };
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
+use log::Level;
+use log_result_proc_macro::log_result_err;
 use std::{
 	fmt::Debug,
 	sync::{Arc, RwLock},
@@ -55,6 +57,7 @@ pub struct UserKeyManager {
 }
 
 impl UserKeyProvider for UserKeyManager {
+	#[log_result_err(Level::Info)]
 	fn import_key_pairs(&mut self, pairs: Vec<GraphKeyPair>) -> DsnpGraphResult<()> {
 		let mut mapped_keys = vec![];
 		for p in pairs {
@@ -107,6 +110,7 @@ impl UserKeyProvider for UserKeyManager {
 }
 
 impl PriProvider for UserKeyManager {
+	#[log_result_err(Level::Info)]
 	fn import_pri(&mut self, dsnp_user_id: DsnpUserId, pages: &[PageData]) -> DsnpGraphResult<()> {
 		self.shared_state_manager
 			.write()
@@ -118,6 +122,7 @@ impl PriProvider for UserKeyManager {
 		self.shared_state_manager.read().unwrap().contains(dsnp_user_id, prid)
 	}
 
+	#[log_result_err(Level::Info)]
 	fn calculate_prid(
 		&self,
 		from: DsnpUserId,
@@ -132,6 +137,7 @@ impl PriProvider for UserKeyManager {
 }
 
 impl ConnectionVerifier for UserKeyManager {
+	#[log_result_err(Level::Info)]
 	fn verify_connection(&self, from: DsnpUserId) -> DsnpGraphResult<bool> {
 		let from_public_keys: Vec<_> = self
 			.shared_state_manager

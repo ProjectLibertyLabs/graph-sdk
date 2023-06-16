@@ -51,8 +51,6 @@ class LibraryTest {
 
     @BeforeAll
     public static void logger_init_should_work() {
-        logCaptor.disableConsoleOutput();
-
         assertDoesNotThrow(() -> Logger.initialize(Level.DEBUG));
         assertEquals(true, testLogsForPattern(Level.INFO, "Initializing dsnp-graph-sdk-jni"));
     }
@@ -94,8 +92,7 @@ class LibraryTest {
         var config = new Configuration(Environment.newBuilder().getConfigBuilder()
                 .addDsnpVersions(DsnpVersion.Version1_0)
                 .setMaxPageId(10)
-                .build()
-        );
+                .build());
 
         // act
         var graph = new Graph(config);
@@ -159,9 +156,10 @@ class LibraryTest {
                         Actions.Action.ConnectAction.newBuilder()
                                 .setOwnerDsnpUserId(ownerUserId)
                                 .setConnection(
-                                        Connection.newBuilder().setDsnpUserId(connectionUserId).setSchemaId(schemaId).build()
-                                ).build())
-        ).build();
+                                        Connection.newBuilder().setDsnpUserId(connectionUserId).setSchemaId(schemaId)
+                                                .build())
+                                .build()))
+                .build();
         var graph = new Graph(Configuration.getMainNet());
 
         // act
@@ -197,9 +195,9 @@ class LibraryTest {
                                 .setConnection(
                                         Connection.newBuilder().setDsnpUserId(connectionUserId)
                                                 .setSchemaId(schemaId)
-                                                .build()
-                                ).build())
-        ).build();
+                                                .build())
+                                .build()))
+                .build();
         var graph = new Graph(Configuration.getMainNet());
 
         // act
@@ -225,9 +223,9 @@ class LibraryTest {
                                 .setConnection(
                                         Connection.newBuilder().setDsnpUserId(connectionUserId)
                                                 .setSchemaId(schemaId)
-                                                .build()
-                                ).build())
-        ).build();
+                                                .build())
+                                .build()))
+                .build();
         var graph = new Graph(Configuration.getMainNet());
 
         // act
@@ -251,8 +249,8 @@ class LibraryTest {
                         Actions.Action.AddGraphKey.newBuilder()
                                 .setOwnerDsnpUserId(ownerUserId)
                                 .setNewPublicKey(ByteString.fromHex(publicKey))
-                                .build())
-        ).build();
+                                .build()))
+                .build();
         var graph = new Graph(Configuration.getMainNet());
 
         // act
@@ -279,9 +277,10 @@ class LibraryTest {
                         Actions.Action.ConnectAction.newBuilder()
                                 .setOwnerDsnpUserId(ownerUserId)
                                 .setConnection(
-                                        Connection.newBuilder().setDsnpUserId(connectionUserId).setSchemaId(schemaId).build()
-                                ).build())
-        ).build();
+                                        Connection.newBuilder().setDsnpUserId(connectionUserId).setSchemaId(schemaId)
+                                                .build())
+                                .build()))
+                .build();
         var graph = new Graph(Configuration.getMainNet());
         graph.applyActions(actions);
 
@@ -310,16 +309,23 @@ class LibraryTest {
                                 .setDsnpKeys(DsnpKeys.newBuilder()
                                         .setDsnpUserId(ownerUserId)
                                         .setKeysHash(1)
-                                        .addKeys(KeyData.newBuilder().setIndex(0).setContent(ByteString.copyFrom(new byte[]{64, 15, -22, 44, -81, -85, -36, -125, 117, 43, -29, 111, -91, 52, -106, 64, -38, 44, -126, -118, -35, 10, 41, 13, -15, 60, -46, -40, 23, 62, -78, 73, 111})).build())
+                                        .addKeys(
+                                                KeyData.newBuilder().setIndex(0)
+                                                        .setContent(ByteString.copyFrom(new byte[] { 64, 15, -22, 44,
+                                                                -81, -85, -36, -125, 117, 43, -29, 111, -91, 52, -106,
+                                                                64, -38, 44, -126, -118, -35, 10, 41, 13, -15, 60, -46,
+                                                                -40, 23, 62, -78, 73, 111 }))
+                                                        .build())
                                         .build())
                                 .addPages(
                                         PageData.newBuilder()
                                                 .setPageId(pageId)
                                                 .setContentHash(contentHash)
-                                                .setContent(ByteString.copyFrom(new byte[]{20, 99, -70, -64, -33, 118, -13, 44, 35, 3, 0}))
+                                                .setContent(ByteString.copyFrom(
+                                                        new byte[] { 20, 99, -70, -64, -33, 118, -13, 44, 35, 3, 0 }))
                                                 .build())
-                                .build()
-                ).build();
+                                .build())
+                .build();
         var graph = new Graph(Configuration.getMainNet());
 
         // act
@@ -371,10 +377,11 @@ class LibraryTest {
                                         PageData.newBuilder()
                                                 .setPageId(pageId)
                                                 .setContentHash(contentHash)
-                                                .setContent(ByteString.copyFrom(new byte[]{20, 99, -70, -64, -33, 118, -13, 44, 35, 3, 0}))
+                                                .setContent(ByteString.copyFrom(
+                                                        new byte[] { 20, 99, -70, -64, -33, 118, -13, 44, 35, 3, 0 }))
                                                 .build())
-                                .build()
-                ).build();
+                                .build())
+                .build();
         var graph = new Graph(Configuration.getMainNet());
         graph.importUserData(bundles);
 

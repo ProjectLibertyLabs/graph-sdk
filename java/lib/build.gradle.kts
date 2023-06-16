@@ -50,6 +50,8 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
 	useJUnitPlatform()
 	testLogging {
+        // Uncomment below to see log output in tests
+        // showStandardStreams = true
 		events("passed", "skipped", "failed")
 	}
 }
