@@ -86,5 +86,6 @@ The SDK provides various type definitions that can be used with the Graph class 
 - `Update`: Represents the different updates to be applied to the graph.
 - `Action`: Represents the different kinds of actions that can be applied to the graph.
 - `DsnpGraphEdge`: Represents a connection in the graph.
-- `DsnpPublicKey`: Represents a published graph key.
+- `DsnpPublicKey`: Represents a published graph key for a DSNP user.
 - `DsnpKeys`: Encapsulates a DSNP user and their associated graph public keys.
+  
