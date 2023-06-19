@@ -1,12 +1,28 @@
 import { Graph } from './graph';
-import { Config } from './models/config';
+import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
+
+function getTestConfig(): Config {
+    let config: Config = {} as Config;
+    config.sdkMaxUsersGraphSize = 100;
+    config.sdkMaxStaleFriendshipDays = 100;
+    config.maxPageId = 100;
+    config.dsnpVersions = [DsnpVersion.Version1_0];
+    config.maxGraphPageSizeBytes = 100;
+    config.maxKeyPageSizeBytes = 100;
+    let schemaConfig = {} as SchemaConfig;
+    schemaConfig.dsnpVersion = DsnpVersion.Version1_0;
+    schemaConfig.connectionType = ConnectionType.Follow;
+    schemaConfig.privacyType = PrivacyType.Public;
+    config.schemaMap = { 1: schemaConfig };
+    return config;
+}
 
 test('printHelloGraph should print "Hello, Graph!"', async () => {
     // Mock the console.log function
     const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
     const graph = new Graph(environment);
     await graph.printHelloGraph();
     expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
@@ -14,11 +30,12 @@ test('printHelloGraph should print "Hello, Graph!"', async () => {
 });
 
 test('getGraphConfig should return the graph config', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config_input = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: config_input};
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    expect(config.sdkMaxUsersGraphSize).toEqual(100);
     await graph.freeGraphState();
 });
 
@@ -41,7 +58,8 @@ test('getGraphConfig with Rococo environment should return the graph config', as
 });
 
 test('initialize graph with low capacity of 100 should return the same capacity', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    let config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment, 100);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
@@ -51,7 +69,8 @@ test('initialize graph with low capacity of 100 should return the same capacity'
 });
 
 test('getGraphStatesCount should be zero after previous graph is freed', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
@@ -61,7 +80,8 @@ test('getGraphStatesCount should be zero after previous graph is freed', async (
 });
 
 test('getGraphStatesCount should be one after graph is initialized', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
@@ -71,7 +91,8 @@ test('getGraphStatesCount should be one after graph is initialized', async () =>
 });
 
 test('getGraphUsersCount should be zero on initialized graph', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
@@ -84,7 +105,8 @@ test('getGraphUsersCount should be zero on initialized graph', async () => {
 });
 
 test('containsUserGraph should return false on initialized graph', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
@@ -94,7 +116,8 @@ test('containsUserGraph should return false on initialized graph', async () => {
 });
 
 test('removeUserGraph should pass through on initialized graph', async () => {
-    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: {} as Config };
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();

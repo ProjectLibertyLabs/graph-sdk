@@ -24,9 +24,9 @@ enum DsnpVersion {
     maxGraphPageSizeBytes: number;
     maxPageId: number;
     maxKeyPageSizeBytes: number;
-    schemaMap: { [key: string]: SchemaConfig };
+    schemaMap: { [key: number]: SchemaConfig };
     dsnpVersions: DsnpVersion[];
   }
   
-  export { Config, ConnectionType, DsnpVersion, SchemaConfig };
+  export { Config, ConnectionType, DsnpVersion, SchemaConfig, PrivacyType };
   

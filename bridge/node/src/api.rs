@@ -37,7 +37,7 @@ pub fn print_hello_graph(mut cx: FunctionContext) -> JsResult<JsString> {
 pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 	let environment_obj = cx.argument::<JsObject>(0)?;
 
-	let environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let environment = unsafe { environment_from_js(&mut cx, environment_obj) }?;
 	let config: &Config = environment.get_config();
 
 	// Convert Config to JsObject
@@ -57,7 +57,7 @@ pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 /// # Safety
 pub fn initialize_graph_state(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let environment_obj = cx.argument::<JsObject>(0)?;
-	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) }?;
 	let graph_state = GraphState::new(rust_environment);
 
 	// Generate a unique identifier for the graph state
@@ -87,7 +87,7 @@ pub fn initialize_graph_state_with_capacity(mut cx: FunctionContext) -> JsResult
 	let environment_obj = cx.argument::<JsObject>(0)?;
 	let capacity = cx.argument::<JsNumber>(1)?;
 	let capacity = capacity.value(&mut cx) as usize;
-	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) };
+	let rust_environment = unsafe { environment_from_js(&mut cx, environment_obj) }?;
 	let graph_state = GraphState::with_capacity(rust_environment, capacity);
 
 	// Generate a unique identifier for the graph state

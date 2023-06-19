@@ -1,4 +1,4 @@
-use dsnp_graph_config::{Config, ConnectionType, Environment, SchemaConfig};
+use dsnp_graph_config::{Config, ConnectionType, DsnpVersion, Environment, SchemaConfig, SchemaId};
 use dsnp_graph_core::{
 	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, Update},
 	dsnp::dsnp_types::{DsnpGraphEdge, DsnpPublicKey},
@@ -7,7 +7,7 @@ use neon::{
 	handle::Handle,
 	object::Object,
 	prelude::{Context, FunctionContext},
-	result::JsResult,
+	result::{JsResult, NeonResult},
 	types::{JsArray, JsNumber, JsObject, JsString, Value},
 };
 
@@ -23,20 +23,19 @@ use neon::{
 pub unsafe fn environment_from_js(
 	cx: &mut FunctionContext,
 	environment_from_js: Handle<JsObject>,
-) -> Environment {
+) -> NeonResult<Environment> {
 	let environment_type_str: Handle<JsString> =
 		environment_from_js.get(cx, "environmentType").unwrap_or(cx.string(""));
 
 	match environment_type_str.value(cx).as_str() {
-		"mainnet" => Environment::Mainnet,
-		"rococo" => Environment::Rococo,
-		"dev" => {
-			let config: Handle<JsObject> =
-				environment_from_js.get(cx, "config").unwrap_or(cx.empty_object());
-			let config = config_from_js(cx, config);
-			Environment::Dev(config)
+		"Mainnet" => Ok(Environment::Mainnet),
+		"Rococo" => Ok(Environment::Rococo),
+		"Dev" => {
+			let config: Handle<JsObject> = environment_from_js.get(cx, "config").unwrap();
+			let config = config_from_js(cx, config)?;
+			Ok(Environment::Dev(config))
 		},
-		_ => Environment::Rococo,
+		_ => cx.throw_error("Invalid environment type"),
 	}
 }
 
@@ -46,10 +45,120 @@ pub unsafe fn environment_from_js(
 /// * `config_from_js` - Neon JsObject containing the config
 /// # Returns
 /// * `Config` - Config object
-pub fn config_from_js(cx: &mut FunctionContext, config_from_js: Handle<JsObject>) -> Config {
-	let config_str: Handle<JsString> = config_from_js.to_string(cx).unwrap_or(cx.string(""));
-	let config_str = config_str.value(cx);
-	Config::try_from(config_str.as_str()).unwrap()
+pub fn config_from_js(
+	cx: &mut FunctionContext,
+	config_from_js: Handle<JsObject>,
+) -> NeonResult<Config> {
+	let sdk_max_users_graph_size: Handle<JsNumber> =
+		config_from_js.get(cx, "sdkMaxUsersGraphSize")?;
+	let sdk_max_users_graph_size = sdk_max_users_graph_size.value(cx) as u32;
+
+	let sdk_max_stale_friendship_days: Handle<JsNumber> =
+		config_from_js.get(cx, "sdkMaxStaleFriendshipDays")?;
+	let sdk_max_stale_friendship_days = sdk_max_stale_friendship_days.value(cx) as u32;
+
+	let max_graph_page_size_bytes: Handle<JsNumber> =
+		config_from_js.get(cx, "maxGraphPageSizeBytes")?;
+	let max_graph_page_size_bytes = max_graph_page_size_bytes.value(cx) as u32;
+
+	let max_page_id: Handle<JsNumber> = config_from_js.get(cx, "maxPageId")?;
+	let max_page_id = max_page_id.value(cx) as u32;
+
+	let max_key_page_size_bytes: Handle<JsNumber> =
+		config_from_js.get(cx, "maxKeyPageSizeBytes")?;
+	let max_key_page_size_bytes = max_key_page_size_bytes.value(cx) as u32;
+
+	let schema_map: Handle<JsObject> = config_from_js.get(cx, "schemaMap")?;
+	let schema_map = schema_map_from_js(cx, schema_map)?;
+
+	let dsnp_versions: Handle<JsArray> = config_from_js.get(cx, "dsnpVersions")?;
+	let dsnp_versions = dsnp_versions_from_js(cx, dsnp_versions)?;
+
+	let config_from_js = Config {
+		sdk_max_users_graph_size,
+		sdk_max_stale_friendship_days,
+		max_graph_page_size_bytes,
+		max_page_id,
+		max_key_page_size_bytes,
+		schema_map,
+		dsnp_versions,
+	};
+
+	Ok(config_from_js)
+}
+
+/// Convert schema map from JSObject to HashMap
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `schema_map_from_js` - Neon JsObject containing the schema map
+/// # Returns
+/// * `HashMap<String, SchemaConfig>` - HashMap of schema configs
+/// # Errors
+/// * Throws a Neon error if the schema map cannot be converted
+pub fn schema_map_from_js(
+	cx: &mut FunctionContext,
+	schema_map_from_js: Handle<JsObject>,
+) -> NeonResult<std::collections::HashMap<SchemaId, SchemaConfig>> {
+	let mut schema_map = std::collections::HashMap::new();
+
+	let schema_map_keys = schema_map_from_js.get_own_property_names(cx)?;
+	for key in schema_map_keys.to_vec(cx).unwrap() {
+		let key_value: Handle<JsString> = key.downcast_or_throw(cx)?;
+		let key_str = key_value.value(cx);
+		let key_u16 = match key_str.as_str().parse::<u16>() {
+			Ok(key_u16) => key_u16,
+			Err(_) => cx.throw_error("Invalid schema id")?,
+		};
+		let schema_config: Handle<JsObject> = schema_map_from_js.get(cx, key)?;
+		let dsnp_version_str: Handle<JsString> = schema_config.get(cx, "dsnpVersion")?;
+		let dsnp_version = match dsnp_version_str.value(cx).as_str() {
+			"1.0" => DsnpVersion::Version1_0,
+			_ => DsnpVersion::Version1_0,
+		};
+		let privacy_type: Handle<'_, JsString> = schema_config.get(cx, "privacyType")?;
+		let privacy_type = match privacy_type.value(cx).as_str() {
+			"public" => dsnp_graph_config::PrivacyType::Public,
+			"private" => dsnp_graph_config::PrivacyType::Private,
+			_ => cx.throw_error("Invalid privacy type")?,
+		};
+
+		let connection_type: Handle<'_, JsString> = schema_config.get(cx, "connectionType")?;
+		let connection_type = match connection_type.value(cx).as_str() {
+			"follow" => ConnectionType::Follow(privacy_type),
+			"friendship" => ConnectionType::Friendship(privacy_type),
+			_ => cx.throw_error("Invalid connection type")?,
+		};
+
+		let schema_config = SchemaConfig { dsnp_version, connection_type };
+		schema_map.insert(key_u16, schema_config);
+	}
+
+	Ok(schema_map)
+}
+
+/// Convert dsnp versions from JSArray to Vec<DsnpVersion>
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `dsnp_versions_from_js` - Neon JsArray containing the dsnp versions
+/// # Returns
+/// * `Vec<DsnpVersion>` - Vec of DsnpVersion
+/// # Errors
+/// * Throws a Neon error if the dsnp versions cannot be converted
+pub fn dsnp_versions_from_js(
+	cx: &mut FunctionContext,
+	dsnp_versions_from_js: Handle<JsArray>,
+) -> NeonResult<Vec<DsnpVersion>> {
+	let mut dsnp_versions = Vec::new();
+	for i in 0..dsnp_versions_from_js.len(cx) {
+		let dsnp_version_str: Handle<'_, JsString> = dsnp_versions_from_js.get(cx, i)?;
+		let dsnp_version_str = dsnp_version_str.value(cx);
+		let dsnp_version = match dsnp_version_str.as_str() {
+			"1.0" => DsnpVersion::Version1_0,
+			_ => cx.throw_error("Invalid dsnp version")?,
+		};
+		dsnp_versions.push(dsnp_version);
+	}
+	Ok(dsnp_versions)
 }
 
 /// Convert rust `Config` to JSObject
@@ -145,7 +254,7 @@ pub fn import_bundle_from_js(
 ) -> Vec<ImportBundle> {
 	let mut import_bundles: Vec<ImportBundle> = Vec::new();
 	for i in 0..import_bundle_js.len(cx) {
-		let import_bundle = import_bundle_js.get(cx, i).unwrap_or(cx.empty_object());
+		let import_bundle: Handle<'_, JsObject> = import_bundle_js.get(cx, i).unwrap();
 		let import_bundle_str: Handle<JsString> =
 			import_bundle.to_string(cx).unwrap_or(cx.string(""));
 		let import_bundle_str = import_bundle_str.value(cx);
