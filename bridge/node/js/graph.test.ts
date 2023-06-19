@@ -121,7 +121,8 @@ test('removeUserGraph should pass through on initialized graph', async () => {
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    await graph.removeUserGraph(1);
+    const removed = await graph.removeUserGraph(1);
+    expect(removed).toEqual(true);
     await graph.freeGraphState();
 });
 

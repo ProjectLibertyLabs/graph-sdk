@@ -38,7 +38,7 @@ export class Graph {
         return graphsdkModule.getGraphUsersCount(this.handle);
     }
 
-    removeUserGraph(dsnpUserId: number): Promise<void> {
+    removeUserGraph(dsnpUserId: number): Promise<boolean> {
         return graphsdkModule.removeUserGraph(this.handle, dsnpUserId);
     }
 

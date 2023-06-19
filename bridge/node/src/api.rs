@@ -203,7 +203,7 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
 /// * Throws a Neon error
-pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
 	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
@@ -218,7 +218,7 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let mut graph_state = graph_state.lock().unwrap();
 	graph_state.remove_user_graph(&dsnp_user_id);
 
-	Ok(cx.undefined())
+	Ok(cx.boolean(true))
 }
 
 /// Function to import user data

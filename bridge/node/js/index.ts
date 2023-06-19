@@ -21,7 +21,7 @@ export interface Native {
     getGraphStatesCount(): Promise<number>;
     getGraphUsersCount(handle: number): Promise<number>;
     containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
-    removeUserGraph(handle: number, dsnpUserId: number): Promise<void>;
+    removeUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
     importUserData(handle: number, payload: [ImportBundle]): Promise<void>;
     exportUpdates(handle: number): Promise<[Update]>;
     getConnectionsForUserGraph(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
