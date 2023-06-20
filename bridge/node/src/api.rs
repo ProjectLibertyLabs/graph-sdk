@@ -1,6 +1,6 @@
-//! # API
-//! This module contains the Neon bindings for the graph state.
-//! This module provides the wrapper functions for the graph state.
+//! API implementation for the DSNP Graph SDK using Neon
+//! This crate provides a bridge between the DSNP graph sdk and Node.js.
+//! It is intended to be used as a dependency in the `@dsnp/graph-sdk` npm package.
 use crate::helper::*;
 use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, PrivacyType};
 use dsnp_graph_core::{
@@ -244,7 +244,7 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 /// * `graph_state_id` - Unique identifier for the graph state
 /// * `dsnp_user_id` - DSNP user id
 /// # Returns
-/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// * `JsResult<JsBoolean>` - Neon JsBoolean
 /// # Errors
 /// * Throws a Neon error
 pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
@@ -271,7 +271,7 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 /// * `graph_state_id` - Unique identifier for the graph state
 /// * `payload` - JSON object for `ImportBundle`
 /// # Returns
-/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// * `JsResult<JsBoolean>` - Neon JsBoolean
 /// # Errors
 /// * Throws a Neon error
 pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsBoolean> {
@@ -368,7 +368,7 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 /// * `graph_state_id` - Unique identifier for the graph state
 /// * `actions` - JSArray containing the actions to apply
 /// # Returns
-/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// * `JsResult<JsBoolean>` - Neon JsBoolean
 /// # Errors
 /// * Throws a Neon error
 pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
@@ -548,7 +548,7 @@ pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// * `cx` - Neon FunctionContext
 /// * `graph_state_id` - Unique identifier for the graph state
 /// # Returns
-/// * `JsResult<JsUndefined>` - Neon JsUndefined
+/// * `JsResult<JsBoolean>` - Neon JsBoolean
 /// # Errors
 /// * Throws a Neon error
 pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsBoolean> {
