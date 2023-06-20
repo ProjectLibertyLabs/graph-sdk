@@ -1,5 +1,5 @@
 use crate::helper::*;
-use dsnp_graph_config::{Config, DsnpUserId};
+use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, PrivacyType};
 use dsnp_graph_core::{
 	api::{
 		api::{GraphAPI, GraphState},
@@ -44,6 +44,47 @@ pub fn get_graph_config(mut cx: FunctionContext) -> JsResult<JsObject> {
 	let config_js = config_to_js(&mut cx, config)?;
 
 	Ok(config_js)
+}
+
+/// Function to get SchemaId for given ConnectionType and PrivacyType
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `connection_type` - ConnectionType string
+/// * `privacy_type` - PrivacyType string
+/// # Returns
+/// * `JsResult<JsNumber>` - Neon JsNumber containing the SchemaId
+/// # Errors
+/// * Throws a Neon error if the SchemaId cannot be found
+pub fn get_schema_id_from_config(mut cx: FunctionContext) -> JsResult<JsNumber> {
+	let environment_obj = cx.argument::<JsObject>(0)?;
+	let environment = unsafe { environment_from_js(&mut cx, environment_obj) }?;
+
+	let connection_type = cx.argument::<JsString>(1)?;
+	let connection_type = connection_type.value(&mut cx);
+
+	let privacy_type = cx.argument::<JsString>(2)?;
+	let privacy_type = privacy_type.value(&mut cx);
+
+	let privacy_type: PrivacyType = match privacy_type.as_str() {
+		"public" => PrivacyType::Public,
+		"private" => PrivacyType::Private,
+		_ => return cx.throw_error("Invalid privacy type"),
+	};
+
+	let connection_type = match connection_type.as_str() {
+		"follow" => ConnectionType::Follow(privacy_type),
+		"friendship" => ConnectionType::Friendship(privacy_type),
+		_ => return cx.throw_error("Invalid connection type"),
+	};
+
+	let config: &Config = environment.get_config();
+	let schema_id = config.get_schema_id_from_connection_type(connection_type);
+	if schema_id.is_none() {
+		return cx.throw_error("SchemaId not found")
+	}
+	let schema_id = schema_id.unwrap();
+
+	Ok(cx.number(schema_id as f64))
 }
 
 /// Create a new graph state
@@ -527,6 +568,7 @@ pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("printHelloGraph", print_hello_graph)?;
 	cx.export_function("getGraphConfig", get_graph_config)?;
+	cx.export_function("getSchemaIdFromConfig", get_schema_id_from_config)?;
 	cx.export_function("initializeGraphState", initialize_graph_state)?;
 	cx.export_function("initializeGraphStateWithCapacity", initialize_graph_state_with_capacity)?;
 	cx.export_function("getGraphStatesCount", get_graph_states_count)?;

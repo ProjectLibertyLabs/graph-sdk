@@ -1,5 +1,5 @@
 import path from "path";
-import { Action, Config, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, Update } from "./models";
+import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, PrivacyType, Update } from "./models";
 
 
 // Load the native neon graphsdk module
@@ -17,6 +17,7 @@ export interface Native {
     initializeGraphState(environment: EnvironmentInterface): number;
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number):number
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
+    getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>;
     getGraphCapacity(handle: number): Promise<number>;
     getGraphStatesCount(): Promise<number>;
     getGraphUsersCount(handle: number): Promise<number>;

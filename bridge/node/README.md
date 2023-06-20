@@ -126,6 +126,7 @@ Creates a new instance of the Graph class.
 - `getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]>`: Retrieves the public keys for the specified DSNP user ID.
 - `deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>`: Deserializes DSNP keys.
 - `getGraphConfig(environment: EnvironmentInterface): Promise<Config>`: Retrieves the graph configuration.
+- `getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>`: Retrieves the schema ID from the graph configuration.  
 - `freeGraphState(): void`: Frees the graph state.
 
 ### Type Definitions
@@ -140,4 +141,6 @@ The SDK provides various type definitions that can be used with the Graph class 
 - `DsnpGraphEdge`: Represents a connection in the graph.
 - `DsnpPublicKey`: Represents a published graph key for a DSNP user.
 - `DsnpKeys`: Encapsulates a DSNP user and their associated graph public keys.
-  
+- `GraphKeyPair`: Represents a key pair for a DSNP user.
+- `PageData`: Represents the page data to be retrieved from the chain.
+- `Connection`: Represents a connection between two DSNP users.- `

@@ -1,5 +1,5 @@
 import { graphsdkModule } from "./index";
-import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys, Config } from "./models";
+import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys, Config, ConnectionType, PrivacyType } from "./models";
 import { EnvironmentInterface } from "./models/environment";
 
 export class Graph {
@@ -20,6 +20,10 @@ export class Graph {
 
     getGraphConfig(environment: EnvironmentInterface): Promise<Config> {
         return graphsdkModule.getGraphConfig(environment);
+    }
+
+    getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number> {
+        return graphsdkModule.getSchemaIdFromConfig(environment, connectionType, privacyType);
     }
 
     getGraphCapacity(): Promise<number> {

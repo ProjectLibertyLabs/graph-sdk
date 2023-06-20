@@ -47,6 +47,8 @@ test('getGraphConfig with Mainnet environment should return the graph config', a
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
     expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    const schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
+    expect(schema_id).toEqual(1);
     await graph.freeGraphState();
 });
 
