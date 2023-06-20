@@ -5,9 +5,9 @@ import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys,
 // Load the native neon graphsdk module
 function loadNativeModule(): Native {
     try {
-        return require(path.join(__dirname, "/graphsdk.node"));
+        return require(path.join(__dirname, "/dsnp_graph_sdk_node.node"));
     } catch (error) {
-        throw new Error("Unable to load the native module graphsdk.node");
+        throw new Error("Unable to load the native module dsnp_graph_sdk_node.node");
     }
 }
 
