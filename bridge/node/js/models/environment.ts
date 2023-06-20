@@ -19,7 +19,6 @@ interface DevEnvironment extends EnvironmentInterface {
     config: Config;
 }
   
-  type EnvironmentConfig = DevEnvironment;
+type EnvironmentConfig = DevEnvironment;
   
-  export { EnvironmentType, Environment, DevEnvironment, EnvironmentConfig, EnvironmentInterface };
-  
+export { EnvironmentType, Environment, DevEnvironment, EnvironmentConfig, EnvironmentInterface };
