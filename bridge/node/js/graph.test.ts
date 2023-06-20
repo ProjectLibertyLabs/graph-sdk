@@ -224,3 +224,81 @@ test('applyActions with few actions should pass through on initialized graph', a
     
     await graph.freeGraphState();
 });
+
+test('getConnectionsForUserGraph with empty connections should return empty array', async () => {
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    // Set up actions
+    const actions = [] as Action[];
+    const action_1 = {
+        type: "Connect",
+        ownerDsnpUserId: 1,
+        connection: {
+            dsnpUserId: 2,
+            schemaId: 1,
+        } as Connection,
+        dsnpKeys: {
+          dsnpUserId: 2,
+          keysHash: 100,
+          keys: [],
+        } as DsnpKeys,
+    } as ConnectAction;
+
+    actions.push(action_1);
+    const applied = await graph.applyActions(actions);
+    expect(applied).toEqual(true);
+    const connections = await graph.getConnectionsForUserGraph(1, 1, false);
+    expect(connections).toBeDefined();
+    expect(connections.length).toEqual(0);
+
+    const forceCalculateGraphs = await graph.forceCalculateGraphs(1);
+    expect(forceCalculateGraphs).toBeDefined();
+    expect(forceCalculateGraphs.length).toEqual(0);
+    await graph.freeGraphState();
+});
+
+test('getConnectionsWithoutKeys with empty connections should return empty array', async () => {
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const connections = await graph.getConnectionsWithoutKeys();
+    expect(connections).toBeDefined();
+    expect(connections.length).toEqual(0);
+
+    expect(async () => {
+        await graph.getOneSidedPrivateFriendshipConnections(1);
+    }).rejects.toThrow('User graph for 1 is not imported');
+
+    await graph.freeGraphState();
+});
+
+test('getPublicKeys with empty connections should return empty array', async () => {
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const connections = await graph.getPublicKeys(1);
+    expect(connections).toBeDefined();
+    expect(connections.length).toEqual(0);
+    await graph.freeGraphState();
+});
+
+test('deserializeDsnpKeys with empty keys should return empty array', async () => {
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    const keys = {          
+        dsnpUserId: 2,
+        keysHash: 100,
+        keys: [],
+    } as DsnpKeys;
+    const connections = await graph.deserializeDsnpKeys(keys);
+    expect(connections).toBeDefined();
+    expect(connections.length).toEqual(0);
+    await graph.freeGraphState();
+});

@@ -50,7 +50,7 @@ export class Graph {
         return graphsdkModule.exportUpdates(this.handle);
     }
 
-    getConnectionsForUserGraph(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<[DsnpGraphEdge]> {
+    getConnectionsForUserGraph(dsnpUserId: number, schemaId: number, includePending: boolean): Promise<DsnpGraphEdge[]> {
         return graphsdkModule.getConnectionsForUserGraph(this.handle, dsnpUserId, schemaId, includePending);
     }
 
@@ -58,27 +58,27 @@ export class Graph {
         return graphsdkModule.applyActions(this.handle, actions);
     }
 
-    forceCalculateGraphs(dsnpUserId: number): Promise<[Update]> {
+    forceCalculateGraphs(dsnpUserId: number): Promise<Update[]> {
         return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 
-    getConnectionsWithoutKeys(): Promise<[number]> {
+    getConnectionsWithoutKeys(): Promise<number[]> {
         return graphsdkModule.getConnectionsWithoutKeys(this.handle);
     }
 
-    getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<[DsnpGraphEdge]> {
+    getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<DsnpGraphEdge[]> {
         return graphsdkModule.getOneSidedPrivateFriendshipConnections(this.handle, dsnpUserId);
     }
 
-    getPublicKeys(dsnpUserId: number): Promise<[DsnpPublicKey]> {
+    getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]> {
         return graphsdkModule.getPublicKeys(this.handle, dsnpUserId);
     }
 
-    deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]> {
+    deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]> {
         return graphsdkModule.deserializeDsnpKeys(keys);
     }
 
-    freeGraphState(): Promise<void> {
+    freeGraphState(): Promise<boolean> {
         return graphsdkModule.freeGraphState(this.handle);
     }
     

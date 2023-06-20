@@ -561,7 +561,7 @@ pub fn connection_to_js<'a, C: Context<'a>>(
 	let obj = cx.empty_object();
 	let dsnp_user_id = cx.number(edge.user_id as f64);
 	obj.set(cx, "userId", dsnp_user_id)?;
-	let since = cx.number(edge.since as f64);
+	let since: Handle<'_, JsNumber> = cx.number(edge.since as f64);
 	obj.set(cx, "since", since)?;
 	Ok(obj)
 }
@@ -701,7 +701,7 @@ pub fn public_key_to_js<'a, C: Context<'a>>(
 	obj.set(cx, "key", key_buffer)?;
 
 	let public_key_id = public_key.key_id.unwrap_or_default();
-	let public_key_id = public_key_id.try_into().map(|x: u64| x as f64).unwrap_or_default();
+	let public_key_id = public_key_id as f64;
 	let key_id = cx.number(public_key_id);
 	obj.set(cx, "keyId", key_id)?;
 

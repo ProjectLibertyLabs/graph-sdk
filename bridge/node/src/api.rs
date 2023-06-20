@@ -293,7 +293,7 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
+	let dsnp_user_id: Handle<'_, JsNumber> = cx.argument::<JsNumber>(1)?;
 	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
 	let schema_id = cx.argument::<JsNumber>(2)?;
 	let schema_id = schema_id.value(&mut cx) as u16;
@@ -507,7 +507,7 @@ pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
 /// * Throws a Neon error
-pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
 
@@ -520,7 +520,7 @@ pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 	let graph_state = graph_state.lock().unwrap();
 	drop(graph_state);
 
-	Ok(cx.undefined())
+	Ok(cx.boolean(true))
 }
 
 #[neon::main]
