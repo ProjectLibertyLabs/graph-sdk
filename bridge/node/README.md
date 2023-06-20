@@ -144,3 +144,198 @@ The SDK provides various type definitions that can be used with the Graph class 
 - `GraphKeyPair`: Represents a key pair for a DSNP user.
 - `PageData`: Represents the page data to be retrieved from the chain.
 - `Connection`: Represents a connection between two DSNP users.- `
+
+## Examples
+
+### Create and export a new graph
+  
+  ```typescript
+  import { Graph, EnvironmentInterface, EnvironmentType } from "@dsnp/graph-sdk";
+
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+
+  const graph = new Graph(environment);
+
+  const public_follow_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
+
+  const connect_action = {
+    type: "Connect",
+    ownerDsnpUserId: 1,
+    connection: {
+      dsnpUserId: 2,
+      schemaId: public_follow_schema_id,
+    },
+    dsnpKeys: {
+      dsnpUserId: 2,
+      keysHash: 100,
+      keys: [],
+    },
+  };
+
+  await graph.applyActions([connect_action]);
+
+  const updates = await graph.exportUpdates();
+
+  graph.freeGraphState();
+
+  ```
+
+### Add a new graph key
+
+  ```typescript
+  import { Graph, EnvironmentInterface, EnvironmentType } from "@dsnp/graph-sdk";
+
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+
+  const graph = new Graph(environment);
+
+  const ownerDsnpUserId = 1;
+  const x25519_public_key = [ 15, 234, 44, 175, 171, 220, 131, 117, 43, 227, 111, 165, 52, 150, 64, 218, 44, 130, 138, 221, 10, 41, 13, 241, 60, 210, 216, 23, 62, 178, 73, 111,];
+
+  const addGraphKeyAction = {
+      type: "AddGraphKey",
+      ownerDsnpUserId: dsnpOwnerId,
+      newPublicKey: new Uint8Array(x25519_public_key),
+  } as AddGraphKeyAction;
+
+  await graph.applyActions([addGraphKeyAction]);
+
+  const updates = await graph.exportUpdates();
+
+  graph.freeGraphState();
+  
+  ```
+
+### Read and deserialize published graph keys
+
+  ```typescript
+
+  import { Graph, EnvironmentInterface, EnvironmentType, DsnpPublicKey } from "@dsnp/graph-sdk";
+
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+
+  const graph = new Graph(environment);
+
+  const dsnpUserId = 1000;
+  // published keys blobs fetched from blockchain
+  const published_keys_blob = [ 64, 15, 234, 44, 175, 171, 220, 131, 117, 43, 227, 111, 165, 52, 150, 64, 218, 44, 130, 138, 221, 10, 41, 13, 241, 60, 210, 216, 23, 62, 178, 73, 111,];
+
+  let dsnp_keys ={
+        dsnpUserId: dsnp_key_owner,
+        keysHash: 100,
+        keys: [
+            {
+                index: 0,
+                content: new Uint8Array(published_keys_blob),
+            }
+
+         ] as KeyData[],
+    } as DsnpKeys;
+
+  const deserialized_keys = await graph.deserializeDsnpKeys(dsnp_keys);
+
+  graph.freeGraphState();
+
+  ```
+
+### Update a Private Follow graph
+
+  ```typescript
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType Mainnet };
+  const graph = new Graph(environment);
+  const dsnpOwnerId = 1;
+  const private_follow_graph_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Private);
+  const import_bundle = {
+      dsnpUserId: dsnpOwnerId,
+      schemaId: private_follow_graph_schema_id,
+      keyPairs: [/* get key-pairs associated with the my_dsnp_user_id user from wallet */],
+      dsnpKeys: {
+          dsnpUserId: dsnpOwnerId,
+          keysHash: 100, // get from blockchain
+          keys: [/* published keys got from blockchain */],
+      } as DsnpKeys,
+      pages: [/* published graph pages got from blockchain */],
+  } as ImportBundle;
+
+  const imported = await graph.importUserData([import_bundle]);
+
+  const connect_action: ConnectAction = {
+      type: "Connect",
+      ownerDsnpUserId: dsnpOwnerId,
+      connection: {
+          dsnpUserId: 2,
+          schemaId: private_follow_graph_schema_id,
+      } as Connection,
+  } as ConnectAction;
+  const actions = [] as Action[];
+  actions.push(connect_action);
+  const applied = await graph.applyActions(actions);
+
+  const exported_updates = await graph.exportUpdates();
+
+  graph.freeGraphState();
+
+  ```
+
+### Update a Private Friendship graph
+
+  ```typescript
+  const environment: EnvironmentInterface = { environmentType: EnvironmentType Mainnet };
+
+  const graph = new Graph(environment);
+
+  const dsnpOwnerId = 1;
+
+  const private_friendship_graph_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Friendship, PrivacyType.Private);
+
+  const import_bundle = {
+      dsnpUserId: dsnpOwnerId,
+      schemaId: private_friendship_graph_schema_id,
+      keyPairs: [/* get key-pairs associated with the my_dsnp_user_id user from wallet */],
+      dsnpKeys: {
+          dsnpUserId: dsnpOwnerId,
+          keysHash: 100, // get from blockchain
+          keys: [/* published keys got from blockchain */],
+      } as DsnpKeys,
+      pages: [/* published graph pages got from blockchain */],
+  } as ImportBundle;
+
+  const imported = await graph.importUserData([import_bundle]);
+
+  // get all associated user without keys so we can fetch and import keys for them
+  const user_without_keys = await graph.getConnectionsWithoutKeys();
+  let users_import_bundles = [] as ImportBundle[];
+  for (const user of user_without_keys) {
+    let user_dsnp_keys = DsnpKeys {..}  // fetch published DsnpKeys for user
+    let user_pages = .. // fetch published private friendship pages for the user
+    let user_import_bundle = ImportBundle {
+      dsnpUserId: user,
+      schemaId: private_friendship_graph_schema_id,
+      keyPairs: []. //  empty key pairs for user since we don't know and need their secret keys
+      dsnpKeys: user_dsnp_keys,
+      pages: user_pages,
+    } as ImportBundle;
+  }
+
+  const imported = await graph.importUserData(users_import_bundles);
+
+  const connect_action: ConnectAction = {
+      type: "Connect",
+      ownerDsnpUserId: dsnpOwnerId,
+      connection: {
+          dsnpUserId: 2,
+          schemaId: private_friendship_graph_schema_id,
+      } as Connection,
+    dsnKeys: {
+      dsnpUserId: 2,
+      keysHash: 100,
+      keys: [/* get keys from chain for user 2 */],
+    } as DsnpKeys,
+  } as ConnectAction;
+
+  const actions = [] as Action[];
+  actions.push(connect_action);
+
+  const applied = await graph.applyActions(actions);
+  
+  ```
