@@ -10,6 +10,8 @@ use dsnp_graph_config::{
 	GraphKeyType, InputValidation, SchemaId,
 };
 pub use dsnp_graph_config::{ConnectionType, PageId, PrivacyType};
+use log::Level;
+use log_result_proc_macro::log_result_err;
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashSet, fmt::Debug};
 
@@ -34,6 +36,7 @@ pub struct PageData {
 
 /// implementing input validation for Page Data
 impl InputValidation for PageData {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.content.len() > 0 && self.content_hash == PageHash::default() {
 			return DsnpGraphResult::Err(InvalidInput(format!(
@@ -60,6 +63,7 @@ pub struct KeyData {
 
 /// implementing input validation for key Data
 impl InputValidation for KeyData {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.content.is_empty() {
 			return DsnpGraphResult::Err(InvalidInput("key_data content is empty!".to_string()))
@@ -86,6 +90,7 @@ pub struct GraphKeyPair {
 
 /// implementing input validation for import bundle
 impl InputValidation for GraphKeyPair {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.public_key.is_empty() {
 			return DsnpGraphResult::Err(InvalidPublicKey)
@@ -131,15 +136,9 @@ pub struct ImportBundle {
 	pub pages: Vec<PageData>,
 }
 
-impl TryFrom<&str> for ImportBundle {
-	type Error = serde_json::Error;
-	fn try_from(s: &str) -> Result<Self, Self::Error> {
-		serde_json::from_str(s)
-	}
-}
-
 /// implementing input validation for import bundle
 impl InputValidation for ImportBundle {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
 			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
@@ -187,6 +186,7 @@ pub struct DsnpKeys {
 
 /// implementing input validation for Dsnp Keys
 impl InputValidation for DsnpKeys {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
 			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
@@ -224,14 +224,9 @@ pub struct Connection {
 	pub schema_id: SchemaId,
 }
 
-impl Connection {
-	/// function to deserialize a connection from a string
-	pub fn try_from(s: &str) -> DsnpGraphResult<Self> {
-		serde_json::from_str(s).map_err(|_| InvalidInput("Invalid Connection".to_string()))
-	}
-}
 /// implementing input validation for Connection
 impl InputValidation for Connection {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
 			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
@@ -298,6 +293,7 @@ impl Action {
 
 /// implementing input validation for Action
 impl InputValidation for Action {
+	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.owner_dsnp_user_id() == 0 {
 			return DsnpGraphResult::Err(InvalidDsnpUserId(self.owner_dsnp_user_id()))

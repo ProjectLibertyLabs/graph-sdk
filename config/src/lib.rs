@@ -8,7 +8,10 @@ use apache_avro::Schema;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
-use std::collections::hash_map::HashMap;
+use std::{
+	collections::hash_map::HashMap,
+	fmt::{Display, Formatter},
+};
 
 /// SchemaId type
 pub type SchemaId = u16;
@@ -73,6 +76,22 @@ pub enum ConnectionType {
 	/// side can revoke the connection for both sides
 	#[serde(rename = "friendship")]
 	Friendship(PrivacyType),
+}
+
+impl Display for ConnectionType {
+	fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), std::fmt::Error> {
+		use ConnectionType::*;
+		write!(
+			f,
+			"{}",
+			match self {
+				Follow(PrivacyType::Public) => "Follow(Public)",
+				Follow(PrivacyType::Private) => "Follow(Private)",
+				Friendship(PrivacyType::Public) => "Friendship(Public)",
+				Friendship(PrivacyType::Private) => "Friendship(Private)",
+			}
+		)
+	}
 }
 
 impl ConnectionType {
@@ -172,7 +191,7 @@ pub struct Config {
 impl TryFrom<&str> for Config {
 	type Error = serde_json::Error;
 	fn try_from(s: &str) -> Result<Self, Self::Error> {
-		serde_json::from_str(s)
+		log_err!(serde_json::from_str(s))
 	}
 }
 
@@ -182,6 +201,7 @@ impl Config {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
 			return Some(schema_config.dsnp_version)
 		}
+		log::warn!("no schema config found for schema ID {}", schema_id);
 		None
 	}
 
@@ -193,6 +213,7 @@ impl Config {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
 			return Some(schema_config.connection_type)
 		}
+		log::warn!("no schema config found for schema ID {}", schema_id);
 		None
 	}
 
@@ -201,7 +222,8 @@ impl Config {
 		&self,
 		connection_type: ConnectionType,
 	) -> Option<SchemaId> {
-		self.schema_map
+		match self
+			.schema_map
 			.iter()
 			.filter_map(|(k, v)| {
 				if v.connection_type == connection_type {
@@ -210,12 +232,20 @@ impl Config {
 				None
 			})
 			.next()
+		{
+			Some(id) => Some(id),
+			None => {
+				log::warn!("no schema id found for connection type {}", connection_type);
+				None
+			},
+		}
 	}
 }
 
 #[cfg(test)]
 mod test {
 	use super::*;
+	use test_log::test;
 
 	#[test]
 	fn connection_type_privacy_getter() {

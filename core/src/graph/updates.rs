@@ -8,6 +8,8 @@ use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
 	SchemaId,
 };
+use log::Level;
+use log_result_proc_macro::log_result_err;
 use std::{cmp::Ordering, collections::HashSet};
 
 /// Update event for a schema
@@ -44,6 +46,7 @@ impl UpdateTracker {
 	}
 
 	/// registers an update event
+	#[log_result_err(Level::Info)]
 	pub fn register_update(&mut self, event: &UpdateEvent) -> DsnpGraphResult<()> {
 		if self.contains(event) {
 			return Err(DsnpGraphError::EventExists)
@@ -60,6 +63,7 @@ impl UpdateTracker {
 	}
 
 	/// registers multiple update events
+	#[log_result_err(Level::Info)]
 	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> DsnpGraphResult<()> {
 		if events.iter().any(|e| self.contains(e)) {
 			return Err(DsnpGraphError::DuplicateUpdateEvents)
