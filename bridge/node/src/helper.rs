@@ -1,3 +1,4 @@
+//! Helper functions for converting between JS and Rust types and vice versa
 use dsnp_graph_config::{
 	Config, ConnectionType, DsnpUserId, DsnpVersion, Environment, PageId, SchemaConfig, SchemaId,
 };
