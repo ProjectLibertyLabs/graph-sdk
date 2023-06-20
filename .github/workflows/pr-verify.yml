@@ -263,7 +263,7 @@ jobs:
           FULL_SHA: ${{ github.sha }}
       - name: Build NPM Package
         working-directory: bridge/node
-        run: npm run native:build-release
+        run: npm run native:build-release && cp README.md dist/README.md
       - name: Publish NPM Package
         working-directory: bridge/node
         run: npm publish --tag next --access public
