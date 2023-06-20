@@ -230,11 +230,11 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
 /// * Throws a Neon error
-pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
 	let payload = cx.argument::<JsArray>(1)?;
-	let rust_payload: Vec<ImportBundle> = import_bundle_from_js(&mut cx, payload);
+	let rust_payload: Vec<ImportBundle> = import_bundle_from_js(&mut cx, payload)?;
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -246,7 +246,7 @@ pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 	let import_result = graph_state.import_users_data(&rust_payload);
 	match import_result {
-		Ok(_) => Ok(cx.undefined()),
+		Ok(_) => Ok(cx.boolean(true)),
 		Err(e) => cx.throw_error(e.to_string()),
 	}
 }
@@ -328,10 +328,10 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 /// # Errors
 /// * Throws a Neon error
 pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
-	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id: Handle<'_, JsNumber> = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let actions = cx.argument::<JsArray>(1)?;
-	let rust_actions: Vec<Action> = actions_from_js(&mut cx, actions);
+	let actions: Handle<'_, JsArray> = cx.argument::<JsArray>(1)?;
+	let rust_actions: Vec<Action> = actions_from_js(&mut cx, actions)?;
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -490,10 +490,8 @@ pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 /// # Errors
 /// * Throws a Neon error
 pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
-	let keys = cx.argument::<JsObject>(0)?;
-	let try_keys_str = keys.to_string(&mut cx)?;
-	let keys_str = try_keys_str.value(&mut cx);
-	let rust_keys: DsnpKeys = DsnpKeys::try_from(keys_str.as_str()).unwrap();
+	let keys: Handle<'_, JsObject> = cx.argument::<JsObject>(0)?;
+	let rust_keys: DsnpKeys = dsnp_keys_from_js(&mut cx, keys)?;
 	let deserialized_keys: Vec<DsnpPublicKey> =
 		GraphState::deserialize_dsnp_keys(&rust_keys).unwrap_or_default();
 	let keys_js = public_keys_to_js(&mut cx, deserialized_keys)?;
@@ -539,7 +537,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("importUserData", import_user_data)?;
 	cx.export_function("exportUpdates", export_graph_updates)?;
 	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
-	cx.export_function("applyActions", apply_actions)?;
+	//cx.export_function("applyActions", apply_actions)?;
 	cx.export_function("forceCalculateGraphs", force_calculate_graphs)?;
 	cx.export_function("getConnectionsWithoutKeys", get_connections_without_keys)?;
 	cx.export_function(

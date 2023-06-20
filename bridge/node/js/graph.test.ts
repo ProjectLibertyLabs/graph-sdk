@@ -1,4 +1,5 @@
 import { Graph } from './graph';
+import { PageData, GraphKeyPair, DsnpKeys, ImportBundle } from './models';
 import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
@@ -126,5 +127,55 @@ test('removeUserGraph should pass through on initialized graph', async () => {
     await graph.freeGraphState();
 });
 
+test('importUserData should pass through on initialized graph', async () => {
+    const config = getTestConfig();
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    // Set up import data
+    const dsnpUserId1 = 1;
+    const dsnpUserId2 = 2;
 
-  
+    const pageData1: PageData = {
+      pageId: 1,
+      content: new Uint8Array([24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0]),
+      contentHash: 100,
+    };
+
+    const keyPairs1: GraphKeyPair[] = [];
+    const keyPairs2: GraphKeyPair[] = [];
+
+    const dsnpKeys1: DsnpKeys = {
+      dsnpUserId: dsnpUserId1,
+      keysHash: 100,
+      keys: [],
+    };
+
+    const dsnpKeys2: DsnpKeys = {
+      dsnpUserId: dsnpUserId2,
+      keysHash: 100,
+      keys: [],
+    };
+
+    const importBundle1: ImportBundle = {
+      dsnpUserId: dsnpUserId1,
+      schemaId: 1,
+      keyPairs: keyPairs1,
+      dsnpKeys: dsnpKeys1,
+      pages: [pageData1],
+    };
+
+    const importBundle2: ImportBundle = {
+      dsnpUserId: dsnpUserId2,
+      schemaId: 1,
+      keyPairs: keyPairs2,
+      dsnpKeys: dsnpKeys2,
+      pages: [pageData1],
+    };
+
+    // Import user data for each ImportBundle
+    const imported = await graph.importUserData([importBundle1, importBundle2]);
+    expect(imported).toEqual(true);
+    await graph.freeGraphState();
+});

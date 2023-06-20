@@ -42,11 +42,11 @@ export class Graph {
         return graphsdkModule.removeUserGraph(this.handle, dsnpUserId);
     }
 
-    importUserData(payload: [ImportBundle]): Promise<void> {
+    importUserData(payload: ImportBundle[]): Promise<boolean> {
         return graphsdkModule.importUserData(this.handle, payload);
     }
 
-    exportUpdates(): Promise<[Update]> {
+    exportUpdates(): Promise<Update[]> {
         return graphsdkModule.exportUpdates(this.handle);
     }
 
@@ -54,7 +54,7 @@ export class Graph {
         return graphsdkModule.getConnectionsForUserGraph(this.handle, dsnpUserId, schemaId, includePending);
     }
 
-    applyActions(actions: [Action]): Promise<void> {
+    applyActions(actions: Action[]): Promise<boolean> {
         return graphsdkModule.applyActions(this.handle, actions);
     }
 

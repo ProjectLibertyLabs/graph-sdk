@@ -185,13 +185,6 @@ pub struct DsnpKeys {
 	pub keys: Vec<KeyData>,
 }
 
-impl DsnpKeys {
-	/// function to deserialize a DsnpKeys from a string
-	pub fn try_from(s: &str) -> DsnpGraphResult<Self> {
-		serde_json::from_str(s).map_err(|_| InvalidInput("Invalid DsnpKeys".to_string()))
-	}
-}
-
 /// implementing input validation for Dsnp Keys
 impl InputValidation for DsnpKeys {
 	fn validate(&self) -> DsnpGraphResult<()> {
