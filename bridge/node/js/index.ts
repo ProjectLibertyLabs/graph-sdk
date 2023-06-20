@@ -1,13 +1,13 @@
 import path from "path";
-import { Action, Config, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, Update } from "./models";
+import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, PrivacyType, Update } from "./models";
 
 
 // Load the native neon graphsdk module
 function loadNativeModule(): Native {
     try {
-        return require(path.join(__dirname, "/graphsdk.node"));
+        return require(path.join(__dirname, "/dsnp_graph_sdk_node.node"));
     } catch (error) {
-        throw new Error("Unable to load the native module graphsdk.node");
+        throw new Error("Unable to load the native module dsnp_graph_sdk_node.node");
     }
 }
 
@@ -17,22 +17,22 @@ export interface Native {
     initializeGraphState(environment: EnvironmentInterface): number;
     initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number):number
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
+    getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>;
     getGraphCapacity(handle: number): Promise<number>;
-    getGraphSize(handle: number): Promise<number>;
-    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
+    getGraphStatesCount(): Promise<number>;
     getGraphUsersCount(handle: number): Promise<number>;
-    removeUserGraph(handle: number, dsnpUserId: number): Promise<void>;
-    importUserData(handle: number, payload: [ImportBundle]): Promise<void>;
-    exportUpdates(handle: number): Promise<Update>;
-    getConnectionsForUserGraphUpdates(handle: number, dsnpUserId: number, schemaId: string, includePending: boolean):Promise<[DsnpGraphEdge]>;
-    applyActions(handle: number, actions: [Action]): Promise<void>;
-    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update>;
-    getConnectionsWithoutKeys(handle: number): Promise<[number]>;
-    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<[DsnpGraphEdge]>;
-    getPublicKeys(handle: number, dsnpUserId: number): Promise<[DsnpPublicKey]>;
-    deserializeDsnpKeys(keys: DsnpKeys): Promise<[DsnpPublicKey]>;
-    freeGraphState(handle: number): Promise<void>;
-    freeAllGraphStates(): Promise<void>;
+    containsUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
+    removeUserGraph(handle: number, dsnpUserId: number): Promise<boolean>;
+    importUserData(handle: number, payload: ImportBundle[]): Promise<boolean>;
+    applyActions(handle: number, actions: Action[]): Promise<boolean>;
+    exportUpdates(handle: number): Promise<Update[]>;
+    getConnectionsForUserGraph(handle: number, dsnpUserId: number, schemaId: number, includePending: boolean):Promise<DsnpGraphEdge[]>;
+    forceCalculateGraphs(handle: number, dsnpUserId: number): Promise<Update[]>;
+    getConnectionsWithoutKeys(handle: number): Promise<number[]>;
+    getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<DsnpGraphEdge[]>;
+    getPublicKeys(handle: number, dsnpUserId: number): Promise<DsnpPublicKey[]>;
+    deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>;
+    freeGraphState(handle: number): Promise<boolean>;
 }
 
 // Export the graphsdk module

@@ -1,6 +1,6 @@
 {
   "name": "@dsnp/graph-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "author": "Amplica Labs",
   "license": "ISC",
   "description": "dsnp-graph-sdk-node",
@@ -9,10 +9,10 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
-    "cp:graphsdk.node": "cp graphsdk.node dist/js/ && cp graphsdk.node js/",
-    "native:build": "tsc && cargo-cp-artifact -a cdylib graphsdk graphsdk.node -- cargo build --message-format=json-render-diagnostics",
+    "cp:dsnp_graph_sdk_node.node": "cp dsnp_graph_sdk_node.node dist/js/ && cp dsnp_graph_sdk_node.node js/",
+    "native:build": "tsc && cargo-cp-artifact -a cdylib dsnp_graph_sdk_node dsnp_graph_sdk_node.node -- cargo build --message-format=json-render-diagnostics",
     "native:build-debug": "npm run native:build --",
-    "native:build-release": "npm run native:build -- --release && npm run cp:graphsdk.node",
+    "native:build-release": "npm run native:build -- --release && npm run cp:dsnp_graph_sdk_node.node",
     "test:cargo": "cargo test",
     "lint": "eslint js/ --ext .ts",
     "lint:fix": "eslint --fix js/ --ext .ts"
@@ -48,5 +48,5 @@
   "bugs": {
     "url": "https://github.com/LibertyDSNP/graph-sdk/issues"
   },
-  "homepage": "https://github.com/LibertyDSNP/graph-sdk#readme"
+  "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md"
 }

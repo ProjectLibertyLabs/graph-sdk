@@ -12,21 +12,25 @@ use dsnp_graph_config::{
 pub use dsnp_graph_config::{ConnectionType, PageId, PrivacyType};
 use log::Level;
 use log_result_proc_macro::log_result_err;
+use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashSet, fmt::Debug};
 
 /// Page Hash type
 pub type PageHash = u32;
 
 /// Raw page of Graph (or Key) data
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct PageData {
 	/// Id of the page
+	#[serde(rename = "pageId")]
 	pub page_id: PageId,
 
 	/// raw content of page data
+	#[serde(rename = "content")]
 	pub content: Vec<u8>,
 
 	/// hash value of content
+	#[serde(rename = "contentHash")]
 	pub content_hash: PageHash,
 }
 
@@ -46,12 +50,14 @@ impl InputValidation for PageData {
 }
 
 /// Represents a published graph key
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Serialize, Deserialize)]
 pub struct KeyData {
 	/// index of the key stored on chain
+	#[serde(rename = "index")]
 	pub index: u16,
 
 	/// raw content of key data
+	#[serde(rename = "content")]
 	pub content: Vec<u8>,
 }
 
@@ -67,15 +73,18 @@ impl InputValidation for KeyData {
 }
 
 /// Key-pair wrapper provided by wallet
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 pub struct GraphKeyPair {
 	/// key pair type
+	#[serde(rename = "keyType")]
 	pub key_type: GraphKeyType,
 
 	/// public key raw
+	#[serde(rename = "publicKey")]
 	pub public_key: Vec<u8>,
 
 	/// secret key raw
+	#[serde(rename = "secretKey")]
 	pub secret_key: Vec<u8>,
 }
 
@@ -104,21 +113,26 @@ pub struct ResolvedKeyPair {
 }
 
 /// Encapsulates all the decryption keys and page data that need to be retrieved from chain
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ImportBundle {
 	/// graph owner dsnp user id
+	#[serde(rename = "dsnpUserId")]
 	pub dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
+	#[serde(rename = "schemaId")]
 	pub schema_id: SchemaId,
 
 	/// key pairs associated with this graph which is used for encryption and PRI generation
+	#[serde(rename = "keyPairs")]
 	pub key_pairs: Vec<GraphKeyPair>,
 
 	/// published dsnp keys associated with this dsnp user
+	#[serde(rename = "dsnpKeys")]
 	pub dsnp_keys: DsnpKeys,
 
 	/// Page data containing the social graph retrieved from chain
+	#[serde(rename = "pages")]
 	pub pages: Vec<PageData>,
 }
 
@@ -155,15 +169,18 @@ impl InputValidation for ImportBundle {
 /// Encapsulates a dsnp user and their associated graph public keys
 /// It is primarily used for PRI calculations
 #[repr(C)]
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct DsnpKeys {
 	/// dsnp user id
+	#[serde(rename = "dsnpUserId")]
 	pub dsnp_user_id: DsnpUserId,
 
 	/// content hash of itemized page
+	#[serde(rename = "keysHash")]
 	pub keys_hash: PageHash,
 
 	/// public keys for the dsnp user
+	#[serde(rename = "keys")]
 	pub keys: Vec<KeyData>,
 }
 
@@ -196,12 +213,14 @@ impl InputValidation for DsnpKeys {
 
 /// A connection representation in graph sdk
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Connection {
 	/// dsnp user id of the user that this connection is associated with
+	#[serde(rename = "dsnpUserId")]
 	pub dsnp_user_id: DsnpUserId,
 
 	/// Schema id of imported data
+	#[serde(rename = "schemaId")]
 	pub schema_id: SchemaId,
 }
 
@@ -222,35 +241,42 @@ impl InputValidation for Connection {
 
 /// Different kind of actions that can be applied to the graph
 #[repr(C)]
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Action {
 	/// an action that defines adding a connection in the social graph
 	Connect {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// connection details
+		#[serde(rename = "connection")]
 		connection: Connection,
 
 		/// optional keys to import for the connection. Mostly useful for private friendships.
+		#[serde(rename = "dsnpKeys")]
 		dsnp_keys: Option<DsnpKeys>,
 	},
 
 	/// an action that defines removing an existing connection from social graph
 	Disconnect {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// connection details
+		#[serde(rename = "connection")]
 		connection: Connection,
 	},
 
 	/// an action that defines adding a new key to chain
 	AddGraphKey {
 		/// owner of the social graph
+		#[serde(rename = "ownerDsnpUserId")]
 		owner_dsnp_user_id: DsnpUserId,
 
 		/// public key
+		#[serde(rename = "newPublicKey")]
 		new_public_key: Vec<u8>,
 	},
 }
