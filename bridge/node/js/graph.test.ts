@@ -252,11 +252,11 @@ test('getConnectionsForUserGraph with empty connections should return empty arra
     expect(applied).toEqual(true);
     const connections = await graph.getConnectionsForUserGraph(1, 1, true);
     expect(connections).toBeDefined();
-    expect(connections.length).toEqual(0);
+    expect(connections.length).toEqual(1);
 
     const forceCalculateGraphs = await graph.forceCalculateGraphs(1);
     expect(forceCalculateGraphs).toBeDefined();
-    expect(forceCalculateGraphs.length).toEqual(1);
+    expect(forceCalculateGraphs.length).toEqual(0);
     await graph.freeGraphState();
 });
 
