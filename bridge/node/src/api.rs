@@ -327,7 +327,7 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 /// * `JsResult<JsUndefined>` - Neon JsUndefined
 /// # Errors
 /// * Throws a Neon error
-pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
+pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id: Handle<'_, JsNumber> = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
 	let actions: Handle<'_, JsArray> = cx.argument::<JsArray>(1)?;
@@ -343,7 +343,7 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsUndefined> {
 
 	let apply_result = graph_state.apply_actions(&rust_actions);
 	match apply_result {
-		Ok(_) => Ok(cx.undefined()),
+		Ok(_) => Ok(cx.boolean(true)),
 		Err(e) => cx.throw_error(e.to_string()),
 	}
 }
@@ -537,7 +537,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("importUserData", import_user_data)?;
 	cx.export_function("exportUpdates", export_graph_updates)?;
 	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
-	//cx.export_function("applyActions", apply_actions)?;
+	cx.export_function("applyActions", apply_actions)?;
 	cx.export_function("forceCalculateGraphs", force_calculate_graphs)?;
 	cx.export_function("getConnectionsWithoutKeys", get_connections_without_keys)?;
 	cx.export_function(

@@ -4,14 +4,14 @@ import { DevEnvironment, EnvironmentType } from './models/environment';
 
 
 function getTestConfig(): Config {
-    let config: Config = {} as Config;
+    const config: Config = {} as Config;
     config.sdkMaxUsersGraphSize = 100;
     config.sdkMaxStaleFriendshipDays = 100;
     config.maxPageId = 100;
     config.dsnpVersions = [DsnpVersion.Version1_0];
     config.maxGraphPageSizeBytes = 100;
     config.maxKeyPageSizeBytes = 100;
-    let schemaConfig = {} as SchemaConfig;
+    const schemaConfig = {} as SchemaConfig;
     schemaConfig.dsnpVersion = DsnpVersion.Version1_0;
     schemaConfig.connectionType = ConnectionType.Follow;
     schemaConfig.privacyType = PrivacyType.Public;

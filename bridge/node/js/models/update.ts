@@ -3,7 +3,7 @@ export interface PersistPageUpdate {
     ownerDsnpUserId: number;
     schemaId: number;
     pageId: number;
-    prevHash: Uint8Array;
+    prevHash: number;
     payload: Uint8Array;
 }
   
@@ -12,13 +12,13 @@ export interface DeletePageUpdate {
     ownerDsnpUserId: number;
     schemaId: number;
     pageId: number;
-    prevHash: Uint8Array;
+    prevHash: number;
 }
   
 export interface AddKeyUpdate {
     type: "AddKey";
     ownerDsnpUserId: number;
-    prevHash: Uint8Array;
+    prevHash: number;
     payload: Uint8Array;
 }
 

@@ -13,7 +13,7 @@ use neon::{
 	object::Object,
 	prelude::{Context, FunctionContext},
 	result::{JsResult, NeonResult},
-	types::{buffer::TypedArray, JsArray, JsNumber, JsObject, JsString, JsTypedArray},
+	types::{buffer::TypedArray, JsArray, JsBuffer, JsNumber, JsObject, JsString, JsTypedArray},
 };
 
 /// Convert environment from JSObject to Environment
@@ -466,7 +466,10 @@ pub fn updates_to_js<'a, C: Context<'a>>(
 /// * `JsResult<JsObject>` - Neon JsObject
 /// # Errors
 /// * Throws a Neon error if the update cannot be converted
-pub fn update_to_js<'a, C: Context<'a>>(cx: &mut C, update: &Update) -> JsResult<'a, JsObject> {
+pub fn update_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	update: &Update,
+) -> NeonResult<Handle<'a, JsObject>> {
 	let obj = cx.empty_object();
 	match update {
 		Update::AddKey { owner_dsnp_user_id, prev_hash, payload } => {
@@ -477,8 +480,11 @@ pub fn update_to_js<'a, C: Context<'a>>(cx: &mut C, update: &Update) -> JsResult
 
 			let prev_hash = cx.number(*prev_hash);
 			obj.set(cx, "prevHash", prev_hash)?;
-			let payload_array: Handle<JsArray> = vec_u8_to_js_array(cx, payload);
-			obj.set(cx, "payload", payload_array)?;
+			let len = payload.len().try_into().unwrap();
+			let mut payload_buffer = JsBuffer::new(cx, len)?;
+
+			payload_buffer.as_mut_slice(cx).copy_from_slice(&payload);
+			obj.set(cx, "payload", payload_buffer)?;
 		},
 		Update::PersistPage { owner_dsnp_user_id, schema_id, page_id, prev_hash, payload } => {
 			let type_update = cx.string("PersistPage");
@@ -495,8 +501,11 @@ pub fn update_to_js<'a, C: Context<'a>>(cx: &mut C, update: &Update) -> JsResult
 			let prev_hash = cx.number(*prev_hash);
 			obj.set(cx, "prevHash", prev_hash)?;
 
-			let payload_array: Handle<JsArray> = vec_u8_to_js_array(cx, payload);
-			obj.set(cx, "payload", payload_array)?;
+			let len = payload.len().try_into().unwrap();
+			let mut payload_buffer = JsBuffer::new(cx, len)?;
+
+			payload_buffer.as_mut_slice(cx).copy_from_slice(&payload);
+			obj.set(cx, "payload", payload_buffer)?;
 		},
 		Update::DeletePage { owner_dsnp_user_id, schema_id, page_id, prev_hash } => {
 			let type_update = cx.string("DeletePage");
@@ -597,7 +606,6 @@ pub fn action_from_js<'a, C: Context<'a>>(
 		"Connect" => {
 			let owner_dsnp_user_id: Handle<'_, JsNumber> = action_js.get(cx, "ownerDsnpUserId")?;
 			let owner_dsnp_user_id = owner_dsnp_user_id.value(cx) as DsnpUserId;
-
 			let dsnp_keys: Option<DsnpKeys> = match action_js.get(cx, "dsnpKeys") {
 				Ok(dsnp_keys) => {
 					let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
@@ -645,7 +653,7 @@ pub fn connection_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	connection_js: Handle<'_, JsObject>,
 ) -> NeonResult<Connection> {
-	let dsnp_user_id: Handle<'_, JsNumber> = connection_js.get(cx, "userId")?;
+	let dsnp_user_id: Handle<'_, JsNumber> = connection_js.get(cx, "dsnpUserId")?;
 	let dsnp_user_id = dsnp_user_id.value(cx) as DsnpUserId;
 
 	let schema_id: Handle<'_, JsNumber> = connection_js.get(cx, "schemaId")?;
@@ -684,28 +692,18 @@ pub fn public_keys_to_js<'a, C: Context<'a>>(
 pub fn public_key_to_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	public_key: &DsnpPublicKey,
-) -> JsResult<'a, JsObject> {
+) -> NeonResult<Handle<'a, JsObject>> {
 	let obj = cx.empty_object();
-	let key: Handle<JsArray> = vec_u8_to_js_array(cx, &public_key.key);
-	obj.set(cx, "key", key)?;
-	let key_id = cx.number(public_key.key_id.unwrap_or(0) as f64);
+
+	let len = public_key.key.len().try_into().unwrap();
+	let mut key_buffer = JsBuffer::new(cx, len)?;
+	key_buffer.as_mut_slice(cx).copy_from_slice(&public_key.key);
+	obj.set(cx, "key", key_buffer)?;
+
+	let public_key_id = public_key.key_id.unwrap_or_default();
+	let public_key_id = public_key_id.try_into().map(|x: u64| x as f64).unwrap_or_default();
+	let key_id = cx.number(public_key_id);
 	obj.set(cx, "keyId", key_id)?;
+
 	Ok(obj)
-}
-
-/// Function to convert J
-/// Function to convert Vec<u8> to JsArray
-/// # Arguments
-/// * `cx` - Neon FunctionContext
-/// * `data` - Vec<u8> to convert
-/// # Returns
-/// * `Handle<JsArray>` - JsArray containing the converted data
-fn vec_u8_to_js_array<'a, C: Context<'a>>(cx: &mut C, data: &[u8]) -> Handle<'a, JsArray> {
-	let js_array = JsArray::new(cx, data.len() as u32);
-
-	for (index, value) in data.iter().enumerate() {
-		let js_number = JsNumber::new(cx, *value as f64);
-		js_array.set(cx, index as u32, js_number).unwrap();
-	}
-	js_array
 }

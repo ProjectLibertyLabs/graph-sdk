@@ -1,18 +1,19 @@
+import exp from 'constants';
 import { Graph } from './graph';
-import { PageData, GraphKeyPair, DsnpKeys, ImportBundle } from './models';
+import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection} from './models';
 import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
 
 function getTestConfig(): Config {
-    let config: Config = {} as Config;
+    const config: Config = {} as Config;
     config.sdkMaxUsersGraphSize = 100;
     config.sdkMaxStaleFriendshipDays = 100;
     config.maxPageId = 100;
     config.dsnpVersions = [DsnpVersion.Version1_0];
     config.maxGraphPageSizeBytes = 100;
     config.maxKeyPageSizeBytes = 100;
-    let schemaConfig = {} as SchemaConfig;
+    const schemaConfig = {} as SchemaConfig;
     schemaConfig.dsnpVersion = DsnpVersion.Version1_0;
     schemaConfig.connectionType = ConnectionType.Follow;
     schemaConfig.privacyType = PrivacyType.Public;
@@ -59,7 +60,7 @@ test('getGraphConfig with Rococo environment should return the graph config', as
 });
 
 test('initialize graph with low capacity of 100 should return the same capacity', async () => {
-    let config = getTestConfig();
+    const config = getTestConfig();
     const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
     const graph = new Graph(environment, 100);
     const handle = graph.getGraphHandle();
@@ -128,7 +129,6 @@ test('removeUserGraph should pass through on initialized graph', async () => {
 });
 
 test('importUserData should pass through on initialized graph', async () => {
-    const config = getTestConfig();
     const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
@@ -177,5 +177,50 @@ test('importUserData should pass through on initialized graph', async () => {
     // Import user data for each ImportBundle
     const imported = await graph.importUserData([importBundle1, importBundle2]);
     expect(imported).toEqual(true);
+    await graph.freeGraphState();
+});
+
+test('applyActions with empty actions should pass through on initialized graph', async () => {
+    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    // Set up actions
+    const actions = [] as Action[];
+    const applied = await graph.applyActions(actions);
+    expect(applied).toEqual(true);
+    await graph.freeGraphState();
+});
+
+test('applyActions with few actions should pass through on initialized graph', async () => {
+    const config = getTestConfig();
+    const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config};
+    const graph = new Graph(environment);
+    const handle = graph.getGraphHandle();
+    expect(handle).toBeDefined();
+    // Set up actions
+    const actions = [] as Action[];
+    const action_1 = {
+        type: "Connect",
+        ownerDsnpUserId: 1,
+        connection: {
+            dsnpUserId: 2,
+            schemaId: 1,
+        } as Connection,
+        dsnpKeys: {
+          dsnpUserId: 2,
+          keysHash: 100,
+          keys: [],
+        } as DsnpKeys,
+    } as ConnectAction;
+
+    actions.push(action_1);
+    const applied = await graph.applyActions(actions);
+    expect(applied).toEqual(true);
+
+    const exported = await graph.exportUpdates();
+    expect(exported).toBeDefined();
+    expect(exported.length).toEqual(1);
+    
     await graph.freeGraphState();
 });
