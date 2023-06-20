@@ -1,3 +1,6 @@
+//! # API
+//! This module contains the Neon bindings for the graph state.
+//! This module provides the wrapper functions for the graph state.
 use crate::helper::*;
 use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, PrivacyType};
 use dsnp_graph_core::{
