@@ -13,6 +13,7 @@ default-members = [
     "config",
     "bridge/ffi",
     "bridge/jni",
+    "bridge/node",
     "log-result-proc-macro",
 ]
 
