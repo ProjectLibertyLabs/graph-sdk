@@ -15,34 +15,86 @@ npm install @dsnp/graph-sdk
 Here's an example of how to use the DSNP Graph SDK:
 
 ```typescript
-import { Graph, EnvironmentInterface, ImportBundle, Action, Update, DsnpGraphEdge, DsnpPublicKey, DsnpKeys } from "@dsnp/graph-sdk";
+import { Graph, EnvironmentInterface, EnvironmentType, ImportBundle, Action, Update, DsnpGraphEdge, DsnpPublicKey, DsnpKeys } from "@dsnp/graph-sdk";
 
 // Create a new instance of the Graph class
-const environment: EnvironmentInterface = /* provide environment details */;
+const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+
 const graph = new Graph(environment);
 
 // Import data into the graph
-const importBundle: ImportBundle = /* provide import bundle */;
-await graph.importUserData([importBundle]);
+// Set up import data
+const dsnpUserId1 = 1;
+const dsnpUserId2 = 2;
+const pageData1: PageData = {
+  pageId: 1,
+  content: new Uint8Array([24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0]),
+  contentHash: 100,
+};
+const keyPairs1: GraphKeyPair[] = [];
+const keyPairs2: GraphKeyPair[] = [];
+const dsnpKeys1: DsnpKeys = {
+  dsnpUserId: dsnpUserId1,
+  keysHash: 100,
+  keys: [],
+};
+const dsnpKeys2: DsnpKeys = {
+  dsnpUserId: dsnpUserId2,
+  keysHash: 100,
+  keys: [],
+};
+const importBundle1: ImportBundle = {
+  dsnpUserId: dsnpUserId1,
+  schemaId: 1,
+  keyPairs: keyPairs1,
+  dsnpKeys: dsnpKeys1,
+  pages: [pageData1],
+};
+const importBundle2: ImportBundle = {
+  dsnpUserId: dsnpUserId2,
+  schemaId: 1,
+  keyPairs: keyPairs2,
+  dsnpKeys: dsnpKeys2,
+  pages: [pageData1],
+};
+// Import user data for each ImportBundle
+const imported = await graph.importUserData([importBundle1, importBundle2]);
 
 // Apply actions to the graph
-const actions: Action[] = /* provide actions */;
-await graph.applyActions(actions);
+// Set up actions
+const actions = [] as Action[];
+const action_1 = {
+    type: "Connect",
+    ownerDsnpUserId: 1,
+    connection: {
+        dsnpUserId: 2,
+        schemaId: 1,
+    } as Connection,
+    dsnpKeys: {
+      dsnpUserId: 2,
+      keysHash: 100,
+      keys: [],
+    } as DsnpKeys,
+} as ConnectAction;
+
+await graph.applyActions(actions.push(action_1));
 
 // Get graph updates
-const updates: Update = await graph.exportUpdates();
+const updates: Update[] = await graph.exportUpdates();
+
+// One can retrieve the graph configuration and respective schema mappings
+const graph_config = await graph.getGraphConfig(environment);
 
 // Get connections for a user graph
-const dsnpUserId: number = /* provide dsnp user id */;
-const schemaId: string = /* provide schema id */;
-const includePending: boolean = /* specify if pending connections should be included */;
-const connections: DsnpGraphEdge[] = await graph.getConnectionsForUserGraphUpdates(dsnpUserId, schemaId, includePending);
+const dsnpUserId: number = 1;
+const schemaId: number = 1;
+const includePending: boolean = true;
 
-// Access other graph-related functions
-// ...
+const connections: DsnpGraphEdge[] = await graph.getConnectionsForUserGraph(dsnpUserId, schemaId, includePending);
 
 // Free the graph state
 graph.freeGraphState();
+
 ```
 
 ## API Reference

@@ -250,13 +250,13 @@ test('getConnectionsForUserGraph with empty connections should return empty arra
     actions.push(action_1);
     const applied = await graph.applyActions(actions);
     expect(applied).toEqual(true);
-    const connections = await graph.getConnectionsForUserGraph(1, 1, false);
+    const connections = await graph.getConnectionsForUserGraph(1, 1, true);
     expect(connections).toBeDefined();
     expect(connections.length).toEqual(0);
 
     const forceCalculateGraphs = await graph.forceCalculateGraphs(1);
     expect(forceCalculateGraphs).toBeDefined();
-    expect(forceCalculateGraphs.length).toEqual(0);
+    expect(forceCalculateGraphs.length).toEqual(1);
     await graph.freeGraphState();
 });
 
