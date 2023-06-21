@@ -64,9 +64,10 @@ use crate::{
 	},
 	util::transactional_hashmap::{Transactional, TransactionalHashMap},
 };
+use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{
 	errors::{DsnpGraphError, DsnpGraphResult},
-	ConnectionType, Environment, InputValidation, SchemaId,
+	ConnectionType, Environment, GraphKeyType, InputValidation, SchemaId,
 };
 use log::Level;
 use log_result_proc_macro::log_result_err;
@@ -75,6 +76,8 @@ use std::{
 	collections::{hash_map::Entry, HashSet},
 	sync::{Arc, RwLock},
 };
+
+use super::api_types::GraphKeyPair;
 
 /// Root data structure that stores all underlying data structures inside
 #[derive(Debug)]
@@ -144,6 +147,9 @@ pub trait GraphAPI {
 
 	/// Returns the deserialized dsnp keys without importing
 	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
+
+	/// Generate a key pair for the given key pair type
+	fn generate_keypair(key_pair_type: GraphKeyType) -> DsnpGraphResult<GraphKeyPair>;
 }
 
 /// Provides transactional operation support on `GraphState`
@@ -332,6 +338,18 @@ impl GraphAPI for GraphState {
 			dsnp_keys.push(k);
 		}
 		Ok(dsnp_keys)
+	}
+
+	/// Generate a key pair for the given key pair type
+	fn generate_keypair(key_pair_type: GraphKeyType) -> DsnpGraphResult<GraphKeyPair> {
+		let key_pair = match key_pair_type {
+			GraphKeyType::X25519 => StackKeyPair::gen(),
+		};
+		Ok(GraphKeyPair {
+			secret_key: key_pair.secret_key.to_vec(),
+			public_key: key_pair.public_key.to_vec(),
+			key_type: key_pair_type,
+		})
 	}
 }
 
