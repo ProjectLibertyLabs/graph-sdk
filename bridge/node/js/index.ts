@@ -1,5 +1,5 @@
 import path from "path";
-import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, ImportBundle, PrivacyType, Update } from "./models";
+import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, GraphKeyPair, GraphKeyType, ImportBundle, PrivacyType, Update } from "./models";
 
 
 // Load the native neon graphsdk module
@@ -32,6 +32,7 @@ export interface Native {
     getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: number): Promise<DsnpGraphEdge[]>;
     getPublicKeys(handle: number, dsnpUserId: number): Promise<DsnpPublicKey[]>;
     deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>;
+    generateKeyPair(keyType: GraphKeyType): Promise<GraphKeyPair>;
     freeGraphState(handle: number): Promise<boolean>;
 }
 

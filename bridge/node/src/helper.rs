@@ -376,9 +376,10 @@ pub fn key_pair_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	key_pair_js: Handle<'_, JsObject>,
 ) -> NeonResult<GraphKeyPair> {
-	let key_type: Handle<'_, JsString> = key_pair_js.get(cx, "keyType")?;
-	let key_type = match key_type.value(cx).as_str() {
-		"0" | "X25519" => dsnp_graph_config::GraphKeyType::X25519,
+	let key_type: Handle<'_, JsNumber> = key_pair_js.get(cx, "keyType")?;
+	let key_type = key_type.value(cx);
+	let key_type = match key_type as u8 {
+		0 => dsnp_graph_config::GraphKeyType::X25519,
 		_ => cx.throw_error("Invalid key type")?,
 	};
 
@@ -405,7 +406,7 @@ pub fn keypair_to_js<'a, C: Context<'a>>(
 ) -> NeonResult<Handle<'a, JsObject>> {
 	let obj = cx.empty_object();
 	let key_type = match key_pair.key_type {
-		dsnp_graph_config::GraphKeyType::X25519 => cx.string("X25519"),
+		dsnp_graph_config::GraphKeyType::X25519 => cx.number(0),
 	};
 	obj.set(cx, "keyType", key_type)?;
 

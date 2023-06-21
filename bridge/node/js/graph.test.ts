@@ -1,6 +1,6 @@
 import exp from 'constants';
 import { Graph } from './graph';
-import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData} from './models';
+import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData, GraphKeyType} from './models';
 import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
@@ -388,8 +388,15 @@ test('Read and deserialize published graph keys', async () => {
     } as DsnpKeys;
 
     const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
-    const graph = new Graph(environment);
 
     const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
     expect(deserialized_keys).toBeDefined();
+});
+
+test('generateKeyPair should return a key pair', async () => {
+    const keyPair = await Graph.generateKeyPair(GraphKeyType.X25519);
+    expect(keyPair).toBeDefined();
+    expect(keyPair.publicKey).toBeDefined();
+    expect(keyPair.secretKey).toBeDefined();
+    expect(keyPair.keyType).toEqual(GraphKeyType.X25519);
 });
