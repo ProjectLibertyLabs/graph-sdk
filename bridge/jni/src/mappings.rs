@@ -107,6 +107,24 @@ pub fn map_to_dsnp_keys<'local>(
 	map_dsnp_keys_to_rust(&dsnp_keys_proto)
 }
 
+pub fn serialize_graph_keypair<'local>(
+	env: &JNIEnv<'local>,
+	key_pair: &dsnp_graph_core::api::api_types::GraphKeyPair,
+) -> SdkJniResult<JByteArray<'local>> {
+	let proto = proto_input::import_bundles::import_bundle::GraphKeyPair {
+		public_key: key_pair.public_key.clone(),
+		secret_key: key_pair.secret_key.clone(),
+		key_type: match key_pair.key_type {
+			RustGraphKeyType::X25519 => proto_input::GraphKeyType::X25519.into(),
+		},
+		special_fields: SpecialFields::default(),
+	};
+
+	let bytes = proto.write_to_bytes().map_err(|e| SdkJniError::from(e))?;
+	let arr = env.byte_array_from_slice(&bytes).map_err(|e| SdkJniError::from(e))?;
+	Ok(arr)
+}
+
 pub fn serialize_public_keys<'local>(
 	env: &JNIEnv<'local>,
 	public_keys: &[RustDsnpPublicKey],

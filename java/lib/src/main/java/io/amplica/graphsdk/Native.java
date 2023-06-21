@@ -95,4 +95,6 @@ public final class Native {
     public static native byte[] getPublicKeys(long stateHandle, long dsnpUserId);
 
     public static native byte[] deserializeDsnpKeys(byte[] dsnpKeys);
+
+    public static native byte[] generateKeyPair(long graph_key_type);
 }
