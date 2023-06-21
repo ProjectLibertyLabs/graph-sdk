@@ -78,7 +78,7 @@ export class Graph {
         return graphsdkModule.getPublicKeys(this.handle, dsnpUserId);
     }
 
-    deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]> {
+    static deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]> {
         return graphsdkModule.deserializeDsnpKeys(keys);
     }
 

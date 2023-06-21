@@ -299,7 +299,7 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
         keysHash: 100,
         keys: [],
     } as DsnpKeys;
-    const connections = await graph.deserializeDsnpKeys(keys);
+    const connections = await Graph.deserializeDsnpKeys(keys);
     expect(connections).toBeDefined();
     expect(connections.length).toEqual(0);
     await graph.freeGraphState();
@@ -390,6 +390,6 @@ test('Read and deserialize published graph keys', async () => {
     const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
     const graph = new Graph(environment);
 
-    const deserialized_keys = await graph.deserializeDsnpKeys(dsnp_keys);
+    const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
     expect(deserialized_keys).toBeDefined();
 });
