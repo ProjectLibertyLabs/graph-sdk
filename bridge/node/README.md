@@ -232,7 +232,7 @@ The SDK provides various type definitions that can be used with the Graph class 
          ] as KeyData[],
     } as DsnpKeys;
 
-  const deserialized_keys = await graph.deserializeDsnpKeys(dsnp_keys);
+  const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
 
   graph.freeGraphState();
 
