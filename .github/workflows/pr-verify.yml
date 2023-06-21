@@ -246,7 +246,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-  publish_npm_package_github:
+  publish_npm_package:
     name: Publish NPM Package
     runs-on: ubuntu-latest
     needs: [verify, test, lint, build, build_test_node_bridge]
@@ -274,5 +274,28 @@ jobs:
       - name: Publish NPM Package
         working-directory: bridge/node
         run: npm publish --tag next --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+  test_published_npm:
+    name: Test Published NPM Package
+    runs-on: ubuntu-latest
+    needs: [publish_npm_package]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+      - name: Install NPM Dependencies
+        working-directory: bridge/node/node-example-client
+        run: npm install
+      - name: Test Published NPM Package
+        working-directory: bridge/node/node-example-client
+        run: npm run test
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
