@@ -2,7 +2,7 @@
 //! This crate provides a bridge between the DSNP graph sdk and Node.js.
 //! It is intended to be used as a dependency in the `@dsnp/graph-sdk` npm package.
 use crate::helper::*;
-use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, PrivacyType};
+use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, GraphKeyType, PrivacyType};
 use dsnp_graph_core::{
 	api::{
 		api::{GraphAPI, GraphState},
@@ -543,6 +543,26 @@ pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	Ok(keys_js)
 }
 
+/// Function to generate X25519 keys and return GraphKeyPair type JsObject
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `key_type` - GraphKeyType enum
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject containing the generated keys
+/// # Errors
+/// * Throws a Neon error
+pub fn generate_keypair(mut cx: FunctionContext) -> JsResult<JsObject> {
+	let key_type = cx.argument::<JsNumber>(0)?;
+	let key_type = key_type.value(&mut cx);
+	let keypair = match key_type as u8 {
+		0 => GraphState::generate_keypair(GraphKeyType::X25519),
+		_ => return cx.throw_error("Unsupported key type"),
+	};
+	let keypair_js = keypair_to_js(&mut cx, &keypair.unwrap())?;
+
+	Ok(keypair_js)
+}
+
 /// Function to free the graph state
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -591,6 +611,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	)?;
 	cx.export_function("getPublicKeys", get_public_keys)?;
 	cx.export_function("deserializeDsnpKeys", deserialize_dsnp_keys)?;
+	cx.export_function("generateKeyPair", generate_keypair)?;
 	cx.export_function("freeGraphState", free_graph_state)?;
 	Ok(())
 }

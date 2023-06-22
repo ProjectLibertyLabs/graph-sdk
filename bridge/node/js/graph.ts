@@ -1,5 +1,5 @@
 import { graphsdkModule } from "./index";
-import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys, Config, ConnectionType, PrivacyType } from "./models";
+import { ImportBundle, Update, DsnpGraphEdge, Action, DsnpPublicKey, DsnpKeys, Config, ConnectionType, PrivacyType, GraphKeyPair } from "./models";
 import { EnvironmentInterface } from "./models/environment";
 
 export class Graph {
@@ -78,8 +78,12 @@ export class Graph {
         return graphsdkModule.getPublicKeys(this.handle, dsnpUserId);
     }
 
-    deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]> {
+    static deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]> {
         return graphsdkModule.deserializeDsnpKeys(keys);
+    }
+
+    static generateKeyPair(keyType: number): Promise<GraphKeyPair> {
+        return graphsdkModule.generateKeyPair(keyType);
     }
 
     freeGraphState(): Promise<boolean> {

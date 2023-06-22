@@ -3,6 +3,7 @@ package io.amplica.graphsdk;
 import com.google.protobuf.InvalidProtocolBufferException;
 import io.amplica.graphsdk.exceptions.BaseGraphSdkException;
 import io.amplica.graphsdk.models.*;
+import io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair;
 
 import java.util.List;
 
@@ -96,6 +97,11 @@ public class Graph implements NativeHandleGuard.Owner {
     public static List<DsnpPublicKeys.DsnpPublicKey> deserializeDsnpKeys(DsnpKeys keys) throws BaseGraphSdkException, InvalidProtocolBufferException {
         var raw = Native.deserializeDsnpKeys(keys.toByteArray());
         return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
+    }
+
+    public static GraphKeyPair generateKeyPair(GraphKeyType key_type) throws BaseGraphSdkException, InvalidProtocolBufferException {
+        var raw = Native.generateKeyPair(key_type.getNumber());
+        return GraphKeyPair.parseFrom(raw);
     }
 
     @Override

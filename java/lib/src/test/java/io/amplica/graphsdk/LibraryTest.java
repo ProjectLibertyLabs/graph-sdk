@@ -422,6 +422,13 @@ class LibraryTest {
     }
 
     @Test
+    void Graph_generateKeyPair_should_work() throws Exception {
+        // arrange
+        var keyPair = Graph.generateKeyPair(GraphKeyType.X25519);
+        assertNotNull(keyPair);
+    }
+
+    @Test
     void logger_double_initialize_should_fail() {
         Logger.initialize();
         assertEquals(true, testLogsForPattern(Level.WARN, "Duplicate logger initialization ignored"));

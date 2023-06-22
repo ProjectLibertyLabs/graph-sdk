@@ -3,11 +3,11 @@ use crate::{
 	helper::{handle_result, validate_handle},
 	mappings::{
 		convert_jboolean, map_to_actions, map_to_dsnp_keys, map_to_environment, map_to_imports,
-		serialize_config, serialize_dsnp_users, serialize_graph_edges, serialize_graph_updates,
-		serialize_public_keys,
+		serialize_config, serialize_dsnp_users, serialize_graph_edges, serialize_graph_keypair,
+		serialize_graph_updates, serialize_public_keys,
 	},
 };
-use dsnp_graph_config::{DsnpUserId, SchemaId};
+use dsnp_graph_config::{DsnpUserId, GraphKeyType, SchemaId};
 use dsnp_graph_core::api::api::{GraphAPI, GraphState};
 use jni::{
 	objects::{JByteArray, JClass, JObject, JString},
@@ -528,6 +528,34 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_deserializeDsnpKeys<'lo
 		GraphState::deserialize_dsnp_keys(&rust_dsnp_keys)
 			.map_err(|e| SdkJniError::from(e))
 			.and_then(|public_keys| serialize_public_keys(&env, &public_keys))
+	});
+	handle_result(&mut env, result)
+}
+
+/// Generate GraphKeyPair for a given GraphKeyType.
+/// # Arguments
+/// * `graph_key_type` - the type of the key to generate
+/// # Returns
+/// * `jbyteArray` - the serialized GraphKeyPair
+/// # Errors
+/// * `SdkJniError` - if generating GraphKeyPair fails
+/// * `SdkJniError` - if GraphKeyType is InvalidHandle
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_generateKeyPair<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	graph_key_type: jint,
+) -> JByteArray<'local> {
+	let result = panic::catch_unwind(|| {
+		let key_type = u8::try_from(graph_key_type)
+			.map_err(|_| SdkJniError::BadJniParameter("invalid graph_key_type"))?;
+
+		match key_type {
+			0 => GraphState::generate_keypair(GraphKeyType::X25519)
+				.map_err(|e| SdkJniError::from(e))
+				.and_then(|key_pair| serialize_graph_keypair(&env, &key_pair)),
+			_ => Err(SdkJniError::BadJniParameter("invalid graph_key_type")),
+		}
 	});
 	handle_result(&mut env, result)
 }
