@@ -1,6 +1,6 @@
 import exp from 'constants';
 import { Graph } from './graph';
-import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData} from './models';
+import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData, GraphKeyType} from './models';
 import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
@@ -283,9 +283,9 @@ test('getPublicKeys with empty connections should return empty array', async () 
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const connections = await graph.getPublicKeys(1);
-    expect(connections).toBeDefined();
-    expect(connections.length).toEqual(0);
+    const keys = await graph.getPublicKeys(1);
+    expect(keys).toBeDefined();
+    expect(keys.length).toEqual(0);
     await graph.freeGraphState();
 });
 
@@ -299,9 +299,9 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
         keysHash: 100,
         keys: [],
     } as DsnpKeys;
-    const connections = await graph.deserializeDsnpKeys(keys);
-    expect(connections).toBeDefined();
-    expect(connections.length).toEqual(0);
+    const des_keys = await Graph.deserializeDsnpKeys(keys);
+    expect(des_keys).toBeDefined();
+    expect(des_keys.length).toEqual(0);
     await graph.freeGraphState();
 });
 
@@ -388,8 +388,15 @@ test('Read and deserialize published graph keys', async () => {
     } as DsnpKeys;
 
     const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
-    const graph = new Graph(environment);
 
-    const deserialized_keys = await graph.deserializeDsnpKeys(dsnp_keys);
+    const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
     expect(deserialized_keys).toBeDefined();
+});
+
+test('generateKeyPair should return a key pair', async () => {
+    const keyPair = await Graph.generateKeyPair(GraphKeyType.X25519);
+    expect(keyPair).toBeDefined();
+    expect(keyPair.publicKey).toBeDefined();
+    expect(keyPair.secretKey).toBeDefined();
+    expect(keyPair.keyType).toEqual(GraphKeyType.X25519);
 });

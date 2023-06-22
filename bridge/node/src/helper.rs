@@ -14,7 +14,7 @@ use neon::{
 	object::Object,
 	prelude::{Context, FunctionContext},
 	result::{JsResult, NeonResult},
-	types::{buffer::TypedArray, JsArray, JsBuffer, JsNumber, JsObject, JsString, JsTypedArray},
+	types::{buffer::TypedArray, JsArray, JsNumber, JsObject, JsString, JsTypedArray},
 };
 
 /// Convert environment from JSObject to Environment
@@ -376,9 +376,10 @@ pub fn key_pair_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	key_pair_js: Handle<'_, JsObject>,
 ) -> NeonResult<GraphKeyPair> {
-	let key_type: Handle<'_, JsString> = key_pair_js.get(cx, "keyType")?;
-	let key_type = match key_type.value(cx).as_str() {
-		"0" | "X25519" => dsnp_graph_config::GraphKeyType::X25519,
+	let key_type: Handle<'_, JsNumber> = key_pair_js.get(cx, "keyType")?;
+	let key_type = key_type.value(cx);
+	let key_type = match key_type as u8 {
+		0 => dsnp_graph_config::GraphKeyType::X25519,
 		_ => cx.throw_error("Invalid key type")?,
 	};
 
@@ -389,6 +390,35 @@ pub fn key_pair_from_js<'a, C: Context<'a>>(
 	let secret_key = secret_key.as_slice(cx).to_vec();
 
 	Ok(GraphKeyPair { key_type, public_key, secret_key })
+}
+
+/// Function to convert GraphKeyPair to JsObject
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `key_pair` - GraphKeyPair
+/// # Returns
+/// * `JsResult<JsObject>` - Neon JsObject
+/// # Errors
+/// * Throws a Neon error if the key pair cannot be converted
+pub fn keypair_to_js<'a, C: Context<'a>>(
+	cx: &mut C,
+	key_pair: &GraphKeyPair,
+) -> NeonResult<Handle<'a, JsObject>> {
+	let obj = cx.empty_object();
+	let key_type = match key_pair.key_type {
+		dsnp_graph_config::GraphKeyType::X25519 => cx.number(0),
+	};
+	obj.set(cx, "keyType", key_type)?;
+
+	let mut public_key = cx.buffer(key_pair.public_key.len() as usize)?;
+	public_key.as_mut_slice(cx).copy_from_slice(&key_pair.public_key);
+	obj.set(cx, "publicKey", public_key)?;
+
+	let mut secret_key = cx.buffer(key_pair.secret_key.len() as usize)?;
+	secret_key.as_mut_slice(cx).copy_from_slice(&key_pair.secret_key);
+	obj.set(cx, "secretKey", secret_key)?;
+
+	Ok(obj)
 }
 
 /// Function to convert DsnpKeys JsObject to DsnpKeys struct
@@ -482,7 +512,7 @@ pub fn update_to_js<'a, C: Context<'a>>(
 			let prev_hash = cx.number(*prev_hash);
 			obj.set(cx, "prevHash", prev_hash)?;
 			let len = payload.len().try_into().unwrap();
-			let mut payload_buffer = JsBuffer::new(cx, len)?;
+			let mut payload_buffer = cx.buffer(len)?;
 
 			payload_buffer.as_mut_slice(cx).copy_from_slice(&payload);
 			obj.set(cx, "payload", payload_buffer)?;
@@ -503,7 +533,7 @@ pub fn update_to_js<'a, C: Context<'a>>(
 			obj.set(cx, "prevHash", prev_hash)?;
 
 			let len = payload.len().try_into().unwrap();
-			let mut payload_buffer = JsBuffer::new(cx, len)?;
+			let mut payload_buffer = cx.buffer(len)?;
 
 			payload_buffer.as_mut_slice(cx).copy_from_slice(&payload);
 			obj.set(cx, "payload", payload_buffer)?;
@@ -697,7 +727,7 @@ pub fn public_key_to_js<'a, C: Context<'a>>(
 	let obj = cx.empty_object();
 
 	let len = public_key.key.len().try_into().unwrap();
-	let mut key_buffer = JsBuffer::new(cx, len)?;
+	let mut key_buffer = cx.buffer(len)?;
 	key_buffer.as_mut_slice(cx).copy_from_slice(&public_key.key);
 	obj.set(cx, "key", key_buffer)?;
 
