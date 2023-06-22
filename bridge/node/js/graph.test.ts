@@ -283,9 +283,9 @@ test('getPublicKeys with empty connections should return empty array', async () 
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const connections = await graph.getPublicKeys(1);
-    expect(connections).toBeDefined();
-    expect(connections.length).toEqual(0);
+    const keys = await graph.getPublicKeys(1);
+    expect(keys).toBeDefined();
+    expect(keys.length).toEqual(0);
     await graph.freeGraphState();
 });
 
@@ -299,9 +299,9 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
         keysHash: 100,
         keys: [],
     } as DsnpKeys;
-    const connections = await Graph.deserializeDsnpKeys(keys);
-    expect(connections).toBeDefined();
-    expect(connections.length).toEqual(0);
+    const des_keys = await Graph.deserializeDsnpKeys(keys);
+    expect(des_keys).toBeDefined();
+    expect(des_keys.length).toEqual(0);
     await graph.freeGraphState();
 });
 
