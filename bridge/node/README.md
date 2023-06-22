@@ -7,7 +7,7 @@ The DSNP Graph SDK is a TypeScript library that provides a high-level interface 
 You can install the DSNP Graph SDK using npm:
 
 ```bash
-npm install @dsnp/graph-sdk
+npm install @dsnp/graph-sdk@latest
 ```
 
 ## Usage

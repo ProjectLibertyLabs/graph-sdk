@@ -38,3 +38,7 @@ export interface Native {
 
 // Export the graphsdk module
 export const graphsdkModule: Native = loadNativeModule();
+
+// Export the models
+export * from "./models";
+export * from "./graph";

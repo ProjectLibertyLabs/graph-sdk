@@ -73,6 +73,9 @@ test-jni: build-jni
 test-java-client:
 	@( cd java/example-graphsdk-client ; ./gradlew test --rerun-tasks)
 
+test-node-client:
+	@( cd bridge/node/node-example-client ; npm run test )
+
 .PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
