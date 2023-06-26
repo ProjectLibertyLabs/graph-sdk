@@ -4,7 +4,7 @@ export interface KeyData {
 }
   
 export interface DsnpKeys {
-    dsnpUserId: number;
+    dsnpUserId: string;
     keysHash: number;
     keys: KeyData[];
 }
@@ -26,7 +26,7 @@ export interface PageData {
 }
   
 export interface ImportBundle {
-    dsnpUserId: number;
+    dsnpUserId: string;
     schemaId: number;
     keyPairs: GraphKeyPair[];
     dsnpKeys: DsnpKeys;

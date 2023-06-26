@@ -3,20 +3,20 @@ import { DsnpKeys } from "./import_bundle";
 
 export interface ConnectAction {
     type: "Connect";
-    ownerDsnpUserId: number;
+    ownerDsnpUserId: string;
     connection: Connection;
     dsnpKeys?: DsnpKeys;
 }
   
 export interface DisconnectAction {
   type: "Disconnect";
-  ownerDsnpUserId: number;
+  ownerDsnpUserId: string;
   connection: Connection;
 }
 
 export interface AddGraphKeyAction {
   type: "AddGraphKey";
-  ownerDsnpUserId: number;
+  ownerDsnpUserId: string;
   newPublicKey: Uint8Array;
 }
 

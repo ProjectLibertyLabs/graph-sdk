@@ -1,4 +1,4 @@
 export interface DsnpGraphEdge {
-    userId: number;
+    userId: string;
     since: number;
 }

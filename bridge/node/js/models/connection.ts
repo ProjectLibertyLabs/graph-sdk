@@ -1,4 +1,4 @@
 export interface Connection {
-    dsnpUserId: number;
+    dsnpUserId: string;
     schemaId: number;
 }
