@@ -34,7 +34,7 @@ export class Graph {
         return graphsdkModule.getGraphStatesCount();
     }
 
-    containsUserGraph(dsnpUserId: number): Promise<boolean> {
+    containsUserGraph(dsnpUserId: string): Promise<boolean> {
         return graphsdkModule.containsUserGraph(this.handle, dsnpUserId);
     }
 
@@ -42,7 +42,7 @@ export class Graph {
         return graphsdkModule.getGraphUsersCount(this.handle);
     }
 
-    removeUserGraph(dsnpUserId: number): Promise<boolean> {
+    removeUserGraph(dsnpUserId: string): Promise<boolean> {
         return graphsdkModule.removeUserGraph(this.handle, dsnpUserId);
     }
 
@@ -54,7 +54,7 @@ export class Graph {
         return graphsdkModule.exportUpdates(this.handle);
     }
 
-    getConnectionsForUserGraph(dsnpUserId: number, schemaId: number, includePending: boolean): Promise<DsnpGraphEdge[]> {
+    getConnectionsForUserGraph(dsnpUserId: string, schemaId: number, includePending: boolean): Promise<DsnpGraphEdge[]> {
         return graphsdkModule.getConnectionsForUserGraph(this.handle, dsnpUserId, schemaId, includePending);
     }
 
@@ -62,7 +62,7 @@ export class Graph {
         return graphsdkModule.applyActions(this.handle, actions);
     }
 
-    forceCalculateGraphs(dsnpUserId: number): Promise<Update[]> {
+    forceCalculateGraphs(dsnpUserId: string): Promise<Update[]> {
         return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 
@@ -70,11 +70,11 @@ export class Graph {
         return graphsdkModule.getConnectionsWithoutKeys(this.handle);
     }
 
-    getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<DsnpGraphEdge[]> {
+    getOneSidedPrivateFriendshipConnections(dsnpUserId: string): Promise<DsnpGraphEdge[]> {
         return graphsdkModule.getOneSidedPrivateFriendshipConnections(this.handle, dsnpUserId);
     }
 
-    getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]> {
+    getPublicKeys(dsnpUserId: string): Promise<DsnpPublicKey[]> {
         return graphsdkModule.getPublicKeys(this.handle, dsnpUserId);
     }
 

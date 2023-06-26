@@ -114,7 +114,7 @@ test('containsUserGraph should return false on initialized graph', async () => {
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const contains = await graph.containsUserGraph(1);
+    const contains = await graph.containsUserGraph("1");
     expect(contains).toEqual(false);
     await graph.freeGraphState();
 });
@@ -125,7 +125,7 @@ test('removeUserGraph should pass through on initialized graph', async () => {
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const removed = await graph.removeUserGraph(1);
+    const removed = await graph.removeUserGraph("1");
     expect(removed).toEqual(true);
     await graph.freeGraphState();
 });
@@ -252,11 +252,11 @@ test('getConnectionsForUserGraph with empty connections should return empty arra
     actions.push(action_1);
     const applied = await graph.applyActions(actions);
     expect(applied).toEqual(true);
-    const connections = await graph.getConnectionsForUserGraph(1, 1, true);
+    const connections = await graph.getConnectionsForUserGraph("1", 1, true);
     expect(connections).toBeDefined();
     expect(connections.length).toEqual(1);
 
-    const forceCalculateGraphs = await graph.forceCalculateGraphs(1);
+    const forceCalculateGraphs = await graph.forceCalculateGraphs("1");
     expect(forceCalculateGraphs).toBeDefined();
     expect(forceCalculateGraphs.length).toEqual(0);
     await graph.freeGraphState();
@@ -272,7 +272,7 @@ test('getConnectionsWithoutKeys with empty connections should return empty array
     expect(connections.length).toEqual(0);
 
     expect(async () => {
-        await graph.getOneSidedPrivateFriendshipConnections(1);
+        await graph.getOneSidedPrivateFriendshipConnections("1");
     }).rejects.toThrow('User graph for 1 is not imported');
 
     await graph.freeGraphState();
@@ -283,7 +283,7 @@ test('getPublicKeys with empty connections should return empty array', async () 
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const keys = await graph.getPublicKeys(1);
+    const keys = await graph.getPublicKeys("1");
     expect(keys).toBeDefined();
     expect(keys.length).toEqual(0);
     await graph.freeGraphState();
@@ -330,7 +330,7 @@ test('Create and export a new graph', async () => {
     let applied = await graph.applyActions(actions);
     expect(applied).toEqual(true);
 
-    let connections_including_pending = await graph.getConnectionsForUserGraph(1, public_follow_graph_schema_id, true);
+    let connections_including_pending = await graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
 
     expect(connections_including_pending).toBeDefined();
     expect(connections_including_pending.length).toEqual(1);
