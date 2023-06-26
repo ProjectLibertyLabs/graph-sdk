@@ -149,19 +149,19 @@ test('importUserData should pass through on initialized graph', async () => {
     const keyPairs2: GraphKeyPair[] = [];
 
     const dsnpKeys1: DsnpKeys = {
-      dsnpUserId: dsnpUserId1,
+      dsnpUserId: dsnpUserId1.toString(),
       keysHash: 100,
       keys: [],
     };
 
     const dsnpKeys2: DsnpKeys = {
-      dsnpUserId: dsnpUserId2,
+      dsnpUserId: dsnpUserId2.toString(),
       keysHash: 100,
       keys: [],
     };
 
     const importBundle1: ImportBundle = {
-      dsnpUserId: dsnpUserId1,
+      dsnpUserId: dsnpUserId1.toString(),
       schemaId: 1,
       keyPairs: keyPairs1,
       dsnpKeys: dsnpKeys1,
@@ -169,7 +169,7 @@ test('importUserData should pass through on initialized graph', async () => {
     };
 
     const importBundle2: ImportBundle = {
-      dsnpUserId: dsnpUserId2,
+      dsnpUserId: dsnpUserId2.toString(),
       schemaId: 1,
       keyPairs: keyPairs2,
       dsnpKeys: dsnpKeys2,
@@ -204,13 +204,13 @@ test('applyActions with few actions should pass through on initialized graph', a
     const actions = [] as Action[];
     const action_1 = {
         type: "Connect",
-        ownerDsnpUserId: 1,
+        ownerDsnpUserId: "1",
         connection: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             schemaId: 1,
         } as Connection,
         dsnpKeys: {
-          dsnpUserId: 2,
+          dsnpUserId: "2",
           keysHash: 100,
           keys: [],
         } as DsnpKeys,
@@ -237,13 +237,13 @@ test('getConnectionsForUserGraph with empty connections should return empty arra
     const actions = [] as Action[];
     const action_1 = {
         type: "Connect",
-        ownerDsnpUserId: 1,
+        ownerDsnpUserId: "1",
         connection: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             schemaId: 1,
         } as Connection,
         dsnpKeys: {
-          dsnpUserId: 2,
+          dsnpUserId: "2",
           keysHash: 100,
           keys: [],
         } as DsnpKeys,
@@ -295,7 +295,7 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
     const keys = {          
-        dsnpUserId: 2,
+        dsnpUserId: "2",
         keysHash: 100,
         keys: [],
     } as DsnpKeys;
@@ -313,13 +313,13 @@ test('Create and export a new graph', async () => {
 
     let connect_action: ConnectAction = {
         type: "Connect",
-        ownerDsnpUserId: 1,
+        ownerDsnpUserId: "1",
         connection: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             schemaId: public_follow_graph_schema_id,
         } as Connection,
         dsnpKeys: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             keysHash: 100,
             keys: [],
         } as DsnpKeys,
@@ -352,7 +352,7 @@ test('Add a new graph key', async () => {
 
     const addGraphKeyAction = {
         type: "AddGraphKey",
-        ownerDsnpUserId: dsnpOwnerId,
+        ownerDsnpUserId: dsnpOwnerId.toString(),
         newPublicKey: new Uint8Array(x25519_public_key),
     } as AddGraphKeyAction;
 
@@ -376,7 +376,7 @@ test('Read and deserialize published graph keys', async () => {
 		138, 221, 10, 41, 13, 241, 60, 210, 216, 23, 62, 178, 73, 111,
 	];
 	let dsnp_keys = {
-        dsnpUserId: dsnp_key_owner,
+        dsnpUserId: dsnp_key_owner.toString(),
         keysHash: 100,
         keys: [
             {

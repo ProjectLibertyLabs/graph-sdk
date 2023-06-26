@@ -280,8 +280,11 @@ pub fn import_bundle_from_js_object<'a, C: Context<'a>>(
 	cx: &mut C,
 	import_bundle_js: Handle<'_, JsObject>,
 ) -> NeonResult<ImportBundle> {
-	let dsnp_user_id: Handle<'_, JsNumber> = import_bundle_js.get(cx, "dsnpUserId")?;
-	let dsnp_user_id = dsnp_user_id.value(cx) as u64;
+	let dsnp_user_id: Handle<'_, JsString> = import_bundle_js.get(cx, "dsnpUserId")?;
+	let dsnp_user_id = match dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+		Ok(dsnp_user_id) => dsnp_user_id,
+		Err(_) => cx.throw_error("Invalid dsnp user id")?,
+	};
 	let schema_id: Handle<'_, JsNumber> = import_bundle_js.get(cx, "schemaId")?;
 	let schema_id = schema_id.value(cx) as SchemaId;
 	let dsnp_keys: Handle<'_, JsObject> = import_bundle_js.get(cx, "dsnpKeys")?;
@@ -433,8 +436,11 @@ pub fn dsnp_keys_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	dsnp_keys_js: Handle<'_, JsObject>,
 ) -> NeonResult<DsnpKeys> {
-	let dsnp_user_id: Handle<'_, JsNumber> = dsnp_keys_js.get(cx, "dsnpUserId")?;
-	let dsnp_user_id = dsnp_user_id.value(cx) as DsnpUserId;
+	let dsnp_user_id: Handle<'_, JsString> = dsnp_keys_js.get(cx, "dsnpUserId")?;
+	let dsnp_user_id = match dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+		Ok(dsnp_user_id) => dsnp_user_id,
+		Err(_) => cx.throw_error("Invalid dsnp user id")?,
+	};
 
 	let keys_hash: Handle<'_, JsNumber> = dsnp_keys_js.get(cx, "keysHash")?;
 	let keys_hash = keys_hash.value(cx) as PageHash;
@@ -506,7 +512,7 @@ pub fn update_to_js<'a, C: Context<'a>>(
 		Update::AddKey { owner_dsnp_user_id, prev_hash, payload } => {
 			let type_update = cx.string("AddKey");
 			obj.set(cx, "type", type_update)?;
-			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			let owner_dsnp_user_id = cx.string(owner_dsnp_user_id.to_string());
 			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
 
 			let prev_hash = cx.number(*prev_hash);
@@ -520,7 +526,7 @@ pub fn update_to_js<'a, C: Context<'a>>(
 		Update::PersistPage { owner_dsnp_user_id, schema_id, page_id, prev_hash, payload } => {
 			let type_update = cx.string("PersistPage");
 			obj.set(cx, "type", type_update)?;
-			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			let owner_dsnp_user_id = cx.string(owner_dsnp_user_id.to_string());
 			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
 
 			let schema_id = cx.number(*schema_id);
@@ -541,7 +547,7 @@ pub fn update_to_js<'a, C: Context<'a>>(
 		Update::DeletePage { owner_dsnp_user_id, schema_id, page_id, prev_hash } => {
 			let type_update = cx.string("DeletePage");
 			obj.set(cx, "type", type_update)?;
-			let owner_dsnp_user_id = cx.number(*owner_dsnp_user_id as f64);
+			let owner_dsnp_user_id = cx.string(owner_dsnp_user_id.to_string());
 			obj.set(cx, "ownerDsnpUserId", owner_dsnp_user_id)?;
 
 			let schema_id = cx.number(*schema_id);
@@ -590,7 +596,7 @@ pub fn connection_to_js<'a, C: Context<'a>>(
 	edge: &DsnpGraphEdge,
 ) -> JsResult<'a, JsObject> {
 	let obj = cx.empty_object();
-	let dsnp_user_id = cx.number(edge.user_id as f64);
+	let dsnp_user_id = cx.string(edge.user_id.to_string());
 	obj.set(cx, "userId", dsnp_user_id)?;
 	let since: Handle<'_, JsNumber> = cx.number(edge.since as f64);
 	obj.set(cx, "since", since)?;
@@ -635,8 +641,12 @@ pub fn action_from_js<'a, C: Context<'a>>(
 	let action_type = action_type.value(cx);
 	let action = match action_type.as_str() {
 		"Connect" => {
-			let owner_dsnp_user_id: Handle<'_, JsNumber> = action_js.get(cx, "ownerDsnpUserId")?;
-			let owner_dsnp_user_id = owner_dsnp_user_id.value(cx) as DsnpUserId;
+			let owner_dsnp_user_id: Handle<'_, JsString> = action_js.get(cx, "ownerDsnpUserId")?;
+			let owner_dsnp_user_id = match owner_dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+				Ok(owner_dsnp_user_id) => owner_dsnp_user_id,
+				Err(_) => cx.throw_error("Invalid dsnp user id")?,
+			};
+
 			let dsnp_keys: Option<DsnpKeys> = match action_js.get(cx, "dsnpKeys") {
 				Ok(dsnp_keys) => {
 					let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
@@ -650,8 +660,11 @@ pub fn action_from_js<'a, C: Context<'a>>(
 			Action::Connect { owner_dsnp_user_id, dsnp_keys, connection }
 		},
 		"Disconnect" => {
-			let owner_dsnp_user_id: Handle<'_, JsNumber> = action_js.get(cx, "ownerDsnpUserId")?;
-			let owner_dsnp_user_id = owner_dsnp_user_id.value(cx) as DsnpUserId;
+			let owner_dsnp_user_id: Handle<'_, JsString> = action_js.get(cx, "ownerDsnpUserId")?;
+			let owner_dsnp_user_id = match owner_dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+				Ok(owner_dsnp_user_id) => owner_dsnp_user_id,
+				Err(_) => cx.throw_error("Invalid dsnp user id")?,
+			};
 
 			let connection: Handle<'_, JsObject> = action_js.get(cx, "connection")?;
 			let connection: Connection = connection_from_js(cx, connection)?;
@@ -659,8 +672,11 @@ pub fn action_from_js<'a, C: Context<'a>>(
 			Action::Disconnect { owner_dsnp_user_id, connection }
 		},
 		"AddGraphKey" => {
-			let owner_dsnp_user_id: Handle<'_, JsNumber> = action_js.get(cx, "ownerDsnpUserId")?;
-			let owner_dsnp_user_id = owner_dsnp_user_id.value(cx) as DsnpUserId;
+			let owner_dsnp_user_id: Handle<'_, JsString> = action_js.get(cx, "ownerDsnpUserId")?;
+			let owner_dsnp_user_id = match owner_dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+				Ok(owner_dsnp_user_id) => owner_dsnp_user_id,
+				Err(_) => cx.throw_error("Invalid dsnp user id")?,
+			};
 
 			let new_public_key: Handle<'_, JsTypedArray<u8>> = action_js.get(cx, "newPublicKey")?;
 			let new_public_key = new_public_key.as_slice(cx).to_vec();
@@ -684,8 +700,11 @@ pub fn connection_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	connection_js: Handle<'_, JsObject>,
 ) -> NeonResult<Connection> {
-	let dsnp_user_id: Handle<'_, JsNumber> = connection_js.get(cx, "dsnpUserId")?;
-	let dsnp_user_id = dsnp_user_id.value(cx) as DsnpUserId;
+	let dsnp_user_id: Handle<'_, JsString> = connection_js.get(cx, "dsnpUserId")?;
+	let dsnp_user_id = match dsnp_user_id.value(cx).parse::<DsnpUserId>() {
+		Ok(dsnp_user_id) => dsnp_user_id,
+		Err(_) => cx.throw_error("Invalid dsnp user id")?,
+	};
 
 	let schema_id: Handle<'_, JsNumber> = connection_js.get(cx, "schemaId")?;
 	let schema_id = schema_id.value(cx) as SchemaId;
@@ -732,8 +751,7 @@ pub fn public_key_to_js<'a, C: Context<'a>>(
 	obj.set(cx, "key", key_buffer)?;
 
 	let public_key_id = public_key.key_id.unwrap_or_default();
-	let public_key_id = public_key_id as f64;
-	let key_id = cx.number(public_key_id);
+	let key_id = cx.string(public_key_id.to_string());
 	obj.set(cx, "keyId", key_id)?;
 
 	Ok(obj)

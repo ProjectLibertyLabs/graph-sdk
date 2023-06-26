@@ -223,8 +223,11 @@ pub fn get_graph_users_count(mut cx: FunctionContext) -> JsResult<JsNumber> {
 pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
 
 	let states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get(&graph_state_id);
@@ -250,8 +253,11 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -337,8 +343,12 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id: Handle<'_, JsNumber> = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id: Handle<'_, JsString> = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
+
 	let schema_id = cx.argument::<JsNumber>(2)?;
 	let schema_id = schema_id.value(&mut cx) as u16;
 	let include_pending = cx.argument::<JsBoolean>(3)?;
@@ -404,8 +414,11 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -471,8 +484,11 @@ pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray
 pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -504,8 +520,11 @@ pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> 
 pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let graph_state_id = cx.argument::<JsNumber>(0)?;
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
-	let dsnp_user_id = cx.argument::<JsNumber>(1)?;
-	let dsnp_user_id = dsnp_user_id.value(&mut cx) as DsnpUserId;
+	let dsnp_user_id = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
