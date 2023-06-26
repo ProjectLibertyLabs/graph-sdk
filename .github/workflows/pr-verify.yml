@@ -110,6 +110,9 @@ jobs:
           profile: minimal
           target: wasm32-unknown-unknown
 
+      - name: Install Protoc
+        run: sudo apt-get install -y protobuf-compiler; cargo install protobuf-codegen; PATH="$HOME/.cargo/bin:$PATH"
+
       - name: Cargo build
         run: make build
   test_binary:
