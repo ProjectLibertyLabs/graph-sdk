@@ -424,8 +424,13 @@ class LibraryTest {
     @Test
     void Graph_generateKeyPair_should_work() throws Exception {
         // arrange
-        var keyPair = Graph.generateKeyPair(GraphKeyType.X25519);
-        assertNotNull(keyPair);
+        var keyPair1 = Graph.generateKeyPair(GraphKeyType.X25519);
+        assertNotNull(keyPair1);
+
+        var keyPair2 = Graph.generateKeyPair(GraphKeyType.X25519);
+        assertNotNull(keyPair2);
+
+        assertNotEquals(keyPair1, keyPair2);
     }
 
     @Test

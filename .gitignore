@@ -19,3 +19,5 @@ bridge/ffi/src/c_example/dsnp_graph_sdk_ffi.h
 *.class
 bridge/node/dsnp_graph_sdk_node.node
 bridge/node/js/dsnp_graph_sdk_node.node
+/bridge/common/src/proto_types/
+/java/lib/src/main/java/io/amplica/graphsdk/models/
