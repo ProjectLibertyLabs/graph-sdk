@@ -46,7 +46,7 @@ test('getGraphConfig with Mainnet environment should return the graph config', a
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    expect(config.sdkMaxUsersGraphSize).toEqual(10000);
     const schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
     expect(schema_id).toEqual(1);
     await graph.freeGraphState();
@@ -57,7 +57,7 @@ test('getGraphConfig with Rococo environment should return the graph config', as
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(1000);
+    expect(config.sdkMaxUsersGraphSize).toEqual(10000);
     await graph.freeGraphState();
 });
 
@@ -223,7 +223,7 @@ test('applyActions with few actions should pass through on initialized graph', a
     const exported = await graph.exportUpdates();
     expect(exported).toBeDefined();
     expect(exported.length).toEqual(1);
-    
+
     await graph.freeGraphState();
 });
 
@@ -294,7 +294,7 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
     const graph = new Graph(environment);
     const handle = graph.getGraphHandle();
     expect(handle).toBeDefined();
-    const keys = {          
+    const keys = {
         dsnpUserId: "2",
         keysHash: 100,
         keys: [],
@@ -324,7 +324,7 @@ test('Create and export a new graph', async () => {
             keys: [],
         } as DsnpKeys,
     } as ConnectAction;
-    
+
     let actions = [] as Action[];
     actions.push(connect_action);
     let applied = await graph.applyActions(actions);
