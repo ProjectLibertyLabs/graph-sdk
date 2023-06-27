@@ -132,7 +132,7 @@ int test_state_capacity() {
 }
 
 int test_initialize_state_with_larger_capacity() {
-    size_t capacity = 10000;
+    size_t capacity = 100000;
     Environment env;
     env.tag = Mainnet;
     GraphState* state = NULL;
