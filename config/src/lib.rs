@@ -245,7 +245,7 @@ impl Config {
 #[cfg(test)]
 mod config_tests {
 	use super::*;
-	use pretty_assertions::{assert_eq, assert_ne};
+	use pretty_assertions::assert_eq;
 	use test_log::test;
 
 	#[test]
