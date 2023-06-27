@@ -57,7 +57,7 @@ mod integration_tests {
 	#[test]
 	fn state_with_capacity_of_higher_than_env_should_return_smaller_capacity() {
 		// arrange
-		let capacity: usize = 10000;
+		let capacity: usize = 11000;
 		let env = Environment::Mainnet;
 
 		// act

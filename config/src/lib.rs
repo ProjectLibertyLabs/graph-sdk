@@ -243,8 +243,9 @@ impl Config {
 }
 
 #[cfg(test)]
-mod test {
+mod config_tests {
 	use super::*;
+	use pretty_assertions::{assert_eq, assert_ne};
 	use test_log::test;
 
 	#[test]
@@ -267,7 +268,7 @@ mod test {
 	#[test]
 	fn config_import_success() -> Result<(), serde_json::Error> {
 		let expected_config = Config {
-			sdk_max_users_graph_size: 1000,
+			sdk_max_users_graph_size: 10000,
 			sdk_max_stale_friendship_days: 90,
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
