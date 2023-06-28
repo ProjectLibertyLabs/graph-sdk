@@ -1,5 +1,5 @@
 {
-  "sdkMaxUsersGraphSize" : 1000,
+  "sdkMaxUsersGraphSize" : 10000,
   "sdkMaxStaleFriendshipDays" : 90,
   "maxGraphPageSizeBytes": 1024,
   "maxPageId": 16,
