@@ -28,7 +28,7 @@ export interface Native {
     exportUpdates(handle: number): Promise<Update[]>;
     getConnectionsForUserGraph(handle: number, dsnpUserId: string, schemaId: number, includePending: boolean):Promise<DsnpGraphEdge[]>;
     forceCalculateGraphs(handle: number, dsnpUserId: string): Promise<Update[]>;
-    getConnectionsWithoutKeys(handle: number): Promise<number[]>;
+    getConnectionsWithoutKeys(handle: number): Promise<string[]>;
     getOneSidedPrivateFriendshipConnections(handle: number, dsnpUserId: string): Promise<DsnpGraphEdge[]>;
     getPublicKeys(handle: number, dsnpUserId: string): Promise<DsnpPublicKey[]>;
     deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>;
