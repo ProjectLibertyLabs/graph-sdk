@@ -66,7 +66,7 @@ export class Graph {
         return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
     }
 
-    getConnectionsWithoutKeys(): Promise<number[]> {
+    getConnectionsWithoutKeys(): Promise<string[]> {
         return graphsdkModule.getConnectionsWithoutKeys(this.handle);
     }
 
