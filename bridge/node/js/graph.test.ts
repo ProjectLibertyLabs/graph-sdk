@@ -7,7 +7,6 @@ import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/
 
 function getTestConfig(): Config {
     const config: Config = {} as Config;
-    config.sdkMaxUsersGraphSize = 100;
     config.sdkMaxStaleFriendshipDays = 100;
     config.maxPageId = 100;
     config.dsnpVersions = [DsnpVersion.Version1_0];
@@ -37,7 +36,6 @@ test('getGraphConfig should return the graph config', async () => {
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(100);
     await graph.freeGraphState();
 });
 
@@ -46,7 +44,6 @@ test('getGraphConfig with Mainnet environment should return the graph config', a
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(10000);
     const schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
     expect(schema_id).toEqual(1);
     await graph.freeGraphState();
@@ -57,7 +54,6 @@ test('getGraphConfig with Rococo environment should return the graph config', as
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.sdkMaxUsersGraphSize).toEqual(10000);
     await graph.freeGraphState();
 });
 
