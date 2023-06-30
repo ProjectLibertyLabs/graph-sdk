@@ -409,8 +409,8 @@ pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray
 		Ok(connections) => {
 			let connections_js = cx.empty_array();
 			for (i, connection) in connections.iter().enumerate() {
-				let dsnp_user_id = cx.number(*connection as f64);
-				connections_js.set(&mut cx, i as u32, dsnp_user_id)?;
+				let connection_js_string: Handle<'_, JsString> = cx.string(connection.to_string());
+				connections_js.set(&mut cx, i as u32, connection_js_string)?;
 			}
 			Ok(connections_js)
 		},
