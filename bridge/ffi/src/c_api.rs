@@ -77,68 +77,6 @@ pub unsafe extern "C" fn initialize_graph_state(
 	})
 }
 
-/// Intialize GraphState with capacity and environment
-/// # Safety
-/// This function is unsafe because it dereferences a raw pointer
-/// # Arguments
-/// * `environment` - a pointer to an environment
-/// * `capacity` - the capacity of the graph state
-/// # Returns
-/// * `GraphState` - the pointer to the graph state
-/// # Errors
-/// * `GraphError` - if the graph state cannot be initialized
-#[no_mangle]
-pub unsafe extern "C" fn initialize_graph_state_with_capacity(
-	environment: *const Environment,
-	capacity: usize,
-) -> FFIResult<GraphState, GraphError> {
-	let result = panic::catch_unwind(|| {
-		let environment = &*environment;
-		let rust_environment = environment_from_ffi(environment);
-		let graph_state = Box::new(GraphState::with_capacity(rust_environment, capacity));
-		let graph_state_ptr = Box::into_raw(graph_state);
-		let mut graph_states = GRAPH_STATES.lock().unwrap();
-		graph_states.push(Box::from_raw(graph_state_ptr));
-		FFIResult::new_mut(graph_state_ptr)
-	});
-	result.unwrap_or_else(|error| {
-		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
-			"Failed to initialize graph state with capacity: {:?}",
-			error
-		))))
-	})
-}
-
-/// Get capacity of graph state
-/// # Safety
-/// This function is unsafe because it dereferences a raw pointer
-/// # Arguments
-/// * `graph_state` - a pointer to a graph state
-/// # Returns
-/// * `usize` - the capacity of the graph state
-/// # Errors
-/// * `GraphError` - if the graph state fails to get capacity
-#[no_mangle]
-pub unsafe extern "C" fn get_graph_capacity(
-	graph_state: *mut GraphState,
-) -> FFIResult<usize, GraphError> {
-	let result = panic::catch_unwind(|| {
-		if graph_state.is_null() {
-			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
-				"Graph state is null".to_string(),
-			)))
-		}
-		let graph_state = &mut *graph_state;
-		FFIResult::new(graph_state.capacity())
-	});
-	result.unwrap_or_else(|error| {
-		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
-			"Failed to get graph capacity: {:?}",
-			error
-		))))
-	})
-}
-
 /// Get total graph states in GRAPH_STATES collection
 /// # Returns
 /// * `usize` - the total graph states in GRAPH_STATES collection

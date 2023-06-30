@@ -25,13 +25,12 @@ message SchemaConfig {
 }
 
 message Config {
-  uint32 sdk_max_users_graph_size = 1;
-  uint32 sdk_max_stale_friendship_days = 2;
-  uint32 max_graph_page_size_bytes = 3;
-  uint32 max_page_id = 4;
-  uint32 max_key_page_size_bytes = 5;
-  map<uint32, SchemaConfig> schema_map = 6;
-  repeated DsnpVersion dsnp_versions = 7;
+  uint32 sdk_max_stale_friendship_days = 1;
+  uint32 max_graph_page_size_bytes = 2;
+  uint32 max_page_id = 3;
+  uint32 max_key_page_size_bytes = 4;
+  map<uint32, SchemaConfig> schema_map = 5;
+  repeated DsnpVersion dsnp_versions = 6;
 }
 
 enum EnvironmentType {

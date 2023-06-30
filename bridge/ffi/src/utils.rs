@@ -29,7 +29,6 @@ fn get_config_from_rust_config(rust_config: &RustConfig) -> Config {
 		.collect::<Vec<DsnpVersion>>();
 
 	Config {
-		sdk_max_users_graph_size: rust_config.sdk_max_users_graph_size,
 		sdk_max_stale_friendship_days: rust_config.sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes: rust_config.max_graph_page_size_bytes,
 		max_page_id: rust_config.max_page_id,
@@ -67,7 +66,6 @@ pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 		dsnp_versions.push(rust_version);
 	}
 	dsnp_graph_config::Config {
-		sdk_max_users_graph_size: config.sdk_max_users_graph_size,
 		sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		max_page_id: config.max_page_id,

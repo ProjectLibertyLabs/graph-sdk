@@ -55,10 +55,6 @@ pub fn config_from_js(
 	cx: &mut FunctionContext,
 	config_from_js: Handle<JsObject>,
 ) -> NeonResult<Config> {
-	let sdk_max_users_graph_size: Handle<JsNumber> =
-		config_from_js.get(cx, "sdkMaxUsersGraphSize")?;
-	let sdk_max_users_graph_size = sdk_max_users_graph_size.value(cx) as u32;
-
 	let sdk_max_stale_friendship_days: Handle<JsNumber> =
 		config_from_js.get(cx, "sdkMaxStaleFriendshipDays")?;
 	let sdk_max_stale_friendship_days = sdk_max_stale_friendship_days.value(cx) as u32;
@@ -81,7 +77,6 @@ pub fn config_from_js(
 	let dsnp_versions = dsnp_versions_from_js(cx, dsnp_versions)?;
 
 	let config_from_js = Config {
-		sdk_max_users_graph_size,
 		sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes,
 		max_page_id,
@@ -176,9 +171,6 @@ pub fn dsnp_versions_from_js(
 /// # Errors
 pub fn config_to_js<'a, C: Context<'a>>(cx: &mut C, config: &Config) -> JsResult<'a, JsObject> {
 	let obj = cx.empty_object();
-
-	let sdk_max_users_graph_size = cx.number(config.sdk_max_users_graph_size);
-	obj.set(cx, "sdkMaxUsersGraphSize", sdk_max_users_graph_size)?;
 
 	let sdk_max_stale_friendship_days = cx.number(config.sdk_max_stale_friendship_days);
 	obj.set(cx, "sdkMaxStaleFriendshipDays", sdk_max_stale_friendship_days)?;

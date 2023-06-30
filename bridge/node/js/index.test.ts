@@ -5,7 +5,6 @@ import { DevEnvironment, EnvironmentType } from './models/environment';
 
 function getTestConfig(): Config {
     const config: Config = {} as Config;
-    config.sdkMaxUsersGraphSize = 100;
     config.sdkMaxStaleFriendshipDays = 100;
     config.maxPageId = 100;
     config.dsnpVersions = [DsnpVersion.Version1_0];

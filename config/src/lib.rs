@@ -158,10 +158,6 @@ pub struct SchemaConfig {
 #[serde_as]
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct Config {
-	/// Maximum number of users in the graph
-	#[serde(rename = "sdkMaxUsersGraphSize")]
-	pub sdk_max_users_graph_size: u32,
-
 	/// Maximum number of days a friendship can be stale before it is removed
 	#[serde(rename = "sdkMaxStaleFriendshipDays")]
 	pub sdk_max_stale_friendship_days: u32,
@@ -268,7 +264,6 @@ mod config_tests {
 	#[test]
 	fn config_import_success() -> Result<(), serde_json::Error> {
 		let expected_config = Config {
-			sdk_max_users_graph_size: 10000,
 			sdk_max_stale_friendship_days: 90,
 			max_graph_page_size_bytes: 1024,
 			max_page_id: 16,
