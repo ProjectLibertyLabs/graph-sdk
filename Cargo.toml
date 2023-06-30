@@ -19,6 +19,7 @@ default-members = [
 
 [profile.release]
 panic = "unwind"
+debug = true
 
 [profile.production]
 inherits = "release"

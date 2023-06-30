@@ -8,41 +8,35 @@ public interface ConfigOrBuilder extends
     com.google.protobuf.MessageOrBuilder {
 
   /**
-   * <code>uint32 sdk_max_users_graph_size = 1;</code>
-   * @return The sdkMaxUsersGraphSize.
-   */
-  int getSdkMaxUsersGraphSize();
-
-  /**
-   * <code>uint32 sdk_max_stale_friendship_days = 2;</code>
+   * <code>uint32 sdk_max_stale_friendship_days = 1;</code>
    * @return The sdkMaxStaleFriendshipDays.
    */
   int getSdkMaxStaleFriendshipDays();
 
   /**
-   * <code>uint32 max_graph_page_size_bytes = 3;</code>
+   * <code>uint32 max_graph_page_size_bytes = 2;</code>
    * @return The maxGraphPageSizeBytes.
    */
   int getMaxGraphPageSizeBytes();
 
   /**
-   * <code>uint32 max_page_id = 4;</code>
+   * <code>uint32 max_page_id = 3;</code>
    * @return The maxPageId.
    */
   int getMaxPageId();
 
   /**
-   * <code>uint32 max_key_page_size_bytes = 5;</code>
+   * <code>uint32 max_key_page_size_bytes = 4;</code>
    * @return The maxKeyPageSizeBytes.
    */
   int getMaxKeyPageSizeBytes();
 
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   int getSchemaMapCount();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   boolean containsSchemaMap(
       int key);
@@ -53,12 +47,12 @@ public interface ConfigOrBuilder extends
   java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
   getSchemaMap();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
   getSchemaMapMap();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   /* nullable */
 io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
@@ -66,35 +60,35 @@ io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
       /* nullable */
 io.amplica.graphsdk.models.SchemaConfig defaultValue);
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrThrow(
       int key);
 
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
    * @return A list containing the dsnpVersions.
    */
   java.util.List<io.amplica.graphsdk.models.DsnpVersion> getDsnpVersionsList();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
    * @return The count of dsnpVersions.
    */
   int getDsnpVersionsCount();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
    * @param index The index of the element to return.
    * @return The dsnpVersions at the given index.
    */
   io.amplica.graphsdk.models.DsnpVersion getDsnpVersions(int index);
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
    * @return A list containing the enum numeric values on the wire for dsnpVersions.
    */
   java.util.List<java.lang.Integer>
   getDsnpVersionsValueList();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
    * @param index The index of the value to return.
    * @return The enum numeric value on the wire of dsnpVersions at the given index.
    */

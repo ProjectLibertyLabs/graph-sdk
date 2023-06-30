@@ -1,7 +1,7 @@
 mod common;
 
 use crate::common::get_schema_from;
-use dsnp_graph_config::{builder::ConfigBuilder, ConnectionType, Environment, PrivacyType};
+use dsnp_graph_config::{ConnectionType, Environment, PrivacyType};
 use dsnp_graph_core::{
 	api::{
 		api::{GraphAPI, GraphState},
@@ -15,7 +15,7 @@ mod integration_tests {
 	use super::*;
 	use crate::common::create_new_keys;
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::{DsnpVersion, GraphKeyType, SchemaConfig};
+	use dsnp_graph_config::GraphKeyType;
 	use dsnp_graph_core::{
 		api::api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
 		dsnp::{
@@ -25,47 +25,6 @@ mod integration_tests {
 		util::builders::KeyDataBuilder,
 	};
 	use std::{borrow::Borrow, collections::HashSet};
-
-	#[test]
-	fn state_capacity_should_return_correct_capacity() {
-		// arrange
-		let capacity: usize = 10;
-		let env = Environment::Dev(
-			ConfigBuilder::new().with_sdk_max_users_graph_size(capacity as u32).build(),
-		);
-		let state = GraphState::new(env);
-
-		// act
-		let state_capacity = state.capacity();
-
-		// assert
-		assert_eq!(state_capacity, capacity);
-	}
-
-	#[test]
-	fn state_with_capacity_of_lower_than_env_should_return_smaller_capacity() {
-		// arrange
-		let capacity: usize = 10;
-
-		// act
-		let state = GraphState::with_capacity(Environment::Mainnet, capacity);
-
-		// assert
-		assert_eq!(state.capacity(), capacity);
-	}
-
-	#[test]
-	fn state_with_capacity_of_higher_than_env_should_return_smaller_capacity() {
-		// arrange
-		let capacity: usize = 11000;
-		let env = Environment::Mainnet;
-
-		// act
-		let state = GraphState::with_capacity(env.clone(), capacity);
-
-		// assert
-		assert_eq!(state.capacity(), env.get_config().sdk_max_users_graph_size as usize);
-	}
 
 	#[test]
 	fn api_len_with_empty_state_should_be_zero() {
@@ -193,34 +152,6 @@ mod integration_tests {
 		let input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
 			.with_page(1, &connections, &vec![], 0)
 			.with_key_pairs(&vec![graph_key_pair])
-			.build();
-
-		// act
-		let res = state.import_users_data(&vec![input]);
-
-		// assert
-		assert!(res.is_err());
-	}
-
-	#[test]
-	fn api_import_user_data_with_maxed_out_capacity_should_fail() {
-		// arrange
-		let connection_type = ConnectionType::Follow(PrivacyType::Public);
-		let schema_id = get_schema_from(Environment::Mainnet, connection_type);
-		let env = Environment::Dev(
-			ConfigBuilder::new()
-				.with_schema(
-					schema_id,
-					SchemaConfig { connection_type, dsnp_version: DsnpVersion::Version1_0 },
-				)
-				.with_sdk_max_users_graph_size(0)
-				.build(),
-		);
-		let mut state = GraphState::new(env.clone());
-		let dsnp_user_id = 1;
-		let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
-		let input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
-			.with_page(1, &connections, &vec![], 0)
 			.build();
 
 		// act

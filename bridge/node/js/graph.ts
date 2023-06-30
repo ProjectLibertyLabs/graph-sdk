@@ -6,12 +6,8 @@ export class Graph {
     /// The handle to the native graph state
     private handle: number;
 
-    constructor(environment: EnvironmentInterface, capacity?: number) {
-        if (capacity) {
-            this.handle = graphsdkModule.initializeGraphStateWithCapacity(environment, capacity);
-        } else {
-            this.handle = graphsdkModule.initializeGraphState(environment);
-        }
+    constructor(environment: EnvironmentInterface) {
+        this.handle = graphsdkModule.initializeGraphState(environment);
     }
 
     getGraphHandle(): number {
@@ -24,10 +20,6 @@ export class Graph {
 
     getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number> {
         return graphsdkModule.getSchemaIdFromConfig(environment, connectionType, privacyType);
-    }
-
-    getGraphCapacity(): Promise<number> {
-        return graphsdkModule.getGraphCapacity(this.handle);
     }
 
     getGraphStatesCount(): Promise<number> {
@@ -89,7 +81,7 @@ export class Graph {
     freeGraphState(): Promise<boolean> {
         return graphsdkModule.freeGraphState(this.handle);
     }
-    
+
     printHelloGraph(): void {
         console.log(graphsdkModule.printHelloGraph());
     }

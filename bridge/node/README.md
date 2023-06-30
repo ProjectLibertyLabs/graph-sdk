@@ -101,17 +101,15 @@ graph.freeGraphState();
 
 ### Class: Graph
 
-#### Constructor: new Graph(environment: EnvironmentInterface, capacity?: number)
+#### Constructor: new Graph(environment: EnvironmentInterface)
 
 Creates a new instance of the Graph class.
 
 - `environment`: An object that represents the environment details.
-- `capacity` (optional): The initial capacity of the graph.
 
 #### Methods
 
 - `getGraphHandle(): number`: Returns the handle to the native graph state.
-- `getGraphCapacity(): Promise<number>`: Retrieves the capacity of the graph.
 - `getGraphSize(): Promise<number>`: Retrieves the current size of the graph.
 - `containsUserGraph(dsnpUserId: number): Promise<boolean>`: Checks if the graph contains the user graph for the specified DSNP user ID.
 - `getGraphUsersCount(): Promise<number>`: Retrieves the count of user graphs in the graph.
@@ -126,7 +124,7 @@ Creates a new instance of the Graph class.
 - `getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]>`: Retrieves the public keys for the specified DSNP user ID.
 - `deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>`: Deserializes DSNP keys.
 - `getGraphConfig(environment: EnvironmentInterface): Promise<Config>`: Retrieves the graph configuration.
-- `getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>`: Retrieves the schema ID from the graph configuration.  
+- `getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>`: Retrieves the schema ID from the graph configuration.
 - `freeGraphState(): void`: Frees the graph state.
 
 ### Type Definitions
@@ -148,7 +146,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 ## Examples
 
 ### Create and export a new graph
-  
+
   ```typescript
   import { Graph, EnvironmentInterface, EnvironmentType } from "@dsnp/graph-sdk";
 
@@ -203,7 +201,7 @@ The SDK provides various type definitions that can be used with the Graph class 
   const updates = await graph.exportUpdates();
 
   graph.freeGraphState();
-  
+
   ```
 
 ### Read and deserialize published graph keys
@@ -337,5 +335,5 @@ The SDK provides various type definitions that can be used with the Graph class 
   actions.push(connect_action);
 
   const applied = await graph.applyActions(actions);
-  
+
   ```

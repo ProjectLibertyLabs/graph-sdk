@@ -15,10 +15,8 @@ function loadNativeModule(): Native {
 export interface Native {
     printHelloGraph(): void;
     initializeGraphState(environment: EnvironmentInterface): number;
-    initializeGraphStateWithCapacity(environment: EnvironmentInterface, capacity: number):number
     getGraphConfig(environment: EnvironmentInterface): Promise<Config>;
     getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>;
-    getGraphCapacity(handle: number): Promise<number>;
     getGraphStatesCount(): Promise<number>;
     getGraphUsersCount(handle: number): Promise<number>;
     containsUserGraph(handle: number, dsnpUserId: string): Promise<boolean>;

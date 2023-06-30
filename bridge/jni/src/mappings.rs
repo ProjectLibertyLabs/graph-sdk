@@ -190,7 +190,6 @@ pub fn serialize_config<'local>(
 	let proto = proto_output::Config {
 		max_page_id: config.max_page_id,
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
-		sdk_max_users_graph_size: config.sdk_max_users_graph_size,
 		sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		dsnp_versions: map_dsnp_versions_to_proto(&config.dsnp_versions)?,
@@ -310,7 +309,6 @@ fn map_config_to_rust(config: proto_output::Config) -> SdkJniResult<RustConfig> 
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
 		max_page_id: config.max_page_id,
-		sdk_max_users_graph_size: config.sdk_max_users_graph_size,
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
 		dsnp_versions,
 		schema_map,
