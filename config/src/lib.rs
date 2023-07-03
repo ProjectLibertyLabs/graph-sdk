@@ -273,7 +273,7 @@ mod config_tests {
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			dsnp_versions: vec![DsnpVersion::Version1_0],
-			graph_key_pair_schema_id: 11,
+			graph_key_pair_schema_id: 1,
 			schema_map: HashMap::from([
 				(
 					1,
