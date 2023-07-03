@@ -76,6 +76,10 @@ pub fn config_from_js(
 	let dsnp_versions: Handle<JsArray> = config_from_js.get(cx, "dsnpVersions")?;
 	let dsnp_versions = dsnp_versions_from_js(cx, dsnp_versions)?;
 
+	let graph_key_pair_schema_id: Handle<JsNumber> =
+		config_from_js.get(cx, "graphKeyPairSchemaId")?;
+	let graph_key_pair_schema_id = graph_key_pair_schema_id.value(cx) as SchemaId;
+
 	let config_from_js = Config {
 		sdk_max_stale_friendship_days,
 		max_graph_page_size_bytes,
@@ -83,6 +87,7 @@ pub fn config_from_js(
 		max_key_page_size_bytes,
 		schema_map,
 		dsnp_versions,
+		graph_key_pair_schema_id,
 	};
 
 	Ok(config_from_js)
@@ -183,6 +188,9 @@ pub fn config_to_js<'a, C: Context<'a>>(cx: &mut C, config: &Config) -> JsResult
 
 	let max_key_page_size_bytes = cx.number(config.max_key_page_size_bytes);
 	obj.set(cx, "maxKeyPageSizeBytes", max_key_page_size_bytes)?;
+
+	let graph_key_pair_schema_id = cx.number(config.graph_key_pair_schema_id);
+	obj.set(cx, "graphKeyPairSchemaId", graph_key_pair_schema_id)?;
 
 	let schema_map = cx.empty_object();
 	for (schema_id, schema_config) in &config.schema_map {

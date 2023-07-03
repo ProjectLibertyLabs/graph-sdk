@@ -23,6 +23,7 @@ enum DsnpVersion {
     maxGraphPageSizeBytes: number;
     maxPageId: number;
     maxKeyPageSizeBytes: number;
+    graphKeyPairSchemaId: number;
     schemaMap: { [key: number]: SchemaConfig };
     dsnpVersions: DsnpVersion[];
   }

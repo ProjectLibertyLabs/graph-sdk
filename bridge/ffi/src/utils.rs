@@ -33,6 +33,7 @@ fn get_config_from_rust_config(rust_config: &RustConfig) -> Config {
 		max_graph_page_size_bytes: rust_config.max_graph_page_size_bytes,
 		max_page_id: rust_config.max_page_id,
 		max_key_page_size_bytes: rust_config.max_key_page_size_bytes,
+		graph_key_pair_schema_id: rust_config.graph_key_pair_schema_id,
 		schema_map_len: schema_map.len(),
 		schema_map: ManuallyDrop::new(schema_map).as_mut_ptr(),
 		dsnp_versions_len: dsnp_versions.len(),
@@ -70,6 +71,7 @@ pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		max_page_id: config.max_page_id,
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
+		graph_key_pair_schema_id: config.graph_key_pair_schema_id,
 		schema_map,
 		dsnp_versions,
 	}

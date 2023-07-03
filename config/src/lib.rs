@@ -174,6 +174,10 @@ pub struct Config {
 	#[serde(rename = "maxKeyPageSizeBytes")]
 	pub max_key_page_size_bytes: u32,
 
+	/// SchemaId for key pair itemized storage
+	#[serde(rename = "graphKeyPairSchemaId")]
+	pub graph_key_pair_schema_id: SchemaId,
+
 	/// Schema map
 	#[serde(rename = "schemaMap")]
 	#[serde_as(as = "Vec<(_, _)>")]
@@ -269,6 +273,7 @@ mod config_tests {
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			dsnp_versions: vec![DsnpVersion::Version1_0],
+			graph_key_pair_schema_id: 11,
 			schema_map: HashMap::from([
 				(
 					1,

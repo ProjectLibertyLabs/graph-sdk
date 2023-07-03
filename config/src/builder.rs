@@ -11,6 +11,7 @@ pub struct ConfigBuilder {
 	max_key_page_size_bytes: u32,
 	schema_map: HashMap<SchemaId, SchemaConfig>,
 	dsnp_versions: Vec<DsnpVersion>,
+	graph_key_pair_schema_id: SchemaId,
 }
 
 impl ConfigBuilder {
@@ -22,6 +23,7 @@ impl ConfigBuilder {
 			max_key_page_size_bytes: 65536,
 			sdk_max_stale_friendship_days: 90,
 			dsnp_versions: vec![],
+			graph_key_pair_schema_id: 0,
 		}
 	}
 
@@ -53,6 +55,10 @@ impl ConfigBuilder {
 		self
 	}
 
+	pub fn with_graph_key_pair_schema_id(mut self, schema_id: SchemaId) -> Self {
+		self.graph_key_pair_schema_id = schema_id;
+		self
+	}
 	pub fn build(self) -> Config {
 		Config {
 			sdk_max_stale_friendship_days: self.sdk_max_stale_friendship_days,
@@ -61,6 +67,7 @@ impl ConfigBuilder {
 			max_key_page_size_bytes: self.max_key_page_size_bytes,
 			max_graph_page_size_bytes: self.max_graph_page_size_bytes,
 			dsnp_versions: self.dsnp_versions,
+			graph_key_pair_schema_id: self.graph_key_pair_schema_id,
 		}
 	}
 }

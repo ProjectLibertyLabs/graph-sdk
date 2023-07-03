@@ -4,6 +4,7 @@
   "maxGraphPageSizeBytes": 1024,
   "maxPageId": 16,
   "maxKeyPageSizeBytes": 65536,
+  "graphKeyPairSchemaId": 1,
   "schemaMap": [
     [
       11,

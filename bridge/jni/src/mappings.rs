@@ -194,6 +194,8 @@ pub fn serialize_config<'local>(
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		dsnp_versions: map_dsnp_versions_to_proto(&config.dsnp_versions)?,
 		schema_map: map_schema_map_to_proto(&config.schema_map)?,
+		graph_key_pair_schema_id: u32::try_from(config.graph_key_pair_schema_id)
+			.map_err(|_| SdkJniError::UnexpectedResponse("invalid graph key pair SchemaId"))?,
 		special_fields: SpecialFields::default(),
 	};
 
@@ -305,6 +307,9 @@ fn map_config_to_rust(config: proto_output::Config) -> SdkJniResult<RustConfig> 
 		);
 	}
 
+	let graph_key_pair_schema_id = SchemaId::try_from(config.graph_key_pair_schema_id)
+		.map_err(|_| SdkJniError::InvalidRequest("invalid SchemaId"))?;
+
 	Ok(RustConfig {
 		max_graph_page_size_bytes: config.max_graph_page_size_bytes,
 		sdk_max_stale_friendship_days: config.sdk_max_stale_friendship_days,
@@ -312,6 +317,7 @@ fn map_config_to_rust(config: proto_output::Config) -> SdkJniResult<RustConfig> 
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
 		dsnp_versions,
 		schema_map,
+		graph_key_pair_schema_id,
 	})
 }
 
