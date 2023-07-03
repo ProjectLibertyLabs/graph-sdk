@@ -31,6 +31,7 @@ message Config {
   uint32 max_key_page_size_bytes = 4;
   map<uint32, SchemaConfig> schema_map = 5;
   repeated DsnpVersion dsnp_versions = 6;
+  uint32 graph_public_key_schema_id = 7;
 }
 
 enum EnvironmentType {

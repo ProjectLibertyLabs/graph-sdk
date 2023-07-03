@@ -13,6 +13,7 @@ mod tests {
 			max_key_page_size_bytes: 1024,
 			schema_map: ptr::null_mut(),
 			schema_map_len: 0,
+			graph_public_key_schema_id: 0,
 			dsnp_versions: ptr::null_mut(),
 			dsnp_versions_len: 0,
 		};

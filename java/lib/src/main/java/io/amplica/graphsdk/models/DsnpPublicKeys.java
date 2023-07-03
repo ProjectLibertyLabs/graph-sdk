@@ -102,7 +102,7 @@ private static final long serialVersionUID = 0L;
     }
 
     public static final int KEY_FIELD_NUMBER = 1;
-    private com.google.protobuf.ByteString key_ = com.google.protobuf.ByteString.EMPTY;
+    private com.google.protobuf.ByteString key_;
     /**
      * <code>bytes key = 1;</code>
      * @return The key.
@@ -113,7 +113,7 @@ private static final long serialVersionUID = 0L;
     }
 
     public static final int KEY_ID_FIELD_NUMBER = 2;
-    private long keyId_ = 0L;
+    private long keyId_;
     /**
      * <code>uint64 key_id = 2;</code>
      * @return The keyId.
@@ -323,9 +323,10 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        bitField0_ = 0;
         key_ = com.google.protobuf.ByteString.EMPTY;
+
         keyId_ = 0L;
+
         return this;
       }
 
@@ -352,19 +353,10 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public io.amplica.graphsdk.models.DsnpPublicKeys.DsnpPublicKey buildPartial() {
         io.amplica.graphsdk.models.DsnpPublicKeys.DsnpPublicKey result = new io.amplica.graphsdk.models.DsnpPublicKeys.DsnpPublicKey(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
+        result.key_ = key_;
+        result.keyId_ = keyId_;
         onBuilt();
         return result;
-      }
-
-      private void buildPartial0(io.amplica.graphsdk.models.DsnpPublicKeys.DsnpPublicKey result) {
-        int from_bitField0_ = bitField0_;
-        if (((from_bitField0_ & 0x00000001) != 0)) {
-          result.key_ = key_;
-        }
-        if (((from_bitField0_ & 0x00000002) != 0)) {
-          result.keyId_ = keyId_;
-        }
       }
 
       @java.lang.Override
@@ -445,12 +437,12 @@ private static final long serialVersionUID = 0L;
                 break;
               case 10: {
                 key_ = input.readBytes();
-                bitField0_ |= 0x00000001;
+
                 break;
               } // case 10
               case 16: {
                 keyId_ = input.readUInt64();
-                bitField0_ |= 0x00000002;
+
                 break;
               } // case 16
               default: {
@@ -468,7 +460,6 @@ private static final long serialVersionUID = 0L;
         } // finally
         return this;
       }
-      private int bitField0_;
 
       private com.google.protobuf.ByteString key_ = com.google.protobuf.ByteString.EMPTY;
       /**
@@ -485,9 +476,11 @@ private static final long serialVersionUID = 0L;
        * @return This builder for chaining.
        */
       public Builder setKey(com.google.protobuf.ByteString value) {
-        if (value == null) { throw new NullPointerException(); }
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  
         key_ = value;
-        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -496,7 +489,7 @@ private static final long serialVersionUID = 0L;
        * @return This builder for chaining.
        */
       public Builder clearKey() {
-        bitField0_ = (bitField0_ & ~0x00000001);
+        
         key_ = getDefaultInstance().getKey();
         onChanged();
         return this;
@@ -519,7 +512,6 @@ private static final long serialVersionUID = 0L;
       public Builder setKeyId(long value) {
         
         keyId_ = value;
-        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -528,7 +520,7 @@ private static final long serialVersionUID = 0L;
        * @return This builder for chaining.
        */
       public Builder clearKeyId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        
         keyId_ = 0L;
         onChanged();
         return this;
@@ -598,7 +590,6 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int PUBLIC_KEY_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
   private java.util.List<io.amplica.graphsdk.models.DsnpPublicKeys.DsnpPublicKey> publicKey_;
   /**
    * <code>repeated .DsnpPublicKeys.DsnpPublicKey public_key = 1;</code>
@@ -828,7 +819,6 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       if (publicKeyBuilder_ == null) {
         publicKey_ = java.util.Collections.emptyList();
       } else {
@@ -862,13 +852,7 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.DsnpPublicKeys buildPartial() {
       io.amplica.graphsdk.models.DsnpPublicKeys result = new io.amplica.graphsdk.models.DsnpPublicKeys(this);
-      buildPartialRepeatedFields(result);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.DsnpPublicKeys result) {
+      int from_bitField0_ = bitField0_;
       if (publicKeyBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0)) {
           publicKey_ = java.util.Collections.unmodifiableList(publicKey_);
@@ -878,10 +862,8 @@ private static final long serialVersionUID = 0L;
       } else {
         result.publicKey_ = publicKeyBuilder_.build();
       }
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.DsnpPublicKeys result) {
-      int from_bitField0_ = bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override

@@ -179,6 +179,10 @@ pub struct Config {
 	#[serde_as(as = "Vec<(_, _)>")]
 	pub schema_map: HashMap<SchemaId, SchemaConfig>,
 
+	/// GraphKeyPair schema_id
+	#[serde(rename = "graphPublicKeySchemaId")]
+	pub graph_public_key_schema_id: SchemaId,
+
 	/// DSNP versions
 	#[serde(rename = "dsnpVersions")]
 	pub dsnp_versions: Vec<DsnpVersion>,
@@ -269,6 +273,7 @@ mod config_tests {
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			dsnp_versions: vec![DsnpVersion::Version1_0],
+			graph_public_key_schema_id: 99, //TODO: put actual value here
 			schema_map: HashMap::from([
 				(
 					1,

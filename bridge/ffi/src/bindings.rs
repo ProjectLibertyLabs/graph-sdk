@@ -166,6 +166,7 @@ pub struct Config {
 	pub max_key_page_size_bytes: u32,
 	pub schema_map_len: size_t,
 	pub schema_map: *mut SchemaConfigTuple,
+	pub graph_public_key_schema_id: SchemaId,
 	pub dsnp_versions_len: size_t,
 	pub dsnp_versions: *mut DsnpVersion,
 }
