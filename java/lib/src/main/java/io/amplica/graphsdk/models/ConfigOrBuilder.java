@@ -32,11 +32,17 @@ public interface ConfigOrBuilder extends
   int getMaxKeyPageSizeBytes();
 
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
+   * <code>uint32 graph_key_pair_schema_id = 5;</code>
+   * @return The graphKeyPairSchemaId.
+   */
+  int getGraphKeyPairSchemaId();
+
+  /**
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
    */
   int getSchemaMapCount();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
    */
   boolean containsSchemaMap(
       int key);
@@ -47,48 +53,50 @@ public interface ConfigOrBuilder extends
   java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
   getSchemaMap();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
    */
   java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
   getSchemaMapMap();
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
    */
+
   /* nullable */
 io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
       int key,
       /* nullable */
 io.amplica.graphsdk.models.SchemaConfig defaultValue);
   /**
-   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
+   * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 6;</code>
    */
+
   io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrThrow(
       int key);
 
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
    * @return A list containing the dsnpVersions.
    */
   java.util.List<io.amplica.graphsdk.models.DsnpVersion> getDsnpVersionsList();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
    * @return The count of dsnpVersions.
    */
   int getDsnpVersionsCount();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
    * @param index The index of the element to return.
    * @return The dsnpVersions at the given index.
    */
   io.amplica.graphsdk.models.DsnpVersion getDsnpVersions(int index);
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
    * @return A list containing the enum numeric values on the wire for dsnpVersions.
    */
   java.util.List<java.lang.Integer>
   getDsnpVersionsValueList();
   /**
-   * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
+   * <code>repeated .DsnpVersion dsnp_versions = 7;</code>
    * @param index The index of the value to return.
    * @return The enum numeric value on the wire of dsnpVersions at the given index.
    */

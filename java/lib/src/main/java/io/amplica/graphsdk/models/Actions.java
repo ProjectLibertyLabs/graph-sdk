@@ -217,7 +217,7 @@ private static final long serialVersionUID = 0L;
 
       private int bitField0_;
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -250,7 +250,7 @@ private static final long serialVersionUID = 0L;
        */
       @java.lang.Override
       public io.amplica.graphsdk.models.ConnectionOrBuilder getConnectionOrBuilder() {
-        return connection_ == null ? io.amplica.graphsdk.models.Connection.getDefaultInstance() : connection_;
+        return getConnection();
       }
 
       public static final int DSNP_KEYS_FIELD_NUMBER = 3;
@@ -500,25 +500,26 @@ private static final long serialVersionUID = 0L;
         private void maybeForceBuilderInitialization() {
           if (com.google.protobuf.GeneratedMessageV3
                   .alwaysUseFieldBuilders) {
-            getConnectionFieldBuilder();
             getDsnpKeysFieldBuilder();
           }
         }
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
-          connection_ = null;
-          if (connectionBuilder_ != null) {
-            connectionBuilder_.dispose();
+
+          if (connectionBuilder_ == null) {
+            connection_ = null;
+          } else {
+            connection_ = null;
             connectionBuilder_ = null;
           }
-          dsnpKeys_ = null;
-          if (dsnpKeysBuilder_ != null) {
-            dsnpKeysBuilder_.dispose();
-            dsnpKeysBuilder_ = null;
+          if (dsnpKeysBuilder_ == null) {
+            dsnpKeys_ = null;
+          } else {
+            dsnpKeysBuilder_.clear();
           }
+          bitField0_ = (bitField0_ & ~0x00000001);
           return this;
         }
 
@@ -545,29 +546,25 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Actions.Action.ConnectAction buildPartial() {
           io.amplica.graphsdk.models.Actions.Action.ConnectAction result = new io.amplica.graphsdk.models.Actions.Action.ConnectAction(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
-          onBuilt();
-          return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Actions.Action.ConnectAction result) {
           int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.connection_ = connectionBuilder_ == null
-                ? connection_
-                : connectionBuilder_.build();
-          }
           int to_bitField0_ = 0;
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.dsnpKeys_ = dsnpKeysBuilder_ == null
-                ? dsnpKeys_
-                : dsnpKeysBuilder_.build();
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          if (connectionBuilder_ == null) {
+            result.connection_ = connection_;
+          } else {
+            result.connection_ = connectionBuilder_.build();
+          }
+          if (((from_bitField0_ & 0x00000001) != 0)) {
+            if (dsnpKeysBuilder_ == null) {
+              result.dsnpKeys_ = dsnpKeys_;
+            } else {
+              result.dsnpKeys_ = dsnpKeysBuilder_.build();
+            }
             to_bitField0_ |= 0x00000001;
           }
-          result.bitField0_ |= to_bitField0_;
+          result.bitField0_ = to_bitField0_;
+          onBuilt();
+          return result;
         }
 
         @java.lang.Override
@@ -651,21 +648,21 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 18: {
                   input.readMessage(
                       getConnectionFieldBuilder().getBuilder(),
                       extensionRegistry);
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 18
                 case 26: {
                   input.readMessage(
                       getDsnpKeysFieldBuilder().getBuilder(),
                       extensionRegistry);
-                  bitField0_ |= 0x00000004;
+                  bitField0_ |= 0x00000001;
                   break;
                 } // case 26
                 default: {
@@ -702,7 +699,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -711,7 +707,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -725,7 +721,7 @@ private static final long serialVersionUID = 0L;
          * @return Whether the connection field is set.
          */
         public boolean hasConnection() {
-          return ((bitField0_ & 0x00000002) != 0);
+          return connectionBuilder_ != null || connection_ != null;
         }
         /**
          * <code>.Connection connection = 2;</code>
@@ -747,11 +743,11 @@ private static final long serialVersionUID = 0L;
               throw new NullPointerException();
             }
             connection_ = value;
+            onChanged();
           } else {
             connectionBuilder_.setMessage(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
@@ -761,11 +757,11 @@ private static final long serialVersionUID = 0L;
             io.amplica.graphsdk.models.Connection.Builder builderForValue) {
           if (connectionBuilder_ == null) {
             connection_ = builderForValue.build();
+            onChanged();
           } else {
             connectionBuilder_.setMessage(builderForValue.build());
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
@@ -773,38 +769,38 @@ private static final long serialVersionUID = 0L;
          */
         public Builder mergeConnection(io.amplica.graphsdk.models.Connection value) {
           if (connectionBuilder_ == null) {
-            if (((bitField0_ & 0x00000002) != 0) &&
-              connection_ != null &&
-              connection_ != io.amplica.graphsdk.models.Connection.getDefaultInstance()) {
-              getConnectionBuilder().mergeFrom(value);
+            if (connection_ != null) {
+              connection_ =
+                io.amplica.graphsdk.models.Connection.newBuilder(connection_).mergeFrom(value).buildPartial();
             } else {
               connection_ = value;
             }
+            onChanged();
           } else {
             connectionBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
          * <code>.Connection connection = 2;</code>
          */
         public Builder clearConnection() {
-          bitField0_ = (bitField0_ & ~0x00000002);
-          connection_ = null;
-          if (connectionBuilder_ != null) {
-            connectionBuilder_.dispose();
+          if (connectionBuilder_ == null) {
+            connection_ = null;
+            onChanged();
+          } else {
+            connection_ = null;
             connectionBuilder_ = null;
           }
-          onChanged();
+
           return this;
         }
         /**
          * <code>.Connection connection = 2;</code>
          */
         public io.amplica.graphsdk.models.Connection.Builder getConnectionBuilder() {
-          bitField0_ |= 0x00000002;
+          
           onChanged();
           return getConnectionFieldBuilder().getBuilder();
         }
@@ -844,7 +840,7 @@ private static final long serialVersionUID = 0L;
          * @return Whether the dsnpKeys field is set.
          */
         public boolean hasDsnpKeys() {
-          return ((bitField0_ & 0x00000004) != 0);
+          return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional .DsnpKeys dsnp_keys = 3;</code>
@@ -866,11 +862,11 @@ private static final long serialVersionUID = 0L;
               throw new NullPointerException();
             }
             dsnpKeys_ = value;
+            onChanged();
           } else {
             dsnpKeysBuilder_.setMessage(value);
           }
-          bitField0_ |= 0x00000004;
-          onChanged();
+          bitField0_ |= 0x00000001;
           return this;
         }
         /**
@@ -880,11 +876,11 @@ private static final long serialVersionUID = 0L;
             io.amplica.graphsdk.models.DsnpKeys.Builder builderForValue) {
           if (dsnpKeysBuilder_ == null) {
             dsnpKeys_ = builderForValue.build();
+            onChanged();
           } else {
             dsnpKeysBuilder_.setMessage(builderForValue.build());
           }
-          bitField0_ |= 0x00000004;
-          onChanged();
+          bitField0_ |= 0x00000001;
           return this;
         }
         /**
@@ -892,38 +888,39 @@ private static final long serialVersionUID = 0L;
          */
         public Builder mergeDsnpKeys(io.amplica.graphsdk.models.DsnpKeys value) {
           if (dsnpKeysBuilder_ == null) {
-            if (((bitField0_ & 0x00000004) != 0) &&
-              dsnpKeys_ != null &&
-              dsnpKeys_ != io.amplica.graphsdk.models.DsnpKeys.getDefaultInstance()) {
-              getDsnpKeysBuilder().mergeFrom(value);
+            if (((bitField0_ & 0x00000001) != 0) &&
+                dsnpKeys_ != null &&
+                dsnpKeys_ != io.amplica.graphsdk.models.DsnpKeys.getDefaultInstance()) {
+              dsnpKeys_ =
+                io.amplica.graphsdk.models.DsnpKeys.newBuilder(dsnpKeys_).mergeFrom(value).buildPartial();
             } else {
               dsnpKeys_ = value;
             }
+            onChanged();
           } else {
             dsnpKeysBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000004;
-          onChanged();
+          bitField0_ |= 0x00000001;
           return this;
         }
         /**
          * <code>optional .DsnpKeys dsnp_keys = 3;</code>
          */
         public Builder clearDsnpKeys() {
-          bitField0_ = (bitField0_ & ~0x00000004);
-          dsnpKeys_ = null;
-          if (dsnpKeysBuilder_ != null) {
-            dsnpKeysBuilder_.dispose();
-            dsnpKeysBuilder_ = null;
+          if (dsnpKeysBuilder_ == null) {
+            dsnpKeys_ = null;
+            onChanged();
+          } else {
+            dsnpKeysBuilder_.clear();
           }
-          onChanged();
+          bitField0_ = (bitField0_ & ~0x00000001);
           return this;
         }
         /**
          * <code>optional .DsnpKeys dsnp_keys = 3;</code>
          */
         public io.amplica.graphsdk.models.DsnpKeys.Builder getDsnpKeysBuilder() {
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000001;
           onChanged();
           return getDsnpKeysFieldBuilder().getBuilder();
         }
@@ -1084,7 +1081,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -1117,7 +1114,7 @@ private static final long serialVersionUID = 0L;
        */
       @java.lang.Override
       public io.amplica.graphsdk.models.ConnectionOrBuilder getConnectionOrBuilder() {
-        return connection_ == null ? io.amplica.graphsdk.models.Connection.getDefaultInstance() : connection_;
+        return getConnection();
       }
 
       private byte memoizedIsInitialized = -1;
@@ -1325,11 +1322,12 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
-          connection_ = null;
-          if (connectionBuilder_ != null) {
-            connectionBuilder_.dispose();
+
+          if (connectionBuilder_ == null) {
+            connection_ = null;
+          } else {
+            connection_ = null;
             connectionBuilder_ = null;
           }
           return this;
@@ -1358,21 +1356,14 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Actions.Action.DisconnectAction buildPartial() {
           io.amplica.graphsdk.models.Actions.Action.DisconnectAction result = new io.amplica.graphsdk.models.Actions.Action.DisconnectAction(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          if (connectionBuilder_ == null) {
+            result.connection_ = connection_;
+          } else {
+            result.connection_ = connectionBuilder_.build();
+          }
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Actions.Action.DisconnectAction result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.connection_ = connectionBuilder_ == null
-                ? connection_
-                : connectionBuilder_.build();
-          }
         }
 
         @java.lang.Override
@@ -1453,14 +1444,14 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 18: {
                   input.readMessage(
                       getConnectionFieldBuilder().getBuilder(),
                       extensionRegistry);
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 18
                 default: {
@@ -1478,7 +1469,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private long ownerDsnpUserId_ ;
         /**
@@ -1497,7 +1487,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -1506,7 +1495,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -1520,7 +1509,7 @@ private static final long serialVersionUID = 0L;
          * @return Whether the connection field is set.
          */
         public boolean hasConnection() {
-          return ((bitField0_ & 0x00000002) != 0);
+          return connectionBuilder_ != null || connection_ != null;
         }
         /**
          * <code>.Connection connection = 2;</code>
@@ -1542,11 +1531,11 @@ private static final long serialVersionUID = 0L;
               throw new NullPointerException();
             }
             connection_ = value;
+            onChanged();
           } else {
             connectionBuilder_.setMessage(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
@@ -1556,11 +1545,11 @@ private static final long serialVersionUID = 0L;
             io.amplica.graphsdk.models.Connection.Builder builderForValue) {
           if (connectionBuilder_ == null) {
             connection_ = builderForValue.build();
+            onChanged();
           } else {
             connectionBuilder_.setMessage(builderForValue.build());
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
@@ -1568,38 +1557,38 @@ private static final long serialVersionUID = 0L;
          */
         public Builder mergeConnection(io.amplica.graphsdk.models.Connection value) {
           if (connectionBuilder_ == null) {
-            if (((bitField0_ & 0x00000002) != 0) &&
-              connection_ != null &&
-              connection_ != io.amplica.graphsdk.models.Connection.getDefaultInstance()) {
-              getConnectionBuilder().mergeFrom(value);
+            if (connection_ != null) {
+              connection_ =
+                io.amplica.graphsdk.models.Connection.newBuilder(connection_).mergeFrom(value).buildPartial();
             } else {
               connection_ = value;
             }
+            onChanged();
           } else {
             connectionBuilder_.mergeFrom(value);
           }
-          bitField0_ |= 0x00000002;
-          onChanged();
+
           return this;
         }
         /**
          * <code>.Connection connection = 2;</code>
          */
         public Builder clearConnection() {
-          bitField0_ = (bitField0_ & ~0x00000002);
-          connection_ = null;
-          if (connectionBuilder_ != null) {
-            connectionBuilder_.dispose();
+          if (connectionBuilder_ == null) {
+            connection_ = null;
+            onChanged();
+          } else {
+            connection_ = null;
             connectionBuilder_ = null;
           }
-          onChanged();
+
           return this;
         }
         /**
          * <code>.Connection connection = 2;</code>
          */
         public io.amplica.graphsdk.models.Connection.Builder getConnectionBuilder() {
-          bitField0_ |= 0x00000002;
+          
           onChanged();
           return getConnectionFieldBuilder().getBuilder();
         }
@@ -1752,7 +1741,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -1763,7 +1752,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int NEW_PUBLIC_KEY_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString newPublicKey_ = com.google.protobuf.ByteString.EMPTY;
+      private com.google.protobuf.ByteString newPublicKey_;
       /**
        * <code>bytes new_public_key = 2;</code>
        * @return The newPublicKey.
@@ -1973,9 +1962,10 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
+
           newPublicKey_ = com.google.protobuf.ByteString.EMPTY;
+
           return this;
         }
 
@@ -2002,19 +1992,10 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Actions.Action.AddGraphKey buildPartial() {
           io.amplica.graphsdk.models.Actions.Action.AddGraphKey result = new io.amplica.graphsdk.models.Actions.Action.AddGraphKey(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          result.newPublicKey_ = newPublicKey_;
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Actions.Action.AddGraphKey result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.newPublicKey_ = newPublicKey_;
-          }
         }
 
         @java.lang.Override
@@ -2095,12 +2076,12 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 18: {
                   newPublicKey_ = input.readBytes();
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 18
                 default: {
@@ -2118,7 +2099,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private long ownerDsnpUserId_ ;
         /**
@@ -2137,7 +2117,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -2146,7 +2125,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -2167,9 +2146,11 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setNewPublicKey(com.google.protobuf.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  
           newPublicKey_ = value;
-          bitField0_ |= 0x00000002;
           onChanged();
           return this;
         }
@@ -2178,7 +2159,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearNewPublicKey() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           newPublicKey_ = getDefaultInstance().getNewPublicKey();
           onChanged();
           return this;
@@ -2614,7 +2595,6 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        bitField0_ = 0;
         if (connectActionBuilder_ != null) {
           connectActionBuilder_.clear();
         }
@@ -2652,31 +2632,30 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public io.amplica.graphsdk.models.Actions.Action buildPartial() {
         io.amplica.graphsdk.models.Actions.Action result = new io.amplica.graphsdk.models.Actions.Action(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
-        buildPartialOneofs(result);
+        if (innerCase_ == 1) {
+          if (connectActionBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = connectActionBuilder_.build();
+          }
+        }
+        if (innerCase_ == 2) {
+          if (disconnectActionBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = disconnectActionBuilder_.build();
+          }
+        }
+        if (innerCase_ == 3) {
+          if (addKeyActionBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = addKeyActionBuilder_.build();
+          }
+        }
+        result.innerCase_ = innerCase_;
         onBuilt();
         return result;
-      }
-
-      private void buildPartial0(io.amplica.graphsdk.models.Actions.Action result) {
-        int from_bitField0_ = bitField0_;
-      }
-
-      private void buildPartialOneofs(io.amplica.graphsdk.models.Actions.Action result) {
-        result.innerCase_ = innerCase_;
-        result.inner_ = this.inner_;
-        if (innerCase_ == 1 &&
-            connectActionBuilder_ != null) {
-          result.inner_ = connectActionBuilder_.build();
-        }
-        if (innerCase_ == 2 &&
-            disconnectActionBuilder_ != null) {
-          result.inner_ = disconnectActionBuilder_.build();
-        }
-        if (innerCase_ == 3 &&
-            addKeyActionBuilder_ != null) {
-          result.inner_ = addKeyActionBuilder_.build();
-        }
       }
 
       @java.lang.Override
@@ -2817,7 +2796,6 @@ private static final long serialVersionUID = 0L;
         return this;
       }
 
-      private int bitField0_;
 
       private com.google.protobuf.SingleFieldBuilderV3<
           io.amplica.graphsdk.models.Actions.Action.ConnectAction, io.amplica.graphsdk.models.Actions.Action.ConnectAction.Builder, io.amplica.graphsdk.models.Actions.Action.ConnectActionOrBuilder> connectActionBuilder_;
@@ -2957,7 +2935,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 1;
-        onChanged();
+        onChanged();;
         return connectActionBuilder_;
       }
 
@@ -3099,7 +3077,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 2;
-        onChanged();
+        onChanged();;
         return disconnectActionBuilder_;
       }
 
@@ -3241,7 +3219,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 3;
-        onChanged();
+        onChanged();;
         return addKeyActionBuilder_;
       }
       @java.lang.Override
@@ -3309,7 +3287,6 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int ACTIONS_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
   private java.util.List<io.amplica.graphsdk.models.Actions.Action> actions_;
   /**
    * <code>repeated .Actions.Action actions = 1;</code>
@@ -3539,7 +3516,6 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       if (actionsBuilder_ == null) {
         actions_ = java.util.Collections.emptyList();
       } else {
@@ -3573,13 +3549,7 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.Actions buildPartial() {
       io.amplica.graphsdk.models.Actions result = new io.amplica.graphsdk.models.Actions(this);
-      buildPartialRepeatedFields(result);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.Actions result) {
+      int from_bitField0_ = bitField0_;
       if (actionsBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0)) {
           actions_ = java.util.Collections.unmodifiableList(actions_);
@@ -3589,10 +3559,8 @@ private static final long serialVersionUID = 0L;
       } else {
         result.actions_ = actionsBuilder_.build();
       }
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.Actions result) {
-      int from_bitField0_ = bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override

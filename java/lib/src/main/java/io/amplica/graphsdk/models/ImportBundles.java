@@ -236,7 +236,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int KEY_TYPE_FIELD_NUMBER = 1;
-      private int keyType_ = 0;
+      private int keyType_;
       /**
        * <code>.GraphKeyType key_type = 1;</code>
        * @return The enum numeric value on the wire for keyType.
@@ -249,12 +249,13 @@ private static final long serialVersionUID = 0L;
        * @return The keyType.
        */
       @java.lang.Override public io.amplica.graphsdk.models.GraphKeyType getKeyType() {
-        io.amplica.graphsdk.models.GraphKeyType result = io.amplica.graphsdk.models.GraphKeyType.forNumber(keyType_);
+        @SuppressWarnings("deprecation")
+        io.amplica.graphsdk.models.GraphKeyType result = io.amplica.graphsdk.models.GraphKeyType.valueOf(keyType_);
         return result == null ? io.amplica.graphsdk.models.GraphKeyType.UNRECOGNIZED : result;
       }
 
       public static final int PUBLIC_KEY_FIELD_NUMBER = 2;
-      private com.google.protobuf.ByteString publicKey_ = com.google.protobuf.ByteString.EMPTY;
+      private com.google.protobuf.ByteString publicKey_;
       /**
        * <code>bytes public_key = 2;</code>
        * @return The publicKey.
@@ -265,7 +266,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int SECRET_KEY_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString secretKey_ = com.google.protobuf.ByteString.EMPTY;
+      private com.google.protobuf.ByteString secretKey_;
       /**
        * <code>bytes secret_key = 3;</code>
        * @return The secretKey.
@@ -484,10 +485,12 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           keyType_ = 0;
+
           publicKey_ = com.google.protobuf.ByteString.EMPTY;
+
           secretKey_ = com.google.protobuf.ByteString.EMPTY;
+
           return this;
         }
 
@@ -514,22 +517,11 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair buildPartial() {
           io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair result = new io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.keyType_ = keyType_;
+          result.publicKey_ = publicKey_;
+          result.secretKey_ = secretKey_;
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.keyType_ = keyType_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.publicKey_ = publicKey_;
-          }
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.secretKey_ = secretKey_;
-          }
         }
 
         @java.lang.Override
@@ -613,17 +605,17 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   keyType_ = input.readEnum();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 18: {
                   publicKey_ = input.readBytes();
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 18
                 case 26: {
                   secretKey_ = input.readBytes();
-                  bitField0_ |= 0x00000004;
+
                   break;
                 } // case 26
                 default: {
@@ -641,7 +633,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private int keyType_ = 0;
         /**
@@ -657,8 +648,8 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setKeyTypeValue(int value) {
+          
           keyType_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -668,7 +659,8 @@ private static final long serialVersionUID = 0L;
          */
         @java.lang.Override
         public io.amplica.graphsdk.models.GraphKeyType getKeyType() {
-          io.amplica.graphsdk.models.GraphKeyType result = io.amplica.graphsdk.models.GraphKeyType.forNumber(keyType_);
+          @SuppressWarnings("deprecation")
+          io.amplica.graphsdk.models.GraphKeyType result = io.amplica.graphsdk.models.GraphKeyType.valueOf(keyType_);
           return result == null ? io.amplica.graphsdk.models.GraphKeyType.UNRECOGNIZED : result;
         }
         /**
@@ -680,7 +672,7 @@ private static final long serialVersionUID = 0L;
           if (value == null) {
             throw new NullPointerException();
           }
-          bitField0_ |= 0x00000001;
+          
           keyType_ = value.getNumber();
           onChanged();
           return this;
@@ -690,7 +682,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearKeyType() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           keyType_ = 0;
           onChanged();
           return this;
@@ -711,9 +703,11 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setPublicKey(com.google.protobuf.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  
           publicKey_ = value;
-          bitField0_ |= 0x00000002;
           onChanged();
           return this;
         }
@@ -722,7 +716,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPublicKey() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           publicKey_ = getDefaultInstance().getPublicKey();
           onChanged();
           return this;
@@ -743,9 +737,11 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setSecretKey(com.google.protobuf.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  
           secretKey_ = value;
-          bitField0_ |= 0x00000004;
           onChanged();
           return this;
         }
@@ -754,7 +750,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearSecretKey() {
-          bitField0_ = (bitField0_ & ~0x00000004);
+          
           secretKey_ = getDefaultInstance().getSecretKey();
           onChanged();
           return this;
@@ -824,7 +820,7 @@ private static final long serialVersionUID = 0L;
     }
 
     public static final int DSNP_USER_ID_FIELD_NUMBER = 1;
-    private long dsnpUserId_ = 0L;
+    private long dsnpUserId_;
     /**
      * <code>uint64 dsnp_user_id = 1;</code>
      * @return The dsnpUserId.
@@ -835,7 +831,7 @@ private static final long serialVersionUID = 0L;
     }
 
     public static final int SCHEMA_ID_FIELD_NUMBER = 2;
-    private int schemaId_ = 0;
+    private int schemaId_;
     /**
      * <code>uint32 schema_id = 2;</code>
      * @return The schemaId.
@@ -846,7 +842,6 @@ private static final long serialVersionUID = 0L;
     }
 
     public static final int KEY_PAIRS_FIELD_NUMBER = 3;
-    @SuppressWarnings("serial")
     private java.util.List<io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair> keyPairs_;
     /**
      * <code>repeated .ImportBundles.ImportBundle.GraphKeyPair key_pairs = 3;</code>
@@ -909,11 +904,10 @@ private static final long serialVersionUID = 0L;
      */
     @java.lang.Override
     public io.amplica.graphsdk.models.DsnpKeysOrBuilder getDsnpKeysOrBuilder() {
-      return dsnpKeys_ == null ? io.amplica.graphsdk.models.DsnpKeys.getDefaultInstance() : dsnpKeys_;
+      return getDsnpKeys();
     }
 
     public static final int PAGES_FIELD_NUMBER = 5;
-    @SuppressWarnings("serial")
     private java.util.List<io.amplica.graphsdk.models.PageData> pages_;
     /**
      * <code>repeated .PageData pages = 5;</code>
@@ -1195,19 +1189,21 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        bitField0_ = 0;
         dsnpUserId_ = 0L;
+
         schemaId_ = 0;
+
         if (keyPairsBuilder_ == null) {
           keyPairs_ = java.util.Collections.emptyList();
         } else {
           keyPairs_ = null;
           keyPairsBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000004);
-        dsnpKeys_ = null;
-        if (dsnpKeysBuilder_ != null) {
-          dsnpKeysBuilder_.dispose();
+        bitField0_ = (bitField0_ & ~0x00000001);
+        if (dsnpKeysBuilder_ == null) {
+          dsnpKeys_ = null;
+        } else {
+          dsnpKeys_ = null;
           dsnpKeysBuilder_ = null;
         }
         if (pagesBuilder_ == null) {
@@ -1216,7 +1212,7 @@ private static final long serialVersionUID = 0L;
           pages_ = null;
           pagesBuilder_.clear();
         }
-        bitField0_ = (bitField0_ & ~0x00000010);
+        bitField0_ = (bitField0_ & ~0x00000002);
         return this;
       }
 
@@ -1243,46 +1239,34 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public io.amplica.graphsdk.models.ImportBundles.ImportBundle buildPartial() {
         io.amplica.graphsdk.models.ImportBundles.ImportBundle result = new io.amplica.graphsdk.models.ImportBundles.ImportBundle(this);
-        buildPartialRepeatedFields(result);
-        if (bitField0_ != 0) { buildPartial0(result); }
-        onBuilt();
-        return result;
-      }
-
-      private void buildPartialRepeatedFields(io.amplica.graphsdk.models.ImportBundles.ImportBundle result) {
+        int from_bitField0_ = bitField0_;
+        result.dsnpUserId_ = dsnpUserId_;
+        result.schemaId_ = schemaId_;
         if (keyPairsBuilder_ == null) {
-          if (((bitField0_ & 0x00000004) != 0)) {
+          if (((bitField0_ & 0x00000001) != 0)) {
             keyPairs_ = java.util.Collections.unmodifiableList(keyPairs_);
-            bitField0_ = (bitField0_ & ~0x00000004);
+            bitField0_ = (bitField0_ & ~0x00000001);
           }
           result.keyPairs_ = keyPairs_;
         } else {
           result.keyPairs_ = keyPairsBuilder_.build();
         }
+        if (dsnpKeysBuilder_ == null) {
+          result.dsnpKeys_ = dsnpKeys_;
+        } else {
+          result.dsnpKeys_ = dsnpKeysBuilder_.build();
+        }
         if (pagesBuilder_ == null) {
-          if (((bitField0_ & 0x00000010) != 0)) {
+          if (((bitField0_ & 0x00000002) != 0)) {
             pages_ = java.util.Collections.unmodifiableList(pages_);
-            bitField0_ = (bitField0_ & ~0x00000010);
+            bitField0_ = (bitField0_ & ~0x00000002);
           }
           result.pages_ = pages_;
         } else {
           result.pages_ = pagesBuilder_.build();
         }
-      }
-
-      private void buildPartial0(io.amplica.graphsdk.models.ImportBundles.ImportBundle result) {
-        int from_bitField0_ = bitField0_;
-        if (((from_bitField0_ & 0x00000001) != 0)) {
-          result.dsnpUserId_ = dsnpUserId_;
-        }
-        if (((from_bitField0_ & 0x00000002) != 0)) {
-          result.schemaId_ = schemaId_;
-        }
-        if (((from_bitField0_ & 0x00000008) != 0)) {
-          result.dsnpKeys_ = dsnpKeysBuilder_ == null
-              ? dsnpKeys_
-              : dsnpKeysBuilder_.build();
-        }
+        onBuilt();
+        return result;
       }
 
       @java.lang.Override
@@ -1339,7 +1323,7 @@ private static final long serialVersionUID = 0L;
           if (!other.keyPairs_.isEmpty()) {
             if (keyPairs_.isEmpty()) {
               keyPairs_ = other.keyPairs_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000001);
             } else {
               ensureKeyPairsIsMutable();
               keyPairs_.addAll(other.keyPairs_);
@@ -1352,7 +1336,7 @@ private static final long serialVersionUID = 0L;
               keyPairsBuilder_.dispose();
               keyPairsBuilder_ = null;
               keyPairs_ = other.keyPairs_;
-              bitField0_ = (bitField0_ & ~0x00000004);
+              bitField0_ = (bitField0_ & ~0x00000001);
               keyPairsBuilder_ = 
                 com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getKeyPairsFieldBuilder() : null;
@@ -1368,7 +1352,7 @@ private static final long serialVersionUID = 0L;
           if (!other.pages_.isEmpty()) {
             if (pages_.isEmpty()) {
               pages_ = other.pages_;
-              bitField0_ = (bitField0_ & ~0x00000010);
+              bitField0_ = (bitField0_ & ~0x00000002);
             } else {
               ensurePagesIsMutable();
               pages_.addAll(other.pages_);
@@ -1381,7 +1365,7 @@ private static final long serialVersionUID = 0L;
               pagesBuilder_.dispose();
               pagesBuilder_ = null;
               pages_ = other.pages_;
-              bitField0_ = (bitField0_ & ~0x00000010);
+              bitField0_ = (bitField0_ & ~0x00000002);
               pagesBuilder_ = 
                 com.google.protobuf.GeneratedMessageV3.alwaysUseFieldBuilders ?
                    getPagesFieldBuilder() : null;
@@ -1418,12 +1402,12 @@ private static final long serialVersionUID = 0L;
                 break;
               case 8: {
                 dsnpUserId_ = input.readUInt64();
-                bitField0_ |= 0x00000001;
+
                 break;
               } // case 8
               case 16: {
                 schemaId_ = input.readUInt32();
-                bitField0_ |= 0x00000002;
+
                 break;
               } // case 16
               case 26: {
@@ -1443,7 +1427,7 @@ private static final long serialVersionUID = 0L;
                 input.readMessage(
                     getDsnpKeysFieldBuilder().getBuilder(),
                     extensionRegistry);
-                bitField0_ |= 0x00000008;
+
                 break;
               } // case 34
               case 42: {
@@ -1493,7 +1477,6 @@ private static final long serialVersionUID = 0L;
       public Builder setDsnpUserId(long value) {
         
         dsnpUserId_ = value;
-        bitField0_ |= 0x00000001;
         onChanged();
         return this;
       }
@@ -1502,7 +1485,7 @@ private static final long serialVersionUID = 0L;
        * @return This builder for chaining.
        */
       public Builder clearDsnpUserId() {
-        bitField0_ = (bitField0_ & ~0x00000001);
+        
         dsnpUserId_ = 0L;
         onChanged();
         return this;
@@ -1525,7 +1508,6 @@ private static final long serialVersionUID = 0L;
       public Builder setSchemaId(int value) {
         
         schemaId_ = value;
-        bitField0_ |= 0x00000002;
         onChanged();
         return this;
       }
@@ -1534,7 +1516,7 @@ private static final long serialVersionUID = 0L;
        * @return This builder for chaining.
        */
       public Builder clearSchemaId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
+        
         schemaId_ = 0;
         onChanged();
         return this;
@@ -1543,9 +1525,9 @@ private static final long serialVersionUID = 0L;
       private java.util.List<io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair> keyPairs_ =
         java.util.Collections.emptyList();
       private void ensureKeyPairsIsMutable() {
-        if (!((bitField0_ & 0x00000004) != 0)) {
+        if (!((bitField0_ & 0x00000001) != 0)) {
           keyPairs_ = new java.util.ArrayList<io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair>(keyPairs_);
-          bitField0_ |= 0x00000004;
+          bitField0_ |= 0x00000001;
          }
       }
 
@@ -1695,7 +1677,7 @@ private static final long serialVersionUID = 0L;
       public Builder clearKeyPairs() {
         if (keyPairsBuilder_ == null) {
           keyPairs_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000004);
+          bitField0_ = (bitField0_ & ~0x00000001);
           onChanged();
         } else {
           keyPairsBuilder_.clear();
@@ -1772,7 +1754,7 @@ private static final long serialVersionUID = 0L;
           keyPairsBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
               io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair, io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair.Builder, io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPairOrBuilder>(
                   keyPairs_,
-                  ((bitField0_ & 0x00000004) != 0),
+                  ((bitField0_ & 0x00000001) != 0),
                   getParentForChildren(),
                   isClean());
           keyPairs_ = null;
@@ -1788,7 +1770,7 @@ private static final long serialVersionUID = 0L;
        * @return Whether the dsnpKeys field is set.
        */
       public boolean hasDsnpKeys() {
-        return ((bitField0_ & 0x00000008) != 0);
+        return dsnpKeysBuilder_ != null || dsnpKeys_ != null;
       }
       /**
        * <code>.DsnpKeys dsnp_keys = 4;</code>
@@ -1810,11 +1792,11 @@ private static final long serialVersionUID = 0L;
             throw new NullPointerException();
           }
           dsnpKeys_ = value;
+          onChanged();
         } else {
           dsnpKeysBuilder_.setMessage(value);
         }
-        bitField0_ |= 0x00000008;
-        onChanged();
+
         return this;
       }
       /**
@@ -1824,11 +1806,11 @@ private static final long serialVersionUID = 0L;
           io.amplica.graphsdk.models.DsnpKeys.Builder builderForValue) {
         if (dsnpKeysBuilder_ == null) {
           dsnpKeys_ = builderForValue.build();
+          onChanged();
         } else {
           dsnpKeysBuilder_.setMessage(builderForValue.build());
         }
-        bitField0_ |= 0x00000008;
-        onChanged();
+
         return this;
       }
       /**
@@ -1836,38 +1818,38 @@ private static final long serialVersionUID = 0L;
        */
       public Builder mergeDsnpKeys(io.amplica.graphsdk.models.DsnpKeys value) {
         if (dsnpKeysBuilder_ == null) {
-          if (((bitField0_ & 0x00000008) != 0) &&
-            dsnpKeys_ != null &&
-            dsnpKeys_ != io.amplica.graphsdk.models.DsnpKeys.getDefaultInstance()) {
-            getDsnpKeysBuilder().mergeFrom(value);
+          if (dsnpKeys_ != null) {
+            dsnpKeys_ =
+              io.amplica.graphsdk.models.DsnpKeys.newBuilder(dsnpKeys_).mergeFrom(value).buildPartial();
           } else {
             dsnpKeys_ = value;
           }
+          onChanged();
         } else {
           dsnpKeysBuilder_.mergeFrom(value);
         }
-        bitField0_ |= 0x00000008;
-        onChanged();
+
         return this;
       }
       /**
        * <code>.DsnpKeys dsnp_keys = 4;</code>
        */
       public Builder clearDsnpKeys() {
-        bitField0_ = (bitField0_ & ~0x00000008);
-        dsnpKeys_ = null;
-        if (dsnpKeysBuilder_ != null) {
-          dsnpKeysBuilder_.dispose();
+        if (dsnpKeysBuilder_ == null) {
+          dsnpKeys_ = null;
+          onChanged();
+        } else {
+          dsnpKeys_ = null;
           dsnpKeysBuilder_ = null;
         }
-        onChanged();
+
         return this;
       }
       /**
        * <code>.DsnpKeys dsnp_keys = 4;</code>
        */
       public io.amplica.graphsdk.models.DsnpKeys.Builder getDsnpKeysBuilder() {
-        bitField0_ |= 0x00000008;
+        
         onChanged();
         return getDsnpKeysFieldBuilder().getBuilder();
       }
@@ -1902,9 +1884,9 @@ private static final long serialVersionUID = 0L;
       private java.util.List<io.amplica.graphsdk.models.PageData> pages_ =
         java.util.Collections.emptyList();
       private void ensurePagesIsMutable() {
-        if (!((bitField0_ & 0x00000010) != 0)) {
+        if (!((bitField0_ & 0x00000002) != 0)) {
           pages_ = new java.util.ArrayList<io.amplica.graphsdk.models.PageData>(pages_);
-          bitField0_ |= 0x00000010;
+          bitField0_ |= 0x00000002;
          }
       }
 
@@ -2054,7 +2036,7 @@ private static final long serialVersionUID = 0L;
       public Builder clearPages() {
         if (pagesBuilder_ == null) {
           pages_ = java.util.Collections.emptyList();
-          bitField0_ = (bitField0_ & ~0x00000010);
+          bitField0_ = (bitField0_ & ~0x00000002);
           onChanged();
         } else {
           pagesBuilder_.clear();
@@ -2131,7 +2113,7 @@ private static final long serialVersionUID = 0L;
           pagesBuilder_ = new com.google.protobuf.RepeatedFieldBuilderV3<
               io.amplica.graphsdk.models.PageData, io.amplica.graphsdk.models.PageData.Builder, io.amplica.graphsdk.models.PageDataOrBuilder>(
                   pages_,
-                  ((bitField0_ & 0x00000010) != 0),
+                  ((bitField0_ & 0x00000002) != 0),
                   getParentForChildren(),
                   isClean());
           pages_ = null;
@@ -2203,7 +2185,6 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int BUNDLES_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
   private java.util.List<io.amplica.graphsdk.models.ImportBundles.ImportBundle> bundles_;
   /**
    * <code>repeated .ImportBundles.ImportBundle bundles = 1;</code>
@@ -2433,7 +2414,6 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       if (bundlesBuilder_ == null) {
         bundles_ = java.util.Collections.emptyList();
       } else {
@@ -2467,13 +2447,7 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.ImportBundles buildPartial() {
       io.amplica.graphsdk.models.ImportBundles result = new io.amplica.graphsdk.models.ImportBundles(this);
-      buildPartialRepeatedFields(result);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.ImportBundles result) {
+      int from_bitField0_ = bitField0_;
       if (bundlesBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0)) {
           bundles_ = java.util.Collections.unmodifiableList(bundles_);
@@ -2483,10 +2457,8 @@ private static final long serialVersionUID = 0L;
       } else {
         result.bundles_ = bundlesBuilder_.build();
       }
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.ImportBundles result) {
-      int from_bitField0_ = bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override

@@ -45,7 +45,6 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int USER_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
   private com.google.protobuf.Internal.LongList user_;
   /**
    * <code>repeated uint64 user = 1;</code>
@@ -278,8 +277,8 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       user_ = emptyLongList();
+      bitField0_ = (bitField0_ & ~0x00000001);
       return this;
     }
 
@@ -306,22 +305,14 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.DsnpUsers buildPartial() {
       io.amplica.graphsdk.models.DsnpUsers result = new io.amplica.graphsdk.models.DsnpUsers(this);
-      buildPartialRepeatedFields(result);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.DsnpUsers result) {
+      int from_bitField0_ = bitField0_;
       if (((bitField0_ & 0x00000001) != 0)) {
         user_.makeImmutable();
         bitField0_ = (bitField0_ & ~0x00000001);
       }
       result.user_ = user_;
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.DsnpUsers result) {
-      int from_bitField0_ = bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override
@@ -442,7 +433,7 @@ private static final long serialVersionUID = 0L;
       if (!((bitField0_ & 0x00000001) != 0)) {
         user_ = mutableCopy(user_);
         bitField0_ |= 0x00000001;
-      }
+       }
     }
     /**
      * <code>repeated uint64 user = 1;</code>
@@ -476,7 +467,6 @@ private static final long serialVersionUID = 0L;
      */
     public Builder setUser(
         int index, long value) {
-      
       ensureUserIsMutable();
       user_.setLong(index, value);
       onChanged();
@@ -488,7 +478,6 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder addUser(long value) {
-      
       ensureUserIsMutable();
       user_.addLong(value);
       onChanged();
