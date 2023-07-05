@@ -54,6 +54,7 @@ public interface ConfigOrBuilder extends
   /**
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
+
   /* nullable */
 io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
       int key,
@@ -62,6 +63,7 @@ io.amplica.graphsdk.models.SchemaConfig defaultValue);
   /**
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
+
   io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrThrow(
       int key);
 
@@ -93,4 +95,10 @@ io.amplica.graphsdk.models.SchemaConfig defaultValue);
    * @return The enum numeric value on the wire of dsnpVersions at the given index.
    */
   int getDsnpVersionsValue(int index);
+
+  /**
+   * <code>uint32 graph_public_key_schema_id = 7;</code>
+   * @return The graphPublicKeySchemaId.
+   */
+  int getGraphPublicKeySchemaId();
 }

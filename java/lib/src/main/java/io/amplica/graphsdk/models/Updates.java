@@ -211,7 +211,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -222,7 +222,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int SCHEMA_ID_FIELD_NUMBER = 2;
-      private int schemaId_ = 0;
+      private int schemaId_;
       /**
        * <code>uint32 schema_id = 2;</code>
        * @return The schemaId.
@@ -233,7 +233,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PAGE_ID_FIELD_NUMBER = 3;
-      private int pageId_ = 0;
+      private int pageId_;
       /**
        * <code>uint32 page_id = 3;</code>
        * @return The pageId.
@@ -244,7 +244,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PREV_HASH_FIELD_NUMBER = 4;
-      private int prevHash_ = 0;
+      private int prevHash_;
       /**
        * <code>uint32 prev_hash = 4;</code>
        * @return The prevHash.
@@ -255,7 +255,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PAYLOAD_FIELD_NUMBER = 5;
-      private com.google.protobuf.ByteString payload_ = com.google.protobuf.ByteString.EMPTY;
+      private com.google.protobuf.ByteString payload_;
       /**
        * <code>bytes payload = 5;</code>
        * @return The payload.
@@ -498,12 +498,16 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
+
           schemaId_ = 0;
+
           pageId_ = 0;
+
           prevHash_ = 0;
+
           payload_ = com.google.protobuf.ByteString.EMPTY;
+
           return this;
         }
 
@@ -530,28 +534,13 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate buildPartial() {
           io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate result = new io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          result.schemaId_ = schemaId_;
+          result.pageId_ = pageId_;
+          result.prevHash_ = prevHash_;
+          result.payload_ = payload_;
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.schemaId_ = schemaId_;
-          }
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.pageId_ = pageId_;
-          }
-          if (((from_bitField0_ & 0x00000008) != 0)) {
-            result.prevHash_ = prevHash_;
-          }
-          if (((from_bitField0_ & 0x00000010) != 0)) {
-            result.payload_ = payload_;
-          }
         }
 
         @java.lang.Override
@@ -641,27 +630,27 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 16: {
                   schemaId_ = input.readUInt32();
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 16
                 case 24: {
                   pageId_ = input.readUInt32();
-                  bitField0_ |= 0x00000004;
+
                   break;
                 } // case 24
                 case 32: {
                   prevHash_ = input.readUInt32();
-                  bitField0_ |= 0x00000008;
+
                   break;
                 } // case 32
                 case 42: {
                   payload_ = input.readBytes();
-                  bitField0_ |= 0x00000010;
+
                   break;
                 } // case 42
                 default: {
@@ -679,7 +668,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private long ownerDsnpUserId_ ;
         /**
@@ -698,7 +686,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -707,7 +694,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -730,7 +717,6 @@ private static final long serialVersionUID = 0L;
         public Builder setSchemaId(int value) {
           
           schemaId_ = value;
-          bitField0_ |= 0x00000002;
           onChanged();
           return this;
         }
@@ -739,7 +725,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearSchemaId() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           schemaId_ = 0;
           onChanged();
           return this;
@@ -762,7 +748,6 @@ private static final long serialVersionUID = 0L;
         public Builder setPageId(int value) {
           
           pageId_ = value;
-          bitField0_ |= 0x00000004;
           onChanged();
           return this;
         }
@@ -771,7 +756,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPageId() {
-          bitField0_ = (bitField0_ & ~0x00000004);
+          
           pageId_ = 0;
           onChanged();
           return this;
@@ -794,7 +779,6 @@ private static final long serialVersionUID = 0L;
         public Builder setPrevHash(int value) {
           
           prevHash_ = value;
-          bitField0_ |= 0x00000008;
           onChanged();
           return this;
         }
@@ -803,7 +787,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPrevHash() {
-          bitField0_ = (bitField0_ & ~0x00000008);
+          
           prevHash_ = 0;
           onChanged();
           return this;
@@ -824,9 +808,11 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setPayload(com.google.protobuf.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  
           payload_ = value;
-          bitField0_ |= 0x00000010;
           onChanged();
           return this;
         }
@@ -835,7 +821,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPayload() {
-          bitField0_ = (bitField0_ & ~0x00000010);
+          
           payload_ = getDefaultInstance().getPayload();
           onChanged();
           return this;
@@ -973,7 +959,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -984,7 +970,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int SCHEMA_ID_FIELD_NUMBER = 2;
-      private int schemaId_ = 0;
+      private int schemaId_;
       /**
        * <code>uint32 schema_id = 2;</code>
        * @return The schemaId.
@@ -995,7 +981,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PAGE_ID_FIELD_NUMBER = 3;
-      private int pageId_ = 0;
+      private int pageId_;
       /**
        * <code>uint32 page_id = 3;</code>
        * @return The pageId.
@@ -1006,7 +992,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PREV_HASH_FIELD_NUMBER = 4;
-      private int prevHash_ = 0;
+      private int prevHash_;
       /**
        * <code>uint32 prev_hash = 4;</code>
        * @return The prevHash.
@@ -1238,11 +1224,14 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
+
           schemaId_ = 0;
+
           pageId_ = 0;
+
           prevHash_ = 0;
+
           return this;
         }
 
@@ -1269,25 +1258,12 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Updates.Update.DeletePageUpdate buildPartial() {
           io.amplica.graphsdk.models.Updates.Update.DeletePageUpdate result = new io.amplica.graphsdk.models.Updates.Update.DeletePageUpdate(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          result.schemaId_ = schemaId_;
+          result.pageId_ = pageId_;
+          result.prevHash_ = prevHash_;
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Updates.Update.DeletePageUpdate result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.schemaId_ = schemaId_;
-          }
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.pageId_ = pageId_;
-          }
-          if (((from_bitField0_ & 0x00000008) != 0)) {
-            result.prevHash_ = prevHash_;
-          }
         }
 
         @java.lang.Override
@@ -1374,22 +1350,22 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 16: {
                   schemaId_ = input.readUInt32();
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 16
                 case 24: {
                   pageId_ = input.readUInt32();
-                  bitField0_ |= 0x00000004;
+
                   break;
                 } // case 24
                 case 32: {
                   prevHash_ = input.readUInt32();
-                  bitField0_ |= 0x00000008;
+
                   break;
                 } // case 32
                 default: {
@@ -1407,7 +1383,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private long ownerDsnpUserId_ ;
         /**
@@ -1426,7 +1401,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -1435,7 +1409,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -1458,7 +1432,6 @@ private static final long serialVersionUID = 0L;
         public Builder setSchemaId(int value) {
           
           schemaId_ = value;
-          bitField0_ |= 0x00000002;
           onChanged();
           return this;
         }
@@ -1467,7 +1440,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearSchemaId() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           schemaId_ = 0;
           onChanged();
           return this;
@@ -1490,7 +1463,6 @@ private static final long serialVersionUID = 0L;
         public Builder setPageId(int value) {
           
           pageId_ = value;
-          bitField0_ |= 0x00000004;
           onChanged();
           return this;
         }
@@ -1499,7 +1471,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPageId() {
-          bitField0_ = (bitField0_ & ~0x00000004);
+          
           pageId_ = 0;
           onChanged();
           return this;
@@ -1522,7 +1494,6 @@ private static final long serialVersionUID = 0L;
         public Builder setPrevHash(int value) {
           
           prevHash_ = value;
-          bitField0_ |= 0x00000008;
           onChanged();
           return this;
         }
@@ -1531,7 +1502,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPrevHash() {
-          bitField0_ = (bitField0_ & ~0x00000008);
+          
           prevHash_ = 0;
           onChanged();
           return this;
@@ -1664,7 +1635,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int OWNER_DSNP_USER_ID_FIELD_NUMBER = 1;
-      private long ownerDsnpUserId_ = 0L;
+      private long ownerDsnpUserId_;
       /**
        * <code>uint64 owner_dsnp_user_id = 1;</code>
        * @return The ownerDsnpUserId.
@@ -1675,7 +1646,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PREV_HASH_FIELD_NUMBER = 2;
-      private int prevHash_ = 0;
+      private int prevHash_;
       /**
        * <code>uint32 prev_hash = 2;</code>
        * @return The prevHash.
@@ -1686,7 +1657,7 @@ private static final long serialVersionUID = 0L;
       }
 
       public static final int PAYLOAD_FIELD_NUMBER = 3;
-      private com.google.protobuf.ByteString payload_ = com.google.protobuf.ByteString.EMPTY;
+      private com.google.protobuf.ByteString payload_;
       /**
        * <code>bytes payload = 3;</code>
        * @return The payload.
@@ -1907,10 +1878,12 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public Builder clear() {
           super.clear();
-          bitField0_ = 0;
           ownerDsnpUserId_ = 0L;
+
           prevHash_ = 0;
+
           payload_ = com.google.protobuf.ByteString.EMPTY;
+
           return this;
         }
 
@@ -1937,22 +1910,11 @@ private static final long serialVersionUID = 0L;
         @java.lang.Override
         public io.amplica.graphsdk.models.Updates.Update.AddKeyUpdate buildPartial() {
           io.amplica.graphsdk.models.Updates.Update.AddKeyUpdate result = new io.amplica.graphsdk.models.Updates.Update.AddKeyUpdate(this);
-          if (bitField0_ != 0) { buildPartial0(result); }
+          result.ownerDsnpUserId_ = ownerDsnpUserId_;
+          result.prevHash_ = prevHash_;
+          result.payload_ = payload_;
           onBuilt();
           return result;
-        }
-
-        private void buildPartial0(io.amplica.graphsdk.models.Updates.Update.AddKeyUpdate result) {
-          int from_bitField0_ = bitField0_;
-          if (((from_bitField0_ & 0x00000001) != 0)) {
-            result.ownerDsnpUserId_ = ownerDsnpUserId_;
-          }
-          if (((from_bitField0_ & 0x00000002) != 0)) {
-            result.prevHash_ = prevHash_;
-          }
-          if (((from_bitField0_ & 0x00000004) != 0)) {
-            result.payload_ = payload_;
-          }
         }
 
         @java.lang.Override
@@ -2036,17 +1998,17 @@ private static final long serialVersionUID = 0L;
                   break;
                 case 8: {
                   ownerDsnpUserId_ = input.readUInt64();
-                  bitField0_ |= 0x00000001;
+
                   break;
                 } // case 8
                 case 16: {
                   prevHash_ = input.readUInt32();
-                  bitField0_ |= 0x00000002;
+
                   break;
                 } // case 16
                 case 26: {
                   payload_ = input.readBytes();
-                  bitField0_ |= 0x00000004;
+
                   break;
                 } // case 26
                 default: {
@@ -2064,7 +2026,6 @@ private static final long serialVersionUID = 0L;
           } // finally
           return this;
         }
-        private int bitField0_;
 
         private long ownerDsnpUserId_ ;
         /**
@@ -2083,7 +2044,6 @@ private static final long serialVersionUID = 0L;
         public Builder setOwnerDsnpUserId(long value) {
           
           ownerDsnpUserId_ = value;
-          bitField0_ |= 0x00000001;
           onChanged();
           return this;
         }
@@ -2092,7 +2052,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearOwnerDsnpUserId() {
-          bitField0_ = (bitField0_ & ~0x00000001);
+          
           ownerDsnpUserId_ = 0L;
           onChanged();
           return this;
@@ -2115,7 +2075,6 @@ private static final long serialVersionUID = 0L;
         public Builder setPrevHash(int value) {
           
           prevHash_ = value;
-          bitField0_ |= 0x00000002;
           onChanged();
           return this;
         }
@@ -2124,7 +2083,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPrevHash() {
-          bitField0_ = (bitField0_ & ~0x00000002);
+          
           prevHash_ = 0;
           onChanged();
           return this;
@@ -2145,9 +2104,11 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder setPayload(com.google.protobuf.ByteString value) {
-          if (value == null) { throw new NullPointerException(); }
+          if (value == null) {
+    throw new NullPointerException();
+  }
+  
           payload_ = value;
-          bitField0_ |= 0x00000004;
           onChanged();
           return this;
         }
@@ -2156,7 +2117,7 @@ private static final long serialVersionUID = 0L;
          * @return This builder for chaining.
          */
         public Builder clearPayload() {
-          bitField0_ = (bitField0_ & ~0x00000004);
+          
           payload_ = getDefaultInstance().getPayload();
           onChanged();
           return this;
@@ -2592,7 +2553,6 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        bitField0_ = 0;
         if (persistBuilder_ != null) {
           persistBuilder_.clear();
         }
@@ -2630,31 +2590,30 @@ private static final long serialVersionUID = 0L;
       @java.lang.Override
       public io.amplica.graphsdk.models.Updates.Update buildPartial() {
         io.amplica.graphsdk.models.Updates.Update result = new io.amplica.graphsdk.models.Updates.Update(this);
-        if (bitField0_ != 0) { buildPartial0(result); }
-        buildPartialOneofs(result);
+        if (innerCase_ == 1) {
+          if (persistBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = persistBuilder_.build();
+          }
+        }
+        if (innerCase_ == 2) {
+          if (deleteBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = deleteBuilder_.build();
+          }
+        }
+        if (innerCase_ == 3) {
+          if (addKeyBuilder_ == null) {
+            result.inner_ = inner_;
+          } else {
+            result.inner_ = addKeyBuilder_.build();
+          }
+        }
+        result.innerCase_ = innerCase_;
         onBuilt();
         return result;
-      }
-
-      private void buildPartial0(io.amplica.graphsdk.models.Updates.Update result) {
-        int from_bitField0_ = bitField0_;
-      }
-
-      private void buildPartialOneofs(io.amplica.graphsdk.models.Updates.Update result) {
-        result.innerCase_ = innerCase_;
-        result.inner_ = this.inner_;
-        if (innerCase_ == 1 &&
-            persistBuilder_ != null) {
-          result.inner_ = persistBuilder_.build();
-        }
-        if (innerCase_ == 2 &&
-            deleteBuilder_ != null) {
-          result.inner_ = deleteBuilder_.build();
-        }
-        if (innerCase_ == 3 &&
-            addKeyBuilder_ != null) {
-          result.inner_ = addKeyBuilder_.build();
-        }
       }
 
       @java.lang.Override
@@ -2795,7 +2754,6 @@ private static final long serialVersionUID = 0L;
         return this;
       }
 
-      private int bitField0_;
 
       private com.google.protobuf.SingleFieldBuilderV3<
           io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate, io.amplica.graphsdk.models.Updates.Update.PersistPageUpdate.Builder, io.amplica.graphsdk.models.Updates.Update.PersistPageUpdateOrBuilder> persistBuilder_;
@@ -2935,7 +2893,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 1;
-        onChanged();
+        onChanged();;
         return persistBuilder_;
       }
 
@@ -3077,7 +3035,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 2;
-        onChanged();
+        onChanged();;
         return deleteBuilder_;
       }
 
@@ -3219,7 +3177,7 @@ private static final long serialVersionUID = 0L;
           inner_ = null;
         }
         innerCase_ = 3;
-        onChanged();
+        onChanged();;
         return addKeyBuilder_;
       }
       @java.lang.Override
@@ -3287,7 +3245,6 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int UPDATE_FIELD_NUMBER = 1;
-  @SuppressWarnings("serial")
   private java.util.List<io.amplica.graphsdk.models.Updates.Update> update_;
   /**
    * <code>repeated .Updates.Update update = 1;</code>
@@ -3517,7 +3474,6 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       if (updateBuilder_ == null) {
         update_ = java.util.Collections.emptyList();
       } else {
@@ -3551,13 +3507,7 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.Updates buildPartial() {
       io.amplica.graphsdk.models.Updates result = new io.amplica.graphsdk.models.Updates(this);
-      buildPartialRepeatedFields(result);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.Updates result) {
+      int from_bitField0_ = bitField0_;
       if (updateBuilder_ == null) {
         if (((bitField0_ & 0x00000001) != 0)) {
           update_ = java.util.Collections.unmodifiableList(update_);
@@ -3567,10 +3517,8 @@ private static final long serialVersionUID = 0L;
       } else {
         result.update_ = updateBuilder_.build();
       }
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.Updates result) {
-      int from_bitField0_ = bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override

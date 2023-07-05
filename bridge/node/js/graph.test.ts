@@ -17,6 +17,7 @@ function getTestConfig(): Config {
     schemaConfig.connectionType = ConnectionType.Follow;
     schemaConfig.privacyType = PrivacyType.Public;
     config.schemaMap = { 1: schemaConfig };
+    config.graphPublicKeySchemaId = 11;
     return config;
 }
 
@@ -36,6 +37,7 @@ test('getGraphConfig should return the graph config', async () => {
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
+    expect(config.graphPublicKeySchemaId).toEqual(11);
     await graph.freeGraphState();
 });
 
@@ -44,6 +46,7 @@ test('getGraphConfig with Mainnet environment should return the graph config', a
     const graph = new Graph(environment);
     const config = await graph.getGraphConfig(environment);
     expect(config).toBeDefined();
+    expect(config.graphPublicKeySchemaId).toEqual(5);
     const schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
     expect(schema_id).toEqual(1);
     await graph.freeGraphState();

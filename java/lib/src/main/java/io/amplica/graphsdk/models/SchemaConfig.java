@@ -46,7 +46,7 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int DSNP_VERSION_FIELD_NUMBER = 1;
-  private int dsnpVersion_ = 0;
+  private int dsnpVersion_;
   /**
    * <code>.DsnpVersion dsnp_version = 1;</code>
    * @return The enum numeric value on the wire for dsnpVersion.
@@ -59,12 +59,13 @@ private static final long serialVersionUID = 0L;
    * @return The dsnpVersion.
    */
   @java.lang.Override public io.amplica.graphsdk.models.DsnpVersion getDsnpVersion() {
-    io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.forNumber(dsnpVersion_);
+    @SuppressWarnings("deprecation")
+    io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.valueOf(dsnpVersion_);
     return result == null ? io.amplica.graphsdk.models.DsnpVersion.UNRECOGNIZED : result;
   }
 
   public static final int CONNECTION_TYPE_FIELD_NUMBER = 2;
-  private int connectionType_ = 0;
+  private int connectionType_;
   /**
    * <code>.ConnectionType connection_type = 2;</code>
    * @return The enum numeric value on the wire for connectionType.
@@ -77,7 +78,8 @@ private static final long serialVersionUID = 0L;
    * @return The connectionType.
    */
   @java.lang.Override public io.amplica.graphsdk.models.ConnectionType getConnectionType() {
-    io.amplica.graphsdk.models.ConnectionType result = io.amplica.graphsdk.models.ConnectionType.forNumber(connectionType_);
+    @SuppressWarnings("deprecation")
+    io.amplica.graphsdk.models.ConnectionType result = io.amplica.graphsdk.models.ConnectionType.valueOf(connectionType_);
     return result == null ? io.amplica.graphsdk.models.ConnectionType.UNRECOGNIZED : result;
   }
 
@@ -278,9 +280,10 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       dsnpVersion_ = 0;
+
       connectionType_ = 0;
+
       return this;
     }
 
@@ -307,19 +310,10 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.SchemaConfig buildPartial() {
       io.amplica.graphsdk.models.SchemaConfig result = new io.amplica.graphsdk.models.SchemaConfig(this);
-      if (bitField0_ != 0) { buildPartial0(result); }
+      result.dsnpVersion_ = dsnpVersion_;
+      result.connectionType_ = connectionType_;
       onBuilt();
       return result;
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.SchemaConfig result) {
-      int from_bitField0_ = bitField0_;
-      if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.dsnpVersion_ = dsnpVersion_;
-      }
-      if (((from_bitField0_ & 0x00000002) != 0)) {
-        result.connectionType_ = connectionType_;
-      }
     }
 
     @java.lang.Override
@@ -400,12 +394,12 @@ private static final long serialVersionUID = 0L;
               break;
             case 8: {
               dsnpVersion_ = input.readEnum();
-              bitField0_ |= 0x00000001;
+
               break;
             } // case 8
             case 16: {
               connectionType_ = input.readEnum();
-              bitField0_ |= 0x00000002;
+
               break;
             } // case 16
             default: {
@@ -423,7 +417,6 @@ private static final long serialVersionUID = 0L;
       } // finally
       return this;
     }
-    private int bitField0_;
 
     private int dsnpVersion_ = 0;
     /**
@@ -439,8 +432,8 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder setDsnpVersionValue(int value) {
+      
       dsnpVersion_ = value;
-      bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
@@ -450,7 +443,8 @@ private static final long serialVersionUID = 0L;
      */
     @java.lang.Override
     public io.amplica.graphsdk.models.DsnpVersion getDsnpVersion() {
-      io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.forNumber(dsnpVersion_);
+      @SuppressWarnings("deprecation")
+      io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.valueOf(dsnpVersion_);
       return result == null ? io.amplica.graphsdk.models.DsnpVersion.UNRECOGNIZED : result;
     }
     /**
@@ -462,7 +456,7 @@ private static final long serialVersionUID = 0L;
       if (value == null) {
         throw new NullPointerException();
       }
-      bitField0_ |= 0x00000001;
+      
       dsnpVersion_ = value.getNumber();
       onChanged();
       return this;
@@ -472,7 +466,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearDsnpVersion() {
-      bitField0_ = (bitField0_ & ~0x00000001);
+      
       dsnpVersion_ = 0;
       onChanged();
       return this;
@@ -492,8 +486,8 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder setConnectionTypeValue(int value) {
+      
       connectionType_ = value;
-      bitField0_ |= 0x00000002;
       onChanged();
       return this;
     }
@@ -503,7 +497,8 @@ private static final long serialVersionUID = 0L;
      */
     @java.lang.Override
     public io.amplica.graphsdk.models.ConnectionType getConnectionType() {
-      io.amplica.graphsdk.models.ConnectionType result = io.amplica.graphsdk.models.ConnectionType.forNumber(connectionType_);
+      @SuppressWarnings("deprecation")
+      io.amplica.graphsdk.models.ConnectionType result = io.amplica.graphsdk.models.ConnectionType.valueOf(connectionType_);
       return result == null ? io.amplica.graphsdk.models.ConnectionType.UNRECOGNIZED : result;
     }
     /**
@@ -515,7 +510,7 @@ private static final long serialVersionUID = 0L;
       if (value == null) {
         throw new NullPointerException();
       }
-      bitField0_ |= 0x00000002;
+      
       connectionType_ = value.getNumber();
       onChanged();
       return this;
@@ -525,7 +520,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearConnectionType() {
-      bitField0_ = (bitField0_ & ~0x00000002);
+      
       connectionType_ = 0;
       onChanged();
       return this;

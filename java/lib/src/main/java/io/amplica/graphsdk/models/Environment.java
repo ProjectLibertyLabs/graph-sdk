@@ -46,7 +46,7 @@ private static final long serialVersionUID = 0L;
 
   private int bitField0_;
   public static final int ENVIRONMENT_TYPE_FIELD_NUMBER = 1;
-  private int environmentType_ = 0;
+  private int environmentType_;
   /**
    * <code>.EnvironmentType environment_type = 1;</code>
    * @return The enum numeric value on the wire for environmentType.
@@ -59,7 +59,8 @@ private static final long serialVersionUID = 0L;
    * @return The environmentType.
    */
   @java.lang.Override public io.amplica.graphsdk.models.EnvironmentType getEnvironmentType() {
-    io.amplica.graphsdk.models.EnvironmentType result = io.amplica.graphsdk.models.EnvironmentType.forNumber(environmentType_);
+    @SuppressWarnings("deprecation")
+    io.amplica.graphsdk.models.EnvironmentType result = io.amplica.graphsdk.models.EnvironmentType.valueOf(environmentType_);
     return result == null ? io.amplica.graphsdk.models.EnvironmentType.UNRECOGNIZED : result;
   }
 
@@ -298,13 +299,14 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
-      bitField0_ = 0;
       environmentType_ = 0;
-      config_ = null;
-      if (configBuilder_ != null) {
-        configBuilder_.dispose();
-        configBuilder_ = null;
+
+      if (configBuilder_ == null) {
+        config_ = null;
+      } else {
+        configBuilder_.clear();
       }
+      bitField0_ = (bitField0_ & ~0x00000001);
       return this;
     }
 
@@ -331,24 +333,20 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.Environment buildPartial() {
       io.amplica.graphsdk.models.Environment result = new io.amplica.graphsdk.models.Environment(this);
-      if (bitField0_ != 0) { buildPartial0(result); }
-      onBuilt();
-      return result;
-    }
-
-    private void buildPartial0(io.amplica.graphsdk.models.Environment result) {
       int from_bitField0_ = bitField0_;
-      if (((from_bitField0_ & 0x00000001) != 0)) {
-        result.environmentType_ = environmentType_;
-      }
       int to_bitField0_ = 0;
-      if (((from_bitField0_ & 0x00000002) != 0)) {
-        result.config_ = configBuilder_ == null
-            ? config_
-            : configBuilder_.build();
+      result.environmentType_ = environmentType_;
+      if (((from_bitField0_ & 0x00000001) != 0)) {
+        if (configBuilder_ == null) {
+          result.config_ = config_;
+        } else {
+          result.config_ = configBuilder_.build();
+        }
         to_bitField0_ |= 0x00000001;
       }
-      result.bitField0_ |= to_bitField0_;
+      result.bitField0_ = to_bitField0_;
+      onBuilt();
+      return result;
     }
 
     @java.lang.Override
@@ -429,14 +427,14 @@ private static final long serialVersionUID = 0L;
               break;
             case 8: {
               environmentType_ = input.readEnum();
-              bitField0_ |= 0x00000001;
+
               break;
             } // case 8
             case 18: {
               input.readMessage(
                   getConfigFieldBuilder().getBuilder(),
                   extensionRegistry);
-              bitField0_ |= 0x00000002;
+              bitField0_ |= 0x00000001;
               break;
             } // case 18
             default: {
@@ -470,8 +468,8 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder setEnvironmentTypeValue(int value) {
+      
       environmentType_ = value;
-      bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
@@ -481,7 +479,8 @@ private static final long serialVersionUID = 0L;
      */
     @java.lang.Override
     public io.amplica.graphsdk.models.EnvironmentType getEnvironmentType() {
-      io.amplica.graphsdk.models.EnvironmentType result = io.amplica.graphsdk.models.EnvironmentType.forNumber(environmentType_);
+      @SuppressWarnings("deprecation")
+      io.amplica.graphsdk.models.EnvironmentType result = io.amplica.graphsdk.models.EnvironmentType.valueOf(environmentType_);
       return result == null ? io.amplica.graphsdk.models.EnvironmentType.UNRECOGNIZED : result;
     }
     /**
@@ -493,7 +492,7 @@ private static final long serialVersionUID = 0L;
       if (value == null) {
         throw new NullPointerException();
       }
-      bitField0_ |= 0x00000001;
+      
       environmentType_ = value.getNumber();
       onChanged();
       return this;
@@ -503,7 +502,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearEnvironmentType() {
-      bitField0_ = (bitField0_ & ~0x00000001);
+      
       environmentType_ = 0;
       onChanged();
       return this;
@@ -517,7 +516,7 @@ private static final long serialVersionUID = 0L;
      * @return Whether the config field is set.
      */
     public boolean hasConfig() {
-      return ((bitField0_ & 0x00000002) != 0);
+      return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .Config config = 2;</code>
@@ -539,11 +538,11 @@ private static final long serialVersionUID = 0L;
           throw new NullPointerException();
         }
         config_ = value;
+        onChanged();
       } else {
         configBuilder_.setMessage(value);
       }
-      bitField0_ |= 0x00000002;
-      onChanged();
+      bitField0_ |= 0x00000001;
       return this;
     }
     /**
@@ -553,11 +552,11 @@ private static final long serialVersionUID = 0L;
         io.amplica.graphsdk.models.Config.Builder builderForValue) {
       if (configBuilder_ == null) {
         config_ = builderForValue.build();
+        onChanged();
       } else {
         configBuilder_.setMessage(builderForValue.build());
       }
-      bitField0_ |= 0x00000002;
-      onChanged();
+      bitField0_ |= 0x00000001;
       return this;
     }
     /**
@@ -565,38 +564,39 @@ private static final long serialVersionUID = 0L;
      */
     public Builder mergeConfig(io.amplica.graphsdk.models.Config value) {
       if (configBuilder_ == null) {
-        if (((bitField0_ & 0x00000002) != 0) &&
-          config_ != null &&
-          config_ != io.amplica.graphsdk.models.Config.getDefaultInstance()) {
-          getConfigBuilder().mergeFrom(value);
+        if (((bitField0_ & 0x00000001) != 0) &&
+            config_ != null &&
+            config_ != io.amplica.graphsdk.models.Config.getDefaultInstance()) {
+          config_ =
+            io.amplica.graphsdk.models.Config.newBuilder(config_).mergeFrom(value).buildPartial();
         } else {
           config_ = value;
         }
+        onChanged();
       } else {
         configBuilder_.mergeFrom(value);
       }
-      bitField0_ |= 0x00000002;
-      onChanged();
+      bitField0_ |= 0x00000001;
       return this;
     }
     /**
      * <code>optional .Config config = 2;</code>
      */
     public Builder clearConfig() {
-      bitField0_ = (bitField0_ & ~0x00000002);
-      config_ = null;
-      if (configBuilder_ != null) {
-        configBuilder_.dispose();
-        configBuilder_ = null;
+      if (configBuilder_ == null) {
+        config_ = null;
+        onChanged();
+      } else {
+        configBuilder_.clear();
       }
-      onChanged();
+      bitField0_ = (bitField0_ & ~0x00000001);
       return this;
     }
     /**
      * <code>optional .Config config = 2;</code>
      */
     public io.amplica.graphsdk.models.Config.Builder getConfigBuilder() {
-      bitField0_ |= 0x00000002;
+      bitField0_ |= 0x00000001;
       onChanged();
       return getConfigFieldBuilder().getBuilder();
     }

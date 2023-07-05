@@ -15,6 +15,7 @@ function getTestConfig(): Config {
     schemaConfig.connectionType = ConnectionType.Follow;
     schemaConfig.privacyType = PrivacyType.Public;
     config.schemaMap = { 1: schemaConfig };
+    config.graphPublicKeySchemaId = 11;
     return config;
 }
 
