@@ -314,7 +314,7 @@ fn map_config_to_rust(config: proto_output::Config) -> SdkJniResult<RustConfig> 
 		max_key_page_size_bytes: config.max_key_page_size_bytes,
 		dsnp_versions,
 		schema_map,
-		graph_public_key_schema_id: config.graph_public_key_schema_id as SchemaId,
+		graph_public_key_schema_id: SchemaId::try_from(config.graph_public_key_schema_id).map_err(|_| SdkJniError::InvalidRequest("invalid SchemaId"))?,
 	})
 }
 
