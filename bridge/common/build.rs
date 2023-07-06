@@ -13,14 +13,16 @@ fn main() {
 	}
 
 	// generate new Rust files
-	protobuf_codegen::Codegen::new()
-		.protoc()
-		.protoc_extra_arg("--experimental_allow_proto3_optional")
-		.includes(&["protos"])
-		.input("protos/input.proto")
-		.input("protos/output.proto")
-		.out_dir("src/proto_types")
-		.run_from_script();
+	Command::new("protoc")
+		.args([
+			"--rust_out",
+			"src/proto_types",
+			"protos/input.proto",
+			"protos/output.proto",
+			"--experimental_allow_proto3_optional",
+		])
+		.spawn()
+		.unwrap();
 
 	// generate new Java files
 	Command::new("protoc")
