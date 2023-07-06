@@ -10,3 +10,6 @@ dsnp-graph-core = { version = "0.1.0", path = "../../core" }
 dsnp-graph-config = { version = "0.1.0", path = "../../config" }
 libc = "0.2.0"
 protobuf = { version = "3.2.0", features = ["with-bytes"] }
+
+[build-dependencies]
+protobuf-codegen = "3.2.0"

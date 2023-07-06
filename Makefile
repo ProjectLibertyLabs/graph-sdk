@@ -5,11 +5,6 @@ PROFILE := release
 # Determine the operating system
 UNAME := $(shell uname)
 
-PROTOC := protoc
- ifeq ($(UNAME), Darwin)
-	PROTOC = /opt/homebrew/opt/protobuf@21/bin/protoc
-endif
-
 CBINDGEN=${HOME}/.cargo/bin/cbindgen
 
 .PHONY: check
@@ -119,27 +114,13 @@ install-protobuf-codegen:
 .PHONY: install-protos
 ifeq ($(UNAME), Darwin)
 install-protos: install-protobuf-codegen
-	@echo "Installing protobuf package..."
+	@echo "Installing protobuf package on Mac..."
 	# Latest version of protobuf (@23) has flagged Rust codegen as experimental;
 	# we'll stick with an earlier version (@21) until that's resolved.
 	@brew install protobuf@21
 endif
 ifeq ($(UNAME), Linux)
 install-protos: install-protobuf-codegen
-	$(error "Please update the Makefile with the appropriate commands for installing the protobuf package using the appropriate distro package manager")
+	@echo "Installing protobuf package on Linux..."
+	@sudo apt-get install -y protobuf-compiler
 endif
-
-.PHONY: build-protos
-build-protos: build-rust-protos build-java-protos
-
-.PHONY: build-rust-protos
-build-rust-protos:
-	@echo "Generating Rust protobuf types..."
-	@rm -f ./bridge/common/src/proto_types/*
-	@$(PROTOC) --rust_out ./bridge/common/src/proto_types ./bridge/common/protos/input.proto ./bridge/common/protos/output.proto
-
-.PHONY: build-java-protos
-build-java-protos:
-	@echo "Generating Java protobuf types..."
-	@rm -f ./java/lib/src/main/java/io/amplica/graphsdk/models/*
-	@$(PROTOC) --java_out ./java/lib/src/main/java/ ./bridge/common/protos/input.proto ./bridge/common/protos/output.proto
