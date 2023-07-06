@@ -112,17 +112,20 @@ build-jni:
 	cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE)
 	@./scripts/install_jni.sh
 
+.PHONY: install-protobuf-codegen
+install-protobuf-codegen:
+	@cargo install protobuf-codegen ; PATH="${HOME}/.cargo/bin:${PATH}"
 
 .PHONY: install-protos
 ifeq ($(UNAME), Darwin)
-install-protos:
+install-protos: install-protobuf-codegen
 	@echo "Installing protobuf package on Mac..."
 	# Latest version of protobuf (@23) has flagged Rust codegen as experimental;
 	# we'll stick with an earlier version (@21) until that's resolved.
 	@brew install protobuf@21
 endif
 ifeq ($(UNAME), Linux)
-install-protos:
+install-protos: install-protobuf-codegen
 	@echo "Installing protobuf package on Linux..."
 	@sudo apt-get install -y protobuf-compiler
 endif
