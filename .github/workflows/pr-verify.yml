@@ -30,6 +30,9 @@ jobs:
           profile: minimal
           target: wasm32-unknown-unknown
 
+      - name: Install Protoc
+        run: make install-protos
+
       - name: Cargo check
         run: make check
 
@@ -49,6 +52,9 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
+
+      - name: Install Protoc
+        run: make install-protos
 
       - name: Cargo test
         run: make test
@@ -109,6 +115,9 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
+
+      - name: Install Protoc
+        run: make install-protos
 
       - name: Cargo build
         run: make build
