@@ -15,6 +15,7 @@ fn main() {
 	// generate new Rust files
 	protobuf_codegen::Codegen::new()
 		.protoc()
+		.protoc_extra_arg("--experimental_allow_proto3_optional")
 		.includes(&["protos"])
 		.input("protos/input.proto")
 		.input("protos/output.proto")
@@ -28,6 +29,7 @@ fn main() {
 			"../../java/lib/src/main/java/",
 			"protos/input.proto",
 			"protos/output.proto",
+			"--experimental_allow_proto3_optional",
 		])
 		.spawn()
 		.unwrap();
