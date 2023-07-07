@@ -40,3 +40,4 @@ export const graphsdkModule: Native = loadNativeModule();
 // Export the models
 export * from "./models";
 export * from "./graph";
+export * from "./import-bundle-builder";
