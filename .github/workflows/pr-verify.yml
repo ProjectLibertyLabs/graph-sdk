@@ -265,9 +265,11 @@ jobs:
         run: npm install
       - name: Get current version
         id: version
+        working-directory: bridge/node
         run: echo ::set-output name=version::$(node -p "require('./package.json').version")
       
       - name: Bump version
+        working-directory: bridge/node
         run: |
           # Increment the version based on semantic versioning rules
           # Example: MAJOR version increment
@@ -276,6 +278,8 @@ jobs:
           npm version --new-version "$VERSION" --no-git-tag-version
       
       - name: Use the new version
+        id: use-version
+        working-directory: bridge/node
         run: |
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
