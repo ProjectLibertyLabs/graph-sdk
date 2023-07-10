@@ -265,7 +265,7 @@ jobs:
         run: npm install
       - name: Get package version
         id: version
-        run: echo ::set-output name=version::$(node -p "require('./bridge/node/package.json').version")
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
         working-directory: bridge/node
       - name: Version ⬆️
         working-directory: bridge/node
