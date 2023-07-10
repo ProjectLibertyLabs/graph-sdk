@@ -25,8 +25,8 @@ describe('ImportBundleBuilder', () => {
         contentHash: 789,
       },
     ];
-
-    const importBundle: ImportBundle = ImportBundleBuilder.setDsnpUserId(dsnpUserId)
+    let importBundleBuilder = new ImportBundleBuilder();
+    const importBundle: ImportBundle = importBundleBuilder.setDsnpUserId(dsnpUserId)
       .setSchemaId(schemaId)
       .addGraphKeyPair(GraphKeyType.X25519, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]))
       .setDsnpKeys(dsnpKeys)

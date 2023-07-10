@@ -1,62 +1,60 @@
 import { GraphKeyType, GraphKeyPair, DsnpKeys, ImportBundle, PageData } from "./models";
 
 export class ImportBundleBuilder {
-  private static dsnpUserId: string;
+  private dsnpUserId: string;
+  private schemaId: number;
+  private keyPairs: GraphKeyPair[];
+  private dsnpKeys: DsnpKeys;
+  private pages: PageData[];
 
-  private static schemaId: number;
+  constructor() {
+    this.dsnpUserId = "";
+    this.schemaId = 0;
+    this.keyPairs = [];
+    this.dsnpKeys = { dsnpUserId: "", keysHash: 0, keys: [] };
+    this.pages = [];
+  }
 
-  private static keyPairs: GraphKeyPair[];
-
-  private static dsnpKeys: DsnpKeys;
-
-  private static pages: PageData[];
-
-  static setDsnpUserId(dsnpUserId: string): typeof ImportBundleBuilder {
-    ImportBundleBuilder.dsnpUserId = dsnpUserId;
+  setDsnpUserId(dsnpUserId: string): ImportBundleBuilder {
+    this.dsnpUserId = dsnpUserId;
     return this;
   }
 
-  static setSchemaId(schemaId: number): typeof ImportBundleBuilder {
-    ImportBundleBuilder.schemaId = schemaId;
+  setSchemaId(schemaId: number): ImportBundleBuilder {
+    this.schemaId = schemaId;
     return this;
   }
 
-  static addGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): typeof ImportBundleBuilder {
-    if (!ImportBundleBuilder.keyPairs) {
-      ImportBundleBuilder.keyPairs = [];
-    }
-    ImportBundleBuilder.keyPairs.push({ keyType, publicKey, secretKey });
+  addGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): ImportBundleBuilder {
+    this.keyPairs.push({ keyType, publicKey, secretKey });
     return this;
   }
 
-  static setDsnpKeys(dsnpKeys: DsnpKeys): typeof ImportBundleBuilder {
-    ImportBundleBuilder.dsnpKeys = dsnpKeys;
+  setDsnpKeys(dsnpKeys: DsnpKeys): ImportBundleBuilder {
+    this.dsnpKeys = dsnpKeys;
     return this;
   }
 
-  static addPageData(pageId: number, content: Uint8Array, contentHash: number): typeof ImportBundleBuilder {
-    if (!ImportBundleBuilder.pages) {
-      ImportBundleBuilder.pages = [];
-    }
-    ImportBundleBuilder.pages.push({ pageId, content, contentHash });
+  addPageData(pageId: number, content: Uint8Array, contentHash: number): ImportBundleBuilder {
+    this.pages.push({ pageId, content, contentHash });
     return this;
   }
 
-  static build(): ImportBundle {
+  build(): ImportBundle {
     const importBundle: ImportBundle = {
-      dsnpUserId: ImportBundleBuilder.dsnpUserId,
-      schemaId: ImportBundleBuilder.schemaId,
-      keyPairs: ImportBundleBuilder.keyPairs,
-      dsnpKeys: ImportBundleBuilder.dsnpKeys,
-      pages: ImportBundleBuilder.pages,
+      dsnpUserId: this.dsnpUserId,
+      schemaId: this.schemaId,
+      keyPairs: this.keyPairs,
+      dsnpKeys: this.dsnpKeys,
+      pages: this.pages,
     };
 
-    // Reset the static properties for the next build
-    ImportBundleBuilder.dsnpUserId = '';
-    ImportBundleBuilder.schemaId = 0;
-    ImportBundleBuilder.keyPairs = [];
-    ImportBundleBuilder.dsnpKeys = { dsnpUserId: '', keysHash: 0, keys: [] };
-    ImportBundleBuilder.pages = [];
+    // Reset the instance properties for the next build
+    this.dsnpUserId = "";
+    this.schemaId = 0;
+    this.keyPairs = [];
+    this.dsnpKeys = { dsnpUserId: "", keysHash: 0, keys: [] };
+    this.pages = [];
 
     return importBundle;
   }
