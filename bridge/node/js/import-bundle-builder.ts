@@ -1,60 +1,54 @@
 import { GraphKeyType, GraphKeyPair, DsnpKeys, ImportBundle, PageData } from "./models";
 
+export interface IImportBundleBuilder {
+  dsnpUserId?: string;
+  schemaId?: number;
+  keyPairs?: GraphKeyPair[];
+  dsnpKeys?: DsnpKeys;
+  pages?: PageData[];
+}
+
 export class ImportBundleBuilder {
-  private dsnpUserId: string;
-  private schemaId: number;
-  private keyPairs: GraphKeyPair[];
-  private dsnpKeys: DsnpKeys;
-  private pages: PageData[];
+  private values: IImportBundleBuilder = {};
 
-  constructor() {
-    this.dsnpUserId = "";
-    this.schemaId = 0;
-    this.keyPairs = [];
-    this.dsnpKeys = { dsnpUserId: "", keysHash: 0, keys: [] };
-    this.pages = [];
+  constructor(values?: IImportBundleBuilder) {
+    if (values !== undefined) {
+      Object.assign(this.values, values);
+    }
   }
 
-  setDsnpUserId(dsnpUserId: string): ImportBundleBuilder {
-    this.dsnpUserId = dsnpUserId;
-    return this;
+  public withDsnpUserId(dsnpUserId: string): ImportBundleBuilder {
+    return new ImportBundleBuilder({ ...this.values, dsnpUserId });
   }
 
-  setSchemaId(schemaId: number): ImportBundleBuilder {
-    this.schemaId = schemaId;
-    return this;
+  public withSchemaId(schemaId: number): ImportBundleBuilder {
+    return new ImportBundleBuilder({ ...this.values, schemaId });
   }
 
-  addGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): ImportBundleBuilder {
-    this.keyPairs.push({ keyType, publicKey, secretKey });
-    return this;
+  public withGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): ImportBundleBuilder {
+    const keyPairs = this.values.keyPairs ? [...this.values.keyPairs] : [];
+    keyPairs.push({ keyType, publicKey, secretKey });
+    return new ImportBundleBuilder({ ...this.values, keyPairs });
   }
 
-  setDsnpKeys(dsnpKeys: DsnpKeys): ImportBundleBuilder {
-    this.dsnpKeys = dsnpKeys;
-    return this;
+  public withDsnpKeys(dsnpKeys: DsnpKeys): ImportBundleBuilder {
+    return new ImportBundleBuilder({ ...this.values, dsnpKeys });
   }
 
-  addPageData(pageId: number, content: Uint8Array, contentHash: number): ImportBundleBuilder {
-    this.pages.push({ pageId, content, contentHash });
-    return this;
+  public withPageData(pageId: number, content: Uint8Array, contentHash: number): ImportBundleBuilder {
+    const pages = this.values.pages ? [...this.values.pages] : [];
+    pages.push({ pageId, content, contentHash });
+    return new ImportBundleBuilder({ ...this.values, pages });
   }
 
-  build(): ImportBundle {
+  public build(): ImportBundle {
     const importBundle: ImportBundle = {
-      dsnpUserId: this.dsnpUserId,
-      schemaId: this.schemaId,
-      keyPairs: this.keyPairs,
-      dsnpKeys: this.dsnpKeys,
-      pages: this.pages,
+      dsnpUserId: this.values.dsnpUserId || '',
+      schemaId: this.values.schemaId || 0,
+      keyPairs: this.values.keyPairs || [],
+      dsnpKeys: this.values.dsnpKeys || { dsnpUserId: '', keysHash: 0, keys: [] },
+      pages: this.values.pages || [],
     };
-
-    // Reset the instance properties for the next build
-    this.dsnpUserId = "";
-    this.schemaId = 0;
-    this.keyPairs = [];
-    this.dsnpKeys = { dsnpUserId: "", keysHash: 0, keys: [] };
-    this.pages = [];
 
     return importBundle;
   }

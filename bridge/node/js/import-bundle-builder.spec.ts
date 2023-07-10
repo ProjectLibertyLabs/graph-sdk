@@ -25,13 +25,15 @@ describe('ImportBundleBuilder', () => {
         contentHash: 789,
       },
     ];
-    let importBundleBuilder = new ImportBundleBuilder();
-    const importBundle: ImportBundle = importBundleBuilder.setDsnpUserId(dsnpUserId)
-      .setSchemaId(schemaId)
-      .addGraphKeyPair(GraphKeyType.X25519, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]))
-      .setDsnpKeys(dsnpKeys)
-      .addPageData(1, new Uint8Array([10, 11, 12]), 789)
-      .build();
+
+    const importBundleBuilder = new ImportBundleBuilder()
+      .withDsnpUserId(dsnpUserId)
+      .withSchemaId(schemaId)
+      .withGraphKeyPair(GraphKeyType.X25519, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]))
+      .withDsnpKeys(dsnpKeys)
+      .withPageData(1, new Uint8Array([10, 11, 12]), 789);
+
+    const importBundle: ImportBundle = importBundleBuilder.build();
 
     expect(importBundle).toEqual({
       dsnpUserId,
