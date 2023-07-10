@@ -263,13 +263,9 @@ jobs:
       - name: Install NPM Dependencies
         working-directory: bridge/node
         run: npm install
-      - name: Get package version
-        id: version
-        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
-        working-directory: bridge/node
       - name: Version ⬆️
         working-directory: bridge/node
-        run: npm version --new-version "${{ steps.version.outputs.version }}" --no-git-tag-version
+        run: npm version --new-version "v0.0.3" --no-git-tag-version
         env:
           FULL_SHA: ${{ github.sha }}
       - name: Build NPM Package
