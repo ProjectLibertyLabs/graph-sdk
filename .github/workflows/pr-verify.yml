@@ -274,7 +274,7 @@ jobs:
           # Increment the version based on semantic versioning rules
           # Example: MAJOR version increment
           # VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); `${parseInt(major) + 1}.0.0`")
-          VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); `${major}.${minor}.${parseInt(patch) + 1}`")
+          VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); \`\${major}.\${minor}.\${parseInt(patch) + 1}\`")
           npm version --new-version "$VERSION" --no-git-tag-version
       
       - name: Use the new version
