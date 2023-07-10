@@ -263,9 +263,26 @@ jobs:
       - name: Install NPM Dependencies
         working-directory: bridge/node
         run: npm install
-      - name: Version ⬆️
+      - name: Get current version
+        id: version
         working-directory: bridge/node
-        run: npm version --new-version "v0.0.0-${FULL_SHA:0:6}" --no-git-tag-version
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+      
+      - name: Bump version
+        working-directory: bridge/node
+        run: |
+          # Increment the version based on semantic versioning rules
+          # Example: MAJOR version increment
+          # VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); `${parseInt(major) + 1}.0.0`")
+          VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); \`\${major}.\${minor}.\${parseInt(patch) + 1}\`")
+          npm version --new-version "$VERSION" --no-git-tag-version
+      
+      - name: Use the new version
+        id: use-version
+        working-directory: bridge/node
+        run: |
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
         env:
           FULL_SHA: ${{ github.sha }}
       - name: Build NPM Package
