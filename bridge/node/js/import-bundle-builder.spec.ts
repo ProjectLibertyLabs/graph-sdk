@@ -29,7 +29,7 @@ describe('ImportBundleBuilder', () => {
     const importBundleBuilder = new ImportBundleBuilder()
       .withDsnpUserId(dsnpUserId)
       .withSchemaId(schemaId)
-      .withGraphKeyPair(GraphKeyType.X25519, new Uint8Array([1, 2, 3]), new Uint8Array([4, 5, 6]))
+      .withGraphKeyPairs([{ keyType: GraphKeyType.X25519, publicKey: new Uint8Array([1, 2, 3]), secretKey:new Uint8Array([4, 5, 6])}])
       .withDsnpKeys(dsnpKeys)
       .withPageData(1, new Uint8Array([10, 11, 12]), 789);
 
