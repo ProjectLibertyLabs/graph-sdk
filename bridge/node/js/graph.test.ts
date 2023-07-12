@@ -230,11 +230,11 @@ test('getConnectionsForUserGraph with empty connections should return empty arra
             dsnpUserId: "2",
             schemaId: 1,
         } as Connection,
-        dsnpKeys: {
-          dsnpUserId: "2",
-          keysHash: 100,
-          keys: [],
-        } as DsnpKeys,
+        // dsnpKeys: {
+        //   dsnpUserId: "2",
+        //   keysHash: 100,
+        //   keys: [],
+        // } as DsnpKeys,
     } as ConnectAction;
 
     actions.push(action_1);

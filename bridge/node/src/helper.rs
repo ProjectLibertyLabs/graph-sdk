@@ -107,7 +107,7 @@ pub fn schema_map_from_js(
 ) -> NeonResult<std::collections::HashMap<SchemaId, SchemaConfig>> {
 	let mut schema_map = std::collections::HashMap::new();
 
-	let schema_map_keys = schema_map_from_js.get_own_property_names(cx)?;
+	let schema_map_keys: Handle<'_, JsArray> = schema_map_from_js.get_own_property_names(cx)?;
 	for key in schema_map_keys.to_vec(cx).unwrap() {
 		let key_value: Handle<'_, JsString> = key.downcast_or_throw(cx)?;
 		let key_str = key_value.value(cx);
@@ -641,19 +641,27 @@ pub fn action_from_js<'a, C: Context<'a>>(
 	let action_type = action_type.value(cx);
 	let action = match action_type.as_str() {
 		"Connect" => {
+			let action_keys: Handle<'_, JsArray> = action_js.get_own_property_names(cx)?;
 			let owner_dsnp_user_id: Handle<'_, JsString> = action_js.get(cx, "ownerDsnpUserId")?;
 			let owner_dsnp_user_id = match owner_dsnp_user_id.value(cx).parse::<DsnpUserId>() {
 				Ok(owner_dsnp_user_id) => owner_dsnp_user_id,
 				Err(_) => cx.throw_error("Invalid dsnp user id")?,
 			};
 
-			let dsnp_keys: Option<DsnpKeys> = match action_js.get(cx, "dsnpKeys") {
-				Ok(dsnp_keys) => {
-					let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
-					Some(dsnp_keys)
-				},
-				Err(_) => None,
-			};
+			let mut dsnp_keys: Option<DsnpKeys> = None;
+			for key in action_keys.to_vec(cx).unwrap() {
+				let key_value: Handle<'_, JsString> = key.downcast_or_throw(cx)?;
+				let key_value = key_value.value(cx);
+				if key_value.as_str() == "dsnpKeys" {
+					dsnp_keys = match action_js.get(cx, "dsnpKeys") {
+						Ok(dsnp_keys) => {
+							let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
+							Some(dsnp_keys)
+						},
+						Err(_) => None,
+					};
+				}
+			}
 			let connection: Handle<'_, JsObject> = action_js.get(cx, "connection")?;
 			let connection: Connection = connection_from_js(cx, connection)?;
 
