@@ -1,6 +1,5 @@
-import exp from 'constants';
 import { Graph } from './graph';
-import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData, GraphKeyType} from './models';
+import { PageData, GraphKeyPair, DsnpKeys, ImportBundle, Action, ConnectAction, Connection, AddGraphKeyAction, KeyData, GraphKeyType, PersistPageUpdate} from './models';
 import { Config, ConnectionType, DsnpVersion, PrivacyType, SchemaConfig } from './models/config';
 import { DevEnvironment, EnvironmentInterface, EnvironmentType } from './models/environment';
 
@@ -197,11 +196,11 @@ test('applyActions with few actions should pass through on initialized graph', a
             dsnpUserId: "2",
             schemaId: 1,
         } as Connection,
-        dsnpKeys: {
-          dsnpUserId: "2",
-          keysHash: 100,
-          keys: [],
-        } as DsnpKeys,
+        // dsnpKeys: {
+        //   dsnpUserId: "2",
+        //   keysHash: 100,
+        //   keys: [],
+        // } as DsnpKeys,
     } as ConnectAction;
 
     actions.push(action_1);
@@ -294,12 +293,12 @@ test('deserializeDsnpKeys with empty keys should return empty array', async () =
 });
 
 test('Create and export a new graph', async () => {
-    let mainnet_environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
-    let graph = new Graph(mainnet_environment);
+    const mainnet_environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
+    const graph = new Graph(mainnet_environment);
 
-    let public_follow_graph_schema_id = await graph.getSchemaIdFromConfig(mainnet_environment, ConnectionType.Follow, PrivacyType.Public);
+    const public_follow_graph_schema_id = await graph.getSchemaIdFromConfig(mainnet_environment, ConnectionType.Follow, PrivacyType.Public);
 
-    let connect_action: ConnectAction = {
+    const connect_action: ConnectAction = {
         type: "Connect",
         ownerDsnpUserId: "1",
         connection: {
@@ -313,17 +312,17 @@ test('Create and export a new graph', async () => {
         } as DsnpKeys,
     } as ConnectAction;
 
-    let actions = [] as Action[];
+    const actions = [] as Action[];
     actions.push(connect_action);
-    let applied = await graph.applyActions(actions);
+    const applied = await graph.applyActions(actions);
     expect(applied).toEqual(true);
 
-    let connections_including_pending = await graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
+    const connections_including_pending = await graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
 
     expect(connections_including_pending).toBeDefined();
     expect(connections_including_pending.length).toEqual(1);
 
-    let exported = await graph.exportUpdates();
+    const exported = await graph.exportUpdates();
     expect(exported).toBeDefined();
     expect(exported.length).toEqual(1);
 });
@@ -356,14 +355,14 @@ test('Add a new graph key', async () => {
 });
 
 test('Read and deserialize published graph keys', async () => {
-    let dsnp_key_owner = 1000;
+    const dsnp_key_owner = 1000;
 
 	// published keys blobs fetched from blockchain
-	let published_keys_blob = [
+	const published_keys_blob = [
 		64, 15, 234, 44, 175, 171, 220, 131, 117, 43, 227, 111, 165, 52, 150, 64, 218, 44, 130,
 		138, 221, 10, 41, 13, 241, 60, 210, 216, 23, 62, 178, 73, 111,
 	];
-	let dsnp_keys = {
+	const dsnp_keys = {
         dsnpUserId: dsnp_key_owner.toString(),
         keysHash: 100,
         keys: [
@@ -374,8 +373,6 @@ test('Read and deserialize published graph keys', async () => {
 
          ] as KeyData[],
     } as DsnpKeys;
-
-    const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
 
     const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
     expect(deserialized_keys).toBeDefined();

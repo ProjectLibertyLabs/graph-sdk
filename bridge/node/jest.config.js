@@ -9,6 +9,5 @@ module.exports = {
         tsconfig: 'tsconfig.json',
       },
     },
+    testMatch: ["**/*.test.ts"]
 };
-
-  

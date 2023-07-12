@@ -850,7 +850,13 @@ mod integration_tests {
 		let mut state = GraphState::new(env);
 		let input2 = ImportBundleBuilder::build_from(&input1, &exports);
 		assert_eq!(input2.pages.len(), input1.pages.len() - 1);
-		assert_eq!(input2.dsnp_keys.keys.len(), input1.dsnp_keys.keys.len() + 1);
+		let (len1, len2) = match (&input1.dsnp_keys, &input2.dsnp_keys) {
+			(Some(key1), Some(key2)) => (key1.keys.len(), key2.keys.len()),
+			(Some(key1), None) => (key1.keys.len(), 0),
+			(None, Some(key2)) => (0, key2.keys.len()),
+			(None, None) => (0, 0),
+		};
+		assert_eq!(len2, len1 + 1);
 		state.import_users_data(&vec![input2]).expect("should import input2");
 		let new_connections: HashSet<DsnpUserId> = state
 			.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, false)
@@ -907,7 +913,13 @@ mod integration_tests {
 		let mut state = GraphState::new(env);
 		let input2 = ImportBundleBuilder::build_from(&input1, &exports);
 		assert_eq!(input2.pages.len(), input1.pages.len() - 1);
-		assert_eq!(input2.dsnp_keys.keys.len(), input1.dsnp_keys.keys.len());
+		let (len1, len2) = match (&input1.dsnp_keys, &input2.dsnp_keys) {
+			(Some(key1), Some(key2)) => (key1.keys.len(), key2.keys.len()),
+			(Some(key1), None) => (key1.keys.len(), 0),
+			(None, Some(key2)) => (0, key2.keys.len()),
+			(None, None) => (0, 0),
+		};
+		assert_eq!(len2, len1);
 		state.import_users_data(&vec![input2]).expect("should import input2");
 		let new_connections: HashSet<DsnpUserId> = state
 			.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, false)
@@ -1012,7 +1024,13 @@ mod integration_tests {
 		let mut state = GraphState::new(env);
 		let input2 = ImportBundleBuilder::build_from(&input1, &exports);
 		assert_eq!(input2.pages.len(), input1.pages.len());
-		assert_eq!(input2.dsnp_keys.keys.len(), input1.dsnp_keys.keys.len());
+		let (len1, len2) = match (&input1.dsnp_keys, &input2.dsnp_keys) {
+			(Some(key1), Some(key2)) => (key1.keys.len(), key2.keys.len()),
+			(Some(key1), None) => (key1.keys.len(), 0),
+			(None, Some(key2)) => (0, key2.keys.len()),
+			(None, None) => (0, 0),
+		};
+		assert_eq!(len2, len1);
 		state.import_users_data(&vec![input2]).expect("should import input2");
 		let new_connections: HashSet<DsnpUserId> = state
 			.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, false)
@@ -1184,7 +1202,7 @@ mod integration_tests {
 		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
 
 		// act
-		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+		let res = GraphState::deserialize_dsnp_keys(&Some(dsnp_keys));
 
 		// assert
 		assert!(res.is_ok());
@@ -1207,7 +1225,7 @@ mod integration_tests {
 		let dsnp_keys = DsnpKeys { keys, keys_hash: 10, dsnp_user_id: 1 };
 
 		// act
-		let res = GraphState::deserialize_dsnp_keys(&dsnp_keys);
+		let res = GraphState::deserialize_dsnp_keys(&Some(dsnp_keys));
 
 		// assert
 		assert!(res.is_err());

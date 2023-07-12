@@ -287,11 +287,17 @@ pub fn import_bundle_from_js_object<'a, C: Context<'a>>(
 	};
 	let schema_id: Handle<'_, JsNumber> = import_bundle_js.get(cx, "schemaId")?;
 	let schema_id = schema_id.value(cx) as SchemaId;
-	let dsnp_keys: Handle<'_, JsObject> = import_bundle_js.get(cx, "dsnpKeys")?;
-	let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
+	let dsnp_keys: Option<Handle<'_, JsObject>> = import_bundle_js.get_opt(cx, "dsnpKeys")?;
+	let dsnp_keys = match dsnp_keys {
+		Some(keys) => Some(dsnp_keys_from_js(cx, keys)?),
+		None => None,
+	};
 
-	let key_pairs: Handle<'_, JsArray> = import_bundle_js.get(cx, "keyPairs")?;
-	let key_pairs: Vec<GraphKeyPair> = key_pairs_from_js(cx, key_pairs)?;
+	let key_pairs: Option<Handle<'_, JsArray>> = import_bundle_js.get_opt(cx, "keyPairs")?;
+	let key_pairs = match key_pairs {
+		Some(kp) => key_pairs_from_js(cx, kp)?,
+		None => Vec::new(),
+	};
 
 	let pages: Handle<'_, JsArray> = import_bundle_js.get(cx, "pages")?;
 	let pages: Vec<PageData> = pages_from_js(cx, pages)?;
@@ -647,10 +653,13 @@ pub fn action_from_js<'a, C: Context<'a>>(
 				Err(_) => cx.throw_error("Invalid dsnp user id")?,
 			};
 
-			let dsnp_keys: Option<DsnpKeys> = match action_js.get(cx, "dsnpKeys") {
-				Ok(dsnp_keys) => {
-					let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
-					Some(dsnp_keys)
+			let dsnp_keys: Option<DsnpKeys> = match action_js.get_opt(cx, "dsnpKeys") {
+				Ok(dsnp_keys) => match dsnp_keys {
+					Some(dsnp_keys) => {
+						let dsnp_keys: DsnpKeys = dsnp_keys_from_js(cx, dsnp_keys)?;
+						Some(dsnp_keys)
+					},
+					None => None,
 				},
 				Err(_) => None,
 			};

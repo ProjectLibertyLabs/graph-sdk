@@ -24,7 +24,7 @@ test('printHelloGraph should print "Hello, Graph!"', async () => {
     const consoleLogMock = jest.spyOn(console, 'log').mockImplementation();
     const environment: DevEnvironment = { environmentType: EnvironmentType.Dev, config: getTestConfig()};
     const graph = new Graph(environment);
-    await graph.printHelloGraph();
+    graph.printHelloGraph();
     expect(consoleLogMock).toHaveBeenCalledWith('Hello, Graph!');
     await graph.freeGraphState();
 });

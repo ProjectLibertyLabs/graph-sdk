@@ -140,7 +140,7 @@ pub trait GraphAPI {
 	fn get_public_keys(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
 
 	/// Returns the deserialized dsnp keys without importing
-	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
+	fn deserialize_dsnp_keys(keys: &Option<DsnpKeys>) -> DsnpGraphResult<Vec<DsnpPublicKey>>;
 
 	/// Generate a key pair for the given key pair type
 	fn generate_keypair(key_pair_type: GraphKeyType) -> DsnpGraphResult<GraphKeyPair>;
@@ -318,9 +318,12 @@ impl GraphAPI for GraphState {
 	}
 
 	/// Returns the deserialized dsnp keys
-	fn deserialize_dsnp_keys(keys: &DsnpKeys) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
+	fn deserialize_dsnp_keys(keys: &Option<DsnpKeys>) -> DsnpGraphResult<Vec<DsnpPublicKey>> {
 		// sorting by index in ascending mode
-		let mut sorted_keys = keys.keys.clone().to_vec();
+		let mut sorted_keys = match keys {
+			Some(keys) => keys.keys.clone().to_vec(),
+			None => vec![],
+		};
 		sorted_keys.sort();
 
 		let mut dsnp_keys = vec![];
@@ -387,10 +390,17 @@ impl GraphState {
 				.get_config()
 				.get_connection_type_from_schema_id(*schema_id)
 				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
-			self.shared_state_manager
-				.write()
-				.map_err(|_| DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string()))?
-				.import_dsnp_keys(&dsnp_keys)?;
+			match dsnp_keys {
+				Some(dsnp_keys) => {
+					self.shared_state_manager
+						.write()
+						.map_err(|_| {
+							DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string())
+						})?
+						.import_dsnp_keys(&dsnp_keys)?;
+				},
+				None => (),
+			};
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 			let dsnp_config = user_graph

@@ -84,7 +84,7 @@ pub struct ImportBundle {
 	pub key_pairs_len: size_t,
 
 	/// published dsnp keys associated with this dsnp user
-	pub dsnp_keys: DsnpKeys,
+	pub dsnp_keys: Option<DsnpKeys>,
 
 	/// Page data containing the social graph retrieved from chain
 	pub pages: *mut PageData,

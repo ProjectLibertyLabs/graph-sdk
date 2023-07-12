@@ -535,7 +535,7 @@ pub unsafe extern "C" fn graph_deserialize_dsnp_keys(
 	let result = panic::catch_unwind(|| {
 		let dsnp_keys = &*dsnp_keys;
 		let rust_dsnp_keys = dsnp_keys_from_ffi(dsnp_keys);
-		match GraphState::deserialize_dsnp_keys(&rust_dsnp_keys) {
+		match GraphState::deserialize_dsnp_keys(&Some(rust_dsnp_keys)) {
 			Ok(keys) => {
 				let ffi_keys = dsnp_public_keys_to_ffi(keys);
 				let keys_len = ffi_keys.len();
