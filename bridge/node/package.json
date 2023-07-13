@@ -2,7 +2,7 @@
   "name": "@dsnp/graph-sdk",
   "version": "0.0.6",
   "author": "Amplica Labs",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",
   "main": "dist/js/index.js",
   "typings": "dist/js/index.d.ts",
