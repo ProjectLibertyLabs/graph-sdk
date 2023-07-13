@@ -57,7 +57,7 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int SDK_MAX_STALE_FRIENDSHIP_DAYS_FIELD_NUMBER = 1;
-  private int sdkMaxStaleFriendshipDays_;
+  private int sdkMaxStaleFriendshipDays_ = 0;
   /**
    * <code>uint32 sdk_max_stale_friendship_days = 1;</code>
    * @return The sdkMaxStaleFriendshipDays.
@@ -68,7 +68,7 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int MAX_GRAPH_PAGE_SIZE_BYTES_FIELD_NUMBER = 2;
-  private int maxGraphPageSizeBytes_;
+  private int maxGraphPageSizeBytes_ = 0;
   /**
    * <code>uint32 max_graph_page_size_bytes = 2;</code>
    * @return The maxGraphPageSizeBytes.
@@ -79,7 +79,7 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int MAX_PAGE_ID_FIELD_NUMBER = 3;
-  private int maxPageId_;
+  private int maxPageId_ = 0;
   /**
    * <code>uint32 max_page_id = 3;</code>
    * @return The maxPageId.
@@ -90,7 +90,7 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int MAX_KEY_PAGE_SIZE_BYTES_FIELD_NUMBER = 4;
-  private int maxKeyPageSizeBytes_;
+  private int maxKeyPageSizeBytes_ = 0;
   /**
    * <code>uint32 max_key_page_size_bytes = 4;</code>
    * @return The maxKeyPageSizeBytes.
@@ -112,6 +112,7 @@ private static final long serialVersionUID = 0L;
                 com.google.protobuf.WireFormat.FieldType.MESSAGE,
                 io.amplica.graphsdk.models.SchemaConfig.getDefaultInstance());
   }
+  @SuppressWarnings("serial")
   private com.google.protobuf.MapField<
       java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> schemaMap_;
   private com.google.protobuf.MapField<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
@@ -122,14 +123,12 @@ private static final long serialVersionUID = 0L;
     }
     return schemaMap_;
   }
-
   public int getSchemaMapCount() {
     return internalGetSchemaMap().getMap().size();
   }
   /**
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
-
   @java.lang.Override
   public boolean containsSchemaMap(
       int key) {
@@ -148,7 +147,6 @@ private static final long serialVersionUID = 0L;
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   @java.lang.Override
-
   public java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> getSchemaMapMap() {
     return internalGetSchemaMap().getMap();
   }
@@ -156,10 +154,11 @@ private static final long serialVersionUID = 0L;
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   @java.lang.Override
-
-  public io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
+  public /* nullable */
+io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
       int key,
-      io.amplica.graphsdk.models.SchemaConfig defaultValue) {
+      /* nullable */
+io.amplica.graphsdk.models.SchemaConfig defaultValue) {
     
     java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> map =
         internalGetSchemaMap().getMap();
@@ -169,7 +168,6 @@ private static final long serialVersionUID = 0L;
    * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
    */
   @java.lang.Override
-
   public io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrThrow(
       int key) {
     
@@ -182,14 +180,14 @@ private static final long serialVersionUID = 0L;
   }
 
   public static final int DSNP_VERSIONS_FIELD_NUMBER = 6;
+  @SuppressWarnings("serial")
   private java.util.List<java.lang.Integer> dsnpVersions_;
   private static final com.google.protobuf.Internal.ListAdapter.Converter<
       java.lang.Integer, io.amplica.graphsdk.models.DsnpVersion> dsnpVersions_converter_ =
           new com.google.protobuf.Internal.ListAdapter.Converter<
               java.lang.Integer, io.amplica.graphsdk.models.DsnpVersion>() {
             public io.amplica.graphsdk.models.DsnpVersion convert(java.lang.Integer from) {
-              @SuppressWarnings("deprecation")
-              io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.valueOf(from);
+              io.amplica.graphsdk.models.DsnpVersion result = io.amplica.graphsdk.models.DsnpVersion.forNumber(from);
               return result == null ? io.amplica.graphsdk.models.DsnpVersion.UNRECOGNIZED : result;
             }
           };
@@ -240,7 +238,7 @@ private static final long serialVersionUID = 0L;
   private int dsnpVersionsMemoizedSerializedSize;
 
   public static final int GRAPH_PUBLIC_KEY_SCHEMA_ID_FIELD_NUMBER = 7;
-  private int graphPublicKeySchemaId_;
+  private int graphPublicKeySchemaId_ = 0;
   /**
    * <code>uint32 graph_public_key_schema_id = 7;</code>
    * @return The graphPublicKeySchemaId.
@@ -551,19 +549,15 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public Builder clear() {
       super.clear();
+      bitField0_ = 0;
       sdkMaxStaleFriendshipDays_ = 0;
-
       maxGraphPageSizeBytes_ = 0;
-
       maxPageId_ = 0;
-
       maxKeyPageSizeBytes_ = 0;
-
       internalGetMutableSchemaMap().clear();
       dsnpVersions_ = java.util.Collections.emptyList();
-      bitField0_ = (bitField0_ & ~0x00000002);
+      bitField0_ = (bitField0_ & ~0x00000020);
       graphPublicKeySchemaId_ = 0;
-
       return this;
     }
 
@@ -590,21 +584,41 @@ private static final long serialVersionUID = 0L;
     @java.lang.Override
     public io.amplica.graphsdk.models.Config buildPartial() {
       io.amplica.graphsdk.models.Config result = new io.amplica.graphsdk.models.Config(this);
-      int from_bitField0_ = bitField0_;
-      result.sdkMaxStaleFriendshipDays_ = sdkMaxStaleFriendshipDays_;
-      result.maxGraphPageSizeBytes_ = maxGraphPageSizeBytes_;
-      result.maxPageId_ = maxPageId_;
-      result.maxKeyPageSizeBytes_ = maxKeyPageSizeBytes_;
-      result.schemaMap_ = internalGetSchemaMap();
-      result.schemaMap_.makeImmutable();
-      if (((bitField0_ & 0x00000002) != 0)) {
-        dsnpVersions_ = java.util.Collections.unmodifiableList(dsnpVersions_);
-        bitField0_ = (bitField0_ & ~0x00000002);
-      }
-      result.dsnpVersions_ = dsnpVersions_;
-      result.graphPublicKeySchemaId_ = graphPublicKeySchemaId_;
+      buildPartialRepeatedFields(result);
+      if (bitField0_ != 0) { buildPartial0(result); }
       onBuilt();
       return result;
+    }
+
+    private void buildPartialRepeatedFields(io.amplica.graphsdk.models.Config result) {
+      if (((bitField0_ & 0x00000020) != 0)) {
+        dsnpVersions_ = java.util.Collections.unmodifiableList(dsnpVersions_);
+        bitField0_ = (bitField0_ & ~0x00000020);
+      }
+      result.dsnpVersions_ = dsnpVersions_;
+    }
+
+    private void buildPartial0(io.amplica.graphsdk.models.Config result) {
+      int from_bitField0_ = bitField0_;
+      if (((from_bitField0_ & 0x00000001) != 0)) {
+        result.sdkMaxStaleFriendshipDays_ = sdkMaxStaleFriendshipDays_;
+      }
+      if (((from_bitField0_ & 0x00000002) != 0)) {
+        result.maxGraphPageSizeBytes_ = maxGraphPageSizeBytes_;
+      }
+      if (((from_bitField0_ & 0x00000004) != 0)) {
+        result.maxPageId_ = maxPageId_;
+      }
+      if (((from_bitField0_ & 0x00000008) != 0)) {
+        result.maxKeyPageSizeBytes_ = maxKeyPageSizeBytes_;
+      }
+      if (((from_bitField0_ & 0x00000010) != 0)) {
+        result.schemaMap_ = internalGetSchemaMap();
+        result.schemaMap_.makeImmutable();
+      }
+      if (((from_bitField0_ & 0x00000040) != 0)) {
+        result.graphPublicKeySchemaId_ = graphPublicKeySchemaId_;
+      }
     }
 
     @java.lang.Override
@@ -665,10 +679,11 @@ private static final long serialVersionUID = 0L;
       }
       internalGetMutableSchemaMap().mergeFrom(
           other.internalGetSchemaMap());
+      bitField0_ |= 0x00000010;
       if (!other.dsnpVersions_.isEmpty()) {
         if (dsnpVersions_.isEmpty()) {
           dsnpVersions_ = other.dsnpVersions_;
-          bitField0_ = (bitField0_ & ~0x00000002);
+          bitField0_ = (bitField0_ & ~0x00000020);
         } else {
           ensureDsnpVersionsIsMutable();
           dsnpVersions_.addAll(other.dsnpVersions_);
@@ -706,22 +721,22 @@ private static final long serialVersionUID = 0L;
               break;
             case 8: {
               sdkMaxStaleFriendshipDays_ = input.readUInt32();
-
+              bitField0_ |= 0x00000001;
               break;
             } // case 8
             case 16: {
               maxGraphPageSizeBytes_ = input.readUInt32();
-
+              bitField0_ |= 0x00000002;
               break;
             } // case 16
             case 24: {
               maxPageId_ = input.readUInt32();
-
+              bitField0_ |= 0x00000004;
               break;
             } // case 24
             case 32: {
               maxKeyPageSizeBytes_ = input.readUInt32();
-
+              bitField0_ |= 0x00000008;
               break;
             } // case 32
             case 42: {
@@ -730,6 +745,7 @@ private static final long serialVersionUID = 0L;
                   SchemaMapDefaultEntryHolder.defaultEntry.getParserForType(), extensionRegistry);
               internalGetMutableSchemaMap().getMutableMap().put(
                   schemaMap__.getKey(), schemaMap__.getValue());
+              bitField0_ |= 0x00000010;
               break;
             } // case 42
             case 48: {
@@ -751,7 +767,7 @@ private static final long serialVersionUID = 0L;
             } // case 50
             case 56: {
               graphPublicKeySchemaId_ = input.readUInt32();
-
+              bitField0_ |= 0x00000040;
               break;
             } // case 56
             default: {
@@ -788,6 +804,7 @@ private static final long serialVersionUID = 0L;
     public Builder setSdkMaxStaleFriendshipDays(int value) {
       
       sdkMaxStaleFriendshipDays_ = value;
+      bitField0_ |= 0x00000001;
       onChanged();
       return this;
     }
@@ -796,7 +813,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearSdkMaxStaleFriendshipDays() {
-      
+      bitField0_ = (bitField0_ & ~0x00000001);
       sdkMaxStaleFriendshipDays_ = 0;
       onChanged();
       return this;
@@ -819,6 +836,7 @@ private static final long serialVersionUID = 0L;
     public Builder setMaxGraphPageSizeBytes(int value) {
       
       maxGraphPageSizeBytes_ = value;
+      bitField0_ |= 0x00000002;
       onChanged();
       return this;
     }
@@ -827,7 +845,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearMaxGraphPageSizeBytes() {
-      
+      bitField0_ = (bitField0_ & ~0x00000002);
       maxGraphPageSizeBytes_ = 0;
       onChanged();
       return this;
@@ -850,6 +868,7 @@ private static final long serialVersionUID = 0L;
     public Builder setMaxPageId(int value) {
       
       maxPageId_ = value;
+      bitField0_ |= 0x00000004;
       onChanged();
       return this;
     }
@@ -858,7 +877,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearMaxPageId() {
-      
+      bitField0_ = (bitField0_ & ~0x00000004);
       maxPageId_ = 0;
       onChanged();
       return this;
@@ -881,6 +900,7 @@ private static final long serialVersionUID = 0L;
     public Builder setMaxKeyPageSizeBytes(int value) {
       
       maxKeyPageSizeBytes_ = value;
+      bitField0_ |= 0x00000008;
       onChanged();
       return this;
     }
@@ -889,7 +909,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearMaxKeyPageSizeBytes() {
-      
+      bitField0_ = (bitField0_ & ~0x00000008);
       maxKeyPageSizeBytes_ = 0;
       onChanged();
       return this;
@@ -898,7 +918,7 @@ private static final long serialVersionUID = 0L;
     private com.google.protobuf.MapField<
         java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> schemaMap_;
     private com.google.protobuf.MapField<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
-    internalGetSchemaMap() {
+        internalGetSchemaMap() {
       if (schemaMap_ == null) {
         return com.google.protobuf.MapField.emptyMapField(
             SchemaMapDefaultEntryHolder.defaultEntry);
@@ -906,8 +926,7 @@ private static final long serialVersionUID = 0L;
       return schemaMap_;
     }
     private com.google.protobuf.MapField<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
-    internalGetMutableSchemaMap() {
-      onChanged();;
+        internalGetMutableSchemaMap() {
       if (schemaMap_ == null) {
         schemaMap_ = com.google.protobuf.MapField.newMapField(
             SchemaMapDefaultEntryHolder.defaultEntry);
@@ -915,16 +934,16 @@ private static final long serialVersionUID = 0L;
       if (!schemaMap_.isMutable()) {
         schemaMap_ = schemaMap_.copy();
       }
+      bitField0_ |= 0x00000010;
+      onChanged();
       return schemaMap_;
     }
-
     public int getSchemaMapCount() {
       return internalGetSchemaMap().getMap().size();
     }
     /**
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
-
     @java.lang.Override
     public boolean containsSchemaMap(
         int key) {
@@ -943,7 +962,6 @@ private static final long serialVersionUID = 0L;
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
     @java.lang.Override
-
     public java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> getSchemaMapMap() {
       return internalGetSchemaMap().getMap();
     }
@@ -951,10 +969,11 @@ private static final long serialVersionUID = 0L;
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
     @java.lang.Override
-
-    public io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
+    public /* nullable */
+io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrDefault(
         int key,
-        io.amplica.graphsdk.models.SchemaConfig defaultValue) {
+        /* nullable */
+io.amplica.graphsdk.models.SchemaConfig defaultValue) {
       
       java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> map =
           internalGetSchemaMap().getMap();
@@ -964,7 +983,6 @@ private static final long serialVersionUID = 0L;
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
     @java.lang.Override
-
     public io.amplica.graphsdk.models.SchemaConfig getSchemaMapOrThrow(
         int key) {
       
@@ -975,8 +993,8 @@ private static final long serialVersionUID = 0L;
       }
       return map.get(key);
     }
-
     public Builder clearSchemaMap() {
+      bitField0_ = (bitField0_ & ~0x00000010);
       internalGetMutableSchemaMap().getMutableMap()
           .clear();
       return this;
@@ -984,7 +1002,6 @@ private static final long serialVersionUID = 0L;
     /**
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
-
     public Builder removeSchemaMap(
         int key) {
       
@@ -997,7 +1014,8 @@ private static final long serialVersionUID = 0L;
      */
     @java.lang.Deprecated
     public java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig>
-    getMutableSchemaMap() {
+        getMutableSchemaMap() {
+      bitField0_ |= 0x00000010;
       return internalGetMutableSchemaMap().getMutableMap();
     }
     /**
@@ -1007,31 +1025,29 @@ private static final long serialVersionUID = 0L;
         int key,
         io.amplica.graphsdk.models.SchemaConfig value) {
       
-      if (value == null) {
-  throw new NullPointerException("map value");
-}
-
+      if (value == null) { throw new NullPointerException("map value"); }
       internalGetMutableSchemaMap().getMutableMap()
           .put(key, value);
+      bitField0_ |= 0x00000010;
       return this;
     }
     /**
      * <code>map&lt;uint32, .SchemaConfig&gt; schema_map = 5;</code>
      */
-
     public Builder putAllSchemaMap(
         java.util.Map<java.lang.Integer, io.amplica.graphsdk.models.SchemaConfig> values) {
       internalGetMutableSchemaMap().getMutableMap()
           .putAll(values);
+      bitField0_ |= 0x00000010;
       return this;
     }
 
     private java.util.List<java.lang.Integer> dsnpVersions_ =
       java.util.Collections.emptyList();
     private void ensureDsnpVersionsIsMutable() {
-      if (!((bitField0_ & 0x00000002) != 0)) {
+      if (!((bitField0_ & 0x00000020) != 0)) {
         dsnpVersions_ = new java.util.ArrayList<java.lang.Integer>(dsnpVersions_);
-        bitField0_ |= 0x00000002;
+        bitField0_ |= 0x00000020;
       }
     }
     /**
@@ -1107,7 +1123,7 @@ private static final long serialVersionUID = 0L;
      */
     public Builder clearDsnpVersions() {
       dsnpVersions_ = java.util.Collections.emptyList();
-      bitField0_ = (bitField0_ & ~0x00000002);
+      bitField0_ = (bitField0_ & ~0x00000020);
       onChanged();
       return this;
     }
@@ -1129,8 +1145,8 @@ private static final long serialVersionUID = 0L;
     }
     /**
      * <code>repeated .DsnpVersion dsnp_versions = 6;</code>
-     * @param index The index of the value to return.
-     * @return The enum numeric value on the wire of dsnpVersions at the given index.
+     * @param index The index to set the value at.
+     * @param value The enum numeric value on the wire for dsnpVersions to set.
      * @return This builder for chaining.
      */
     public Builder setDsnpVersionsValue(
@@ -1183,6 +1199,7 @@ private static final long serialVersionUID = 0L;
     public Builder setGraphPublicKeySchemaId(int value) {
       
       graphPublicKeySchemaId_ = value;
+      bitField0_ |= 0x00000040;
       onChanged();
       return this;
     }
@@ -1191,7 +1208,7 @@ private static final long serialVersionUID = 0L;
      * @return This builder for chaining.
      */
     public Builder clearGraphPublicKeySchemaId() {
-      
+      bitField0_ = (bitField0_ & ~0x00000040);
       graphPublicKeySchemaId_ = 0;
       onChanged();
       return this;

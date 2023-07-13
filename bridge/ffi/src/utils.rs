@@ -143,10 +143,7 @@ pub fn import_bundle_from_ffi(
 		key_pairs.push(graph_key_pair_from_ffi(graph_key_pair));
 	}
 
-	let dsnp_keys = match &import_bundle.dsnp_keys {
-		Some(keys) => Some(dsnp_keys_from_ffi(keys)),
-		None => None,
-	};
+	let dsnp_keys = dsnp_keys_from_ffi(&import_bundle.dsnp_keys);
 
 	let pages_slice =
 		unsafe { std::slice::from_raw_parts(import_bundle.pages, import_bundle.pages_len) };
@@ -159,7 +156,7 @@ pub fn import_bundle_from_ffi(
 		dsnp_user_id: import_bundle.dsnp_user_id,
 		schema_id: import_bundle.schema_id,
 		key_pairs,
-		dsnp_keys,
+		dsnp_keys: Some(dsnp_keys),
 		pages,
 	}
 }
