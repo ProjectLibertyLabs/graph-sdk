@@ -1,5 +1,5 @@
 import path from "path";
-import { Action, Config, ConnectAction, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, GraphKeyPair, GraphKeyType, ImportBundle, PrivacyType, Update } from "./models";
+import { Action, Config, ConnectionType, DsnpGraphEdge, DsnpKeys, DsnpPublicKey, EnvironmentInterface, GraphKeyPair, GraphKeyType, ImportBundle, PrivacyType, Update } from "./models";
 
 
 // Load the native neon graphsdk module

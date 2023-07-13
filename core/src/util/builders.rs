@@ -235,7 +235,10 @@ impl ImportBundleBuilder {
 		};
 
 		ImportBundle {
-			dsnp_keys: DsnpKeys { keys, keys_hash, dsnp_user_id: self.dsnp_user_id },
+			dsnp_keys: match keys.len() {
+				0 => None,
+				_ => Some(DsnpKeys { keys, keys_hash, dsnp_user_id: self.dsnp_user_id }),
+			},
 			dsnp_user_id: self.dsnp_user_id,
 			schema_id: self.schema_id,
 			key_pairs,
@@ -292,12 +295,28 @@ impl ImportBundleBuilder {
 					if *owner_dsnp_user_id != new_bundle.dsnp_user_id {
 						continue
 					}
-					assert_eq!(original.dsnp_keys.keys_hash, *prev_hash);
-					new_bundle.dsnp_keys.keys_hash = 1;
-					new_bundle.dsnp_keys.keys.push(KeyData {
-						content: payload.clone(),
-						index: original.dsnp_keys.keys.len() as u16,
-					})
+					assert_eq!(
+						match original.dsnp_keys.borrow() {
+							Some(dsnp_keys) => dsnp_keys.keys_hash,
+							None => 0,
+						},
+						*prev_hash
+					);
+					match new_bundle.dsnp_keys.iter_mut().next() {
+						Some(dsnp_keys) => {
+							dsnp_keys.keys_hash = 1;
+							dsnp_keys.keys.push(KeyData {
+								content: payload.clone(),
+								index: dsnp_keys.keys.len() as u16,
+							});
+						},
+						None =>
+							new_bundle.dsnp_keys = Some(DsnpKeys {
+								dsnp_user_id: new_bundle.dsnp_user_id,
+								keys_hash: 1,
+								keys: vec![KeyData { content: payload.clone(), index: 0u16 }],
+							}),
+					};
 				},
 			}
 		}

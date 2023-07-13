@@ -129,7 +129,7 @@ pub struct ImportBundle {
 
 	/// published dsnp keys associated with this dsnp user
 	#[serde(rename = "dsnpKeys")]
-	pub dsnp_keys: DsnpKeys,
+	pub dsnp_keys: Option<DsnpKeys>,
 
 	/// Page data containing the social graph retrieved from chain
 	#[serde(rename = "pages")]
@@ -151,7 +151,12 @@ impl InputValidation for ImportBundle {
 			k.validate()?;
 		}
 
-		self.dsnp_keys.validate()?;
+		match &self.dsnp_keys {
+			Some(dsnp_keys) => {
+				dsnp_keys.validate()?;
+			},
+			None => (),
+		}
 
 		for p in &self.pages {
 			p.validate()?;

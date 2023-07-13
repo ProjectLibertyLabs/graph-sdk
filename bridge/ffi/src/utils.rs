@@ -156,7 +156,7 @@ pub fn import_bundle_from_ffi(
 		dsnp_user_id: import_bundle.dsnp_user_id,
 		schema_id: import_bundle.schema_id,
 		key_pairs,
-		dsnp_keys,
+		dsnp_keys: Some(dsnp_keys),
 		pages,
 	}
 }

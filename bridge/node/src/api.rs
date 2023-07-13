@@ -502,7 +502,7 @@ pub fn deserialize_dsnp_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let keys: Handle<'_, JsObject> = cx.argument::<JsObject>(0)?;
 	let rust_keys: DsnpKeys = dsnp_keys_from_js(&mut cx, keys)?;
 	let deserialized_keys: Vec<DsnpPublicKey> =
-		GraphState::deserialize_dsnp_keys(&rust_keys).unwrap_or_default();
+		GraphState::deserialize_dsnp_keys(&Some(rust_keys)).unwrap_or_default();
 	let keys_js = public_keys_to_js(&mut cx, deserialized_keys)?;
 
 	Ok(keys_js)

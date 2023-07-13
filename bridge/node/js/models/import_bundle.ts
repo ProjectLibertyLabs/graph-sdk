@@ -2,7 +2,7 @@ export interface KeyData {
     index: number;
     content: Uint8Array;
 }
-  
+
 export interface DsnpKeys {
     dsnpUserId: string;
     keysHash: number;
@@ -24,11 +24,11 @@ export interface PageData {
     content: Uint8Array;
     contentHash: number;
 }
-  
+
 export interface ImportBundle {
     dsnpUserId: string;
     schemaId: number;
     keyPairs: GraphKeyPair[];
-    dsnpKeys: DsnpKeys;
+    dsnpKeys?: DsnpKeys;
     pages: PageData[];
 }

@@ -85,11 +85,7 @@ pub fn map_to_imports<'local>(
 			schema_id: SchemaId::try_from(i.schema_id)
 				.map_err(|_| SdkJniError::UnexpectedResponse("invalid SchemaId"))?,
 			dsnp_user_id: i.dsnp_user_id,
-			dsnp_keys: map_dsnp_keys_to_rust(
-				&i.dsnp_keys
-					.into_option()
-					.ok_or(SdkJniError::InvalidRequest("dsnp_keys not set!"))?,
-			)?,
+			dsnp_keys: map_dsnp_keys_to_rust(&i.dsnp_keys.into_option())?,
 			key_pairs: map_graph_key_pairs_to_rust(&i.key_pairs)?,
 			pages: map_page_datas_to_rust(&i.pages)?,
 		});
@@ -100,11 +96,11 @@ pub fn map_to_imports<'local>(
 pub fn map_to_dsnp_keys<'local>(
 	env: &JNIEnv<'local>,
 	dsnp_keys: &JByteArray,
-) -> SdkJniResult<RustDsnpKeys> {
+) -> SdkJniResult<Option<RustDsnpKeys>> {
 	let bytes = env.convert_byte_array(dsnp_keys).map_err(|e| SdkJniError::from(e))?;
 	let dsnp_keys_proto =
 		proto_input::DsnpKeys::parse_from_bytes(&bytes).map_err(|e| SdkJniError::from(e))?;
-	map_dsnp_keys_to_rust(&dsnp_keys_proto)
+	map_dsnp_keys_to_rust(&Some(dsnp_keys_proto))
 }
 
 pub fn serialize_graph_keypair<'local>(
@@ -242,10 +238,7 @@ fn map_action_to_rust(action: proto_input::actions::Action) -> SdkJniResult<Rust
 					.into_option()
 					.ok_or(SdkJniError::InvalidRequest("connection not set!"))?,
 			)?,
-			dsnp_keys: match connect.dsnp_keys.as_ref() {
-				Some(k) => Some(map_dsnp_keys_to_rust(k)?),
-				None => None,
-			},
+			dsnp_keys: map_dsnp_keys_to_rust(&connect.dsnp_keys.as_ref().cloned())?,
 		},
 		proto_input::actions::action::Inner::DisconnectAction(disconnect) =>
 			RustAction::Disconnect {
@@ -269,12 +262,17 @@ fn map_connection_to_rust(conection: &proto_input::Connection) -> SdkJniResult<R
 	})
 }
 
-fn map_dsnp_keys_to_rust(dsnp_keys: &proto_input::DsnpKeys) -> SdkJniResult<RustDsnpKeys> {
-	Ok(RustDsnpKeys {
-		dsnp_user_id: dsnp_keys.dsnp_user_id,
-		keys_hash: dsnp_keys.keys_hash,
-		keys: map_key_data_to_rust(&dsnp_keys.keys)?,
-	})
+fn map_dsnp_keys_to_rust(
+	dsnp_keys: &Option<proto_input::DsnpKeys>,
+) -> SdkJniResult<Option<RustDsnpKeys>> {
+	match dsnp_keys {
+		Some(keys) => Ok(Some(RustDsnpKeys {
+			dsnp_user_id: keys.dsnp_user_id,
+			keys_hash: keys.keys_hash,
+			keys: map_key_data_to_rust(&keys.keys)?,
+		})),
+		None => Ok(None),
+	}
 }
 
 fn map_key_data_to_rust(key_datas: &Vec<proto_input::KeyData>) -> SdkJniResult<Vec<RustKeyData>> {

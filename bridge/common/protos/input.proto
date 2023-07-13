@@ -35,7 +35,7 @@ message ImportBundles {
     uint64 dsnp_user_id = 1;
     uint32 schema_id = 2;
     repeated GraphKeyPair key_pairs = 3;
-    DsnpKeys dsnp_keys = 4;
+    optional DsnpKeys dsnp_keys = 4;
     repeated PageData pages = 5;
   }
   repeated ImportBundle bundles = 1;
