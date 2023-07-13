@@ -5,9 +5,11 @@ module.exports = {
     },
     moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
     globals: {
-      'ts-jest': {
-        tsconfig: 'tsconfig.json',
-      },
+      transform: {
+        "\\.[jt]sx?$": [
+          'ts-jest', { tsconfig: 'tsconfig.json' }
+        ]
+      }
     },
     testMatch: ["**/*.test.ts"]
 };

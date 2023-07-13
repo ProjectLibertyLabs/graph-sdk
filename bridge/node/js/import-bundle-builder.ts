@@ -46,7 +46,7 @@ export class ImportBundleBuilder {
       dsnpUserId: this.values.dsnpUserId || '',
       schemaId: this.values.schemaId || 0,
       keyPairs: this.values.keyPairs || [],
-      dsnpKeys: this.values.dsnpKeys || { dsnpUserId: '', keysHash: 0, keys: [] },
+      dsnpKeys: this.values.dsnpKeys,
       pages: this.values.pages || [],
     };
 
