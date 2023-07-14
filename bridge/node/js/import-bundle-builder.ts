@@ -25,7 +25,13 @@ export class ImportBundleBuilder {
     return new ImportBundleBuilder({ ...this.values, schemaId });
   }
 
-  public withGraphKeyPair(keys: GraphKeyPair[]): ImportBundleBuilder {
+  public withGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): ImportBundleBuilder {
+    const keyPairs = this.values.keyPairs ? [...this.values.keyPairs] : [];
+    keyPairs.push({ keyType, publicKey, secretKey });
+    return new ImportBundleBuilder({ ...this.values, keyPairs });
+  }
+
+  public withGraphKeyPairs(keys: GraphKeyPair[]): ImportBundleBuilder {
     const keyPairs = this.values.keyPairs ? [...this.values.keyPairs] : [];
     keyPairs.push(...keys);
     return new ImportBundleBuilder({ ...this.values, keyPairs });
