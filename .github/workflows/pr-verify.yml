@@ -6,6 +6,9 @@ on:
   pull_request:
     branches:
       - main
+  push :
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
@@ -315,7 +318,14 @@ jobs:
         run: npm run native:build-release && cp README.md dist/README.md
       - name: Publish NPM Package
         working-directory: bridge/node
+        if: github.ref == 'refs/heads/main'
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+      - name: Dry run NPM Package
+        working-directory: bridge/node
+        if: github.ref != 'refs/heads/main'
+        run: npm publish --access public --dry-run
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
