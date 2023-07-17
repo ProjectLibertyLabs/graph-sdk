@@ -4,10 +4,10 @@
   "maxGraphPageSizeBytes": 1024,
   "maxPageId": 16,
   "maxKeyPageSizeBytes": 65536,
-  "graphPublicKeySchemaId": 12,
+  "graphPublicKeySchemaId": 18,
   "schemaMap": [
     [
-      11,
+      13,
       [
         "1.0",
         {
@@ -17,7 +17,7 @@
       ]
     ],
     [
-      12,
+      14,
       [
         "1.0",
         {
@@ -27,17 +27,7 @@
       ]
     ],
     [
-      13,
-      [
-        "1.0",
-        {
-          "connectionType": "friendship",
-          "privacyType": "public"
-        }
-      ]
-    ],
-    [
-      14,
+      15,
       [
         "1.0",
         {
