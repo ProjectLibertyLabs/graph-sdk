@@ -134,11 +134,10 @@ fun addNewUserGraphKeypair(long msaId, int schemaId, GraphKeyPair newKeypair)
     }
 
     // finally, add the new exported key to blockchain
-    // here we are using `createApplyItemActions` for simplicity but in reality this should be done using
-    // `createApplyItemActionsWithSignature` since user should sign the payload of adding a new graph key with one of
-    // their msa control keys
+    // the user MUST sign the payload of adding a new graph key with one of their msa control keys
+    // The full data to sign is available: https://libertydsnp.github.io/frequency/pallet_stateful_storage/types/struct.ItemizedSignaturePayload.html
     val retVal =
-      frequencyClient.createApplyItemActions(graphOwnerMsaId, publicKeySchemaId, keyContentHash.toBigInteger(), itemizedActions)
+      frequencyClient.createApplyItemActionsWithSignature(graphOwnerSigningPublicKey, signatureProof, publicKeySchemaId, keyContentHash.toBigInteger(), itemizedActions)
         .join()
   }
 ```
