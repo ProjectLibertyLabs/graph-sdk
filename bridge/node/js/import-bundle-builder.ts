@@ -31,6 +31,12 @@ export class ImportBundleBuilder {
     return new ImportBundleBuilder({ ...this.values, keyPairs });
   }
 
+  public withGraphKeyPairs(keys: GraphKeyPair[]): ImportBundleBuilder {
+    const keyPairs = this.values.keyPairs ? [...this.values.keyPairs] : [];
+    keyPairs.push(...keys);
+    return new ImportBundleBuilder({ ...this.values, keyPairs });
+  }
+
   public withDsnpKeys(dsnpKeys: DsnpKeys): ImportBundleBuilder {
     return new ImportBundleBuilder({ ...this.values, dsnpKeys });
   }
