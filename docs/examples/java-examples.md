@@ -20,8 +20,12 @@ The following code examples illustrate how to implement various steps in the wor
 ```kotlin
   fun addNewGraphKeyOrReadPublicKeysWorkflow() {
     // Graph keys are x25519 and different from msa control keys which are sr25519 and should not get mixed
-    val newKeyPair = Graph.generateKeyPair(GraphKeyType.X25519)
-    val msaId = 1L;
+    // Graph encryption keys typically are stored in the wallet and would be retrieved outside this flow, but
+    // the public half of the keypair is stored on-chain.
+    val newKeyPair = some_function_to_get_or_generate_new_graph_keys_from_wallet();
+
+    // Example data
+    val graphOwnerMsaId = 1L;
     val publicKey = newKeyPair.publicKey
 
     // ----- SETUP GRAPH ----- //
@@ -37,14 +41,14 @@ The following code examples illustrate how to implement various steps in the wor
 
     // Retrieve current public keys from the chain. We need the content
     // hash of the current list of keys in order to send an update
-    val currentKeys = frequencyClient.getItemizedStorage(msaId, schemaId.value).join()
+    val currentKeys = frequencyClient.getItemizedStorage(graphOwnerMsaId, publicKeySchemaId.value).join()
     val keyContentHash = currentKeys.contentHash;
 
     // create the request to add a new key to the graph
     val graphActions = Actions.newBuilder().addActions(
       Actions.Action.newBuilder().setAddKeyAction(
         Actions.Action.AddGraphKey.newBuilder()
-          .setOwnerDsnpUserId(msaId.toLong())
+          .setOwnerDsnpUserId(graphOwnerMsaId.toLong())
           .setNewPublicKey(publicKey)
           .build()
       )
@@ -67,19 +71,19 @@ The following code examples illustrate how to implement various steps in the wor
     // `createApplyItemActionsWithSignature` since user should sign the payload of adding a new graph key with one of
     // their msa control keys
     val retVal =
-      frequencyClient.createApplyItemActions(msaId, schemaId.value, keyContentHash.toBigInteger(), itemizedActions)
+      frequencyClient.createApplyItemActions(graphOwnerMsaId, publicKeySchemaId.value, keyContentHash.toBigInteger(), itemizedActions)
         .join()
 
     // verify the chain update
     Assertions.assertThat(retVal.isRight()).isTrue
     val pageUpdated: ItemizedPageUpdated = retVal.getOrThrow()
-    Assertions.assertThat(pageUpdated.schemaId).isEqualTo(schemaId)
-    Assertions.assertThat(pageUpdated.msaId).isEqualTo(MessageSourceId(msaId))
+    Assertions.assertThat(pageUpdated.schemaId).isEqualTo(publicKeySchemaId)
+    Assertions.assertThat(pageUpdated.msaId).isEqualTo(MessageSourceId(graphOwnerMsaId))
     Assertions.assertThat(pageUpdated.previousHash).isEqualTo(PageHash(schemaPageHash.toLong()))
     Assertions.assertThat(pageUpdated.currentHash).isNotEqualTo(PageHash(schemaPageHash.toLong()))
 
     // retrieve all the published keys to verify existing of new key
-    val publishedKeys = frequencyClient.getItemizedStorage(msaId, schemaId.value).join()
+    val publishedKeys = frequencyClient.getItemizedStorage(msaId, publicKeySchemaId.value).join()
     Assertions.assertThat(publishedKeys).isNotNull
     Assertions.assertThat(publishedKeys.items).isNotNull
     Assertions.assertThat(publishedKeys.items.size).isEqualTo(1)
@@ -96,7 +100,7 @@ The following code examples illustrate how to implement various steps in the wor
         .build()
     }
     val dsnpKeys = DsnpKeys.newBuilder()
-      .setDsnpUserId(msaId.toLong())
+      .setDsnpUserId(graphOwnerMsaId.toLong())
       .setKeysHash(publishedKeys.contentHash)
       .addAllKeys(mappedKeys)
       .build()
@@ -129,7 +133,6 @@ The following code examples illustrate how to implement various steps in the wor
         ImportBundles.ImportBundle.newBuilder()
           .setDsnpUserId(msaId.toLong())
           .setSchemaId(publicFollowSchemaId)
-          .setDsnpKeys(DsnpKeys.newBuilder().setDsnpUserId(msaId.toLong()).build())
           .addAllPages(bundlePages)
           .build()
       ).build()
@@ -165,8 +168,8 @@ The following code examples illustrate how to implement various steps in the wor
         // finally, update the graph on chain with new connections
         val retVal =
           frequencyClient.createUpsertPage(
-            msaId,
-            publicFollowSchemaId,
+            persist.ownerDsnpUserId,
+            persist.schemaId,
             persist.pageId,
             persist.prevHash.toBigInteger(),
             persist.payload.toByteArray()
@@ -260,8 +263,8 @@ The following code examples illustrate how to implement various steps in the wor
         // finally, updating the graph on chain with new connections
         val retVal =
           frequencyClient.createUpsertPage(
-            msaId,
-            privateFollowSchemaId,
+            persist.ownerDsnpUserId,
+            persist.schemaId,
             persist.pageId,
             persist.prevHash.toBigInteger(),
             persist.payload.toByteArray()
@@ -374,8 +377,8 @@ The following code examples illustrate how to implement various steps in the wor
         // finally, updating the graph on chain with new connections
         val retVal =
           frequencyClient.createUpsertPage(
-            msaId,
-            privateFriendshipSchemaId,
+            persist.ownerDsnpUserId,
+            persist.schemaId,
             persist.pageId,
             persist.prevHash.toBigInteger(),
             persist.payload.toByteArray()
