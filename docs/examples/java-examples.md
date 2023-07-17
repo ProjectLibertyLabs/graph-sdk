@@ -30,7 +30,7 @@ The following code examples illustrate how to implement various steps in the wor
     val graph = Graph(configuration)
 
     // Get the schema ID for the graph keys
-    val schemaId = configuration
+    val publicKeySchemaId = configuration
     .getEnvironment()
     .getConfig()
     .getGraphPublicKeySchemaId()
