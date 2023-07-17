@@ -14,7 +14,7 @@ import io.amplica.graphsdk.models.*
 
 ## Prerequisites
 
-Since GraphSDK does not itself interact with the blockchain, for the following examples, we'll make use of a proposed class, `FrequencyService`, that provides an API to Frequency blockchain RPCs and Extrinsics. The structure/syntax for your own blockchain interface may be somewhat different.
+Since GraphSDK does not itself interact with the blockchain, for the following examples, we'll make use of a proposed `frequencyClient`, that provides an API to Frequency blockchain RPCs and Extrinsics. The structure/syntax for your own blockchain interface may be somewhat different.
 
 ## Basic Social Graph Workflow
 
