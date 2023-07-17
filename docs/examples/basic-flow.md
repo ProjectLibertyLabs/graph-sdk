@@ -33,7 +33,7 @@ flowchart TD
     D --> E[Export graph & key changes\nto raw export bundles]
     end
     subgraph Output
-    A3[Write updated key\ndata to chain]
+    A3[Write updated key\ndata to chain\nif needed]
     B3[Write updated graph\ndata to chain]
     E --> A3 & B3
     end
