@@ -40,6 +40,10 @@ public class Configuration {
         return this.schemaIdMap.get(connectionType);
     }
 
+    public int getGraphPublicKeySchemaId() {
+        return this.inner.getGraphPublicKeySchemaId();
+    }
+
     public Environment getEnvironment() {
         return this.environment;
     }
