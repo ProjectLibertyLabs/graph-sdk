@@ -87,6 +87,16 @@ class LibraryTest {
     }
 
     @Test
+    void graph_schema_id_should_return_correctly() throws Exception {
+        // act
+        var configuration = Configuration.getMainNet();
+        var keySchemaId = configuration.getGraphPublicKeySchemaId();
+
+        // assert
+        assertNotEquals(0, keySchemaId);
+    }
+
+    @Test
     void initiate_dev_state_should_work() throws Exception {
         // arrange
         var config = new Configuration(Environment.newBuilder().getConfigBuilder()
