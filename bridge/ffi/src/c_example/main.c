@@ -675,7 +675,7 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
     Action actions[] = {add_graph_key_action, connect_action, disconnect_action};
     size_t actions_len = sizeof(actions) / sizeof(Action);
 
-    DsnpGraphBooleanResult_Error apply_result = graph_apply_actions(state, actions, actions_len);
+    DsnpGraphBooleanResult_Error apply_result = graph_apply_actions(state, actions, actions_len, NULL);
     ASSERT(apply_result.error == NULL, "Failed to apply actions");
 
     DsnpGraphConnectionsResult_Error connections_result = graph_get_connections_for_user(state, &dsnp_user_id_1, &connection_1.schema_id, true);

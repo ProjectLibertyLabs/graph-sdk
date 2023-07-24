@@ -48,6 +48,11 @@ message Connection {
 }
 
 message Actions {
+  message ActionOptions {
+    bool ignore_existing_connections = 1;
+    bool ignore_missing_connections = 2;
+  }
+
   message Action {
     message ConnectAction {
       uint64 owner_dsnp_user_id = 1;
@@ -71,5 +76,7 @@ message Actions {
       AddGraphKey add_key_action = 3;
     }
   }
+
   repeated Action actions = 1;
+  optional ActionOptions options = 2;
 }

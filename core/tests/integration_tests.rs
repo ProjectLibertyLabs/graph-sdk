@@ -359,7 +359,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 3, schema_id },
 			},
 		];
-		state.apply_actions(&actions).expect("should apply actions");
+		state.apply_actions(&actions, &None).expect("should apply actions");
 		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
 		let input2 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
 			.with_page(1, &re_imported_connections, &vec![], 200)
@@ -403,7 +403,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 3, schema_id },
 			},
 		];
-		state.apply_actions(&actions).expect("should apply actions");
+		state.apply_actions(&actions, &None).expect("should apply actions");
 		let re_imported_connections = vec![(2, 0), (4, 0), (5, 0), (10, 0)];
 		let input2 = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
@@ -642,7 +642,7 @@ mod integration_tests {
 		let expected_connections = vec![(2, 1), (10, 0), (4, 3), (5, 4)];
 
 		// act
-		let res = state.apply_actions(&actions);
+		let res = state.apply_actions(&actions, &None);
 
 		// assert
 		assert!(res.is_ok());
@@ -673,7 +673,7 @@ mod integration_tests {
 		}];
 
 		// act
-		let res = state.apply_actions(&actions);
+		let res = state.apply_actions(&actions, &None);
 
 		// assert
 		assert!(res.is_err());
@@ -697,7 +697,7 @@ mod integration_tests {
 		}];
 
 		// act
-		let res = state.apply_actions(&actions);
+		let res = state.apply_actions(&actions, &None);
 
 		// assert
 		assert!(res.is_err());
@@ -728,7 +728,7 @@ mod integration_tests {
 		];
 
 		// act
-		let res = state.apply_actions(&actions);
+		let res = state.apply_actions(&actions, &None);
 
 		// assert
 		assert!(res.is_err());
@@ -756,8 +756,8 @@ mod integration_tests {
 		let mut state = GraphState::new(env);
 
 		// act
-		assert!(state.apply_actions(&vec![action.clone()]).is_ok());
-		assert!(state.apply_actions(&vec![action]).is_err());
+		assert!(state.apply_actions(&vec![action.clone()], &None).is_ok());
+		assert!(state.apply_actions(&vec![action], &None).is_err());
 	}
 
 	#[test]
@@ -779,11 +779,11 @@ mod integration_tests {
 			connection: Connection { dsnp_user_id: 1, schema_id },
 		};
 		let mut state = GraphState::new(env);
-		assert!(state.apply_actions(&vec![connect_action]).is_ok());
+		assert!(state.apply_actions(&vec![connect_action], &None).is_ok());
 
 		// act
-		assert!(state.apply_actions(&vec![disconnect_action.clone()]).is_ok());
-		assert!(state.apply_actions(&vec![disconnect_action]).is_err());
+		assert!(state.apply_actions(&vec![disconnect_action.clone()], &None).is_ok());
+		assert!(state.apply_actions(&vec![disconnect_action], &None).is_err());
 	}
 
 	#[test]
@@ -798,10 +798,13 @@ mod integration_tests {
 
 		// act
 		assert!(state
-			.apply_actions(&vec![Action::Disconnect {
-				owner_dsnp_user_id: 0,
-				connection: Connection { dsnp_user_id: 1, schema_id }
-			}])
+			.apply_actions(
+				&vec![Action::Disconnect {
+					owner_dsnp_user_id: 0,
+					connection: Connection { dsnp_user_id: 1, schema_id }
+				}],
+				&None
+			)
 			.is_err());
 	}
 
@@ -838,7 +841,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 100, schema_id },
 			},
 		];
-		state.apply_actions(&actions).expect("Should apply actions!");
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
 		let expected_connections = HashSet::<DsnpUserId>::from([2, 3, 4, 5, 6, 20]);
 
 		// act
@@ -901,7 +904,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 100, schema_id },
 			},
 		];
-		state.apply_actions(&actions).expect("Should apply actions!");
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
 		let expected_connections = HashSet::<DsnpUserId>::from([2, 3, 4, 5, 6, 20]);
 
 		// act
@@ -1012,7 +1015,7 @@ mod integration_tests {
 				connection: Connection { dsnp_user_id: 2, schema_id },
 			},
 		];
-		state.apply_actions(&actions).expect("Should apply actions!");
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
 		let expected_connections = HashSet::<DsnpUserId>::from([3, 4]);
 
 		// act
@@ -1085,7 +1088,7 @@ mod integration_tests {
 			connection: Connection { dsnp_user_id: 4, schema_id },
 			dsnp_keys: None,
 		}];
-		state.apply_actions(&actions).expect("Should apply actions!");
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
 
 		// act
 		let result = state.export_updates();
@@ -1147,7 +1150,7 @@ mod integration_tests {
 			owner_dsnp_user_id: dsnp_user_id_1,
 			new_public_key: keypair_2.clone().public_key,
 		}];
-		state.apply_actions(&actions).expect("Should apply actions!");
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
 		let exports = state.export_updates().expect("Should export!");
 		let mut input2 = ImportBundleBuilder::build_from(&input1, &exports);
 		input2.key_pairs.push(keypair_2);

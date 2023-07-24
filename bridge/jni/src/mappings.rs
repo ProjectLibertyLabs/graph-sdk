@@ -9,15 +9,15 @@ use dsnp_graph_config::{
 };
 use dsnp_graph_core::{
 	api::api_types::{
-		Action as RustAction, Connection as RustConnection, ConnectionType as RustConnectionType,
-		DsnpKeys as RustDsnpKeys, GraphKeyPair as RustGraphKeyPair,
-		ImportBundle as RustImportBundle, KeyData as RustKeyData, PageData as RustPageData,
-		PrivacyType as RustPrivacyType, Update as RustUpdate,
+		Action as RustAction, ActionOptions as RustActionOptions, Connection as RustConnection,
+		ConnectionType as RustConnectionType, DsnpKeys as RustDsnpKeys,
+		GraphKeyPair as RustGraphKeyPair, ImportBundle as RustImportBundle, KeyData as RustKeyData,
+		PageData as RustPageData, PrivacyType as RustPrivacyType, Update as RustUpdate,
 	},
 	dsnp::dsnp_types::{DsnpGraphEdge as RustDsnpGraphEdge, DsnpPublicKey as RustDsnpPublicKey},
 };
 use dsnp_graph_sdk_common::proto_types::{
-	input as proto_input,
+	input::{self as proto_input},
 	output::{
 		self as proto_output,
 		updates::update::{AddKeyUpdate, DeletePageUpdate, PersistPageUpdate},
@@ -60,7 +60,7 @@ pub fn map_to_environment<'local>(
 pub fn map_to_actions<'local>(
 	env: &JNIEnv<'local>,
 	actions: &JByteArray,
-) -> SdkJniResult<Vec<RustAction>> {
+) -> SdkJniResult<(Vec<RustAction>, Option<RustActionOptions>)> {
 	let bytes = env.convert_byte_array(actions).map_err(|e| SdkJniError::from(e))?;
 	let actions_proto =
 		proto_input::Actions::parse_from_bytes(&bytes).map_err(|e| SdkJniError::from(e))?;
@@ -69,7 +69,14 @@ pub fn map_to_actions<'local>(
 	for a in actions_proto.actions {
 		result.push(map_action_to_rust(a)?);
 	}
-	Ok(result)
+	let options = match actions_proto.options.into_option() {
+		Some(options) => Some(RustActionOptions {
+			ignore_existing_connections: options.ignore_existing_connections,
+			ignore_missing_connections: options.ignore_missing_connections,
+		}),
+		None => None,
+	};
+	Ok((result, options))
 }
 
 pub fn map_to_imports<'local>(
