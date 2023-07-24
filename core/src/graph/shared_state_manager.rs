@@ -47,6 +47,12 @@ pub trait PublicKeyProvider {
 	/// exports added new keys to be submitted to chain
 	fn export_new_key_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
+	/// exports added new keys to be submitted to chain for a specific user
+	fn export_new_key_updates_for_user(
+		&self,
+		dsnp_user_id: &DsnpUserId,
+	) -> DsnpGraphResult<Vec<Update>>;
+
 	/// get imported keys
 	fn get_imported_keys(&self, dsnp_user_id: DsnpUserId) -> Vec<&DsnpPublicKey>;
 
@@ -171,6 +177,31 @@ impl PublicKeyProvider for SharedStateManager {
 	fn export_new_key_updates(&self) -> DsnpGraphResult<Vec<Update>> {
 		let mut result = vec![];
 		for (dsnp_user_id, key) in self.new_keys.inner() {
+			let prev_hash = self
+				.dsnp_user_to_keys
+				.get(&dsnp_user_id)
+				.map_or(PageHash::default(), |(_, hash)| *hash);
+			result.push(Update::AddKey {
+				owner_dsnp_user_id: *dsnp_user_id,
+				prev_hash,
+				payload: Frequency::write_public_key(key)?,
+			});
+		}
+		Ok(result)
+	}
+
+	#[log_result_err(Level::Info)]
+	fn export_new_key_updates_for_user(
+		&self,
+		dsnp_user_id: &DsnpUserId,
+	) -> DsnpGraphResult<Vec<Update>> {
+		let mut result = vec![];
+		for (dsnp_user_id, key) in self
+			.new_keys
+			.inner()
+			.iter()
+			.filter(|(key_dsnp_id, _)| *key_dsnp_id == dsnp_user_id)
+		{
 			let prev_hash = self
 				.dsnp_user_to_keys
 				.get(&dsnp_user_id)

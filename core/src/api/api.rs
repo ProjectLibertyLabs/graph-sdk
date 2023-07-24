@@ -225,7 +225,11 @@ impl GraphAPI for GraphState {
 			.export_new_key_updates()?;
 		let imported_users: Vec<_> = self.user_map.inner().keys().copied().collect();
 		for user_id in imported_users {
-			let updates = self.export_user_graph_updates(&user_id)?;
+			let user_graph = self
+				.user_map
+				.get(&user_id)
+				.ok_or(DsnpGraphError::UserGraphNotImported(user_id))?;
+			let updates = user_graph.calculate_updates()?;
 			result.extend(updates);
 		}
 		Ok(result)
@@ -235,12 +239,18 @@ impl GraphAPI for GraphState {
 	/// be updated and/or removed or added keys
 	#[log_result_err(Level::Error)]
 	fn export_user_graph_updates(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>> {
+		let mut result = self
+			.shared_state_manager
+			.read()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
+			.export_new_key_updates_for_user(user_id)?;
 		let user_graph = self
 			.user_map
 			.get(&user_id)
 			.ok_or(DsnpGraphError::UserGraphNotImported(*user_id))?;
 		let updates = user_graph.calculate_updates()?;
-		Ok(updates)
+		result.extend(updates);
+		Ok(result)
 	}
 
 	/// Applies actions (Connect, Disconnect) to imported users graph
