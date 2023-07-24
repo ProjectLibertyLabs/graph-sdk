@@ -17,7 +17,7 @@ mod integration_tests {
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::GraphKeyType;
 	use dsnp_graph_core::{
-		api::api_types::{Action, Connection, DsnpKeys, GraphKeyPair, Update},
+		api::api_types::{Action, ActionOptions, Connection, DsnpKeys, GraphKeyPair, Update},
 		dsnp::{
 			dsnp_types::{DsnpGraphEdge, DsnpPrid, DsnpPublicKey, DsnpUserId},
 			pseudo_relationship_identifier::PridProvider,
@@ -655,7 +655,7 @@ mod integration_tests {
 	}
 
 	#[test]
-	fn api_apply_actions_add_with_exising_connections_should_fail() {
+	fn api_apply_actions_add_with_existing_connections_should_fail() {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
@@ -680,6 +680,51 @@ mod integration_tests {
 	}
 
 	#[test]
+	fn api_apply_actions_add_with_existing_connections_with_ignore_should_not_fail() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
+		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1000)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import!");
+		let actions = vec![
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 5, schema_id }, // redundant connection
+				dsnp_keys: None,
+			},
+			Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+				dsnp_keys: None,
+			},
+		];
+		let expected_connections = vec![(2, 1), (3, 2), (4, 3), (5, 4), (10, 5)];
+
+		// act
+		let res = state.apply_actions(
+			&actions,
+			&Some(ActionOptions {
+				ignore_existing_connections: true,
+				ignore_missing_connections: false,
+			}),
+		);
+
+		// assert
+		assert!(res.is_ok());
+		let connections = state
+			.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, true)
+			.expect("should work");
+		let sorted_connections: HashSet<_> = connections.into_iter().map(|e| e.user_id).collect();
+		let mapped: HashSet<_> = expected_connections.into_iter().map(|(c, _)| c).collect();
+		assert_eq!(sorted_connections, mapped);
+	}
+
+	#[test]
 	fn api_apply_actions_remove_with_non_existing_connections_should_fail() {
 		// arrange
 		let env = Environment::Mainnet;
@@ -701,6 +746,50 @@ mod integration_tests {
 
 		// assert
 		assert!(res.is_err());
+	}
+
+	#[test]
+	fn api_apply_actions_remove_with_non_existing_connections_with_ignore_should_not_fail() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
+		let input1 = ImportBundleBuilder::new(env, dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1000)
+			.build();
+		state.import_users_data(&vec![input1]).expect("should import!");
+		let actions = vec![
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 10, schema_id },
+			},
+			Action::Disconnect {
+				owner_dsnp_user_id: dsnp_user_id_1,
+				connection: Connection { dsnp_user_id: 5, schema_id },
+			},
+		];
+
+		let expected_connections = vec![(2, 1), (3, 2), (4, 3)];
+
+		// act
+		let res = state.apply_actions(
+			&actions,
+			&Some(ActionOptions {
+				ignore_existing_connections: false,
+				ignore_missing_connections: true,
+			}),
+		);
+
+		// assert
+		assert!(res.is_ok());
+		let connections = state
+			.get_connections_for_user_graph(&dsnp_user_id_1, &schema_id, true)
+			.expect("should work");
+		let sorted_connections: HashSet<_> = connections.into_iter().map(|e| e.user_id).collect();
+		let mapped: HashSet<_> = expected_connections.into_iter().map(|(c, _)| c).collect();
+		assert_eq!(sorted_connections, mapped);
 	}
 
 	#[test]
