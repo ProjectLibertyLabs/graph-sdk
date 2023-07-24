@@ -521,6 +521,7 @@ mod tests {
 	{
 		// arrange
 		let dsnp_user_id = 2;
+		let dsnp_user_id_2 = 3;
 		let keys_hash = 233;
 		let key1 = DsnpPublicKey { key_id: None, key: vec![1u8; 32] };
 		let serialized1 = Frequency::write_public_key(&key1).expect("should serialize");
@@ -547,6 +548,9 @@ mod tests {
 		let active_key = key_manager.get_active_key(dsnp_user_id);
 		assert_eq!(active_key, Some(&DsnpPublicKey { key_id: Some(2), key: key2.key }));
 		let export = key_manager.export_new_key_updates().expect("should work");
+		let export_user = key_manager
+			.export_new_key_updates_for_user(&dsnp_user_id)
+			.expect("key export for specific user should work");
 		assert_eq!(
 			export,
 			vec![Update::AddKey {
@@ -555,7 +559,16 @@ mod tests {
 				prev_hash: keys_hash,
 			}]
 		);
+		assert_eq!(
+			export, export_user,
+			"key export for all keys and specific user should be the same"
+		);
 		assert_eq!(key_manager.get_imported_keys(dsnp_user_id).len(), 2);
+
+		let export_other_user = key_manager
+			.export_new_key_updates_for_user(&dsnp_user_id_2)
+			.expect("key export for another user should work");
+		assert_eq!(export_other_user.len(), 0, "should have exported 0 keys for other user");
 	}
 
 	#[test]

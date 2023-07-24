@@ -1156,6 +1156,53 @@ mod integration_tests {
 	}
 
 	#[test]
+	fn api_export_user_updates_should_include_only_specified_user_updates() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = get_schema_from(env.clone(), ConnectionType::Follow(PrivacyType::Public));
+		let mut state = GraphState::new(env.clone());
+		let dsnp_user_id_1 = 1;
+		let dsnp_user_id_2 = 2;
+		let connections_1 = vec![(2, 1), (3, 2), (4, 3), (5, 4)];
+		let connections_2 = vec![(6, 1), (7, 2), (8, 3), (9, 4)];
+		let input1 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_1, schema_id)
+			.with_page(1, &connections_1, &vec![], 1)
+			.build();
+		let input2 = ImportBundleBuilder::new(env.clone(), dsnp_user_id_2, schema_id)
+			.with_page(1, &connections_2, &vec![], 1)
+			.build();
+		state
+			.import_users_data(&vec![input1.clone(), input2.clone()])
+			.expect("should import!");
+		let actions = vec![Action::Connect {
+			owner_dsnp_user_id: dsnp_user_id_2,
+			connection: Connection { dsnp_user_id: 10, schema_id },
+			dsnp_keys: None,
+		}];
+		state.apply_actions(&actions, &None).expect("Should apply actions!");
+
+		// act
+		let result_1 = state.export_user_graph_updates(&dsnp_user_id_1);
+		let result_2 = state.export_user_graph_updates(&dsnp_user_id_2);
+		let expected_connections = vec![(6, 1), (7, 2), (8, 3), (9, 4), (10, 5)];
+
+		// assert
+		assert!(result_1.is_ok());
+		let exports_1 = result_1.unwrap();
+		assert!(exports_1.is_empty());
+
+		assert!(result_2.is_ok());
+		let exports_2 = result_2.unwrap();
+		assert!(!exports_2.is_empty());
+		let connections = state
+			.get_connections_for_user_graph(&dsnp_user_id_2, &schema_id, true)
+			.expect("should work");
+		let sorted_connections: HashSet<_> = connections.into_iter().map(|e| e.user_id).collect();
+		let mapped: HashSet<_> = expected_connections.into_iter().map(|(c, _)| c).collect();
+		assert_eq!(sorted_connections, mapped);
+	}
+
+	#[test]
 	fn api_export_updates_for_private_friendship_graph_without_imported_connection_keys_should_fail(
 	) {
 		// arrange
