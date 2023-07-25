@@ -381,7 +381,8 @@ pub unsafe extern "C" fn graph_apply_actions(
 		let actions = actions_from_ffi(&actions);
 		let mut rust_options: Option<ActionOptions> = None;
 		if !options.is_null() {
-			rust_options = Some((*options).clone())
+			let options = &*options;
+			rust_options = Some(options.clone());
 		}
 		match graph_state.apply_actions(&actions, &rust_options) {
 			Ok(_) => FFIResult::new(true),

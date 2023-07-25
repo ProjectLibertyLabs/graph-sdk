@@ -390,7 +390,7 @@ mod test {
 		let connection_dsnp = 1000000;
 		user_graph
 			.update_tracker
-			.register_update(&UpdateEvent::Add { dsnp_user_id: connection_dsnp, schema_id })
+			.register_update(&UpdateEvent::Add { dsnp_user_id: connection_dsnp, schema_id }, false)
 			.unwrap();
 		let key = StackKeyPair::gen();
 		user_graph

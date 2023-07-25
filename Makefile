@@ -93,7 +93,7 @@ build-ffi-bridge-for-test:
 	cargo build --profile $(PROFILE) -p dsnp-graph-sdk-ffi
 
 .PHONY: build-ffi-tests
-build-ffi-tests: build-ffi-bridge-for-test bindgen
+build-ffi-tests: clean-ffi-bridge build-ffi-bridge-for-test bindgen
 	$(MAKE) -C bridge/ffi/src/c_example clean all
 
 .PHONY: test-ffi

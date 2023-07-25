@@ -507,17 +507,20 @@ impl GraphState {
 							*ignore_existing_connections,
 						None => false,
 					};
-					if !ignore_existing_connections &&
-						owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true)
-					{
+					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						if ignore_existing_connections {
+							continue
+						}
+
 						return Err(DsnpGraphError::ConnectionAlreadyExists(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
 						))
 					}
-					owner_graph
-						.update_tracker_mut()
-						.register_update(&UpdateEvent::create_add(*dsnp_user_id, *schema_id))?;
+					owner_graph.update_tracker_mut().register_update(
+						&UpdateEvent::create_add(*dsnp_user_id, *schema_id),
+						ignore_existing_connections,
+					)?;
 					if let Some(inner_keys) = dsnp_keys {
 						self.shared_state_manager
 							.write()
@@ -536,17 +539,20 @@ impl GraphState {
 							*ignore_missing_connections,
 						None => false,
 					};
-					if !ignore_missing_connections &&
-						!owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true)
-					{
+					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						if ignore_missing_connections {
+							continue
+						}
+
 						return Err(DsnpGraphError::ConnectionDoesNotExist(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
 						))
 					}
-					owner_graph
-						.update_tracker_mut()
-						.register_update(&UpdateEvent::create_remove(*dsnp_user_id, *schema_id))?;
+					owner_graph.update_tracker_mut().register_update(
+						&UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
+						ignore_missing_connections,
+					)?;
 				},
 				Action::AddGraphKey { new_public_key, .. } => {
 					self.shared_state_manager
