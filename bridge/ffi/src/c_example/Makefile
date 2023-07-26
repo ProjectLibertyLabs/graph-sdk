@@ -3,6 +3,7 @@ UNAME := $(shell uname)
 
 # Compiler options
 CC := gcc
+CXX := g++
 CFLAGS :=
 
 PROFILE := release

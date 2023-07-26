@@ -336,12 +336,14 @@ int test_import_user_data_with_invalid_serialized_public_key_should_fail() {
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
 
+    const uint8_t bad_keypair[] = { 0, 1 };
+
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = bad_keypair, // invalid serialized public key
+        .public_key_len = 2,
         .secret_key = NULL,
         .secret_key_len = 0,
-        .public_key = (const uint8_t[]){0, 1}, // invalid serialized public key
-        .public_key_len = 2
     };
 
     ImportBundle import_bundle = {
@@ -402,12 +404,14 @@ int test_import_user_data_with_invalid_secret_fails(){
         return 1;
     }
 
+    const uint8_t bad_keypair[] = { 0, 1 };
+
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
-        .secret_key = (const uint8_t[]){0, 1}, // invalid serialized secret key
-        .secret_key_len = 2,
         .public_key = public_key,
-        .public_key_len = crypto_box_PUBLICKEYBYTES
+        .public_key_len = crypto_box_PUBLICKEYBYTES,
+        .secret_key = bad_keypair, // invalid serialized secret key
+        .secret_key_len = 2,
     };
 
     ImportBundle import_bundle = {
@@ -461,10 +465,10 @@ int api_import_user_data_should_import_graph_for_private_follow_successfully() {
 
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key),
         .secret_key = secret_key,
         .secret_key_len = sizeof(secret_key),
-        .public_key = public_key,
-        .public_key_len = sizeof(public_key)
     };
     ImportBundle import_bundle = {
         .dsnp_user_id = dsnp_user_id,
@@ -531,10 +535,10 @@ int api_import_user_data_with_wrong_encryption_keys_should_fail() {
 
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key),
         .secret_key = resolved_key,
         .secret_key_len = sizeof(resolved_key),
-        .public_key = public_key,
-        .public_key_len = sizeof(public_key)
     };
     ImportBundle import_bundle = {
         .dsnp_user_id = dsnp_user_id,
