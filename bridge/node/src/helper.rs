@@ -709,12 +709,18 @@ pub fn action_options_from_js<'a, C: Context<'a>>(
 	cx: &mut C,
 	action_options_js: Handle<'_, JsObject>,
 ) -> NeonResult<ActionOptions> {
-	let ignore_existing_connections: Handle<'_, JsBoolean> =
-		action_options_js.get(cx, "ignoreExistingConnections")?;
-	let ignore_existing_connections = ignore_existing_connections.value(cx);
-	let ignore_missing_connections: Handle<'_, JsBoolean> =
-		action_options_js.get(cx, "ignoreMissingConnections")?;
-	let ignore_missing_connections = ignore_missing_connections.value(cx);
+	let ignore_existing_connections: Option<Handle<'_, JsBoolean>> =
+		action_options_js.get_opt(cx, "ignoreExistingConnections")?;
+	let ignore_existing_connections = match ignore_existing_connections {
+		Some(ignore) => ignore.value(cx),
+		None => false,
+	};
+	let ignore_missing_connections: Option<Handle<'_, JsBoolean>> =
+		action_options_js.get_opt(cx, "ignoreMissingConnections")?;
+	let ignore_missing_connections = match ignore_missing_connections {
+		Some(ignore) => ignore.value(cx),
+		None => false,
+	};
 
 	return Ok(ActionOptions { ignore_existing_connections, ignore_missing_connections })
 }

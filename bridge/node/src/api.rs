@@ -607,6 +607,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("removeUserGraph", remove_user_graph)?;
 	cx.export_function("importUserData", import_user_data)?;
 	cx.export_function("exportUpdates", export_graph_updates)?;
+	cx.export_function("exportUserGraphUpdates", export_user_graph_updates)?;
 	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
 	cx.export_function("applyActions", apply_actions)?;
 	cx.export_function("forceCalculateGraphs", force_calculate_graphs)?;
