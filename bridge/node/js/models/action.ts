@@ -7,10 +7,10 @@ export interface ActionOptions {
 }
 
 export interface ConnectAction {
-    type: "Connect";
-    ownerDsnpUserId: string;
-    connection: Connection;
-    dsnpKeys?: DsnpKeys;
+  type: "Connect";
+  ownerDsnpUserId: string;
+  connection: Connection;
+  dsnpKeys?: DsnpKeys;
 }
 
 export interface DisconnectAction {

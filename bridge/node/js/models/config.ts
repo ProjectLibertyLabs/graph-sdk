@@ -1,31 +1,31 @@
 enum DsnpVersion {
-    Version1_0 = "1.0",
-  }
+  Version1_0 = "1.0",
+}
 
-  enum ConnectionType {
-    Follow = "follow",
-    Friendship = "friendship",
-  }
+enum ConnectionType {
+  Follow = "follow",
+  Friendship = "friendship",
+}
 
-  enum PrivacyType {
-    Public = "public",
-    Private = "private",
-  }
+enum PrivacyType {
+  Public = "public",
+  Private = "private",
+}
 
-  interface SchemaConfig {
-    dsnpVersion: DsnpVersion;
-    connectionType: ConnectionType,
-    privacyType: PrivacyType,
-  }
+interface SchemaConfig {
+  dsnpVersion: DsnpVersion;
+  connectionType: ConnectionType;
+  privacyType: PrivacyType;
+}
 
-  interface Config {
-    sdkMaxStaleFriendshipDays: number;
-    maxGraphPageSizeBytes: number;
-    maxPageId: number;
-    maxKeyPageSizeBytes: number;
-    schemaMap: { [key: number]: SchemaConfig };
-    graphPublicKeySchemaId: number;
-    dsnpVersions: DsnpVersion[];
-  }
+interface Config {
+  sdkMaxStaleFriendshipDays: number;
+  maxGraphPageSizeBytes: number;
+  maxPageId: number;
+  maxKeyPageSizeBytes: number;
+  schemaMap: { [key: number]: SchemaConfig };
+  graphPublicKeySchemaId: number;
+  dsnpVersions: DsnpVersion[];
+}
 
-  export { Config, ConnectionType, DsnpVersion, SchemaConfig, PrivacyType };
+export { Config, ConnectionType, DsnpVersion, SchemaConfig, PrivacyType };
