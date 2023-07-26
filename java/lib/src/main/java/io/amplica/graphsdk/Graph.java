@@ -51,6 +51,14 @@ public class Graph implements NativeHandleGuard.Owner {
         }
     }
 
+    public List<Updates.Update> exportUserGraphUpdates(long dsnpUserId)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.exportUserGraphUpdates(guard.nativeHandle(), dsnpUserId);
+            return Updates.parseFrom(raw).getUpdateList();
+        }
+    }
+
     public void applyActions(Actions actions) throws BaseGraphSdkException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
             Native.applyActions(guard.nativeHandle(), actions.toByteArray());

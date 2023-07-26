@@ -81,6 +81,8 @@ public final class Native {
 
     public static native byte[] exportUpdates(long stateHandle);
 
+    public static native byte[] exportUserGraphUpdates(long stateHandle, long dsnpUserId);
+
     public static native void applyActions(long stateHandle, byte[] actions);
 
     public static native byte[] forceCalculateGraphs(long stateHandle, long dsnpUserId);
