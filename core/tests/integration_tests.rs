@@ -884,9 +884,6 @@ mod integration_tests {
 		let mut state = GraphState::new(env);
 
 		state.import_users_data(&vec![input1]).expect("should import!");
-		let connections = state
-			.get_connections_for_user_graph(&owner_dsnp_user_id, &schema_id, false)
-			.unwrap();
 
 		// act
 		assert!(state.apply_actions(&vec![disconnect_action.clone()], &None).is_ok());
