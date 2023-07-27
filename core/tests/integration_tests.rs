@@ -14,6 +14,7 @@ use dsnp_graph_core::{
 mod integration_tests {
 	use super::*;
 	use crate::common::create_new_keys;
+	use ctor::ctor;
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::GraphKeyType;
 	use dsnp_graph_core::{
@@ -25,6 +26,12 @@ mod integration_tests {
 		util::builders::KeyDataBuilder,
 	};
 	use std::{borrow::Borrow, collections::HashSet};
+
+	#[ctor]
+	fn test_harness_init() {
+		const IS_TEST: bool = true; // set to false to see log output in tests
+		let _ = env_logger::builder().is_test(IS_TEST).try_init();
+	}
 
 	#[test]
 	fn api_len_with_empty_state_should_be_zero() {
@@ -846,7 +853,16 @@ mod integration_tests {
 
 		// act
 		assert!(state.apply_actions(&vec![action.clone()], &None).is_ok());
-		assert!(state.apply_actions(&vec![action], &None).is_err());
+		assert!(state.apply_actions(&vec![action.clone()], &None).is_err());
+		assert!(state
+			.apply_actions(
+				&vec![action],
+				&Some(ActionOptions {
+					ignore_existing_connections: true,
+					ignore_missing_connections: false
+				})
+			)
+			.is_ok());
 	}
 
 	#[test]
@@ -855,24 +871,35 @@ mod integration_tests {
 		let env = Environment::Mainnet;
 		let schema_id = env
 			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
 			.expect("should exist");
 		let owner_dsnp_user_id: DsnpUserId = 1;
-		let connect_action = Action::Connect {
-			owner_dsnp_user_id,
-			connection: Connection { dsnp_user_id: 1, schema_id },
-			dsnp_keys: None,
-		};
 		let disconnect_action = Action::Disconnect {
 			owner_dsnp_user_id,
-			connection: Connection { dsnp_user_id: 1, schema_id },
+			connection: Connection { dsnp_user_id: 2, schema_id },
 		};
+		let input1 = ImportBundleBuilder::new(env.clone(), owner_dsnp_user_id, schema_id)
+			.with_page(0, &vec![(2, 1)], &vec![], 1)
+			.build();
 		let mut state = GraphState::new(env);
-		assert!(state.apply_actions(&vec![connect_action], &None).is_ok());
+
+		state.import_users_data(&vec![input1]).expect("should import!");
+		let connections = state
+			.get_connections_for_user_graph(&owner_dsnp_user_id, &schema_id, false)
+			.unwrap();
 
 		// act
 		assert!(state.apply_actions(&vec![disconnect_action.clone()], &None).is_ok());
-		assert!(state.apply_actions(&vec![disconnect_action], &None).is_err());
+		assert!(state.apply_actions(&vec![disconnect_action.clone()], &None).is_err());
+		assert!(state
+			.apply_actions(
+				&vec![disconnect_action],
+				&Some(ActionOptions {
+					ignore_existing_connections: false,
+					ignore_missing_connections: true
+				}),
+			)
+			.is_ok());
 	}
 
 	#[test]

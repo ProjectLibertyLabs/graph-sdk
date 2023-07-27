@@ -509,6 +509,11 @@ impl GraphState {
 					};
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						if ignore_existing_connections {
+							log::warn!(
+								"Ignoring add redundant connection {} -> {}",
+								action.owner_dsnp_user_id(),
+								*dsnp_user_id
+							);
 							continue
 						}
 
@@ -541,6 +546,11 @@ impl GraphState {
 					};
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						if ignore_missing_connections {
+							log::warn!(
+								"Ignoring remove non-existent connection {} -> {}",
+								action.owner_dsnp_user_id(),
+								*dsnp_user_id
+							);
 							continue
 						}
 

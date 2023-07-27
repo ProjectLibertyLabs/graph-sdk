@@ -54,7 +54,17 @@ impl UpdateTracker {
 	) -> DsnpGraphResult<()> {
 		if self.contains(event) {
 			return match ignore_existing {
-				true => Ok(()),
+				true => {
+					match event {
+						UpdateEvent::Add { dsnp_user_id, schema_id } => {
+							log::warn!("Ignore duplicate Add event: id={dsnp_user_id}, schema_id={schema_id}");
+						},
+						UpdateEvent::Remove { dsnp_user_id, schema_id } => {
+							log::warn!("Ignore duplicate Remove event: id={dsnp_user_id}, schema_id={schema_id}");
+						},
+					};
+					Ok(())
+				},
 				false => Err(DsnpGraphError::EventExists),
 			}
 		}
