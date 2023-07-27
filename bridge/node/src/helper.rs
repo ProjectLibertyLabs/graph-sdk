@@ -299,8 +299,11 @@ pub fn import_bundle_from_js_object<'a, C: Context<'a>>(
 		None => Vec::new(),
 	};
 
-	let pages: Handle<'_, JsArray> = import_bundle_js.get(cx, "pages")?;
-	let pages: Vec<PageData> = pages_from_js(cx, pages)?;
+	let pages_res: Handle<'_, JsArray> = import_bundle_js.get(cx, "pages")?;
+	let mut pages: Vec<PageData> = Vec::new();
+	if pages_res.len(cx) > 0 {
+		pages = pages_from_js(cx, pages_res)?;
+	}
 
 	let import_bundle = ImportBundle { dsnp_user_id, schema_id, dsnp_keys, key_pairs, pages };
 	Ok(import_bundle)
