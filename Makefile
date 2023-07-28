@@ -115,6 +115,9 @@ test-java-client:
 test-node-client:
 	@( cd bridge/node/node-example-client ; npm run test )
 
+.PHONY: test-all
+test-all: test test-ffi test-jni test-node
+
 .PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
