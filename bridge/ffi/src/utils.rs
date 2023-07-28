@@ -42,7 +42,7 @@ fn get_config_from_rust_config(rust_config: &RustConfig) -> Config {
 }
 
 // Function to convert C-compatible `Config` to a Rust `Config`
-pub fn config_from_ffi(config: &Config) -> dsnp_graph_config::Config {
+pub fn config_from_ffi(config: &Config) -> RustConfig {
 	let schema_map_slice = if config.schema_map.is_null() {
 		&[]
 	} else {

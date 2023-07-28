@@ -115,6 +115,18 @@ int test_import_user_data_for_public_follow() {
     env.tag = Mainnet;
     GraphState* state = NULL;
 
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Follow,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error == NULL, "Unable to get schema id for connection type");
+    SchemaId schema_id = *schema_result.result;
+
     // Set up import data
 
     DsnpUserId dsnp_user_id_1 = 1;
@@ -138,7 +150,7 @@ int test_import_user_data_for_public_follow() {
 
     ImportBundle importbundle_1 = {
         .dsnp_user_id = dsnp_user_id_1,
-        .schema_id = 1,
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
@@ -147,7 +159,7 @@ int test_import_user_data_for_public_follow() {
     };
     ImportBundle importbundle_2 = {
         .dsnp_user_id = dsnp_user_id_2,
-        .schema_id = 1,
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_2, 0, NULL, 0},
@@ -209,6 +221,18 @@ int test_add_bad_page_get_bad_response() {
     env.tag = Mainnet;
     GraphState* state = NULL;
 
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Follow,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error == NULL, "Unable to get schema id for connection type");
+    SchemaId schema_id = *schema_result.result;
+
     // Set up import data
 
     DsnpUserId dsnp_user_id_1 = 1;
@@ -232,7 +256,7 @@ int test_add_bad_page_get_bad_response() {
 
     ImportBundle importbundle_1 = {
         .dsnp_user_id = dsnp_user_id_1,
-        .schema_id = 1,
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
@@ -241,7 +265,7 @@ int test_add_bad_page_get_bad_response() {
     };
     ImportBundle importbundle_2 = {
         .dsnp_user_id = dsnp_user_id_2,
-        .schema_id = 1,
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_2, 0, NULL, 0},
@@ -267,6 +291,24 @@ int test_add_bad_page_get_bad_response() {
     free_graph_state(state);
     free_dsnp_graph_error(state_result.error);
     free_dsnp_graph_error(importresult.error);
+
+    return 0;
+}
+
+int test_unsupported_connection_type_should_fail() {
+    Environment env;
+    env.tag = Mainnet;
+
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Friendship,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error != NULL, "Expected map of Public Friendship connection type to fail");
 
     return 0;
 }
@@ -450,6 +492,18 @@ int api_import_user_data_should_import_graph_for_private_follow_successfully() {
     env.tag = Mainnet;
     GraphState* state = initialize_graph_state(&env).result;
 
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Follow,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error == NULL, "Unable to get schema id for connection type");
+    SchemaId schema_id = *schema_result.result;
+
     unsigned char secret_key[crypto_box_SECRETKEYBYTES];
     unsigned char public_key[crypto_box_PUBLICKEYBYTES];
     crypto_box_keypair(public_key, secret_key);
@@ -472,7 +526,7 @@ int api_import_user_data_should_import_graph_for_private_follow_successfully() {
     };
     ImportBundle import_bundle = {
         .dsnp_user_id = dsnp_user_id,
-        .schema_id = 1, // Set the correct schema ID here
+        .schema_id = schema_id,
         .key_pairs = &graph_key_pair,
         .key_pairs_len = 1,
         .dsnp_keys = {dsnp_user_id, 0, NULL, 0},
@@ -575,6 +629,18 @@ int api_remove_user_graph_should_remove_user_successfully() {
     env.tag = Mainnet;
     GraphState* state = initialize_graph_state(&env).result;
 
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Follow,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error == NULL, "Unable to get schema id for connection type");
+    SchemaId schema_id = *schema_result.result;
+
     DsnpUserId dsnp_user_id_1 = 1;
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
     size_t page_data_1_content_len = sizeof(page_data_1_content);
@@ -586,7 +652,7 @@ int api_remove_user_graph_should_remove_user_successfully() {
 
     ImportBundle import_bundle_1 = {
         .dsnp_user_id = dsnp_user_id_1,
-        .schema_id = 1, // Set the correct schema ID here
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
@@ -626,7 +692,18 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
     env.tag = Mainnet;
     GraphState* state = initialize_graph_state(&env).result;
 
-    SchemaId schema_id = 1;
+    FFIResultConfigGraphError config_result = get_graph_config(&env);
+    ASSERT(config_result.error == NULL, "Unable to get config from environment");
+    Config * config = config_result.result;
+
+    ConnectionType connection_type = {
+        .tag = Follow,
+        .follow = Public
+    };
+    FFIResultSchemaIdGraphError schema_result = get_schema_id_from_config(&connection_type, config);
+    ASSERT(schema_result.error == NULL, "Unable to get schema id for connection type");
+    SchemaId schema_id = *schema_result.result;
+
     DsnpUserId dsnp_user_id_1 = 1;
     DsnpUserId dsnp_user_id_2 = 10;
     uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0}; // connections 2, 3, 4, 5
@@ -639,7 +716,7 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
 
     ImportBundle import_bundle_1 = {
         .dsnp_user_id = dsnp_user_id_1,
-        .schema_id = schema_id, // Set the correct schema ID here
+        .schema_id = schema_id,
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
@@ -809,6 +886,7 @@ int testno = 1;
     result += test_import_user_data_for_public_follow();
     result += test_add_bad_page_get_bad_response();
     result += test_bad_schema_id_should_fail();
+    result += test_unsupported_connection_type_should_fail();
     result += test_import_user_data_with_invalid_serialized_public_key_should_fail();
     result += test_import_user_data_with_invalid_secret_fails();
     result += api_import_user_data_should_import_graph_for_private_follow_successfully();
