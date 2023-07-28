@@ -250,7 +250,7 @@ mod test {
 	use super::*;
 	use crate::{graph::key_manager::UserKeyProvider, iter_graph_connections, tests::helpers::*};
 	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::GraphKeyType;
+	use dsnp_graph_config::{GraphKeyType, ALL_CONNECTION_TYPES};
 
 	#[test]
 	fn new_creates_empty_graphs_for_all_connection_types() {
@@ -258,27 +258,13 @@ mod test {
 		let env = Environment::Mainnet;
 		let user_graph =
 			UserGraph::new(&user_id, &env, Arc::new(RwLock::new(SharedStateManager::new())));
-
-		let follow_public_schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Public))
-			.expect("should exist");
-		assert_eq!(user_graph.graphs.inner().contains_key(&follow_public_schema_id), true);
-		let follow_private_schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
-			.expect("should exist");
-		assert_eq!(user_graph.graphs.inner().contains_key(&follow_private_schema_id), true);
-		let friendship_public_schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Public))
-			.expect("should exist");
-		assert_eq!(user_graph.graphs.inner().contains_key(&friendship_public_schema_id), true);
-		let friendship_private_schema_id = env
-			.get_config()
-			.get_schema_id_from_connection_type(ConnectionType::Friendship(PrivacyType::Private))
-			.expect("should exist");
-		assert_eq!(user_graph.graphs.inner().contains_key(&friendship_private_schema_id), true);
+		for c in ALL_CONNECTION_TYPES {
+			let schema_id = env
+				.get_config()
+				.get_schema_id_from_connection_type(c)
+				.expect("schema for connection type should exist");
+			assert_eq!(user_graph.graphs.inner().contains_key(&schema_id), true);
+		}
 
 		for graph in user_graph.graphs.inner().values() {
 			let graph_len = iter_graph_connections!(graph).len();
@@ -290,12 +276,10 @@ mod test {
 	fn graph_getter_gets_correct_graph_for_connection_type() {
 		let env = Environment::Mainnet;
 		let user_graph = UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
-		for p in [PrivacyType::Public, PrivacyType::Private] {
-			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				let schema_id =
-					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				assert_eq!(user_graph.graph(&schema_id).unwrap().get_connection_type(), c);
-			}
+		for c in ALL_CONNECTION_TYPES {
+			let schema_id =
+				env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+			assert_eq!(user_graph.graph(&schema_id).unwrap().get_connection_type(), c);
 		}
 	}
 
@@ -304,12 +288,10 @@ mod test {
 		let env = Environment::Mainnet;
 		let mut user_graph =
 			UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
-		for p in [PrivacyType::Public, PrivacyType::Private] {
-			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				let schema_id =
-					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				assert_eq!(user_graph.graph_mut(&schema_id).unwrap().get_connection_type(), c);
-			}
+		for c in ALL_CONNECTION_TYPES {
+			let schema_id =
+				env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+			assert_eq!(user_graph.graph_mut(&schema_id).unwrap().get_connection_type(), c);
 		}
 	}
 
@@ -346,12 +328,10 @@ mod test {
 		let graph = create_test_graph(None);
 		let mut user_graph =
 			UserGraph::new(&1, &env, Arc::new(RwLock::new(SharedStateManager::new())));
-		for p in [PrivacyType::Public, PrivacyType::Private] {
-			for c in [ConnectionType::Follow(p), ConnectionType::Friendship(p)] {
-				let schema_id =
-					env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
-				user_graph.set_graph(&schema_id, graph.clone());
-			}
+		for c in ALL_CONNECTION_TYPES {
+			let schema_id =
+				env.get_config().get_schema_id_from_connection_type(c).expect("should exist");
+			user_graph.set_graph(&schema_id, graph.clone());
 		}
 
 		for (_, g) in user_graph.graphs.inner().iter() {

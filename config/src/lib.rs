@@ -103,9 +103,8 @@ impl ConnectionType {
 }
 
 /// a list of all supported Graphs and connections types
-pub const ALL_CONNECTION_TYPES: [ConnectionType; 4] = [
+pub const ALL_CONNECTION_TYPES: [ConnectionType; 3] = [
 	ConnectionType::Follow(PrivacyType::Public),
-	ConnectionType::Friendship(PrivacyType::Public),
 	ConnectionType::Follow(PrivacyType::Private),
 	ConnectionType::Friendship(PrivacyType::Private),
 ];
@@ -273,31 +272,24 @@ mod config_tests {
 			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			dsnp_versions: vec![DsnpVersion::Version1_0],
-			graph_public_key_schema_id: 5,
+			graph_public_key_schema_id: 7,
 			schema_map: HashMap::from([
 				(
-					1,
+					8,
 					SchemaConfig {
 						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Follow(PrivacyType::Public),
 					},
 				),
 				(
-					2,
+					9,
 					SchemaConfig {
 						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Follow(PrivacyType::Private),
 					},
 				),
 				(
-					3,
-					SchemaConfig {
-						dsnp_version: DsnpVersion::Version1_0,
-						connection_type: ConnectionType::Friendship(PrivacyType::Public),
-					},
-				),
-				(
-					4,
+					10,
 					SchemaConfig {
 						dsnp_version: DsnpVersion::Version1_0,
 						connection_type: ConnectionType::Friendship(PrivacyType::Private),
