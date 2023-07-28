@@ -289,6 +289,43 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
 	handle_result(&mut env, result)
 }
 
+/// Export updates to graph state for a single user graph.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `dsnp_user_id` - the user id whose graph to export
+/// # Returns
+/// * `jbyteArray` - the serialized updates
+/// # Errors
+/// * `SdkJniError` - if exporting updates fails
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUserGraphUpdates<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	handle: jlong,
+	dsnp_user_id: jlong,
+) -> JByteArray<'local> {
+	let result = panic::catch_unwind(|| {
+		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
+		let dsnp_user_id = DsnpUserId::try_from(dsnp_user_id)
+			.map_err(|_| SdkJniError::BadJniParameter("invalid dsnp_user_id"))?;
+
+		// locking to read from state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.read().map_err(|_| SdkJniError::LockError)?;
+		let graph = unsafe { Box::from_raw(handle as *mut GraphState) };
+		// do not use `?` here to handle the error since it would drop the memory
+		let result = graph
+			.deref()
+			.export_user_graph_updates(&dsnp_user_id)
+			.map_err(|e| SdkJniError::from(e))
+			.and_then(|updates| serialize_graph_updates(&env, &updates));
+
+		// pulling out of the box as raw so that memory stays allocated
+		let _ = Box::into_raw(graph) as jlong;
+		result
+	});
+	handle_result(&mut env, result)
+}
+
 /// Apply actions to graph state.
 /// # Arguments
 /// * `handle` - the handle to the graph state
@@ -304,13 +341,16 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 ) {
 	let result = panic::catch_unwind(|| {
 		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
-		let actions = map_to_actions(&env, &actions)?;
+		let (actions, options) = map_to_actions(&env, &actions)?;
 
 		// locking to write in state
 		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
 		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
 		// do not use `?` here to handle the error since it would drop the memory
-		let result = graph.deref_mut().apply_actions(&actions).map_err(|e| SdkJniError::from(e));
+		let result = graph
+			.deref_mut()
+			.apply_actions(&actions, &options)
+			.map_err(|e| SdkJniError::from(e));
 
 		// pulling out of the box as raw so that memory stays allocated
 		let _ = Box::into_raw(graph) as jlong;

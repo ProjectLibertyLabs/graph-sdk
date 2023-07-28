@@ -44,6 +44,559 @@ private static final long serialVersionUID = 0L;
             io.amplica.graphsdk.models.Actions.class, io.amplica.graphsdk.models.Actions.Builder.class);
   }
 
+  public interface ActionOptionsOrBuilder extends
+      // @@protoc_insertion_point(interface_extends:Actions.ActionOptions)
+      com.google.protobuf.MessageOrBuilder {
+
+    /**
+     * <code>bool ignore_existing_connections = 1;</code>
+     * @return The ignoreExistingConnections.
+     */
+    boolean getIgnoreExistingConnections();
+
+    /**
+     * <code>bool ignore_missing_connections = 2;</code>
+     * @return The ignoreMissingConnections.
+     */
+    boolean getIgnoreMissingConnections();
+  }
+  /**
+   * Protobuf type {@code Actions.ActionOptions}
+   */
+  public static final class ActionOptions extends
+      com.google.protobuf.GeneratedMessageV3 implements
+      // @@protoc_insertion_point(message_implements:Actions.ActionOptions)
+      ActionOptionsOrBuilder {
+  private static final long serialVersionUID = 0L;
+    // Use ActionOptions.newBuilder() to construct.
+    private ActionOptions(com.google.protobuf.GeneratedMessageV3.Builder<?> builder) {
+      super(builder);
+    }
+    private ActionOptions() {
+    }
+
+    @java.lang.Override
+    @SuppressWarnings({"unused"})
+    protected java.lang.Object newInstance(
+        UnusedPrivateParameter unused) {
+      return new ActionOptions();
+    }
+
+    @java.lang.Override
+    public final com.google.protobuf.UnknownFieldSet
+    getUnknownFields() {
+      return this.unknownFields;
+    }
+    public static final com.google.protobuf.Descriptors.Descriptor
+        getDescriptor() {
+      return io.amplica.graphsdk.models.Input.internal_static_Actions_ActionOptions_descriptor;
+    }
+
+    @java.lang.Override
+    protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+        internalGetFieldAccessorTable() {
+      return io.amplica.graphsdk.models.Input.internal_static_Actions_ActionOptions_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              io.amplica.graphsdk.models.Actions.ActionOptions.class, io.amplica.graphsdk.models.Actions.ActionOptions.Builder.class);
+    }
+
+    public static final int IGNORE_EXISTING_CONNECTIONS_FIELD_NUMBER = 1;
+    private boolean ignoreExistingConnections_ = false;
+    /**
+     * <code>bool ignore_existing_connections = 1;</code>
+     * @return The ignoreExistingConnections.
+     */
+    @java.lang.Override
+    public boolean getIgnoreExistingConnections() {
+      return ignoreExistingConnections_;
+    }
+
+    public static final int IGNORE_MISSING_CONNECTIONS_FIELD_NUMBER = 2;
+    private boolean ignoreMissingConnections_ = false;
+    /**
+     * <code>bool ignore_missing_connections = 2;</code>
+     * @return The ignoreMissingConnections.
+     */
+    @java.lang.Override
+    public boolean getIgnoreMissingConnections() {
+      return ignoreMissingConnections_;
+    }
+
+    private byte memoizedIsInitialized = -1;
+    @java.lang.Override
+    public final boolean isInitialized() {
+      byte isInitialized = memoizedIsInitialized;
+      if (isInitialized == 1) return true;
+      if (isInitialized == 0) return false;
+
+      memoizedIsInitialized = 1;
+      return true;
+    }
+
+    @java.lang.Override
+    public void writeTo(com.google.protobuf.CodedOutputStream output)
+                        throws java.io.IOException {
+      if (ignoreExistingConnections_ != false) {
+        output.writeBool(1, ignoreExistingConnections_);
+      }
+      if (ignoreMissingConnections_ != false) {
+        output.writeBool(2, ignoreMissingConnections_);
+      }
+      getUnknownFields().writeTo(output);
+    }
+
+    @java.lang.Override
+    public int getSerializedSize() {
+      int size = memoizedSize;
+      if (size != -1) return size;
+
+      size = 0;
+      if (ignoreExistingConnections_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(1, ignoreExistingConnections_);
+      }
+      if (ignoreMissingConnections_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(2, ignoreMissingConnections_);
+      }
+      size += getUnknownFields().getSerializedSize();
+      memoizedSize = size;
+      return size;
+    }
+
+    @java.lang.Override
+    public boolean equals(final java.lang.Object obj) {
+      if (obj == this) {
+       return true;
+      }
+      if (!(obj instanceof io.amplica.graphsdk.models.Actions.ActionOptions)) {
+        return super.equals(obj);
+      }
+      io.amplica.graphsdk.models.Actions.ActionOptions other = (io.amplica.graphsdk.models.Actions.ActionOptions) obj;
+
+      if (getIgnoreExistingConnections()
+          != other.getIgnoreExistingConnections()) return false;
+      if (getIgnoreMissingConnections()
+          != other.getIgnoreMissingConnections()) return false;
+      if (!getUnknownFields().equals(other.getUnknownFields())) return false;
+      return true;
+    }
+
+    @java.lang.Override
+    public int hashCode() {
+      if (memoizedHashCode != 0) {
+        return memoizedHashCode;
+      }
+      int hash = 41;
+      hash = (19 * hash) + getDescriptor().hashCode();
+      hash = (37 * hash) + IGNORE_EXISTING_CONNECTIONS_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getIgnoreExistingConnections());
+      hash = (37 * hash) + IGNORE_MISSING_CONNECTIONS_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getIgnoreMissingConnections());
+      hash = (29 * hash) + getUnknownFields().hashCode();
+      memoizedHashCode = hash;
+      return hash;
+    }
+
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        java.nio.ByteBuffer data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        java.nio.ByteBuffer data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        com.google.protobuf.ByteString data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        com.google.protobuf.ByteString data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(byte[] data)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        byte[] data,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws com.google.protobuf.InvalidProtocolBufferException {
+      return PARSER.parseFrom(data, extensionRegistry);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseDelimitedFrom(java.io.InputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseDelimitedFrom(
+        java.io.InputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseDelimitedWithIOException(PARSER, input, extensionRegistry);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        com.google.protobuf.CodedInputStream input)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input);
+    }
+    public static io.amplica.graphsdk.models.Actions.ActionOptions parseFrom(
+        com.google.protobuf.CodedInputStream input,
+        com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+        throws java.io.IOException {
+      return com.google.protobuf.GeneratedMessageV3
+          .parseWithIOException(PARSER, input, extensionRegistry);
+    }
+
+    @java.lang.Override
+    public Builder newBuilderForType() { return newBuilder(); }
+    public static Builder newBuilder() {
+      return DEFAULT_INSTANCE.toBuilder();
+    }
+    public static Builder newBuilder(io.amplica.graphsdk.models.Actions.ActionOptions prototype) {
+      return DEFAULT_INSTANCE.toBuilder().mergeFrom(prototype);
+    }
+    @java.lang.Override
+    public Builder toBuilder() {
+      return this == DEFAULT_INSTANCE
+          ? new Builder() : new Builder().mergeFrom(this);
+    }
+
+    @java.lang.Override
+    protected Builder newBuilderForType(
+        com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+      Builder builder = new Builder(parent);
+      return builder;
+    }
+    /**
+     * Protobuf type {@code Actions.ActionOptions}
+     */
+    public static final class Builder extends
+        com.google.protobuf.GeneratedMessageV3.Builder<Builder> implements
+        // @@protoc_insertion_point(builder_implements:Actions.ActionOptions)
+        io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder {
+      public static final com.google.protobuf.Descriptors.Descriptor
+          getDescriptor() {
+        return io.amplica.graphsdk.models.Input.internal_static_Actions_ActionOptions_descriptor;
+      }
+
+      @java.lang.Override
+      protected com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+          internalGetFieldAccessorTable() {
+        return io.amplica.graphsdk.models.Input.internal_static_Actions_ActionOptions_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                io.amplica.graphsdk.models.Actions.ActionOptions.class, io.amplica.graphsdk.models.Actions.ActionOptions.Builder.class);
+      }
+
+      // Construct using io.amplica.graphsdk.models.Actions.ActionOptions.newBuilder()
+      private Builder() {
+
+      }
+
+      private Builder(
+          com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
+        super(parent);
+
+      }
+      @java.lang.Override
+      public Builder clear() {
+        super.clear();
+        bitField0_ = 0;
+        ignoreExistingConnections_ = false;
+        ignoreMissingConnections_ = false;
+        return this;
+      }
+
+      @java.lang.Override
+      public com.google.protobuf.Descriptors.Descriptor
+          getDescriptorForType() {
+        return io.amplica.graphsdk.models.Input.internal_static_Actions_ActionOptions_descriptor;
+      }
+
+      @java.lang.Override
+      public io.amplica.graphsdk.models.Actions.ActionOptions getDefaultInstanceForType() {
+        return io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance();
+      }
+
+      @java.lang.Override
+      public io.amplica.graphsdk.models.Actions.ActionOptions build() {
+        io.amplica.graphsdk.models.Actions.ActionOptions result = buildPartial();
+        if (!result.isInitialized()) {
+          throw newUninitializedMessageException(result);
+        }
+        return result;
+      }
+
+      @java.lang.Override
+      public io.amplica.graphsdk.models.Actions.ActionOptions buildPartial() {
+        io.amplica.graphsdk.models.Actions.ActionOptions result = new io.amplica.graphsdk.models.Actions.ActionOptions(this);
+        if (bitField0_ != 0) { buildPartial0(result); }
+        onBuilt();
+        return result;
+      }
+
+      private void buildPartial0(io.amplica.graphsdk.models.Actions.ActionOptions result) {
+        int from_bitField0_ = bitField0_;
+        if (((from_bitField0_ & 0x00000001) != 0)) {
+          result.ignoreExistingConnections_ = ignoreExistingConnections_;
+        }
+        if (((from_bitField0_ & 0x00000002) != 0)) {
+          result.ignoreMissingConnections_ = ignoreMissingConnections_;
+        }
+      }
+
+      @java.lang.Override
+      public Builder clone() {
+        return super.clone();
+      }
+      @java.lang.Override
+      public Builder setField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.setField(field, value);
+      }
+      @java.lang.Override
+      public Builder clearField(
+          com.google.protobuf.Descriptors.FieldDescriptor field) {
+        return super.clearField(field);
+      }
+      @java.lang.Override
+      public Builder clearOneof(
+          com.google.protobuf.Descriptors.OneofDescriptor oneof) {
+        return super.clearOneof(oneof);
+      }
+      @java.lang.Override
+      public Builder setRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          int index, java.lang.Object value) {
+        return super.setRepeatedField(field, index, value);
+      }
+      @java.lang.Override
+      public Builder addRepeatedField(
+          com.google.protobuf.Descriptors.FieldDescriptor field,
+          java.lang.Object value) {
+        return super.addRepeatedField(field, value);
+      }
+      @java.lang.Override
+      public Builder mergeFrom(com.google.protobuf.Message other) {
+        if (other instanceof io.amplica.graphsdk.models.Actions.ActionOptions) {
+          return mergeFrom((io.amplica.graphsdk.models.Actions.ActionOptions)other);
+        } else {
+          super.mergeFrom(other);
+          return this;
+        }
+      }
+
+      public Builder mergeFrom(io.amplica.graphsdk.models.Actions.ActionOptions other) {
+        if (other == io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance()) return this;
+        if (other.getIgnoreExistingConnections() != false) {
+          setIgnoreExistingConnections(other.getIgnoreExistingConnections());
+        }
+        if (other.getIgnoreMissingConnections() != false) {
+          setIgnoreMissingConnections(other.getIgnoreMissingConnections());
+        }
+        this.mergeUnknownFields(other.getUnknownFields());
+        onChanged();
+        return this;
+      }
+
+      @java.lang.Override
+      public final boolean isInitialized() {
+        return true;
+      }
+
+      @java.lang.Override
+      public Builder mergeFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws java.io.IOException {
+        if (extensionRegistry == null) {
+          throw new java.lang.NullPointerException();
+        }
+        try {
+          boolean done = false;
+          while (!done) {
+            int tag = input.readTag();
+            switch (tag) {
+              case 0:
+                done = true;
+                break;
+              case 8: {
+                ignoreExistingConnections_ = input.readBool();
+                bitField0_ |= 0x00000001;
+                break;
+              } // case 8
+              case 16: {
+                ignoreMissingConnections_ = input.readBool();
+                bitField0_ |= 0x00000002;
+                break;
+              } // case 16
+              default: {
+                if (!super.parseUnknownField(input, extensionRegistry, tag)) {
+                  done = true; // was an endgroup tag
+                }
+                break;
+              } // default:
+            } // switch (tag)
+          } // while (!done)
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.unwrapIOException();
+        } finally {
+          onChanged();
+        } // finally
+        return this;
+      }
+      private int bitField0_;
+
+      private boolean ignoreExistingConnections_ ;
+      /**
+       * <code>bool ignore_existing_connections = 1;</code>
+       * @return The ignoreExistingConnections.
+       */
+      @java.lang.Override
+      public boolean getIgnoreExistingConnections() {
+        return ignoreExistingConnections_;
+      }
+      /**
+       * <code>bool ignore_existing_connections = 1;</code>
+       * @param value The ignoreExistingConnections to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIgnoreExistingConnections(boolean value) {
+        
+        ignoreExistingConnections_ = value;
+        bitField0_ |= 0x00000001;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bool ignore_existing_connections = 1;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearIgnoreExistingConnections() {
+        bitField0_ = (bitField0_ & ~0x00000001);
+        ignoreExistingConnections_ = false;
+        onChanged();
+        return this;
+      }
+
+      private boolean ignoreMissingConnections_ ;
+      /**
+       * <code>bool ignore_missing_connections = 2;</code>
+       * @return The ignoreMissingConnections.
+       */
+      @java.lang.Override
+      public boolean getIgnoreMissingConnections() {
+        return ignoreMissingConnections_;
+      }
+      /**
+       * <code>bool ignore_missing_connections = 2;</code>
+       * @param value The ignoreMissingConnections to set.
+       * @return This builder for chaining.
+       */
+      public Builder setIgnoreMissingConnections(boolean value) {
+        
+        ignoreMissingConnections_ = value;
+        bitField0_ |= 0x00000002;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bool ignore_missing_connections = 2;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearIgnoreMissingConnections() {
+        bitField0_ = (bitField0_ & ~0x00000002);
+        ignoreMissingConnections_ = false;
+        onChanged();
+        return this;
+      }
+      @java.lang.Override
+      public final Builder setUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.setUnknownFields(unknownFields);
+      }
+
+      @java.lang.Override
+      public final Builder mergeUnknownFields(
+          final com.google.protobuf.UnknownFieldSet unknownFields) {
+        return super.mergeUnknownFields(unknownFields);
+      }
+
+
+      // @@protoc_insertion_point(builder_scope:Actions.ActionOptions)
+    }
+
+    // @@protoc_insertion_point(class_scope:Actions.ActionOptions)
+    private static final io.amplica.graphsdk.models.Actions.ActionOptions DEFAULT_INSTANCE;
+    static {
+      DEFAULT_INSTANCE = new io.amplica.graphsdk.models.Actions.ActionOptions();
+    }
+
+    public static io.amplica.graphsdk.models.Actions.ActionOptions getDefaultInstance() {
+      return DEFAULT_INSTANCE;
+    }
+
+    private static final com.google.protobuf.Parser<ActionOptions>
+        PARSER = new com.google.protobuf.AbstractParser<ActionOptions>() {
+      @java.lang.Override
+      public ActionOptions parsePartialFrom(
+          com.google.protobuf.CodedInputStream input,
+          com.google.protobuf.ExtensionRegistryLite extensionRegistry)
+          throws com.google.protobuf.InvalidProtocolBufferException {
+        Builder builder = newBuilder();
+        try {
+          builder.mergeFrom(input, extensionRegistry);
+        } catch (com.google.protobuf.InvalidProtocolBufferException e) {
+          throw e.setUnfinishedMessage(builder.buildPartial());
+        } catch (com.google.protobuf.UninitializedMessageException e) {
+          throw e.asInvalidProtocolBufferException().setUnfinishedMessage(builder.buildPartial());
+        } catch (java.io.IOException e) {
+          throw new com.google.protobuf.InvalidProtocolBufferException(e)
+              .setUnfinishedMessage(builder.buildPartial());
+        }
+        return builder.buildPartial();
+      }
+    };
+
+    public static com.google.protobuf.Parser<ActionOptions> parser() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public com.google.protobuf.Parser<ActionOptions> getParserForType() {
+      return PARSER;
+    }
+
+    @java.lang.Override
+    public io.amplica.graphsdk.models.Actions.ActionOptions getDefaultInstanceForType() {
+      return DEFAULT_INSTANCE;
+    }
+
+  }
+
   public interface ActionOrBuilder extends
       // @@protoc_insertion_point(interface_extends:Actions.Action)
       com.google.protobuf.MessageOrBuilder {
@@ -3308,6 +3861,7 @@ private static final long serialVersionUID = 0L;
 
   }
 
+  private int bitField0_;
   public static final int ACTIONS_FIELD_NUMBER = 1;
   @SuppressWarnings("serial")
   private java.util.List<io.amplica.graphsdk.models.Actions.Action> actions_;
@@ -3349,6 +3903,32 @@ private static final long serialVersionUID = 0L;
     return actions_.get(index);
   }
 
+  public static final int OPTIONS_FIELD_NUMBER = 2;
+  private io.amplica.graphsdk.models.Actions.ActionOptions options_;
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   * @return Whether the options field is set.
+   */
+  @java.lang.Override
+  public boolean hasOptions() {
+    return ((bitField0_ & 0x00000001) != 0);
+  }
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   * @return The options.
+   */
+  @java.lang.Override
+  public io.amplica.graphsdk.models.Actions.ActionOptions getOptions() {
+    return options_ == null ? io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance() : options_;
+  }
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   */
+  @java.lang.Override
+  public io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder getOptionsOrBuilder() {
+    return options_ == null ? io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance() : options_;
+  }
+
   private byte memoizedIsInitialized = -1;
   @java.lang.Override
   public final boolean isInitialized() {
@@ -3366,6 +3946,9 @@ private static final long serialVersionUID = 0L;
     for (int i = 0; i < actions_.size(); i++) {
       output.writeMessage(1, actions_.get(i));
     }
+    if (((bitField0_ & 0x00000001) != 0)) {
+      output.writeMessage(2, getOptions());
+    }
     getUnknownFields().writeTo(output);
   }
 
@@ -3378,6 +3961,10 @@ private static final long serialVersionUID = 0L;
     for (int i = 0; i < actions_.size(); i++) {
       size += com.google.protobuf.CodedOutputStream
         .computeMessageSize(1, actions_.get(i));
+    }
+    if (((bitField0_ & 0x00000001) != 0)) {
+      size += com.google.protobuf.CodedOutputStream
+        .computeMessageSize(2, getOptions());
     }
     size += getUnknownFields().getSerializedSize();
     memoizedSize = size;
@@ -3396,6 +3983,11 @@ private static final long serialVersionUID = 0L;
 
     if (!getActionsList()
         .equals(other.getActionsList())) return false;
+    if (hasOptions() != other.hasOptions()) return false;
+    if (hasOptions()) {
+      if (!getOptions()
+          .equals(other.getOptions())) return false;
+    }
     if (!getUnknownFields().equals(other.getUnknownFields())) return false;
     return true;
   }
@@ -3410,6 +4002,10 @@ private static final long serialVersionUID = 0L;
     if (getActionsCount() > 0) {
       hash = (37 * hash) + ACTIONS_FIELD_NUMBER;
       hash = (53 * hash) + getActionsList().hashCode();
+    }
+    if (hasOptions()) {
+      hash = (37 * hash) + OPTIONS_FIELD_NUMBER;
+      hash = (53 * hash) + getOptions().hashCode();
     }
     hash = (29 * hash) + getUnknownFields().hashCode();
     memoizedHashCode = hash;
@@ -3528,13 +4124,20 @@ private static final long serialVersionUID = 0L;
 
     // Construct using io.amplica.graphsdk.models.Actions.newBuilder()
     private Builder() {
-
+      maybeForceBuilderInitialization();
     }
 
     private Builder(
         com.google.protobuf.GeneratedMessageV3.BuilderParent parent) {
       super(parent);
-
+      maybeForceBuilderInitialization();
+    }
+    private void maybeForceBuilderInitialization() {
+      if (com.google.protobuf.GeneratedMessageV3
+              .alwaysUseFieldBuilders) {
+        getActionsFieldBuilder();
+        getOptionsFieldBuilder();
+      }
     }
     @java.lang.Override
     public Builder clear() {
@@ -3547,6 +4150,11 @@ private static final long serialVersionUID = 0L;
         actionsBuilder_.clear();
       }
       bitField0_ = (bitField0_ & ~0x00000001);
+      options_ = null;
+      if (optionsBuilder_ != null) {
+        optionsBuilder_.dispose();
+        optionsBuilder_ = null;
+      }
       return this;
     }
 
@@ -3593,6 +4201,14 @@ private static final long serialVersionUID = 0L;
 
     private void buildPartial0(io.amplica.graphsdk.models.Actions result) {
       int from_bitField0_ = bitField0_;
+      int to_bitField0_ = 0;
+      if (((from_bitField0_ & 0x00000002) != 0)) {
+        result.options_ = optionsBuilder_ == null
+            ? options_
+            : optionsBuilder_.build();
+        to_bitField0_ |= 0x00000001;
+      }
+      result.bitField0_ |= to_bitField0_;
     }
 
     @java.lang.Override
@@ -3665,6 +4281,9 @@ private static final long serialVersionUID = 0L;
           }
         }
       }
+      if (other.hasOptions()) {
+        mergeOptions(other.getOptions());
+      }
       this.mergeUnknownFields(other.getUnknownFields());
       onChanged();
       return this;
@@ -3704,6 +4323,13 @@ private static final long serialVersionUID = 0L;
               }
               break;
             } // case 10
+            case 18: {
+              input.readMessage(
+                  getOptionsFieldBuilder().getBuilder(),
+                  extensionRegistry);
+              bitField0_ |= 0x00000002;
+              break;
+            } // case 18
             default: {
               if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                 done = true; // was an endgroup tag
@@ -3959,6 +4585,125 @@ private static final long serialVersionUID = 0L;
         actions_ = null;
       }
       return actionsBuilder_;
+    }
+
+    private io.amplica.graphsdk.models.Actions.ActionOptions options_;
+    private com.google.protobuf.SingleFieldBuilderV3<
+        io.amplica.graphsdk.models.Actions.ActionOptions, io.amplica.graphsdk.models.Actions.ActionOptions.Builder, io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder> optionsBuilder_;
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     * @return Whether the options field is set.
+     */
+    public boolean hasOptions() {
+      return ((bitField0_ & 0x00000002) != 0);
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     * @return The options.
+     */
+    public io.amplica.graphsdk.models.Actions.ActionOptions getOptions() {
+      if (optionsBuilder_ == null) {
+        return options_ == null ? io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance() : options_;
+      } else {
+        return optionsBuilder_.getMessage();
+      }
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public Builder setOptions(io.amplica.graphsdk.models.Actions.ActionOptions value) {
+      if (optionsBuilder_ == null) {
+        if (value == null) {
+          throw new NullPointerException();
+        }
+        options_ = value;
+      } else {
+        optionsBuilder_.setMessage(value);
+      }
+      bitField0_ |= 0x00000002;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public Builder setOptions(
+        io.amplica.graphsdk.models.Actions.ActionOptions.Builder builderForValue) {
+      if (optionsBuilder_ == null) {
+        options_ = builderForValue.build();
+      } else {
+        optionsBuilder_.setMessage(builderForValue.build());
+      }
+      bitField0_ |= 0x00000002;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public Builder mergeOptions(io.amplica.graphsdk.models.Actions.ActionOptions value) {
+      if (optionsBuilder_ == null) {
+        if (((bitField0_ & 0x00000002) != 0) &&
+          options_ != null &&
+          options_ != io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance()) {
+          getOptionsBuilder().mergeFrom(value);
+        } else {
+          options_ = value;
+        }
+      } else {
+        optionsBuilder_.mergeFrom(value);
+      }
+      bitField0_ |= 0x00000002;
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public Builder clearOptions() {
+      bitField0_ = (bitField0_ & ~0x00000002);
+      options_ = null;
+      if (optionsBuilder_ != null) {
+        optionsBuilder_.dispose();
+        optionsBuilder_ = null;
+      }
+      onChanged();
+      return this;
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public io.amplica.graphsdk.models.Actions.ActionOptions.Builder getOptionsBuilder() {
+      bitField0_ |= 0x00000002;
+      onChanged();
+      return getOptionsFieldBuilder().getBuilder();
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    public io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder getOptionsOrBuilder() {
+      if (optionsBuilder_ != null) {
+        return optionsBuilder_.getMessageOrBuilder();
+      } else {
+        return options_ == null ?
+            io.amplica.graphsdk.models.Actions.ActionOptions.getDefaultInstance() : options_;
+      }
+    }
+    /**
+     * <code>optional .Actions.ActionOptions options = 2;</code>
+     */
+    private com.google.protobuf.SingleFieldBuilderV3<
+        io.amplica.graphsdk.models.Actions.ActionOptions, io.amplica.graphsdk.models.Actions.ActionOptions.Builder, io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder> 
+        getOptionsFieldBuilder() {
+      if (optionsBuilder_ == null) {
+        optionsBuilder_ = new com.google.protobuf.SingleFieldBuilderV3<
+            io.amplica.graphsdk.models.Actions.ActionOptions, io.amplica.graphsdk.models.Actions.ActionOptions.Builder, io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder>(
+                getOptions(),
+                getParentForChildren(),
+                isClean());
+        options_ = null;
+      }
+      return optionsBuilder_;
     }
     @java.lang.Override
     public final Builder setUnknownFields(

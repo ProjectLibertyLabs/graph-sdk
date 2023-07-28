@@ -3,6 +3,7 @@ UNAME := $(shell uname)
 
 # Compiler options
 CC := gcc
+CXX := g++
 CFLAGS :=
 
 PROFILE := release
@@ -33,20 +34,20 @@ endif
 TARGET := main
 
 # Source files
-SRCS := main.c
+SRCS := main.cpp
 
 # Object files
-OBJS := $(SRCS:.c=.o)
+OBJS := $(SRCS:.cpp=.o)
 
 .PHONY: all clean
 
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
+	$(CXX) $(OBJS) $(LDFLAGS) $(LIBS) -o $(TARGET)
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+%.o: %.cpp
+	$(CXX) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f $(OBJS) $(TARGET)

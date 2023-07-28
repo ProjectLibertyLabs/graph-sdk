@@ -1,7 +1,10 @@
 use crate::{bindings::*, utils::*, FFIResult, GraphError};
 use dsnp_graph_config::{errors::DsnpGraphError, SchemaId};
 use dsnp_graph_core::{
-	api::api::{GraphAPI, GraphState},
+	api::{
+		api::{GraphAPI, GraphState},
+		api_types::ActionOptions,
+	},
 	dsnp::dsnp_types::DsnpUserId,
 };
 use std::{
@@ -272,6 +275,46 @@ pub unsafe extern "C" fn graph_export_updates(
 	})
 }
 
+/// Export updates from graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `GraphUpdates` - the pointer to the graph updates
+/// # Errors
+/// * `GraphError` - if the graph updates cannot be retrieved
+#[no_mangle]
+pub unsafe extern "C" fn graph_export_user_graph_updates(
+	graph_state: *mut GraphState,
+	user_id: *const DsnpUserId,
+) -> FFIResult<GraphUpdates, GraphError> {
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)))
+		}
+		let graph_state = &mut *graph_state;
+		match graph_state.export_user_graph_updates(&*user_id) {
+			Ok(updates) => {
+				let ffi_updates = updates_to_ffi(updates);
+				let updates_len = ffi_updates.len();
+				let updates_ptr = ManuallyDrop::new(ffi_updates).as_mut_ptr();
+				let graph_updates = GraphUpdates { updates: updates_ptr, updates_len };
+				FFIResult::new(graph_updates)
+			},
+			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
+		}
+	});
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to export updates from graph: {:?}",
+			error
+		))))
+	})
+}
+
 /// Force recalculate graph updates from graph state
 /// # Safety
 /// This function is unsafe because it dereferences a raw pointer
@@ -325,6 +368,7 @@ pub unsafe extern "C" fn graph_apply_actions(
 	graph_state: *mut GraphState,
 	actions: *const Action,
 	actions_len: usize,
+	options: *const ActionOptions,
 ) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
@@ -335,7 +379,12 @@ pub unsafe extern "C" fn graph_apply_actions(
 		let graph_state = &mut *graph_state;
 		let actions = std::slice::from_raw_parts(actions, actions_len);
 		let actions = actions_from_ffi(&actions);
-		match graph_state.apply_actions(&actions) {
+		let mut rust_options: Option<ActionOptions> = None;
+		if !options.is_null() {
+			let options = &*options;
+			rust_options = Some(options.clone());
+		}
+		match graph_state.apply_actions(&actions, &rust_options) {
 			Ok(_) => FFIResult::new(true),
 			Err(error) => FFIResult::new_mut_error(GraphError::from_error(error)),
 		}

@@ -7,7 +7,6 @@ import io.amplica.graphsdk.models.ImportBundles.ImportBundle.GraphKeyPair;
 
 import java.util.List;
 
-
 public class Graph implements NativeHandleGuard.Owner {
     private long unsafeHandle;
     private final Configuration configuration;
@@ -52,22 +51,33 @@ public class Graph implements NativeHandleGuard.Owner {
         }
     }
 
+    public List<Updates.Update> exportUserGraphUpdates(long dsnpUserId)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            var raw = Native.exportUserGraphUpdates(guard.nativeHandle(), dsnpUserId);
+            return Updates.parseFrom(raw).getUpdateList();
+        }
+    }
+
     public void applyActions(Actions actions) throws BaseGraphSdkException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
             Native.applyActions(guard.nativeHandle(), actions.toByteArray());
         }
     }
 
-    public List<Updates.Update> forceRecalculateGraph(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public List<Updates.Update> forceRecalculateGraph(long dsnpUserId)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
             var raw = Native.forceCalculateGraphs(guard.nativeHandle(), dsnpUserId);
             return Updates.parseFrom(raw).getUpdateList();
         }
     }
 
-    public List<DsnpGraphEdges.DsnpGraphEdge> getConnections(long dsnpUserId, ConnectionType connectionType, boolean includePending) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public List<DsnpGraphEdges.DsnpGraphEdge> getConnections(long dsnpUserId, ConnectionType connectionType,
+            boolean includePending) throws BaseGraphSdkException, InvalidProtocolBufferException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
-            var raw = Native.getConnectionsForUserGraph(guard.nativeHandle(), dsnpUserId, this.configuration.getSchemaId(connectionType), includePending);
+            var raw = Native.getConnectionsForUserGraph(guard.nativeHandle(), dsnpUserId,
+                    this.configuration.getSchemaId(connectionType), includePending);
             return DsnpGraphEdges.parseFrom(raw).getEdgeList();
         }
     }
@@ -80,26 +90,30 @@ public class Graph implements NativeHandleGuard.Owner {
     }
 
     // TODO: add test
-    public List<DsnpGraphEdges.DsnpGraphEdge> getOneSidedPrivateFriendships(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public List<DsnpGraphEdges.DsnpGraphEdge> getOneSidedPrivateFriendships(long dsnpUserId)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
             var raw = Native.getOneSidedPrivateFriendshipConnections(guard.nativeHandle(), dsnpUserId);
             return DsnpGraphEdges.parseFrom(raw).getEdgeList();
         }
     }
 
-    public List<DsnpPublicKeys.DsnpPublicKey> getPublicKeys(long dsnpUserId) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public List<DsnpPublicKeys.DsnpPublicKey> getPublicKeys(long dsnpUserId)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
             var raw = Native.getPublicKeys(guard.nativeHandle(), dsnpUserId);
             return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
         }
     }
 
-    public static List<DsnpPublicKeys.DsnpPublicKey> deserializeDsnpKeys(DsnpKeys keys) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public static List<DsnpPublicKeys.DsnpPublicKey> deserializeDsnpKeys(DsnpKeys keys)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
         var raw = Native.deserializeDsnpKeys(keys.toByteArray());
         return DsnpPublicKeys.parseFrom(raw).getPublicKeyList();
     }
 
-    public static GraphKeyPair generateKeyPair(GraphKeyType key_type) throws BaseGraphSdkException, InvalidProtocolBufferException {
+    public static GraphKeyPair generateKeyPair(GraphKeyType key_type)
+            throws BaseGraphSdkException, InvalidProtocolBufferException {
         var raw = Native.generateKeyPair(key_type.getNumber());
         return GraphKeyPair.parseFrom(raw);
     }

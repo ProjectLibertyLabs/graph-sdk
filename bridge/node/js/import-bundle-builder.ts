@@ -1,4 +1,10 @@
-import { GraphKeyType, GraphKeyPair, DsnpKeys, ImportBundle, PageData } from "./models";
+import {
+  GraphKeyType,
+  GraphKeyPair,
+  DsnpKeys,
+  ImportBundle,
+  PageData,
+} from "./models";
 
 export interface IImportBundleBuilder {
   dsnpUserId?: string;
@@ -25,7 +31,11 @@ export class ImportBundleBuilder {
     return new ImportBundleBuilder({ ...this.values, schemaId });
   }
 
-  public withGraphKeyPair(keyType: GraphKeyType, publicKey: Uint8Array, secretKey: Uint8Array): ImportBundleBuilder {
+  public withGraphKeyPair(
+    keyType: GraphKeyType,
+    publicKey: Uint8Array,
+    secretKey: Uint8Array,
+  ): ImportBundleBuilder {
     const keyPairs = this.values.keyPairs ? [...this.values.keyPairs] : [];
     keyPairs.push({ keyType, publicKey, secretKey });
     return new ImportBundleBuilder({ ...this.values, keyPairs });
@@ -41,7 +51,11 @@ export class ImportBundleBuilder {
     return new ImportBundleBuilder({ ...this.values, dsnpKeys });
   }
 
-  public withPageData(pageId: number, content: Uint8Array, contentHash: number): ImportBundleBuilder {
+  public withPageData(
+    pageId: number,
+    content: Uint8Array,
+    contentHash: number,
+  ): ImportBundleBuilder {
     const pages = this.values.pages ? [...this.values.pages] : [];
     pages.push({ pageId, content, contentHash });
     return new ImportBundleBuilder({ ...this.values, pages });
@@ -49,7 +63,7 @@ export class ImportBundleBuilder {
 
   public build(): ImportBundle {
     const importBundle: ImportBundle = {
-      dsnpUserId: this.values.dsnpUserId || '',
+      dsnpUserId: this.values.dsnpUserId || "",
       schemaId: this.values.schemaId || 0,
       keyPairs: this.values.keyPairs || [],
       dsnpKeys: this.values.dsnpKeys,

@@ -48,7 +48,7 @@ build:
 .PHONY: build-node
 build-node:
 	@echo "Build Neon Node Bridge for GraphSDK..."
-	@cd bridge/node && npm install && npm run native:build-release && npx jest --verbose
+	@cd bridge/node && npm install && npm run native:build-release
 
 
 .PHONY: dsnp-graph-sdk-jni
@@ -93,13 +93,17 @@ build-ffi-bridge-for-test:
 	cargo build --profile $(PROFILE) -p dsnp-graph-sdk-ffi
 
 .PHONY: build-ffi-tests
-build-ffi-tests: build-ffi-bridge-for-test bindgen
+build-ffi-tests: clean-ffi-bridge build-ffi-bridge-for-test bindgen
 	$(MAKE) -C bridge/ffi/src/c_example clean all
 
 .PHONY: test-ffi
 test-ffi: build-ffi-tests
 	@echo "Running FFI tests..."
 	@scripts/run_ffi_tests.sh
+
+.PHONY: test-node
+test-node: build-node
+	@cd bridge/node && npx jest --verbose
 
 .PHONY: test-jni
 test-jni: build-jni

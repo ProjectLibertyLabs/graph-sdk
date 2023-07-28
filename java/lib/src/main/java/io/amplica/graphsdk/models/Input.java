@@ -55,6 +55,11 @@ public final class Input {
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
       internal_static_Actions_fieldAccessorTable;
   static final com.google.protobuf.Descriptors.Descriptor
+    internal_static_Actions_ActionOptions_descriptor;
+  static final 
+    com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
+      internal_static_Actions_ActionOptions_fieldAccessorTable;
+  static final com.google.protobuf.Descriptors.Descriptor
     internal_static_Actions_Action_descriptor;
   static final 
     com.google.protobuf.GeneratedMessageV3.FieldAccessorTable
@@ -98,22 +103,25 @@ public final class Input {
       "ir\022\037\n\010key_type\030\001 \001(\0162\r.GraphKeyType\022\022\n\np" +
       "ublic_key\030\002 \001(\014\022\022\n\nsecret_key\030\003 \001(\014B\014\n\n_" +
       "dsnp_keys\"5\n\nConnection\022\024\n\014dsnp_user_id\030" +
-      "\001 \001(\004\022\021\n\tschema_id\030\002 \001(\r\"\201\004\n\007Actions\022 \n\007" +
-      "actions\030\001 \003(\0132\017.Actions.Action\032\323\003\n\006Actio" +
-      "n\0227\n\016connect_action\030\001 \001(\0132\035.Actions.Acti" +
-      "on.ConnectActionH\000\022=\n\021disconnect_action\030" +
-      "\002 \001(\0132 .Actions.Action.DisconnectActionH" +
-      "\000\0225\n\016add_key_action\030\003 \001(\0132\033.Actions.Acti" +
-      "on.AddGraphKeyH\000\032}\n\rConnectAction\022\032\n\022own" +
-      "er_dsnp_user_id\030\001 \001(\004\022\037\n\nconnection\030\002 \001(" +
-      "\0132\013.Connection\022!\n\tdsnp_keys\030\003 \001(\0132\t.Dsnp" +
-      "KeysH\000\210\001\001B\014\n\n_dsnp_keys\032O\n\020DisconnectAct" +
-      "ion\022\032\n\022owner_dsnp_user_id\030\001 \001(\004\022\037\n\nconne" +
-      "ction\030\002 \001(\0132\013.Connection\032A\n\013AddGraphKey\022" +
-      "\032\n\022owner_dsnp_user_id\030\001 \001(\004\022\026\n\016new_publi" +
-      "c_key\030\002 \001(\014B\007\n\005inner*\032\n\014GraphKeyType\022\n\n\006" +
-      "X25519\020\000B\036\n\032io.amplica.graphsdk.modelsP\001" +
-      "b\006proto3"
+      "\001 \001(\004\022\021\n\tschema_id\030\002 \001(\r\"\225\005\n\007Actions\022 \n\007" +
+      "actions\030\001 \003(\0132\017.Actions.Action\022,\n\007option" +
+      "s\030\002 \001(\0132\026.Actions.ActionOptionsH\000\210\001\001\032X\n\r" +
+      "ActionOptions\022#\n\033ignore_existing_connect" +
+      "ions\030\001 \001(\010\022\"\n\032ignore_missing_connections" +
+      "\030\002 \001(\010\032\323\003\n\006Action\0227\n\016connect_action\030\001 \001(" +
+      "\0132\035.Actions.Action.ConnectActionH\000\022=\n\021di" +
+      "sconnect_action\030\002 \001(\0132 .Actions.Action.D" +
+      "isconnectActionH\000\0225\n\016add_key_action\030\003 \001(" +
+      "\0132\033.Actions.Action.AddGraphKeyH\000\032}\n\rConn" +
+      "ectAction\022\032\n\022owner_dsnp_user_id\030\001 \001(\004\022\037\n" +
+      "\nconnection\030\002 \001(\0132\013.Connection\022!\n\tdsnp_k" +
+      "eys\030\003 \001(\0132\t.DsnpKeysH\000\210\001\001B\014\n\n_dsnp_keys\032" +
+      "O\n\020DisconnectAction\022\032\n\022owner_dsnp_user_i" +
+      "d\030\001 \001(\004\022\037\n\nconnection\030\002 \001(\0132\013.Connection" +
+      "\032A\n\013AddGraphKey\022\032\n\022owner_dsnp_user_id\030\001 " +
+      "\001(\004\022\026\n\016new_public_key\030\002 \001(\014B\007\n\005innerB\n\n\010" +
+      "_options*\032\n\014GraphKeyType\022\n\n\006X25519\020\000B\036\n\032" +
+      "io.amplica.graphsdk.modelsP\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -166,9 +174,15 @@ public final class Input {
     internal_static_Actions_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Actions_descriptor,
-        new java.lang.String[] { "Actions", });
-    internal_static_Actions_Action_descriptor =
+        new java.lang.String[] { "Actions", "Options", "Options", });
+    internal_static_Actions_ActionOptions_descriptor =
       internal_static_Actions_descriptor.getNestedTypes().get(0);
+    internal_static_Actions_ActionOptions_fieldAccessorTable = new
+      com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
+        internal_static_Actions_ActionOptions_descriptor,
+        new java.lang.String[] { "IgnoreExistingConnections", "IgnoreMissingConnections", });
+    internal_static_Actions_Action_descriptor =
+      internal_static_Actions_descriptor.getNestedTypes().get(1);
     internal_static_Actions_Action_fieldAccessorTable = new
       com.google.protobuf.GeneratedMessageV3.FieldAccessorTable(
         internal_static_Actions_Action_descriptor,
