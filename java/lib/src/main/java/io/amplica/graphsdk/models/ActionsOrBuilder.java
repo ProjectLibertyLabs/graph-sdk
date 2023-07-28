@@ -30,4 +30,19 @@ public interface ActionsOrBuilder extends
    */
   io.amplica.graphsdk.models.Actions.ActionOrBuilder getActionsOrBuilder(
       int index);
+
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   * @return Whether the options field is set.
+   */
+  boolean hasOptions();
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   * @return The options.
+   */
+  io.amplica.graphsdk.models.Actions.ActionOptions getOptions();
+  /**
+   * <code>optional .Actions.ActionOptions options = 2;</code>
+   */
+  io.amplica.graphsdk.models.Actions.ActionOptionsOrBuilder getOptionsOrBuilder();
 }

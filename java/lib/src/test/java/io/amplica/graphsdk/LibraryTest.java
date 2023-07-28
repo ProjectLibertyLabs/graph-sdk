@@ -1,15 +1,24 @@
 package io.amplica.graphsdk;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.InvalidProtocolBufferException;
+
+import io.amplica.graphsdk.exceptions.BaseGraphSdkException;
 import io.amplica.graphsdk.exceptions.GraphSdkException;
 import io.amplica.graphsdk.exceptions.InvalidHandleException;
 import io.amplica.graphsdk.models.*;
+import io.amplica.graphsdk.models.Actions.Action;
+import io.amplica.graphsdk.models.Actions.ActionOptions;
+import io.amplica.graphsdk.models.DsnpGraphEdges.DsnpGraphEdge;
+import io.amplica.graphsdk.models.Updates.Update;
+import kotlin.collections.SetsKt;
 import nl.altindag.log.LogCaptor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.event.Level;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -355,6 +364,92 @@ class LibraryTest {
     }
 
     @Test
+    void graph_applyActions_with_existing_connection_should_handle_as_per_options() throws Exception {
+        // arrange
+        var ownerUserId = 20;
+        var pageId = 0;
+        var schemaId = 1;
+        var contentHash = 1000;
+        var bundles = ImportBundles.newBuilder()
+                .addBundles(
+                        ImportBundles.ImportBundle.newBuilder()
+                                .setDsnpUserId(ownerUserId)
+                                .setSchemaId(schemaId)
+                                .addPages(
+                                        PageData.newBuilder()
+                                                .setPageId(pageId)
+                                                .setContentHash(contentHash)
+                                                .setContent(ByteString.copyFrom(
+                                                        new byte[] { 20, 99, -70, -64, -33, 118, -13, 44, 35, 3, 0 }))
+                                                .build())
+                                .build())
+                .build();
+        var graph = new Graph(Configuration.getMainNet());
+
+        // act
+        graph.importUserData(bundles);
+        // var keys = graph.getPublicKeys(ownerUserId);
+
+        var connections = graph.getConnections(ownerUserId, ConnectionType.FollowPublic, false);
+        assertTrue(connections.size() > 0);
+
+        var actions = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setConnectAction(
+                        Actions.Action.ConnectAction.newBuilder()
+                                .setOwnerDsnpUserId(ownerUserId)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(1000)
+                                        .setSchemaId(1)
+                                        .build())
+                                .build()))
+                .build();
+        var exception = assertThrows(GraphSdkException.class, () -> graph.applyActions(actions),
+                "expected error not thrown");
+        assertTrue(exception.getMessage().matches("^ErrorCode\\(5\\).*"));
+
+        var actions2 = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setConnectAction(
+                        Actions.Action.ConnectAction.newBuilder()
+                                .setOwnerDsnpUserId(ownerUserId)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(1000)
+                                        .setSchemaId(1)
+                                        .build())
+                                .build()))
+                .setOptions(ActionOptions.newBuilder()
+                        .setIgnoreExistingConnections(true))
+                .build();
+        assertDoesNotThrow(() -> graph.applyActions(actions2), "should not throw if set to ignore");
+
+        var actions3 = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setDisconnectAction(
+                        Actions.Action.DisconnectAction.newBuilder()
+                                .setOwnerDsnpUserId(ownerUserId)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(2000)
+                                        .setSchemaId(1)
+                                        .build())
+                                .build()))
+                .build();
+        exception = assertThrows(GraphSdkException.class, () -> graph.applyActions(actions3));
+        assertTrue(exception.getMessage().matches("^ErrorCode\\(6\\).*"));
+
+        var actions4 = Actions.newBuilder().addActions(
+                Actions.Action.newBuilder().setDisconnectAction(
+                        Actions.Action.DisconnectAction.newBuilder()
+                                .setOwnerDsnpUserId(ownerUserId)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(2000)
+                                        .setSchemaId(1)
+                                        .build())
+                                .build()))
+                .setOptions(ActionOptions.newBuilder()
+                        .setIgnoreMissingConnections(true).build())
+                .build();
+        assertDoesNotThrow(() -> graph.applyActions(actions4));
+    }
+
+    @Test
     void graph_usersWithoutImportedKeys_should_work() throws Exception {
         // arrange
         var graph = new Graph(Configuration.getMainNet());
@@ -440,6 +535,59 @@ class LibraryTest {
         // arrange
         var keyPair = Graph.generateKeyPair(GraphKeyType.X25519);
         assertNotNull(keyPair);
+    }
+
+    @Test
+    void graph_exportUpdates_all_and_single_user_should_export_correct_number_of_graphs() throws Exception {
+        var graph = new Graph(Configuration.getMainNet());
+        var dsnp_user_id_1 = 1L;
+        var dsnp_user_id_2 = 2L;
+        var schema_id = 1;
+
+        var actions = Actions.newBuilder()
+                .addActions(Actions.Action.newBuilder()
+                        .setConnectAction(Actions.Action.ConnectAction.newBuilder()
+                                .setOwnerDsnpUserId(dsnp_user_id_1)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(dsnp_user_id_2)
+                                        .setSchemaId(schema_id)
+                                        .build())
+                                .build())
+                        .build())
+                .addActions(Actions.Action.newBuilder()
+                        .setConnectAction(Actions.Action.ConnectAction.newBuilder()
+                                .setOwnerDsnpUserId(dsnp_user_id_2)
+                                .setConnection(Connection.newBuilder()
+                                        .setDsnpUserId(dsnp_user_id_1)
+                                        .setSchemaId(schema_id)
+                                        .build())
+                                .build())
+                        .build())
+                .build();
+
+        assertDoesNotThrow(() -> graph.applyActions(actions));
+
+        var exports = graph.exportUpdates();
+        HashSet<Long> users = new HashSet<Long>();
+        for (Update u : exports) {
+            if (u.hasPersist()) {
+                var persist = u.getPersist();
+                users.add(persist.getOwnerDsnpUserId());
+            }
+        }
+        assertTrue(users.contains(dsnp_user_id_1));
+        assertTrue(users.contains(dsnp_user_id_2));
+
+        exports = graph.exportUserGraphUpdates(dsnp_user_id_1);
+        users.clear();
+        for (Update u : exports) {
+            if (u.hasPersist()) {
+                var persist = u.getPersist();
+                users.add(persist.getOwnerDsnpUserId());
+            }
+        }
+        assertTrue(users.contains(dsnp_user_id_1));
+        assertFalse(users.contains(dsnp_user_id_2));
     }
 
     @Test

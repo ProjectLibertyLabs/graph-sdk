@@ -47,9 +47,26 @@ impl UpdateTracker {
 
 	/// registers an update event
 	#[log_result_err(Level::Info)]
-	pub fn register_update(&mut self, event: &UpdateEvent) -> DsnpGraphResult<()> {
+	pub fn register_update(
+		&mut self,
+		event: &UpdateEvent,
+		ignore_existing: bool,
+	) -> DsnpGraphResult<()> {
 		if self.contains(event) {
-			return Err(DsnpGraphError::EventExists)
+			return match ignore_existing {
+				true => {
+					match event {
+						UpdateEvent::Add { dsnp_user_id, schema_id } => {
+							log::warn!("Ignore duplicate Add event: id={dsnp_user_id}, schema_id={schema_id}");
+						},
+						UpdateEvent::Remove { dsnp_user_id, schema_id } => {
+							log::warn!("Ignore duplicate Remove event: id={dsnp_user_id}, schema_id={schema_id}");
+						},
+					};
+					Ok(())
+				},
+				false => Err(DsnpGraphError::EventExists),
+			}
 		}
 
 		match self.contains_complement(event) {
@@ -64,13 +81,17 @@ impl UpdateTracker {
 
 	/// registers multiple update events
 	#[log_result_err(Level::Info)]
-	pub fn register_updates(&mut self, events: &[UpdateEvent]) -> DsnpGraphResult<()> {
-		if events.iter().any(|e| self.contains(e)) {
+	pub fn register_updates(
+		&mut self,
+		events: &[UpdateEvent],
+		ignore_existing: bool,
+	) -> DsnpGraphResult<()> {
+		if !ignore_existing && events.iter().any(|e| self.contains(e)) {
 			return Err(DsnpGraphError::DuplicateUpdateEvents)
 		}
 
 		for e in events {
-			self.register_update(e)?;
+			self.register_update(e, ignore_existing)?;
 		}
 
 		Ok(())
@@ -184,22 +205,29 @@ mod test {
 	use super::*;
 
 	#[test]
-	fn tracker_register_should_return_error_for_duplicate_events() {
+	fn tracker_register_should_handle_duplicate_events_as_requested() {
 		// arrange
 		let mut tracker = UpdateTracker::new();
 		let schema_id = 4;
 		let event = UpdateEvent::create_add(1, schema_id);
 		tracker
-			.register_update(&event.clone())
+			.register_update(&event.clone(), false)
 			.expect("Should have registered successfully!");
 
 		// act
 		let exists = tracker.contains(&event);
-		let res = tracker.register_update(&event);
+		let res1 = tracker.register_update(&event, false);
+		let res2 = tracker.register_update(&event, true);
 
 		// assert
 		assert!(exists);
-		assert!(res.is_err());
+		assert!(res1.is_err(), "should error on duplicate event");
+		assert!(res2.is_ok(), "should ignore duplicate event");
+		assert_eq!(
+			tracker.get_updates_for_schema_id(schema_id).iter().count(),
+			1,
+			"should only contain original update event"
+		);
 	}
 
 	#[test]
@@ -209,12 +237,14 @@ mod test {
 		let schema_id = 4;
 		let events =
 			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
-		tracker.register_updates(&events).expect("Should have registered successfully!");
+		tracker
+			.register_updates(&events, false)
+			.expect("Should have registered successfully!");
 		let complements: Vec<UpdateEvent> =
 			events.as_slice().iter().map(|e| e.get_complement()).collect();
 
 		// act
-		let res = tracker.register_updates(&complements);
+		let res = tracker.register_updates(&complements, false);
 
 		// assert
 		assert!(res.is_ok());
@@ -237,7 +267,7 @@ mod test {
 		];
 
 		// act
-		let res = tracker.register_updates(&events);
+		let res = tracker.register_updates(&events, false);
 
 		// assert
 		assert!(res.is_ok());
@@ -280,7 +310,7 @@ mod test {
 			UpdateEvent::create_remove(4, schema_1),
 		];
 		let existing_connections = HashSet::from([3, 2]);
-		tracker.register_updates(&events).expect("should register");
+		tracker.register_updates(&events, false).expect("should register");
 
 		// act
 		tracker.sync_updates(schema_1, &existing_connections);

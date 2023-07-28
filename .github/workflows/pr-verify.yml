@@ -251,7 +251,7 @@ jobs:
         with:
           node-version: '18'
       - name: Build Node Bridge
-        run: make build-node
+        run: make test-node
 
   test_java_lib_gradle:
     name: Test Java Library

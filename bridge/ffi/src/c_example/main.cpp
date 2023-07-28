@@ -1,7 +1,10 @@
 #include <sodium.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <set>
+extern "C" {
 #include "dsnp_graph_sdk_ffi.h"
+}
 
 #define ASSERT(condition, message) \
     do { \
@@ -333,12 +336,14 @@ int test_import_user_data_with_invalid_serialized_public_key_should_fail() {
     PageData pages[] = {page_data_1};
     size_t pages_len = 1;
 
+    const uint8_t bad_keypair[] = { 0, 1 };
+
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = bad_keypair, // invalid serialized public key
+        .public_key_len = 2,
         .secret_key = NULL,
         .secret_key_len = 0,
-        .public_key = (const uint8_t[]){0, 1}, // invalid serialized public key
-        .public_key_len = 2
     };
 
     ImportBundle import_bundle = {
@@ -399,12 +404,14 @@ int test_import_user_data_with_invalid_secret_fails(){
         return 1;
     }
 
+    const uint8_t bad_keypair[] = { 0, 1 };
+
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
-        .secret_key = (const uint8_t[]){0, 1}, // invalid serialized secret key
-        .secret_key_len = 2,
         .public_key = public_key,
-        .public_key_len = crypto_box_PUBLICKEYBYTES
+        .public_key_len = crypto_box_PUBLICKEYBYTES,
+        .secret_key = bad_keypair, // invalid serialized secret key
+        .secret_key_len = 2,
     };
 
     ImportBundle import_bundle = {
@@ -458,10 +465,10 @@ int api_import_user_data_should_import_graph_for_private_follow_successfully() {
 
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key),
         .secret_key = secret_key,
         .secret_key_len = sizeof(secret_key),
-        .public_key = public_key,
-        .public_key_len = sizeof(public_key)
     };
     ImportBundle import_bundle = {
         .dsnp_user_id = dsnp_user_id,
@@ -528,10 +535,10 @@ int api_import_user_data_with_wrong_encryption_keys_should_fail() {
 
     GraphKeyPair graph_key_pair = {
         .key_type = X25519,
+        .public_key = public_key,
+        .public_key_len = sizeof(public_key),
         .secret_key = resolved_key,
         .secret_key_len = sizeof(resolved_key),
-        .public_key = public_key,
-        .public_key_len = sizeof(public_key)
     };
     ImportBundle import_bundle = {
         .dsnp_user_id = dsnp_user_id,
@@ -619,8 +626,10 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
     env.tag = Mainnet;
     GraphState* state = initialize_graph_state(&env).result;
 
+    SchemaId schema_id = 1;
     DsnpUserId dsnp_user_id_1 = 1;
-    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0};
+    DsnpUserId dsnp_user_id_2 = 10;
+    uint8_t page_data_1_content[] = {24, 227, 96, 97, 96, 99, 224, 96, 224, 98, 96, 0, 0}; // connections 2, 3, 4, 5
     size_t page_data_1_content_len = sizeof(page_data_1_content);
 
     PageData page_data_1 = {1, page_data_1_content, page_data_1_content_len, 10};
@@ -630,7 +639,7 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
 
     ImportBundle import_bundle_1 = {
         .dsnp_user_id = dsnp_user_id_1,
-        .schema_id = 1, // Set the correct schema ID here
+        .schema_id = schema_id, // Set the correct schema ID here
         .key_pairs = NULL,
         .key_pairs_len = 0,
         .dsnp_keys = {dsnp_user_id_1, 0, NULL, 0},
@@ -638,49 +647,121 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
         .pages_len = pages_len
     };
 
-    DsnpGraphBooleanResult_Error import_result_1 = graph_import_users_data(state, &import_bundle_1, 1);
+    ImportBundle import_bundle_2 = {
+        .dsnp_user_id = dsnp_user_id_2,
+        .schema_id = schema_id,
+        .key_pairs = NULL,
+        .key_pairs_len = 0,
+        .dsnp_keys = { dsnp_user_id_2, 0, NULL, 0 },
+        .pages = NULL,
+        .pages_len = 0
+    };
+
+    ImportBundle bundles[] = { import_bundle_1, import_bundle_2 };
+
+    DsnpGraphBooleanResult_Error import_result_1 = graph_import_users_data(state, bundles, 2);
     ASSERT(import_result_1.error == NULL, "Failed to import user data");
 
-    DsnpUserId dsnp_user_id_2 = 10;
-    Connection connection_1 = {dsnp_user_id_2, 1};
+    DsnpGraphConnectionsResult_Error connections_result = graph_get_connections_for_user(state, &dsnp_user_id_1, &schema_id, true);
+    ASSERT(connections_result.error == NULL, "Failed to get connections");
 
     // Generate new public key using libsodium
     unsigned char new_public_key[crypto_box_PUBLICKEYBYTES];
     unsigned char new_secret_key[crypto_box_SECRETKEYBYTES];
     crypto_box_keypair(new_public_key, new_secret_key);
 
-    Action add_graph_key_action = {
-        .tag = AddGraphKey,
-        .add_graph_key = {
-            .owner_dsnp_user_id = dsnp_user_id_1,
-            .new_public_key = new_public_key,
-            .new_public_key_len = crypto_box_PUBLICKEYBYTES
+    Action actions_1[] = {
+        {
+            .tag = AddGraphKey,
+            .add_graph_key = {
+                .owner_dsnp_user_id = dsnp_user_id_1,
+                .new_public_key = new_public_key,
+                .new_public_key_len = crypto_box_PUBLICKEYBYTES
+            }
+        },
+        {
+            .tag = Connect,
+            .connect = {
+                .owner_dsnp_user_id = dsnp_user_id_1,
+                .connection = {
+                    .dsnp_user_id = dsnp_user_id_2,
+                    .schema_id = schema_id,
+                },
+                .dsnp_keys = NULL
+            }
+        },
+        {
+            .tag = Disconnect,
+            .disconnect = {
+                .owner_dsnp_user_id = dsnp_user_id_1,
+                .connection = {
+                    .dsnp_user_id = 3,
+                    .schema_id = schema_id
+                }
+            }
         }
     };
-    Action connect_action = {
-        .tag = Connect,
-        .connect = {
-            .owner_dsnp_user_id = dsnp_user_id_1,
-            .connection = connection_1,
-            .dsnp_keys = NULL
-        }
-    };
-    Action disconnect_action = {
-        .tag = Disconnect,
-        .disconnect = {
-            .owner_dsnp_user_id = dsnp_user_id_1,
-            .connection = {3, 1}
-        }
-    };
-    Action actions[] = {add_graph_key_action, connect_action, disconnect_action};
-    size_t actions_len = sizeof(actions) / sizeof(Action);
 
-    DsnpGraphBooleanResult_Error apply_result = graph_apply_actions(state, actions, actions_len);
-    ASSERT(apply_result.error == NULL, "Failed to apply actions");
+    ActionOptions options = {
+        .ignore_existing_connections = true,
+        .ignore_missing_connections = true,
+    };
+    size_t actions_len = sizeof(actions_1) / sizeof(Action);
 
-    DsnpGraphConnectionsResult_Error connections_result = graph_get_connections_for_user(state, &dsnp_user_id_1, &connection_1.schema_id, true);
+    // Create an Actions array attempting to add existing connections
+    Action actions_2[] = {
+        {
+            .tag = Connect,
+            .connect = {
+                .owner_dsnp_user_id = dsnp_user_id_1,
+                .connection = {
+                    .dsnp_user_id = 2,
+                    .schema_id = schema_id
+                }
+            }
+        }
+    };
+
+    // Create an Actions array attempting to remove nonexistent connections
+    Action actions_3[] = {
+        {
+            .tag = Disconnect,
+            .disconnect = {
+                .owner_dsnp_user_id = dsnp_user_id_1,
+                .connection = {
+                    .dsnp_user_id = 99,
+                    .schema_id = schema_id
+                }
+            }
+        }
+    };
+
+    // Populate other user's graph
+    Action actions_4[] = {
+        {
+            .tag = Connect,
+            .connect = {
+                .owner_dsnp_user_id = dsnp_user_id_2,
+                .connection = {
+                    .dsnp_user_id = dsnp_user_id_1,
+                    .schema_id = schema_id,
+                }
+            }
+        }
+    };
+
+    DsnpGraphBooleanResult_Error apply_result = graph_apply_actions(state, actions_1, actions_len, NULL);
+    ASSERT(apply_result.error == NULL, "Failed to apply actions with NULL options");
+    apply_result = graph_apply_actions(state, actions_2, 1, &options);
+    ASSERT(apply_result.error == NULL, "Failed to apply redundant actions with options object");
+    apply_result = graph_apply_actions(state, actions_3, 1, &options);
+    ASSERT(apply_result.error == NULL, "Failed to apply non-existent disconnections with options object");
+    apply_result = graph_apply_actions(state, actions_4, 1, NULL);
+    ASSERT(apply_result.error == NULL, "Failed to apply additions to other user's graph");
+
+    connections_result = graph_get_connections_for_user(state, &dsnp_user_id_1, &schema_id, true);
     ASSERT(connections_result.error == NULL, "Failed to get connections");
-    GraphConnections* connections = connections_result.result;
+    GraphConnections *connections = connections_result.result;
     size_t expected_connections_len = 4;
 
     DsnpGraphEdge expected_connections[] = {
@@ -689,7 +770,28 @@ int api_apply_actions_should_work_as_expected_and_include_changes_in_pending() {
         {4, 3},
         {5, 4}
     };
-    ASSERT(connections->connections_len == expected_connections_len, "Number of connections is incorrect");
+    ASSERT(connections->connections_len == expected_connections_len, "Number of current + pending connections is incorrect");
+
+    DsnpGraphUpdatesResult_Error export_result = graph_export_updates(state);
+    ASSERT(export_result.error == NULL, "Failed to export user graphs");
+    std::set<DsnpUserId> users_in_export;
+    for (size_t i = 0; i < export_result.result->updates_len; ++i) {
+        if (export_result.result->updates[i].tag == Persist) {
+            users_in_export.insert(export_result.result->updates[i].persist.owner_dsnp_user_id);
+        }
+    }
+    ASSERT(users_in_export.size() == 2, "Incorrect number of users in export-all");
+
+    export_result = graph_export_user_graph_updates(state, &dsnp_user_id_2);
+    ASSERT(export_result.error == NULL, "Failed to export individual user graph");
+    users_in_export.clear();
+    for (size_t i = 0; i < export_result.result->updates_len; ++i) {
+        if (export_result.result->updates[i].tag == Persist) {
+            users_in_export.insert(export_result.result->updates[i].persist.owner_dsnp_user_id);
+        }
+    }
+    ASSERT(users_in_export.size() == 1, "Incorrect number of users in export-single");
+    ASSERT(users_in_export.count(dsnp_user_id_2) == 1, "Requested user not found in export-single");
 
     // Clean up
     free_graph_state(state);
