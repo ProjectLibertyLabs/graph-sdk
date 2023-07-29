@@ -57,8 +57,8 @@ pub fn map_to_environment(
 	Ok(result)
 }
 
-pub fn map_to_actions<'local>(
-	env: &JNIEnv<'local>,
+pub fn map_to_actions(
+	env: &JNIEnv<'_>,
 	actions: &JByteArray,
 ) -> SdkJniResult<(Vec<RustAction>, Option<RustActionOptions>)> {
 	let bytes = env.convert_byte_array(actions).map_err(|e| SdkJniError::from(e))?;
