@@ -175,6 +175,10 @@ pub enum DsnpGraphError {
 	/// Unable to decrypt private graph with any of the imported keys
 	#[error("Unable to decrypt private graph with any of the imported keys")]
 	UnableToDecryptGraphChunkWithAnyKey,
+
+	/// Unsupported connection type
+	#[error("No schema ID found for connection type")]
+	UnsupportedConnectionTypeForConfig(ConnectionType),
 }
 
 impl DsnpGraphError {
@@ -222,6 +226,7 @@ impl DsnpGraphError {
 			DsnpGraphError::UserGraphNotImported(_) => 41,
 			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 42,
 			DsnpGraphError::FFIError(_) => 43,
+			DsnpGraphError::UnsupportedConnectionTypeForConfig(..) => 44,
 		}
 	}
 }

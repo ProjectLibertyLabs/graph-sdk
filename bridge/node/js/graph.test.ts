@@ -90,13 +90,13 @@ describe("Graph tests", () => {
     const graph = new Graph(environment);
     const config = graph.getGraphConfig(environment);
     expect(config).toBeDefined();
-    expect(config.graphPublicKeySchemaId).toEqual(5);
+    expect(config.graphPublicKeySchemaId).toEqual(7);
     const schema_id = graph.getSchemaIdFromConfig(
       environment,
       ConnectionType.Follow,
       PrivacyType.Public,
     );
-    expect(schema_id).toEqual(1);
+    expect(schema_id).toEqual(8);
     graph.freeGraphState();
   });
 

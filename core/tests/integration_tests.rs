@@ -526,7 +526,6 @@ mod integration_tests {
 		for connection_type in vec![
 			ConnectionType::Follow(PrivacyType::Public),
 			ConnectionType::Follow(PrivacyType::Private),
-			ConnectionType::Friendship(PrivacyType::Public),
 		] {
 			let env = Environment::Mainnet;
 			let schema_id = get_schema_from(env.clone(), connection_type);
