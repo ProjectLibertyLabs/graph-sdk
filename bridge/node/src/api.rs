@@ -6,7 +6,7 @@ use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, GraphKeyType, Privac
 use dsnp_graph_core::{
 	api::{
 		api::{GraphAPI, GraphState},
-		api_types::{Action, DsnpKeys, ImportBundle},
+		api_types::{Action, ActionOptions, DsnpKeys, ImportBundle},
 	},
 	dsnp::dsnp_types::DsnpPublicKey,
 };
@@ -277,6 +277,41 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 	}
 }
 
+/// Function to export graph updates for a single user graph
+/// # Arguments
+/// * `cx` - Neon FunctionContext
+/// * `graph_state_id` - Unique identifier for the graph state
+/// # Returns
+/// * `JsResult<JsArray>` - Neon JsArray containing the exported updates
+/// # Errors
+/// * Throws a Neon error
+pub fn export_user_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
+	let graph_state_id = cx.argument::<JsNumber>(0)?;
+	let graph_state_id = graph_state_id.value(&mut cx) as usize;
+	let dsnp_user_id: Handle<'_, JsString> = cx.argument::<JsString>(1)?;
+	let dsnp_user_id = match dsnp_user_id.value(&mut cx).parse::<DsnpUserId>() {
+		Ok(id) => id,
+		Err(_) => return cx.throw_error("Invalid DSNP user id"),
+	};
+
+	let mut states = GRAPH_STATES.lock().unwrap();
+	let graph_state = states.get_mut(&graph_state_id);
+	if graph_state.is_none() {
+		return cx.throw_error("Graph state not found")
+	}
+	let graph_state = graph_state.unwrap();
+	let graph_state = graph_state.lock().unwrap();
+
+	let updates = graph_state.export_user_graph_updates(&dsnp_user_id);
+	match updates {
+		Ok(updates) => {
+			let updates_js = updates_to_js(&mut cx, updates)?;
+			Ok(updates_js)
+		},
+		Err(e) => cx.throw_error(e.to_string()),
+	}
+}
+
 /// Function to get connections for user from the graph state (getConnectionsForUserGraph)
 /// # Arguments
 /// * `cx` - Neon FunctionContext
@@ -332,6 +367,14 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state_id = graph_state_id.value(&mut cx) as usize;
 	let actions: Handle<'_, JsArray> = cx.argument::<JsArray>(1)?;
 	let rust_actions: Vec<Action> = actions_from_js(&mut cx, actions)?;
+	let mut rust_options: Option<ActionOptions> = None;
+	match cx.argument_opt(2) {
+		Some(opt_value) => {
+			let options: Handle<'_, JsObject> = opt_value.downcast_or_throw(&mut cx)?;
+			rust_options = Some(action_options_from_js(&mut cx, options)?);
+		},
+		None => (),
+	};
 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
@@ -341,7 +384,7 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let graph_state = graph_state.unwrap();
 	let mut graph_state = graph_state.lock().unwrap();
 
-	let apply_result = graph_state.apply_actions(&rust_actions);
+	let apply_result = graph_state.apply_actions(&rust_actions, &rust_options);
 	match apply_result {
 		Ok(_) => Ok(cx.boolean(true)),
 		Err(e) => cx.throw_error(e.to_string()),
@@ -564,6 +607,7 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 	cx.export_function("removeUserGraph", remove_user_graph)?;
 	cx.export_function("importUserData", import_user_data)?;
 	cx.export_function("exportUpdates", export_graph_updates)?;
+	cx.export_function("exportUserGraphUpdates", export_user_graph_updates)?;
 	cx.export_function("getConnectionsForUserGraph", get_connections_for_user_graph)?;
 	cx.export_function("applyActions", apply_actions)?;
 	cx.export_function("forceCalculateGraphs", force_calculate_graphs)?;

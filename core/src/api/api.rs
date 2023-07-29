@@ -48,7 +48,9 @@
 //! be reverted to before failed call state.
 
 use crate::{
-	api::api_types::{Action, Connection, DsnpKeys, ImportBundle, PrivacyType, Update},
+	api::api_types::{
+		Action, ActionOptions, Connection, DsnpKeys, ImportBundle, PrivacyType, Update,
+	},
 	dsnp::{
 		dsnp_types::{DsnpGraphEdge, DsnpPublicKey, DsnpUserId},
 		reader_writer::DsnpReader,
@@ -108,12 +110,20 @@ pub trait GraphAPI {
 	/// but pending updates will be preserved.
 	fn import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()>;
 
-	/// Calculates the necessary page updates for all imported users and graph using their active
+	/// Calculates the necessary new key and graph page updates for all imported users and graph using their active
 	/// encryption key and return a list of updates
 	fn export_updates(&self) -> DsnpGraphResult<Vec<Update>>;
 
+	/// Calculates the necessary graph page updates for a single user, using their active encryption
+	/// key, and returns a list of graph page updates
+	fn export_user_graph_updates(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>>;
+
 	/// Applies Actions (Connect or Disconnect) to the list of pending actions for a users graph
-	fn apply_actions(&mut self, action: &[Action]) -> DsnpGraphResult<()>;
+	fn apply_actions(
+		&mut self,
+		action: &[Action],
+		options: &Option<ActionOptions>,
+	) -> DsnpGraphResult<()>;
 
 	/// Force re-calculates the imported graphs. This is useful to ensure the pages are using the
 	/// latest encryption key or refresh calculated PRIds or remove any empty pages and ...
@@ -225,10 +235,32 @@ impl GraphAPI for GraphState {
 		Ok(result)
 	}
 
+	/// Calculates the necessary page updates for all users graphs and return as a map of pages to
+	/// be updated and/or removed or added keys
+	#[log_result_err(Level::Error)]
+	fn export_user_graph_updates(&self, user_id: &DsnpUserId) -> DsnpGraphResult<Vec<Update>> {
+		let mut result = self
+			.shared_state_manager
+			.read()
+			.map_err(|_| DsnpGraphError::FailedtoReadLock(SHARED_STATE_MANAGER.to_string()))?
+			.export_new_key_updates_for_user(user_id)?;
+		let user_graph = self
+			.user_map
+			.get(&user_id)
+			.ok_or(DsnpGraphError::UserGraphNotImported(*user_id))?;
+		let updates = user_graph.calculate_updates()?;
+		result.extend(updates);
+		Ok(result)
+	}
+
 	/// Applies actions (Connect, Disconnect) to imported users graph
 	#[log_result_err(Level::Error)]
-	fn apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
-		let result = self.do_apply_actions(actions);
+	fn apply_actions(
+		&mut self,
+		actions: &[Action],
+		options: &Option<ActionOptions>,
+	) -> DsnpGraphResult<()> {
+		let result = self.do_apply_actions(actions, options);
 		match result {
 			DsnpGraphResult::Ok(_) => self.commit(),
 			DsnpGraphResult::Err(_) => self.rollback(),
@@ -452,7 +484,11 @@ impl GraphState {
 
 	/// main updating logic
 	#[log_result_err(Level::Error)]
-	fn do_apply_actions(&mut self, actions: &[Action]) -> DsnpGraphResult<()> {
+	fn do_apply_actions(
+		&mut self,
+		actions: &[Action],
+		options: &Option<ActionOptions>,
+	) -> DsnpGraphResult<()> {
 		// pre validate all actions
 		for action in actions {
 			action.validate()?;
@@ -466,15 +502,30 @@ impl GraphState {
 					dsnp_keys,
 					..
 				} => {
+					let ignore_existing_connections = match options {
+						Some(ActionOptions { ignore_existing_connections, .. }) =>
+							*ignore_existing_connections,
+						None => false,
+					};
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						if ignore_existing_connections {
+							log::warn!(
+								"Ignoring add redundant connection {} -> {}",
+								action.owner_dsnp_user_id(),
+								*dsnp_user_id
+							);
+							continue
+						}
+
 						return Err(DsnpGraphError::ConnectionAlreadyExists(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
 						))
 					}
-					owner_graph
-						.update_tracker_mut()
-						.register_update(&UpdateEvent::create_add(*dsnp_user_id, *schema_id))?;
+					owner_graph.update_tracker_mut().register_update(
+						&UpdateEvent::create_add(*dsnp_user_id, *schema_id),
+						ignore_existing_connections,
+					)?;
 					if let Some(inner_keys) = dsnp_keys {
 						self.shared_state_manager
 							.write()
@@ -488,15 +539,30 @@ impl GraphState {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
 					..
 				} => {
+					let ignore_missing_connections = match options {
+						Some(ActionOptions { ignore_missing_connections, .. }) =>
+							*ignore_missing_connections,
+						None => false,
+					};
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
+						if ignore_missing_connections {
+							log::warn!(
+								"Ignoring remove non-existent connection {} -> {}",
+								action.owner_dsnp_user_id(),
+								*dsnp_user_id
+							);
+							continue
+						}
+
 						return Err(DsnpGraphError::ConnectionDoesNotExist(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
 						))
 					}
-					owner_graph
-						.update_tracker_mut()
-						.register_update(&UpdateEvent::create_remove(*dsnp_user_id, *schema_id))?;
+					owner_graph.update_tracker_mut().register_update(
+						&UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
+						ignore_missing_connections,
+					)?;
 				},
 				Action::AddGraphKey { new_public_key, .. } => {
 					self.shared_state_manager
@@ -775,12 +841,10 @@ mod test {
 
 		// act
 		assert!(state
-			.apply_actions(&vec![
-				connect_action_1.clone(),
-				connect_action_2,
-				connect_action_1,
-				key_add_action
-			])
+			.apply_actions(
+				&vec![connect_action_1.clone(), connect_action_2, connect_action_1, key_add_action],
+				&None
+			)
 			.is_err());
 
 		// assert

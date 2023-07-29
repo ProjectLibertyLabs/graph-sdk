@@ -296,6 +296,18 @@ impl Action {
 	}
 }
 
+#[repr(C)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ActionOptions {
+	/// ignore existing connection on add
+	#[serde(rename = "ignoreExistingConnections")]
+	pub ignore_existing_connections: bool,
+
+	/// ignore missing connection on remove
+	#[serde(rename = "ignoreMissingConnections")]
+	pub ignore_missing_connections: bool,
+}
+
 /// implementing input validation for Action
 impl InputValidation for Action {
 	#[log_result_err(Level::Info)]

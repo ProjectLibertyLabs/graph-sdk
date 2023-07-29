@@ -1,6 +1,6 @@
 {
   "name": "@dsnp/graph-sdk",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "author": "Amplica Labs",
   "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",
@@ -30,6 +30,9 @@
     "@typescript-eslint/parser": "^5.59.9",
     "cargo-cp-artifact": "^0.1",
     "eslint": "^8.42.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-config-prettier": "^8.8.0",
+    "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
     "ts-jest": "^29.1.0"
   },
