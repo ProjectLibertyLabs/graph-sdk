@@ -31,8 +31,8 @@ use jni::{
 use protobuf::{EnumOrUnknown, Message, SpecialFields};
 use std::collections::HashMap;
 
-pub fn map_to_environment<'local>(
-	env: &JNIEnv<'local>,
+pub fn map_to_environment(
+	env: &JNIEnv<'_>,
 	environment: &JByteArray,
 ) -> SdkJniResult<RustEnvironment> {
 	let bytes = env.convert_byte_array(environment).map_err(|e| SdkJniError::from(e))?;
@@ -57,8 +57,8 @@ pub fn map_to_environment<'local>(
 	Ok(result)
 }
 
-pub fn map_to_actions<'local>(
-	env: &JNIEnv<'local>,
+pub fn map_to_actions(
+	env: &JNIEnv<'_>,
 	actions: &JByteArray,
 ) -> SdkJniResult<(Vec<RustAction>, Option<RustActionOptions>)> {
 	let bytes = env.convert_byte_array(actions).map_err(|e| SdkJniError::from(e))?;
@@ -79,8 +79,8 @@ pub fn map_to_actions<'local>(
 	Ok((result, options))
 }
 
-pub fn map_to_imports<'local>(
-	env: &JNIEnv<'local>,
+pub fn map_to_imports(
+	env: &JNIEnv<'_>,
 	imports: &JByteArray,
 ) -> SdkJniResult<Vec<RustImportBundle>> {
 	let bytes = env.convert_byte_array(imports).map_err(|e| SdkJniError::from(e))?;
@@ -100,8 +100,8 @@ pub fn map_to_imports<'local>(
 	Ok(result)
 }
 
-pub fn map_to_dsnp_keys<'local>(
-	env: &JNIEnv<'local>,
+pub fn map_to_dsnp_keys(
+	env: &JNIEnv<'_>,
 	dsnp_keys: &JByteArray,
 ) -> SdkJniResult<Option<RustDsnpKeys>> {
 	let bytes = env.convert_byte_array(dsnp_keys).map_err(|e| SdkJniError::from(e))?;

@@ -13,7 +13,7 @@ use crate::{
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
 use log::Level;
 use log_result_proc_macro::log_result_err;
-use std::{borrow::Borrow, collections::HashSet};
+use std::collections::HashSet;
 
 /// Constant used in errors
 pub const SHARED_STATE_MANAGER: &str = "SharedStateManager";
@@ -140,7 +140,7 @@ impl PublicKeyProvider for SharedStateManager {
 				Frequency::read_public_key(&key.content).map_err(|e| DsnpGraphError::from(e))?;
 
 			// make sure it can deserialize correctly
-			let _: PublicKeyType = k.borrow().try_into()?;
+			let _: PublicKeyType = (&k).try_into()?;
 			// key id is the itemized index of the key stored in Frequency
 			k.key_id = Some(key.index.into());
 			dsnp_keys.push(k);

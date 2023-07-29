@@ -13,7 +13,7 @@ use crate::{
 };
 use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{ConnectionType, Environment, GraphKeyType, PrivacyType, SchemaId};
-use std::{borrow::Borrow, collections::BTreeMap};
+use std::collections::BTreeMap;
 
 pub struct KeyDataBuilder {
 	key_pairs: Vec<GraphKeyPair>,
@@ -146,7 +146,7 @@ impl PageDataBuilder {
 	}
 
 	pub fn build(self) -> Vec<PageData> {
-		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
+		let dsnp_config: DsnpVersionConfig = (&self.resolved_key.key_pair).into();
 		self.page_builder
 			.build()
 			.iter()
@@ -161,7 +161,7 @@ impl PageDataBuilder {
 	}
 
 	pub fn build_with_size(&self) -> Vec<(usize, PageData)> {
-		let dsnp_config: DsnpVersionConfig = self.resolved_key.key_pair.borrow().into();
+		let dsnp_config: DsnpVersionConfig = (&self.resolved_key.key_pair).into();
 		self.page_builder
 			.build()
 			.iter()
@@ -296,7 +296,7 @@ impl ImportBundleBuilder {
 						continue
 					}
 					assert_eq!(
-						match original.dsnp_keys.borrow() {
+						match &original.dsnp_keys {
 							Some(dsnp_keys) => dsnp_keys.keys_hash,
 							None => 0,
 						},

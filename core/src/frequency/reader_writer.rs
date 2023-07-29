@@ -89,7 +89,6 @@ mod test {
 	};
 	use dryoc::keypair::StackKeyPair;
 	use rand::Rng;
-	use std::borrow::Borrow;
 
 	#[test]
 	fn public_graph_read_and_write_using_valid_input_should_succeed() {
@@ -139,7 +138,7 @@ mod test {
 		let serialized = Frequency::write_private_graph(
 			&private_graph,
 			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
-			&key_pair.borrow().into(),
+			&(&key_pair).into(),
 		)
 		.expect("serialization should work");
 		let deserialized = Frequency::read_private_graph(
@@ -170,7 +169,7 @@ mod test {
 		let mut serialized = Frequency::write_private_graph(
 			&private_graph,
 			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
-			&key_pair.borrow().into(),
+			&(&key_pair).into(),
 		)
 		.expect("serialization should work");
 		serialized.pop(); // corrupting the input
@@ -208,7 +207,7 @@ mod test {
 		let private_serialized = Frequency::write_private_graph(
 			&private_graph,
 			&DsnpVersionConfig::Version1_0 { algorithm: SealBox },
-			&key_pair.borrow().into(),
+			&(&key_pair).into(),
 		)
 		.expect("serialization should work");
 

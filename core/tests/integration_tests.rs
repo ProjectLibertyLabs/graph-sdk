@@ -25,7 +25,7 @@ mod integration_tests {
 		},
 		util::builders::KeyDataBuilder,
 	};
-	use std::{borrow::Borrow, collections::HashSet};
+	use std::collections::HashSet;
 
 	#[ctor]
 	fn test_harness_init() {
@@ -526,7 +526,6 @@ mod integration_tests {
 		for connection_type in vec![
 			ConnectionType::Follow(PrivacyType::Public),
 			ConnectionType::Follow(PrivacyType::Private),
-			ConnectionType::Friendship(PrivacyType::Public),
 		] {
 			let env = Environment::Mainnet;
 			let schema_id = get_schema_from(env.clone(), connection_type);
@@ -569,14 +568,14 @@ mod integration_tests {
 				dsnp_user_id_1,
 				2,
 				&resolved_key_1.key_pair.clone().into(),
-				&resolved_key_2.key_pair.borrow().into(),
+				&(&resolved_key_2.key_pair).into(),
 			)
 			.unwrap(),
 			DsnpPrid::create_prid(
 				dsnp_user_id_1,
 				3,
 				&resolved_key_1.key_pair.clone().into(),
-				&resolved_key_3.key_pair.borrow().into(),
+				&(&resolved_key_3.key_pair).into(),
 			)
 			.unwrap(),
 		];
@@ -599,7 +598,7 @@ mod integration_tests {
 			3,
 			dsnp_user_id_1,
 			&resolved_key_1.key_pair.clone().into(),
-			&resolved_key_3.key_pair.borrow().into(),
+			&(&resolved_key_3.key_pair).into(),
 		)
 		.unwrap()];
 		let mut input3 = ImportBundleBuilder::new(env.clone(), 3, schema_id)
@@ -1066,14 +1065,14 @@ mod integration_tests {
 				dsnp_user_id_1,
 				2,
 				&resolved_key.key_pair.clone().into(),
-				&resolved_key_2.key_pair.borrow().into(),
+				&(&resolved_key_2.key_pair).into(),
 			)
 			.unwrap(),
 			DsnpPrid::create_prid(
 				dsnp_user_id_1,
 				3,
 				&resolved_key.key_pair.clone().into(),
-				&resolved_key_3.key_pair.borrow().into(),
+				&(&resolved_key_3.key_pair).into(),
 			)
 			.unwrap(),
 		];
@@ -1088,7 +1087,7 @@ mod integration_tests {
 			2,
 			dsnp_user_id_1,
 			&resolved_key_2.key_pair.clone().into(),
-			&resolved_key.key_pair.borrow().into(),
+			&(&resolved_key.key_pair).into(),
 		)
 		.unwrap()];
 		let mut input2 = ImportBundleBuilder::new(env.clone(), 2, schema_id)
@@ -1102,7 +1101,7 @@ mod integration_tests {
 			3,
 			dsnp_user_id_1,
 			&resolved_key_3.key_pair.clone().into(),
-			&resolved_key.key_pair.borrow().into(),
+			&(&resolved_key.key_pair).into(),
 		)
 		.unwrap()];
 		let mut input3 = ImportBundleBuilder::new(env.clone(), 3, schema_id)

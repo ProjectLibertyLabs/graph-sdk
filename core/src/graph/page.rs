@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 use crate::{api::api_types::*, dsnp::dsnp_types::*, util::time::time_in_ksecs};
 use dsnp_graph_config::errors::{DsnpGraphError, DsnpGraphResult};
-use std::borrow::Borrow;
 
 use crate::{
 	dsnp::{
@@ -161,7 +160,7 @@ impl PrivatePageDataProvider for GraphPage {
 					key_id: key.clone().key_id,
 				},
 				dsnp_version_config,
-				&key.key_pair.borrow().into(),
+				&(&key.key_pair).into(),
 			)?,
 		})
 	}

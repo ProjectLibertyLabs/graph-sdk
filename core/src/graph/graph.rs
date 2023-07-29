@@ -1397,13 +1397,6 @@ mod test {
 
 	#[test]
 	#[timeout(15000)] // let's make sure this terminates successfully
-	fn calculate_updates_adding_new_page_public_friendship_should_succeed() {
-		calculate_updates_adding_new_page(ConnectionType::Friendship(PrivacyType::Public))
-			.expect("should succeed");
-	}
-
-	#[test]
-	#[timeout(15000)] // let's make sure this terminates successfully
 	fn calculate_updates_adding_new_page_private_follow_should_succeed() {
 		calculate_updates_adding_new_page(ConnectionType::Follow(PrivacyType::Private))
 			.expect("should succeed");
@@ -1420,13 +1413,6 @@ mod test {
 	#[timeout(15000)]
 	fn calculate_updates_existing_page_public_follow_should_succeed() {
 		calculate_updates_existing_page(ConnectionType::Follow(PrivacyType::Public))
-			.expect("should succeed");
-	}
-
-	#[test]
-	#[timeout(15000)]
-	fn calculate_updates_existing_page_public_friendship_should_succeed() {
-		calculate_updates_existing_page(ConnectionType::Friendship(PrivacyType::Public))
 			.expect("should succeed");
 	}
 
@@ -1485,7 +1471,6 @@ mod test {
 	fn private_friendship_functions_should_fail_for_non_private_friendship_graphs() {
 		let env = Environment::Mainnet;
 		let failures = vec![
-			ConnectionType::Friendship(PrivacyType::Public),
 			ConnectionType::Follow(PrivacyType::Private),
 			ConnectionType::Follow(PrivacyType::Public),
 		];

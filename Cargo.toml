@@ -16,6 +16,7 @@ default-members = [
     "bridge/node",
     "log-result-proc-macro",
 ]
+resolver = "2"
 
 [profile.release]
 panic = "unwind"

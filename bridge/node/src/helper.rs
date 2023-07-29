@@ -142,7 +142,7 @@ pub fn schema_map_from_js(
 	Ok(schema_map)
 }
 
-/// Convert dsnp versions from JSArray to Vec<DsnpVersion>
+/// Convert dsnp versions from JSArray to `Vec<DsnpVersion>`
 /// # Arguments
 /// * `cx` - Neon FunctionContext
 /// * `dsnp_versions_from_js` - Neon JsArray containing the dsnp versions
@@ -306,12 +306,12 @@ pub fn import_bundle_from_js_object<'a, C: Context<'a>>(
 	Ok(import_bundle)
 }
 
-/// Function to convert JsArray of PageData to Vec<PageData>
+/// Function to convert JsArray of PageData to `Vec<PageData>`
 /// # Arguments
 /// * `cx` - Neon FunctionContext
 /// * `pages_js` - Neon JsArray of JsObjects
 /// # Returns
-/// * `Vec<PageData>` - Vec<PageData>
+/// * `Vec<PageData>`
 /// # Errors
 /// * Throws a Neon error if the pages cannot be converted
 pub fn pages_from_js<'a, C: Context<'a>>(
@@ -351,12 +351,12 @@ pub fn page_from_js<'a, C: Context<'a>>(
 	Ok(PageData { page_id, content_hash, content })
 }
 
-/// Function to convert JsArray of GraphKeyPair to Vec<GraphKeyPair>
+/// Function to convert JsArray of GraphKeyPair to `Vec<GraphKeyPair>`
 /// # Arguments
 /// * `cx` - Neon FunctionContext
 /// * `key_pairs_js` - Neon JsArray of JsObjects
 /// # Returns
-/// * `Vec<GraphKeyPair>` - Vec<GraphKeyPair>
+/// * `Vec<GraphKeyPair>`
 /// # Errors
 /// * Throws a Neon error if the key pairs cannot be converted
 pub fn key_pairs_from_js<'a, C: Context<'a>>(
@@ -456,12 +456,12 @@ pub fn dsnp_keys_from_js<'a, C: Context<'a>>(
 
 	Ok(DsnpKeys { dsnp_user_id, keys_hash, keys })
 }
-/// Function to convert JsArray of KeyData to Vec<KeyData>
+/// Function to convert JsArray of KeyData to `Vec<KeyData>`
 /// # Arguments
 /// * `cx` - Neon FunctionContext
 /// * `keys_js` - Neon JsArray of JsObjects
 /// # Returns
-/// * `Vec<KeyData>` - Vec<KeyData>
+/// * `Vec<KeyData>`
 /// # Errors
 /// * Throws a Neon error if the keys cannot be converted
 pub fn keys_from_js<'a, C: Context<'a>>(
@@ -481,10 +481,10 @@ pub fn keys_from_js<'a, C: Context<'a>>(
 	Ok(keys)
 }
 
-/// Function to convert rust Vec<Update> to JsArray of JsObjects
+/// Function to convert rust `Vec<Update>` to JsArray of JsObjects
 /// # Arguments
 /// * `cx` - Neon FunctionContext
-/// * `updates` - rust Vec<Update>
+/// * `updates` - rust `Vec<Update>`
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray of JsObjects
 /// # Errors
@@ -569,10 +569,10 @@ pub fn update_to_js<'a, C: Context<'a>>(
 	Ok(obj)
 }
 
-/// Function to convert Vec<DsnpGraphEdge> to JsArray of JsObjects
+/// Function to convert `Vec<DsnpGraphEdge>` to JsArray of JsObjects
 /// # Arguments
 /// * `cx` - Neon FunctionContext
-/// * `edges` - Vec<DsnpGraphEdge>
+/// * `edges` - `Vec<DsnpGraphEdge>`
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray of JsObjects
 /// # Errors
@@ -609,12 +609,12 @@ pub fn connection_to_js<'a, C: Context<'a>>(
 	Ok(obj)
 }
 
-/// Function to convert JSArray of Action to Vec<Action>
+/// Function to convert JSArray of Action to `Vec<Action>`
 /// # Arguments
 /// * `cx` - Neon FunctionContext
 /// * `actions_js` - Neon JsArray of JsObjects
 /// # Returns
-/// * `Vec<Action>` - Vec<Action>
+/// * `Vec<Action>`
 /// # Errors
 /// * Throws a Neon error if the actions cannot be converted
 pub fn actions_from_js<'a, C: Context<'a>>(
@@ -748,10 +748,10 @@ pub fn connection_from_js<'a, C: Context<'a>>(
 	Ok(Connection { dsnp_user_id, schema_id })
 }
 
-/// Function to convert Vec<DsnpPublicKey> to JsArray of JsObjects
+/// Function to convert `Vec<DsnpPublicKey>` to JsArray of JsObjects
 /// # Arguments
 /// * `cx` - Neon FunctionContext
-/// * `public_keys` - Vec<DsnpPublicKey>
+/// * public_keys - `Vec<DsnpPublicKey>`
 /// # Returns
 /// * `JsResult<JsArray>` - Neon JsArray of JsObjects
 /// # Errors

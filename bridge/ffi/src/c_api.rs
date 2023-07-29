@@ -1,5 +1,5 @@
 use crate::{bindings::*, utils::*, FFIResult, GraphError};
-use dsnp_graph_config::{errors::DsnpGraphError, SchemaId};
+use dsnp_graph_config::{errors::DsnpGraphError, Config as RustConfig, ConnectionType, SchemaId};
 use dsnp_graph_core::{
 	api::{
 		api::{GraphAPI, GraphState},
@@ -48,6 +48,33 @@ pub unsafe extern "C" fn get_graph_config(
 			error
 		))))
 	})
+}
+
+// Get the schema ID corresponding to the specified connection type using
+// the given Config.
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `config` - a pointer to a Config struct
+/// # Returns
+/// * `SchemaId` - the schema id
+/// # Errors
+/// * `GraphError` - if the given connection type does not map to a schema in the config
+#[no_mangle]
+pub unsafe extern "C" fn get_schema_id_from_config(
+	connection_type: *const ConnectionType,
+	config: *const Config,
+) -> FFIResult<SchemaId, GraphError> {
+	let cfg = &*config;
+	let rust_config: RustConfig = config_from_ffi(cfg);
+	let schema_id: Option<SchemaId> =
+		rust_config.get_schema_id_from_connection_type(*connection_type);
+	match schema_id {
+		Some(id) => FFIResult::new(id),
+		None => FFIResult::new_mut_error(GraphError::from_error(
+			DsnpGraphError::UnsupportedConnectionTypeForConfig(*connection_type),
+		)),
+	}
 }
 
 /// Initialize a graph state with the given environment

@@ -175,6 +175,10 @@ pub enum DsnpGraphError {
 	/// Unable to decrypt private graph with any of the imported keys
 	#[error("Unable to decrypt private graph with any of the imported keys")]
 	UnableToDecryptGraphChunkWithAnyKey,
+
+	/// Unsupported connection type
+	#[error("No schema ID found for connection type")]
+	UnsupportedConnectionTypeForConfig(ConnectionType),
 }
 
 impl DsnpGraphError {
@@ -222,11 +226,12 @@ impl DsnpGraphError {
 			DsnpGraphError::UserGraphNotImported(_) => 41,
 			DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey => 42,
 			DsnpGraphError::FFIError(_) => 43,
+			DsnpGraphError::UnsupportedConnectionTypeForConfig(..) => 44,
 		}
 	}
 }
 
-/// Macro to replicate Option<T>::ok_or, but logging if the returned
+/// Macro to replicate `Option<T>::ok_or`, but logging if the returned
 /// Result is an Err variant.
 // (note: could have been implemented as a trait, but then the resulting log
 // event would not contain the correct file:line, since the std::file! macro records
