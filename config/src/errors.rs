@@ -226,7 +226,7 @@ impl DsnpGraphError {
 	}
 }
 
-/// Macro to replicate Option<T>::ok_or, but logging if the returned
+/// Macro to replicate `Option<T>::ok_or`, but logging if the returned
 /// Result is an Err variant.
 // (note: could have been implemented as a trait, but then the resulting log
 // event would not contain the correct file:line, since the std::file! macro records
