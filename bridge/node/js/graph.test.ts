@@ -483,4 +483,34 @@ describe("Graph tests", () => {
     expect(keyPair.secretKey).toBeDefined();
     expect(keyPair.keyType).toEqual(GraphKeyType.X25519);
   });
+
+  test("Import bundle without schema id and empty pages should import keys", async () => {
+    const dsnpUserId = "1";
+    const keyPair = Graph.generateKeyPair(GraphKeyType.X25519);
+    const keyPairs = [keyPair];
+    const dsnpKeys = {
+      dsnpUserId,
+      keysHash: 100,
+      keys: [
+        {
+          index: 0,
+          content: keyPair.publicKey,
+        },
+      ] as KeyData[],
+    } as DsnpKeys;
+
+    const importBundle: ImportBundle = {
+      dsnpUserId,
+      keyPairs,
+      dsnpKeys,
+      pages: [],
+    };
+
+    const imported = graph.importUserData([importBundle]);
+    expect(imported).toEqual(true);
+
+    const exported = graph.exportUpdates();
+    expect(exported).toBeDefined();
+    expect(exported.length).toEqual(1);
+  });
 });

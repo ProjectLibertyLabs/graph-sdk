@@ -27,8 +27,8 @@ export interface PageData {
 
 export interface ImportBundle {
   dsnpUserId: string;
-  schemaId: number;
-  keyPairs: GraphKeyPair[];
+  schemaId?: number;
+  keyPairs?: GraphKeyPair[];
   dsnpKeys?: DsnpKeys;
-  pages: PageData[];
+  pages?: PageData[];
 }
