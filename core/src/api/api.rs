@@ -422,7 +422,7 @@ impl GraphState {
 			let connection_type = match connection_type_option {
 				Some(connection_type) => connection_type,
 				None => {
-					if pages.is_empty() && !key_pairs.is_empty() && !dsnp_keys.is_none() {
+					if pages.is_empty() && (!key_pairs.is_empty() || !dsnp_keys.is_none()) {
 						// This condition implies that only keys are being imported
 						ConnectionType::Follow(PrivacyType::Private)
 					} else {
@@ -455,7 +455,9 @@ impl GraphState {
 				// import key-pairs inside user key manager
 				user_key_manager.import_key_pairs(key_pairs.clone())?;
 			};
+
 			if pages.is_empty() {
+				// case where only keys are imported
 				continue
 			}
 
