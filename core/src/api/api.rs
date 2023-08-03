@@ -419,8 +419,6 @@ impl GraphState {
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
 			let connection_type_option =
 				self.environment.get_config().get_connection_type_from_schema_id(*schema_id);
-			print!("connection_type_option: {:?}", connection_type_option);
-			print!("schema_id: {:?}", schema_id);
 			let connection_type = match connection_type_option {
 				Some(connection_type) => connection_type,
 				None => {
