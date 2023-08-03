@@ -41,9 +41,14 @@ const config: Config = {
     2: {
       dsnpVersion: DsnpVersion.Version1_0,
       connectionType: ConnectionType.Follow,
-      privacyType: PrivacyType.Private,
+      privacyType: PrivacyType.Public,
     },
     3: {
+      dsnpVersion: DsnpVersion.Version1_0,
+      connectionType: ConnectionType.Follow,
+      privacyType: PrivacyType.Private,
+    },
+    4: {
       dsnpVersion: DsnpVersion.Version1_0,
       connectionType: ConnectionType.Friendship,
       privacyType: PrivacyType.Private,
@@ -484,7 +489,7 @@ describe("Graph tests", () => {
     expect(keyPair.keyType).toEqual(GraphKeyType.X25519);
   });
 
-  test("Import bundle without schema id and empty pages should import keys", async () => {
+  test("Private Graph: Import bundle without schema id and empty pages should import keys", async () => {
     const dsnpUserId = "1000";
     const keyPair: GraphKeyPair = {
       publicKey: Uint8Array.from(
@@ -524,8 +529,21 @@ describe("Graph tests", () => {
 
     const imported = graph.importUserData([importBundle]);
     expect(imported).toEqual(true);
+    let connectionPrivate: Connection = {
+      dsnpUserId: "1000",
+      schemaId: 3,
+    };
 
+    let privateConnectAction: ConnectAction ={
+      type: "Connect",
+      ownerDsnpUserId: "1000",
+      dsnpKeys,
+      connection: connectionPrivate,
+    }
+    const appliedAction = await  graph.applyActions([privateConnectAction]);
+    expect(appliedAction).toEqual(true);
     const exported = graph.exportUpdates();
     expect(exported).toBeDefined();
+    expect(exported.length).toEqual(1);
   });
 });
