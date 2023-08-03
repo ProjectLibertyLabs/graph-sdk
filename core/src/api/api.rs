@@ -411,26 +411,10 @@ impl GraphState {
 	/// main data importing logic
 	#[log_result_err(Level::Error)]
 	fn do_import_users_data(&mut self, payloads: &Vec<ImportBundle>) -> DsnpGraphResult<()> {
-		// pre validate all bundles
 		for bundle in payloads {
 			bundle.validate()?;
 		}
-		// import bundles
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
-			let connection_type_option =
-				self.environment.get_config().get_connection_type_from_schema_id(*schema_id);
-			let connection_type = match connection_type_option {
-				Some(connection_type) => connection_type,
-				None => {
-					if pages.is_empty() && (!key_pairs.is_empty() || !dsnp_keys.is_none()) {
-						// This condition implies that only keys are being imported
-						ConnectionType::Follow(PrivacyType::Private)
-					} else {
-						return Err(DsnpGraphError::InvalidSchemaId(*schema_id))
-					}
-				},
-			};
-
 			match dsnp_keys {
 				Some(dsnp_keys) => {
 					self.shared_state_manager
@@ -443,56 +427,64 @@ impl GraphState {
 				None => (),
 			};
 
-			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
+			// Retrieve connection type first to avoid borrow conflict
+			let connection_type = self
+				.environment
+				.get_config()
+				.get_connection_type_from_schema_id(*schema_id)
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
-			let include_secret_keys = !key_pairs.is_empty();
 			{
-				let mut user_key_manager = user_graph
-					.user_key_manager
-					.write()
-					.map_err(|_| DsnpGraphError::FailedtoWriteLock(USER_KEY_MANAGER.to_string()))?;
+				let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
 
-				// import key-pairs inside user key manager
-				user_key_manager.import_key_pairs(key_pairs.clone())?;
-			};
+				let include_secret_keys = !key_pairs.is_empty();
+				{
+					let mut user_key_manager =
+						user_graph.user_key_manager.write().map_err(|_| {
+							DsnpGraphError::FailedtoWriteLock(USER_KEY_MANAGER.to_string())
+						})?;
 
-			if pages.is_empty() {
-				// case where only keys are imported
-				continue
-			}
+					user_key_manager.import_key_pairs(key_pairs.clone())?;
+				};
 
-			let dsnp_config = user_graph
-				.get_dsnp_config(*schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
+				if pages.is_empty() {
+					continue
+				}
 
-			let graph = user_graph
-				.graph_mut(&schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
-			graph.clear();
+				let dsnp_config = user_graph
+					.get_dsnp_config(*schema_id)
+					.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
-			match connection_type.privacy_type() {
-				PrivacyType::Public => {
-					graph.import_public(connection_type, pages)?;
-					user_graph.sync_updates(*schema_id);
-				},
-				PrivacyType::Private => {
-					// private keys are provided try to import the graph
-					if include_secret_keys {
-						graph.import_private(&dsnp_config, connection_type, pages)?;
+				let graph = user_graph
+					.graph_mut(&schema_id)
+					.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
+				graph.clear();
+				match connection_type.privacy_type() {
+					PrivacyType::Public => {
+						graph.import_public(connection_type, pages)?;
 						user_graph.sync_updates(*schema_id);
-					}
+					},
+					PrivacyType::Private => {
+						// private keys are provided try to import the graph
+						if include_secret_keys {
+							graph.import_private(&dsnp_config, connection_type, pages)?;
+							user_graph.sync_updates(*schema_id);
+						}
 
-					// since it's a private friendship import provided PRIs
-					if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
-						self.shared_state_manager
-							.write()
-							.map_err(|_| {
-								DsnpGraphError::FailedtoWriteLock(SHARED_STATE_MANAGER.to_string())
-							})?
-							.import_pri(*dsnp_user_id, pages)?;
-					}
-				},
-			};
+						// since it's a private friendship import provided PRIs
+						if connection_type == ConnectionType::Friendship(PrivacyType::Private) {
+							self.shared_state_manager
+								.write()
+								.map_err(|_| {
+									DsnpGraphError::FailedtoWriteLock(
+										SHARED_STATE_MANAGER.to_string(),
+									)
+								})?
+								.import_pri(*dsnp_user_id, pages)?;
+						}
+					},
+				};
+			}
 		}
 		Ok(())
 	}
