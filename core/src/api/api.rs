@@ -425,9 +425,7 @@ impl GraphState {
 				Some(connection_type) => connection_type,
 				None => {
 					if pages.is_empty() && !key_pairs.is_empty() && !dsnp_keys.is_none() {
-						// if this very condition is met, it means that the user is importing key(s)
-						// key(s) are used in private follow graph, so we can safely assume that the
-						// privacy type is private follow if only key(s) are provided
+						// This condition implies that only keys are being imported
 						ConnectionType::Follow(PrivacyType::Private)
 					} else {
 						return Err(DsnpGraphError::InvalidSchemaId(*schema_id))
