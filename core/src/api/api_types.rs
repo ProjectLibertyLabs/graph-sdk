@@ -236,7 +236,6 @@ impl InputValidation for Connection {
 		if self.dsnp_user_id == 0 {
 			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
 		}
-		println!("schema_id: {}", self.schema_id);
 		if self.schema_id == 0 {
 			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id))
 		}
