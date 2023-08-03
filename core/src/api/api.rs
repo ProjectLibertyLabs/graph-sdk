@@ -441,6 +441,11 @@ impl GraphState {
 				user_key_manager.import_key_pairs(key_pairs.clone())?;
 			};
 
+			if pages.is_empty() {
+				// case where only keys are imported
+				continue
+			}
+
 			let dsnp_config = user_graph
 				.get_dsnp_config(*schema_id)
 				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
@@ -449,11 +454,6 @@ impl GraphState {
 				.graph_mut(&schema_id)
 				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 			graph.clear();
-
-			if pages.is_empty() {
-				// case where only keys are imported
-				continue
-			}
 
 			let connection_type =
 				connection_type_option.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
