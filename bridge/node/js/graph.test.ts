@@ -41,9 +41,14 @@ const config: Config = {
     2: {
       dsnpVersion: DsnpVersion.Version1_0,
       connectionType: ConnectionType.Follow,
-      privacyType: PrivacyType.Private,
+      privacyType: PrivacyType.Public,
     },
     3: {
+      dsnpVersion: DsnpVersion.Version1_0,
+      connectionType: ConnectionType.Follow,
+      privacyType: PrivacyType.Private,
+    },
+    4: {
       dsnpVersion: DsnpVersion.Version1_0,
       connectionType: ConnectionType.Friendship,
       privacyType: PrivacyType.Private,
@@ -482,5 +487,63 @@ describe("Graph tests", () => {
     expect(keyPair.publicKey).toBeDefined();
     expect(keyPair.secretKey).toBeDefined();
     expect(keyPair.keyType).toEqual(GraphKeyType.X25519);
+  });
+
+  test("Private Graph: Import bundle without schema id and empty pages should import keys", async () => {
+    const dsnpUserId = "1000";
+    const keyPair: GraphKeyPair = {
+      publicKey: Uint8Array.from(
+        Buffer.from(
+          "e3b18e1aa5c84175ec0c516838fb89dd9c947dd348fa38fe2082764bbc82a86f",
+          "hex",
+        ),
+      ),
+      secretKey: Uint8Array.from(
+        Buffer.from(
+          "a55688dc2ffcf0f2b7e819029ad686a3c896c585725f5ac38dddace7de703451",
+          "hex",
+        ),
+      ),
+      keyType: GraphKeyType.X25519,
+    };
+
+    const keyPairs = [keyPair];
+    const dsnpKeys = {
+      dsnpUserId,
+      keysHash: 100,
+      keys: [
+        {
+          index: 0,
+          content:Uint8Array.from(Buffer.from('40e3b18e1aa5c84175ec0c516838fb89dd9c947dd348fa38fe2082764bbc82a86f', 'hex')),
+        },
+      ] as KeyData[],
+    } as DsnpKeys;
+
+    const importBundle: ImportBundle = {
+      dsnpUserId,
+      schemaId: 0,
+      keyPairs,
+      dsnpKeys,
+      pages: [],
+    };
+
+    const imported = graph.importUserData([importBundle]);
+    expect(imported).toEqual(true);
+    let connectionPrivate: Connection = {
+      dsnpUserId: "1000",
+      schemaId: 3,
+    };
+
+    let privateConnectAction: ConnectAction ={
+      type: "Connect",
+      ownerDsnpUserId: "1000",
+      dsnpKeys,
+      connection: connectionPrivate,
+    }
+    const appliedAction = await  graph.applyActions([privateConnectAction]);
+    expect(appliedAction).toEqual(true);
+    const exported = graph.exportUpdates();
+    expect(exported).toBeDefined();
+    expect(exported.length).toEqual(1);
   });
 });
