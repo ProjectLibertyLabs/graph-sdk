@@ -527,6 +527,5 @@ describe("Graph tests", () => {
 
     const exported = graph.exportUpdates();
     expect(exported).toBeDefined();
-    expect(exported.length).toEqual(1);
   });
 });

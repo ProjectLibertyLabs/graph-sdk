@@ -417,11 +417,24 @@ impl GraphState {
 		}
 		// import bundles
 		for ImportBundle { schema_id, pages, dsnp_keys, dsnp_user_id, key_pairs } in payloads {
-			let connection_type = self
-				.environment
-				.get_config()
-				.get_connection_type_from_schema_id(*schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
+			let connection_type_option =
+				self.environment.get_config().get_connection_type_from_schema_id(*schema_id);
+			print!("connection_type_option: {:?}", connection_type_option);
+			print!("schema_id: {:?}", schema_id);
+			let connection_type = match connection_type_option {
+				Some(connection_type) => connection_type,
+				None => {
+					if pages.is_empty() && !key_pairs.is_empty() && !dsnp_keys.is_none() {
+						// if this very condition is met, it means that the user is importing key(s)
+						// key(s) are used in private follow graph, so we can safely assume that the
+						// privacy type is private follow if only key(s) are provided
+						ConnectionType::Follow(PrivacyType::Private)
+					} else {
+						return Err(DsnpGraphError::InvalidSchemaId(*schema_id))
+					}
+				},
+			};
+
 			match dsnp_keys {
 				Some(dsnp_keys) => {
 					self.shared_state_manager
@@ -435,9 +448,6 @@ impl GraphState {
 			};
 
 			let user_graph = self.get_or_create_user_graph(*dsnp_user_id)?;
-			let dsnp_config = user_graph
-				.get_dsnp_config(*schema_id)
-				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
 			let include_secret_keys = !key_pairs.is_empty();
 			{
@@ -449,6 +459,13 @@ impl GraphState {
 				// import key-pairs inside user key manager
 				user_key_manager.import_key_pairs(key_pairs.clone())?;
 			};
+			if pages.is_empty() {
+				continue
+			}
+
+			let dsnp_config = user_graph
+				.get_dsnp_config(*schema_id)
+				.ok_or(DsnpGraphError::InvalidSchemaId(*schema_id))?;
 
 			let graph = user_graph
 				.graph_mut(&schema_id)
