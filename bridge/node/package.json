@@ -13,6 +13,7 @@
     "native:build": "tsc && cargo-cp-artifact -a cdylib dsnp_graph_sdk_node dsnp_graph_sdk_node.node -- cargo build --message-format=json-render-diagnostics",
     "native:build-debug": "npm run native:build --",
     "native:build-release": "npm run native:build -- --release && npm run cp:dsnp_graph_sdk_node.node",
+    "native:download": "tsc && node downloadBinaries.js && npm run cp:dsnp_graph_sdk_node.node",
     "test:cargo": "cargo test",
     "lint": "eslint js/ --ext .ts",
     "lint:fix": "eslint --fix js/ --ext .ts"
@@ -34,7 +35,8 @@
     "eslint-config-prettier": "^8.8.0",
     "eslint-plugin-prettier": "^5.0.0",
     "jest": "^29.5.0",
-    "ts-jest": "^29.1.0"
+    "ts-jest": "^29.1.0",
+    "axios": "^1.4.0"
   },
   "repository": {
     "type": "git",
@@ -51,5 +53,8 @@
   "bugs": {
     "url": "https://github.com/LibertyDSNP/graph-sdk/issues"
   },
-  "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md"
+  "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md",
+  "customProperties": {
+    "uploadedBinariesVersion": "v0.0.1-rc1"
+  }
 }

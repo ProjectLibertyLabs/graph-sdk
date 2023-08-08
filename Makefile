@@ -50,6 +50,10 @@ build-node:
 	@echo "Build Neon Node Bridge for GraphSDK..."
 	@cd bridge/node && npm install && npm run native:build-release
 
+.PHONY: build-node-download
+build-node-download:
+	@echo "Build Bridge by downloading native binaries for GraphSDK..."
+	@cd bridge/node && npm install && npm run native:download
 
 .PHONY: dsnp-graph-sdk-jni
 	@cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE)
@@ -105,6 +109,10 @@ test-ffi: build-ffi-tests
 test-node: build-node
 	@cd bridge/node && npx jest --verbose
 
+.PHONY: test-node-download
+test-node-download: build-node-download
+	@cd bridge/node && npx jest --verbose
+
 .PHONY: test-jni
 test-jni: build-jni
 	@( cd java ; ./gradlew test --rerun-tasks)
@@ -122,7 +130,12 @@ test-all: test test-ffi test-jni test-node
 build-jni:
 	@echo "Build JNI ..."
 	cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE)
-	@./scripts/install_jni.sh
+	# using bash to support windows compatibility
+	bash ./scripts/install_jni.sh
+
+.PHONY: download-jni
+download-jni:
+	@( cd java ; ./gradlew downloadJniBinaries)
 
 .PHONY: install-protobuf-codegen
 install-protobuf-codegen:
