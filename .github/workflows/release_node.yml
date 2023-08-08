@@ -1,0 +1,250 @@
+name: Release Node
+run-name: Release ${{github.event.inputs.release-version || github.ref_name}}
+concurrency:
+  group: ${{github.workflow}}-${{github.ref}}
+  cancel-in-progress: true
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+-node" # ex. v1.0.0-node
+      - "v0.0.1-rc[0-9]+-node" # used for testing only
+
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: "Release version (v#.#.#[-rc#]-node)"
+        required: true
+
+env:
+  NEW_RELEASE_TAG: ${{github.event.inputs.release-version || github.ref_name}}
+  TEST_RUN: ${{contains(github.event.inputs.release-version || github.ref_name, '-rc')}}
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: 1
+  RUSTFLAGS: -D warnings
+
+jobs:
+  verify:
+    name: Checks core project built in Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
+      - name: Cargo check
+        run: make check
+
+      - name: Cargo test
+        run: make test
+
+      - name: Cargo fmt
+        run: make format-check
+
+      - name: Set Up Cargo Deny
+        run: |
+          cargo install --force cargo-deny
+          cargo generate-lockfile
+
+      - name: License and Issue Check
+        run: make deny
+
+  build-artifacts:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            library: libdsnp_graph_sdk_node.so
+          - os: windows-latest
+            library: dsnp_graph_sdk_node.dll
+          - os: macos-latest
+            library: libdsnp_graph_sdk_node.dylib
+            additional-rust-target: aarch64-apple-darwin
+
+    name: Build project in ${{ matrix.os }}
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
+      - run: rustup target add ${{ matrix.additional-rust-target }}
+        if: ${{ matrix.additional-rust-target != '' }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Build Node bridge
+        run: make build-node
+
+      - name: Copy artifacts
+        run: |
+          mkdir artifacts
+          cp target/release/${{ matrix.library }} artifacts/${{ matrix.library }}
+
+      - name: Build Universal Binary for MacOS
+        run: |
+          cargo build -p dsnp-graph-sdk-node --profile release --target ${{ matrix.additional-rust-target }}
+          lipo -create -output artifacts/${{ matrix.library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.library }} target/release/${{ matrix.library }}
+        if: matrix.os == 'macos-latest'
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts-${{github.run_id}}
+          path: |
+            artifacts/${{ matrix.library }}
+
+  publish_npm_package:
+    name: Publish NPM Package
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install NPM Dependencies
+        working-directory: bridge/node
+        run: npm install
+
+      - name: Get current version
+        id: version
+        working-directory: bridge/node
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+
+      - name: Show versions
+        working-directory: bridge/node
+        run: |
+          echo "Package: v{{ steps.version.outputs.version }}"
+          echo " Actual: ${{ env.NEW_RELEASE_TAG }}"
+
+      - name: Use the new version
+        working-directory: bridge/node
+        run: |
+          npm version --new-version "${{ env.NEW_RELEASE_TAG }}"
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+        env:
+          FULL_SHA: ${{ github.sha }}
+
+      - name: Build NPM Package
+        working-directory: bridge/node
+        run: npm run native:build-release && cp README.md dist/README.md
+
+      - name: Publish NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN != 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      - name: Dry run NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN == 'true'
+        run: npm publish --access public --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+  generate-docs:
+    name: Generate graph sdk rust docs
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Build Docs
+        run: |
+          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
+      - name: Fix file permissions
+        shell: sh
+        run: |
+          chmod -c -R +rX "target/doc" |
+          while read line; do
+              echo "::warning title=Invalid file permissions automatically fixed::$line"
+          done
+      - name: Upload Docs
+        uses: actions/upload-pages-artifact@v1
+        if: env.TEST_RUN != 'true'
+        with:
+          path: ./target/doc
+      - name: Deploy Docs
+        uses: actions/deploy-pages@v2
+        if: env.TEST_RUN != 'true'
+        id: deployment
+
+  release:
+    needs: build-artifacts
+    runs-on: ubuntu-latest
+    name: Release generated artifacts
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - name: Download Binaries
+        id: download-binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: artifacts-${{github.run_id}}
+          path: downloaded
+      - name: List Downloaded Binaries
+        run: |
+          download_dir=${{steps.download-binaries.outputs.download-path}}
+          echo "Download dir: $download_dir"
+          echo "Downloaded binaries: $(ls -l $download_dir)"
+          ls -R
+      - name: creating release
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844
+        with:
+          files: |
+            downloaded/*
+          prerelease: ${{ env.TEST_RUN }}
+          name: ${{env.NEW_RELEASE_TAG}}
+

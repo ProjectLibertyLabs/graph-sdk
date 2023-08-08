@@ -76,26 +76,6 @@ jobs:
       - name: Cargo fmt
         run: make format-check
 
-  #  clippy:
-  #    name: Run clippy
-  #    runs-on: ubuntu-latest
-  #    steps:
-  #      - name: Checkout code
-  #        uses: actions/checkout@v3
-  #        with:
-  #          fetch-depth: 0
-  #
-  #      - name: Install Rust Toolchain
-  #        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-  #        with:
-  #          toolchain: stable
-  #          default: true
-  #          profile: minimal
-  #          target: wasm32-unknown-unknown
-  #
-  #      - name: Cargo clippy
-  #        run: make clippy
-
   deny:
     name: Cargo Deny
     runs-on: ubuntu-latest
@@ -203,13 +183,6 @@ jobs:
           while read line; do
               echo "::warning title=Invalid file permissions automatically fixed::$line"
           done
-      - name: Upload Docs
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: ./target/doc
-      - name: Deploy Docs
-        uses: actions/deploy-pages@v2
-        id: deployment
 
   build_gradlew_jvm:
     name: Build and Publish JVM
@@ -274,65 +247,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-  publish_npm_package:
-    name: Publish NPM Package
-    runs-on: ubuntu-latest
-    needs: [verify, test, lint, build, build_test_node_bridge]
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-          registry-url: https://registry.npmjs.org/
-      - name: Install NPM Dependencies
-        working-directory: bridge/node
-        run: npm install
-      - name: Get current version
-        id: version
-        working-directory: bridge/node
-        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
-
-      - name: Bump version
-        working-directory: bridge/node
-        run: |
-          # Increment the version based on semantic versioning rules
-          # Example: MAJOR version increment
-          # VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); `${parseInt(major) + 1}.0.0`")
-          VERSION=$(node -p "const [major, minor, patch] = '${{ steps.version.outputs.version }}'.split('.'); \`\${major}.\${minor}.\${parseInt(patch) + 1}\`")
-          npm version --new-version "$VERSION" --no-git-tag-version
-
-      - name: Use the new version
-        id: use-version
-        working-directory: bridge/node
-        run: |
-          NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "New version: $NEW_VERSION"
-        env:
-          FULL_SHA: ${{ github.sha }}
-      - name: Build NPM Package
-        working-directory: bridge/node
-        run: npm run native:build-release && cp README.md dist/README.md
-      - name: Publish NPM Package
-        working-directory: bridge/node
-        if: github.ref == 'refs/heads/main'
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-      - name: Dry run NPM Package
-        working-directory: bridge/node
-        if: github.ref != 'refs/heads/main'
-        run: npm publish --access public --dry-run
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-
   test_published_npm:
     name: Test Published NPM Package
     runs-on: ubuntu-latest
-    needs: [publish_npm_package]
+    needs: [verify, test, lint, build, build_gradlew_jvm]
     permissions:
       contents: read
       packages: write
