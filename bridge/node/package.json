@@ -1,6 +1,6 @@
 {
   "name": "@dsnp/graph-sdk",
-  "version": "0.0.10",
+  "version": "1.0.0",
   "author": "Amplica Labs",
   "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",
@@ -55,6 +55,6 @@
   },
   "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md",
   "customProperties": {
-    "uploadedBinariesVersion": "v0.0.1-rc1"
+    "uploadedBinariesVersion": "v1.0.0"
   }
 }
