@@ -12,9 +12,13 @@ plugins {
 }
 
 group = "io.amplica.graphsdk"
-version = "0.0.2-SNAPSHOT"
 val uploadedBinariesVersion = "0.0.1-rc1+java"
 java.sourceCompatibility = JavaVersion.VERSION_17
+version = if (project.hasProperty("projVersion")) {
+    project.properties["projVersion"]!!
+} else {
+    "0.0.2-SNAPSHOT"
+}
 
 repositories {
 	maven {
@@ -42,6 +46,11 @@ dependencies {
 java {
 	withSourcesJar()
 }
+
+tasks.register("printVersion") {
+    shouldRunAfter("build")
+    println("version = $version")
+}.get()
 
 tasks.withType<KotlinCompile> {
 	kotlinOptions {

@@ -6,13 +6,13 @@ concurrency:
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+\+java' # ex. v1.0.0+java
-      - 'v0.0.1-rc[0-9]+\+java' # used for testing only
+      - 'v[0-9]+.[0-9]+.[0-9]+' # ex. v1.0.0
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+' # ex. v1.1.0-rc1  for pre-releases
 
   workflow_dispatch:
     inputs:
       release-version:
-        description: "Release version (v#.#.#[-rc#]+java)"
+        description: "Release version (v#.#.#[-rc#])"
         required: true
 
 env:
@@ -63,11 +63,14 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
-            library: libdsnp_graph_sdk_jni.so
+            java_library: libdsnp_graph_sdk_jni.so
+            node_library: libdsnp_graph_sdk_node.so
           - os: windows-latest
-            library: dsnp_graph_sdk_jni.dll
+            java_library: dsnp_graph_sdk_jni.dll
+            node_library: dsnp_graph_sdk_node.dll
           - os: macos-latest
-            library: libdsnp_graph_sdk_jni.dylib
+            java_library: libdsnp_graph_sdk_jni.dylib
+            node_library: libdsnp_graph_sdk_node.dylib
             additional-rust-target: aarch64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
@@ -96,13 +99,34 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-      - name: Build JNI
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Build Jni bridge
         run: make build-jni
 
-      - name: Build Universal Binary for MacOS
+      - name: Build Node bridge
+        run: make build-node
+
+      - name: Copy artifacts
+        run: |
+          mkdir artifacts
+          cp target/release/${{ matrix.java_library }} artifacts/${{ matrix.java_library }}
+          cp target/release/${{ matrix.node_library }} artifacts/${{ matrix.node_library }}
+
+      - name: Build Universal Binary for MacOS Jni
         run: |
           cargo build -p dsnp-graph-sdk-jni --profile release --target ${{ matrix.additional-rust-target }}
-          lipo -create -output java/lib/src/main/resources/${{ matrix.library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.library }} target/release/${{ matrix.library }}
+          lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} target/release/${{ matrix.java_library }}
+        if: matrix.os == 'macos-latest'
+
+      - name: Build Universal Binary for MacOS Node
+        run: |
+          cargo build -p dsnp-graph-sdk-node --profile release --target ${{ matrix.additional-rust-target }}
+          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} target/release/${{ matrix.node_library }}
         if: matrix.os == 'macos-latest'
 
       - name: Build with Gradle
@@ -114,9 +138,10 @@ jobs:
         with:
           name: artifacts-${{github.run_id}}
           path: |
-            java/lib/src/main/resources/${{ matrix.library }}
+            artifacts/${{ matrix.java_library }}
+            artifacts/${{ matrix.node_library }}
 
-  publish:
+  publish-java:
     name: Build and Publish JVM
     runs-on: ubuntu-latest
     needs: build-artifacts
@@ -134,13 +159,75 @@ jobs:
         run: make build-jni
       - name: Build and Publish with Gradle
         working-directory: java
-        run: ./gradlew build
+        run: |
+          # removing v from in front of tag to get version
+          NEW_VERSION=$(echo '${{ env.NEW_RELEASE_TAG }}' | cut -d 'v' -f 2)
+          echo "New version: $NEW_VERSION"
+          ./gradlew -PprojVersion="$NEW_VERSION" build
       - name: Publish to GitHub Packages
         working-directory: java
         run: ./gradlew publish
+        if: env.TEST_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+
+  publish_npm_package:
+    name: Publish NPM Package
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install NPM Dependencies
+        working-directory: bridge/node
+        run: npm install
+
+      - name: Get current version
+        id: version
+        working-directory: bridge/node
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+
+      - name: Show versions
+        working-directory: bridge/node
+        run: |
+          echo "Package: v{{ steps.version.outputs.version }}"
+          echo " Actual: ${{ env.NEW_RELEASE_TAG }}"
+
+      - name: Use the new version
+        working-directory: bridge/node
+        run: |
+          npm version --new-version "${{ env.NEW_RELEASE_TAG }}"
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+        env:
+          FULL_SHA: ${{ github.sha }}
+
+      - name: Build NPM Package
+        working-directory: bridge/node
+        run: npm run native:build-release && cp README.md dist/README.md
+
+      - name: Publish NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN != 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      - name: Dry run NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN == 'true'
+        run: npm publish --access public --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
   generate-docs:
     name: Generate graph sdk rust docs
@@ -188,7 +275,7 @@ jobs:
         id: deployment
 
   release:
-    needs: build-artifacts
+    needs: [publish-java, publish_npm_package, generate-docs]
     runs-on: ubuntu-latest
     name: Release generated artifacts
     permissions:
