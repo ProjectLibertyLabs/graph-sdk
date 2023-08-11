@@ -1,3 +1,4 @@
+import de.undercouch.gradle.tasks.download.Download
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -7,11 +8,17 @@ plugins {
     id("maven-publish")
     id("java-library")
     id("signing")
+    id("de.undercouch.download") version "5.0.2"
 }
 
 group = "io.amplica.graphsdk"
-version = "0.0.2-SNAPSHOT"
+val uploadedBinariesVersion = "0.0.1-rc1"
 java.sourceCompatibility = JavaVersion.VERSION_17
+version = if (project.hasProperty("projVersion")) {
+    project.properties["projVersion"]!!
+} else {
+    "0.0.2-SNAPSHOT"
+}
 
 repositories {
 	maven {
@@ -40,6 +47,11 @@ java {
 	withSourcesJar()
 }
 
+tasks.register("printVersion") {
+    shouldRunAfter("build")
+    println("version = $version")
+}.get()
+
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs = listOf("-Xjsr305=strict")
@@ -54,6 +66,19 @@ tasks.withType<Test> {
         // showStandardStreams = true
 		events("passed", "skipped", "failed")
 	}
+}
+
+tasks.register("downloadJniBinaries", Download::class.java) {
+    enabled = true
+
+    println("Downloading Jni Binaries...")
+    val extraResources = arrayOf("dsnp_graph_sdk_jni.dll", "libdsnp_graph_sdk_jni.dylib", "libdsnp_graph_sdk_jni.so")
+
+    src(extraResources.map {
+        "https://github.com/LibertyDSNP/graph-sdk/releases/download/v$uploadedBinariesVersion/$it"
+    })
+    overwrite(true)
+    dest("src/main/resources")
 }
 
 // Configure publishing
