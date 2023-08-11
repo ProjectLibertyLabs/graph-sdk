@@ -13,7 +13,7 @@ plugins {
 
 group = "io.amplica.graphsdk"
 version = "0.0.2-SNAPSHOT"
-val uploadedBinariesVersion = "0.0.1-rc1-java"
+val uploadedBinariesVersion = "0.0.1-rc1+java"
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 repositories {

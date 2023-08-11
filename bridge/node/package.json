@@ -55,6 +55,6 @@
   },
   "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md",
   "customProperties": {
-    "uploadedBinariesVersion": "v0.0.1-rc1-node"
+    "uploadedBinariesVersion": "v0.0.1-rc1+node"
   }
 }

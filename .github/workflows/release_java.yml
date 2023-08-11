@@ -6,13 +6,13 @@ concurrency:
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+-java" # ex. v1.0.0-java
-      - "v0.0.1-rc[0-9]+-java" # used for testing only
+      - 'v[0-9]+.[0-9]+.[0-9]+\+java' # ex. v1.0.0+java
+      - 'v0.0.1-rc[0-9]+\+java' # used for testing only
 
   workflow_dispatch:
     inputs:
       release-version:
-        description: "Release version (v#.#.#[-rc#]-java)"
+        description: "Release version (v#.#.#[-rc#]+java)"
         required: true
 
 env:
