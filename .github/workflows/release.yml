@@ -1,4 +1,4 @@
-name: Release Java
+name: Release
 run-name: Release ${{github.event.inputs.release-version || github.ref_name}}
 concurrency:
   group: ${{github.workflow}}-${{github.ref}}
