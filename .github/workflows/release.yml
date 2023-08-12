@@ -205,7 +205,7 @@ jobs:
       - name: Use the new version
         working-directory: bridge/node
         run: |
-          npm version --new-version "${{ env.NEW_RELEASE_TAG }}"
+          npm version --new-version "${{ env.NEW_RELEASE_TAG }}" --allow-same-version
           NEW_VERSION=$(node -p "require('./package.json').version")
           echo "New version: $NEW_VERSION"
         env:
