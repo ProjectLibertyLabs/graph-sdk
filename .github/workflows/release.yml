@@ -157,16 +157,19 @@ jobs:
           distribution: 'adopt'
       - name: Build JNI package
         run: make build-jni
-      - name: Build and Publish with Gradle
-        working-directory: java
+      - name: Get current version
+        id: version
         run: |
           # removing v from in front of tag to get version
           NEW_VERSION=$(echo '${{ env.NEW_RELEASE_TAG }}' | cut -d 'v' -f 2)
           echo "New version: $NEW_VERSION"
-          ./gradlew -PprojVersion="$NEW_VERSION" build
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+      - name: Build and Publish with Gradle
+        working-directory: java
+        run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' build
       - name: Publish to GitHub Packages
         working-directory: java
-        run: ./gradlew publish
+        run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' publish
         if: env.TEST_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -199,7 +202,7 @@ jobs:
       - name: Show versions
         working-directory: bridge/node
         run: |
-          echo "Package: v{{ steps.version.outputs.version }}"
+          echo "Package: v${{ steps.version.outputs.version }}"
           echo " Actual: ${{ env.NEW_RELEASE_TAG }}"
 
       - name: Use the new version
