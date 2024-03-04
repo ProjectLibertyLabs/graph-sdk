@@ -72,7 +72,7 @@ where
 		if let Some(v) = self.inner.remove(&k) {
 			self.rollback_operations
 				.push(Reversible::Remove { prev: v.clone(), key: k.clone() });
-			return Some(v)
+			return Some(v);
 		}
 		None
 	}

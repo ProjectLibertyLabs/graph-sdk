@@ -86,10 +86,12 @@ impl SdkJniError {
 	fn get_java_class_and_constructor_signature(&self) -> (String, String) {
 		let string_message_signature = "(Ljava/lang/String;)V".to_string();
 		match self {
-			SdkJniError::DsnpGraph(_) =>
-				(format!("{}{}", JAVA_ERROR_PATH, "GraphSdkException"), string_message_signature),
-			SdkJniError::Jni(_) =>
-				(format!("{}{}", JAVA_ERROR_PATH, "JniException"), string_message_signature),
+			SdkJniError::DsnpGraph(_) => {
+				(format!("{}{}", JAVA_ERROR_PATH, "GraphSdkException"), string_message_signature)
+			},
+			SdkJniError::Jni(_) => {
+				(format!("{}{}", JAVA_ERROR_PATH, "JniException"), string_message_signature)
+			},
 			SdkJniError::InvalidProto(_) => (
 				format!("{}{}", JAVA_ERROR_PATH, "InvalidProtoException"),
 				string_message_signature,
@@ -110,8 +112,9 @@ impl SdkJniError {
 				format!("{}{}", JAVA_ERROR_PATH, "InvalidHandleException"),
 				string_message_signature,
 			),
-			SdkJniError::UnexpectedPanic(_) =>
-				(format!("{}{}", JAVA_ERROR_PATH, "UnknownException"), string_message_signature),
+			SdkJniError::UnexpectedPanic(_) => {
+				(format!("{}{}", JAVA_ERROR_PATH, "UnknownException"), string_message_signature)
+			},
 		}
 	}
 }

@@ -247,7 +247,7 @@ fn map_action_to_rust(action: proto_input::actions::Action) -> SdkJniResult<Rust
 			)?,
 			dsnp_keys: map_dsnp_keys_to_rust(&connect.dsnp_keys.as_ref().cloned())?,
 		},
-		proto_input::actions::action::Inner::DisconnectAction(disconnect) =>
+		proto_input::actions::action::Inner::DisconnectAction(disconnect) => {
 			RustAction::Disconnect {
 				owner_dsnp_user_id: disconnect.owner_dsnp_user_id,
 				connection: map_connection_to_rust(
@@ -256,7 +256,8 @@ fn map_action_to_rust(action: proto_input::actions::Action) -> SdkJniResult<Rust
 						.into_option()
 						.ok_or(SdkJniError::InvalidRequest("connection not set!"))?,
 				)?,
-			},
+			}
+		},
 		_ => return SdkJniResult::Err(InvalidRequest("invalid action type!")),
 	})
 }
@@ -355,21 +356,25 @@ fn map_connection_type_to_rust(
 	connection_type: proto_output::ConnectionType,
 ) -> SdkJniResult<RustConnectionType> {
 	Ok(match connection_type {
-		proto_output::ConnectionType::FollowPrivate =>
-			RustConnectionType::Follow(RustPrivacyType::Private),
-		proto_output::ConnectionType::FollowPublic =>
-			RustConnectionType::Follow(RustPrivacyType::Public),
-		proto_output::ConnectionType::FriendshipPrivate =>
-			RustConnectionType::Friendship(RustPrivacyType::Private),
-		proto_output::ConnectionType::FriendshipPublic =>
-			RustConnectionType::Friendship(RustPrivacyType::Public),
+		proto_output::ConnectionType::FollowPrivate => {
+			RustConnectionType::Follow(RustPrivacyType::Private)
+		},
+		proto_output::ConnectionType::FollowPublic => {
+			RustConnectionType::Follow(RustPrivacyType::Public)
+		},
+		proto_output::ConnectionType::FriendshipPrivate => {
+			RustConnectionType::Friendship(RustPrivacyType::Private)
+		},
+		proto_output::ConnectionType::FriendshipPublic => {
+			RustConnectionType::Friendship(RustPrivacyType::Public)
+		},
 	})
 }
 
 fn map_update_to_proto(update: &RustUpdate) -> SdkJniResult<proto_output::updates::Update> {
 	let mut proto = proto_output::updates::Update::new();
 	let inner = match update {
-		RustUpdate::PersistPage { schema_id, page_id, prev_hash, owner_dsnp_user_id, payload } =>
+		RustUpdate::PersistPage { schema_id, page_id, prev_hash, owner_dsnp_user_id, payload } => {
 			proto_output::updates::update::Inner::Persist(PersistPageUpdate {
 				owner_dsnp_user_id: *owner_dsnp_user_id,
 				prev_hash: *prev_hash,
@@ -379,8 +384,9 @@ fn map_update_to_proto(update: &RustUpdate) -> SdkJniResult<proto_output::update
 					.map_err(|_| SdkJniError::InvalidRequest("invalid SchemaId"))?,
 				payload: payload.clone(),
 				special_fields: SpecialFields::default(),
-			}),
-		RustUpdate::DeletePage { schema_id, page_id, prev_hash, owner_dsnp_user_id } =>
+			})
+		},
+		RustUpdate::DeletePage { schema_id, page_id, prev_hash, owner_dsnp_user_id } => {
 			proto_output::updates::update::Inner::Delete(DeletePageUpdate {
 				owner_dsnp_user_id: *owner_dsnp_user_id,
 				prev_hash: *prev_hash,
@@ -389,14 +395,16 @@ fn map_update_to_proto(update: &RustUpdate) -> SdkJniResult<proto_output::update
 				schema_id: u32::try_from(*schema_id)
 					.map_err(|_| SdkJniError::InvalidRequest("invalid SchemaId"))?,
 				special_fields: SpecialFields::default(),
-			}),
-		RustUpdate::AddKey { prev_hash, owner_dsnp_user_id, payload } =>
+			})
+		},
+		RustUpdate::AddKey { prev_hash, owner_dsnp_user_id, payload } => {
 			proto_output::updates::update::Inner::AddKey(AddKeyUpdate {
 				owner_dsnp_user_id: *owner_dsnp_user_id,
 				prev_hash: *prev_hash,
 				payload: payload.clone(),
 				special_fields: SpecialFields::default(),
-			}),
+			})
+		},
 	};
 	proto.inner = Some(inner);
 	Ok(proto)
@@ -463,14 +471,18 @@ fn map_connection_type_to_proto(
 	connection_type: &RustConnectionType,
 ) -> SdkJniResult<EnumOrUnknown<proto_output::ConnectionType>> {
 	Ok(match connection_type {
-		RustConnectionType::Friendship(RustPrivacyType::Private) =>
-			EnumOrUnknown::new(proto_output::ConnectionType::FriendshipPrivate),
-		RustConnectionType::Friendship(RustPrivacyType::Public) =>
-			EnumOrUnknown::new(proto_output::ConnectionType::FriendshipPublic),
-		RustConnectionType::Follow(RustPrivacyType::Private) =>
-			EnumOrUnknown::new(proto_output::ConnectionType::FollowPrivate),
-		RustConnectionType::Follow(RustPrivacyType::Public) =>
-			EnumOrUnknown::new(proto_output::ConnectionType::FollowPublic),
+		RustConnectionType::Friendship(RustPrivacyType::Private) => {
+			EnumOrUnknown::new(proto_output::ConnectionType::FriendshipPrivate)
+		},
+		RustConnectionType::Friendship(RustPrivacyType::Public) => {
+			EnumOrUnknown::new(proto_output::ConnectionType::FriendshipPublic)
+		},
+		RustConnectionType::Follow(RustPrivacyType::Private) => {
+			EnumOrUnknown::new(proto_output::ConnectionType::FollowPrivate)
+		},
+		RustConnectionType::Follow(RustPrivacyType::Public) => {
+			EnumOrUnknown::new(proto_output::ConnectionType::FollowPublic)
+		},
 	})
 }
 

@@ -79,7 +79,7 @@ impl KeyPairType {
 impl Into<PublicKeyType> for &'_ KeyPairType {
 	fn into(self) -> PublicKeyType {
 		match self {
-			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.clone().public_key),
+			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.public_key.clone()),
 		}
 	}
 }
@@ -152,7 +152,7 @@ impl TryInto<KeyPairType> for GraphKeyPair {
 					.map_err(|_| DsnpGraphError::InvalidSecretKey)?;
 				let pair = StackKeyPair::from_secret_key(secret_key);
 				if pair.public_key.to_vec() != self.public_key {
-					return Err(DsnpGraphError::PublicKeyNotCompatibleWithSecretKey)
+					return Err(DsnpGraphError::PublicKeyNotCompatibleWithSecretKey);
 				}
 				Ok(KeyPairType::Version1_0(pair))
 			},

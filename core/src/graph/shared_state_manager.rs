@@ -158,7 +158,7 @@ impl PublicKeyProvider for SharedStateManager {
 	) -> DsnpGraphResult<()> {
 		// check if exists
 		if self.get_key_by_public_key(dsnp_user_id, public_key.clone()).is_some() {
-			return Err(DsnpGraphError::PublicKeyAlreadyExists(format!("{:?}", public_key)))
+			return Err(DsnpGraphError::PublicKeyAlreadyExists(format!("{:?}", public_key)));
 		}
 
 		let new_key =
@@ -248,7 +248,7 @@ impl PublicKeyProvider for SharedStateManager {
 		if let Some(k) = last_key {
 			if let Some(key_id) = k.key_id {
 				// get the first key published by that key_id
-				return self.get_key_by_id(dsnp_user_id, key_id)
+				return self.get_key_by_id(dsnp_user_id, key_id);
 			}
 		}
 		last_key
@@ -338,8 +338,8 @@ impl SharedStateManager {
 			.iter()
 			.filter_map(|key| key.key_id)
 			.max()
-			.unwrap_or(u64::default()) +
-			1
+			.unwrap_or(u64::default())
+			+ 1
 	}
 
 	#[cfg(test)]

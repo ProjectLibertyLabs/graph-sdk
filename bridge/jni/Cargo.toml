@@ -14,8 +14,7 @@ dsnp-graph-core = { version = "1.0.0", path = "../../core" }
 dsnp-graph-config = { version = "1.0.0", path = "../../config" }
 dsnp-graph-sdk-common = { version = "1.0.0", path = "../common" }
 jni = "0.21.1"
-async-trait = "0.1.68"
 cfg-if = "1.0.0"
-log = { version = "^0.4.17", features = ["std", "max_level_debug", "release_max_level_debug"] }
+log = { version = "^0.4.21", features = ["std", "max_level_debug", "release_max_level_debug"] }
 log-panics = { version = "^2.1.0", features = ["with-backtrace"]}
-protobuf = { version = "3.2.0", features = ["with-bytes"] }
+protobuf = { version = "3.4.0", features = ["with-bytes"] }

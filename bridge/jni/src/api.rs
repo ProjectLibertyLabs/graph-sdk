@@ -93,7 +93,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 ) {
 	let result = panic::catch_unwind(|| {
 		if handle == 0 {
-			return Err(SdkJniError::InvalidHandle("is null"))
+			return Err(SdkJniError::InvalidHandle("is null"));
 		}
 		let mut graph_states =
 			GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;

@@ -48,10 +48,10 @@ pub struct Graph {
 
 impl PartialEq for Graph {
 	fn eq(&self, other: &Self) -> bool {
-		self.environment == other.environment &&
-			self.user_id == other.user_id &&
-			self.schema_id == other.schema_id &&
-			self.pages.eq(&other.pages)
+		self.environment == other.environment
+			&& self.user_id == other.user_id
+			&& self.schema_id == other.schema_id
+			&& self.pages.eq(&other.pages)
 	}
 }
 
@@ -116,13 +116,8 @@ impl Graph {
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
 		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
-		for pid in 0..=(self.environment.get_config().max_page_id as PageId) {
-			if !existing_pages.contains(&pid) {
-				return Some(pid)
-			}
-		}
-
-		None
+		(0..=(self.environment.get_config().max_page_id as PageId))
+			.find(|&pid| !existing_pages.contains(&pid))
 	}
 
 	/// Remove all pages from this graph
@@ -160,13 +155,13 @@ impl Graph {
 				"Expected {:?} but got {:?}",
 				self.get_connection_type(),
 				connection_type
-			)))
+			)));
 		}
 		let max_page_id = self.environment.get_config().max_page_id;
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(page.page_id))
+				return Err(DsnpGraphError::InvalidPageId(page.page_id));
 			}
 			match GraphPage::try_from(page) {
 				Err(e) => return Err(DsnpGraphError::from(e)),
@@ -197,7 +192,7 @@ impl Graph {
 				"Expected {:?} but got {:?}",
 				self.get_connection_type(),
 				connection_type
-			)))
+			)));
 		}
 
 		let max_page_id = self.environment.get_config().max_page_id;
@@ -209,7 +204,7 @@ impl Graph {
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(page.page_id))
+				return Err(DsnpGraphError::InvalidPageId(page.page_id));
 			}
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(DsnpGraphError::from(e)),
@@ -274,7 +269,7 @@ impl Graph {
 				if pages_with_removals.contains(page_id) {
 					let mut updated_page = page.clone();
 					updated_page.remove_connections(&ids_to_remove);
-					return Some((*page_id, updated_page))
+					return Some((*page_id, updated_page));
 				}
 
 				None
@@ -297,7 +292,7 @@ impl Graph {
 				);
 
 				if let None = add_iter.peek() {
-					break 'fullness_mode_loop
+					break 'fullness_mode_loop;
 				}
 			}
 		}
@@ -336,7 +331,7 @@ impl Graph {
 			}
 
 			if let None = add_iter.peek() {
-				break
+				break;
 			}
 		}
 
@@ -344,8 +339,9 @@ impl Graph {
 		// as needed to accommodate any remaining connections to be added, filling aggressively.
 		while let Some(_) = add_iter.peek() {
 			let mut new_page = match self.get_next_available_page_id() {
-				Some(next_page_id) =>
-					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id)),
+				Some(next_page_id) => {
+					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id))
+				},
 				None => Err(DsnpGraphError::GraphIsFull),
 			}?;
 
@@ -384,7 +380,7 @@ impl Graph {
 				page_modified = true;
 				let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
 			} else {
-				break
+				break;
 			}
 		}
 
@@ -406,15 +402,16 @@ impl Graph {
 		updated_pages.retain(|_, page| {
 			if page.is_empty() {
 				removed_pages.push(page.to_removed_page_data());
-				return false
+				return false;
 			}
 			true
 		});
 
 		let updated_blobs: DsnpGraphResult<Vec<PageData>> = match self.get_connection_type() {
-			ConnectionType::Follow(PrivacyType::Public) |
-			ConnectionType::Friendship(PrivacyType::Public) =>
-				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
+			ConnectionType::Follow(PrivacyType::Public)
+			| ConnectionType::Friendship(PrivacyType::Public) => {
+				updated_pages.values().map(|page| page.to_public_page_data()).collect()
+			},
 			ConnectionType::Follow(PrivacyType::Private) => {
 				let encryption_key =
 					encryption_key.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
@@ -472,8 +469,8 @@ impl Graph {
 			let page_data_result = match page.is_empty() {
 				true => Ok(page.to_removed_page_data()),
 				false => match self.get_connection_type() {
-					ConnectionType::Follow(PrivacyType::Public) |
-					ConnectionType::Friendship(PrivacyType::Public) => page.to_public_page_data(),
+					ConnectionType::Follow(PrivacyType::Public)
+					| ConnectionType::Friendship(PrivacyType::Public) => page.to_public_page_data(),
 					ConnectionType::Follow(PrivacyType::Private) => {
 						let encryption_key = encryption_key
 							.clone()
@@ -516,7 +513,7 @@ impl Graph {
 		page: Option<GraphPage>,
 	) -> DsnpGraphResult<&mut GraphPage> {
 		if let Some(_existing_page) = self.pages.get(page_id) {
-			return Err(DsnpGraphError::NewPageForExistingPageId)
+			return Err(DsnpGraphError::NewPageForExistingPageId);
 		}
 
 		self.pages.insert(
@@ -551,7 +548,7 @@ impl Graph {
 	pub fn find_connection(&self, dsnp_id: &DsnpUserId) -> Option<PageId> {
 		for (id, page) in self.pages.inner().iter() {
 			if page.contains(dsnp_id) {
-				return Some(*id)
+				return Some(*id);
 			}
 		}
 
@@ -581,7 +578,7 @@ impl Graph {
 		connection_id: &DsnpUserId,
 	) -> DsnpGraphResult<()> {
 		if self.find_connection(connection_id).is_some() {
-			return Err(DsnpGraphError::DuplicateConnectionDetected)
+			return Err(DsnpGraphError::DuplicateConnectionDetected);
 		}
 
 		if !self.pages.inner().contains_key(page_id) {
@@ -612,7 +609,7 @@ impl Graph {
 					Err(e) => Err(e),
 				},
 				None => Err(DsnpGraphError::FailedToRetrieveGraphPage),
-			}
+			};
 		}
 
 		// Return Ok if no-op/connection not found
@@ -623,7 +620,7 @@ impl Graph {
 	#[log_result_err(Level::Info)]
 	pub fn get_one_sided_friendships(&self) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph)
+			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph);
 		}
 
 		let mut result = vec![];
@@ -649,7 +646,7 @@ impl Graph {
 		encryption_key: &ResolvedKeyPair,
 	) -> DsnpGraphResult<()> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(DsnpGraphError::CallToPridsInPublicGraph)
+			return Err(DsnpGraphError::CallToPridsInPublicGraph);
 		}
 
 		// verify connection existence based on prid
@@ -661,8 +658,8 @@ impl Graph {
 			.iter()
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
-			if duration_days_since(c.since) > max_allowed_stale_days &&
-				!self
+			if duration_days_since(c.since) > max_allowed_stale_days
+				&& !self
 					.user_key_manager
 					.read()
 					.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
@@ -710,9 +707,9 @@ impl Graph {
 		// Regardless of whether we're in aggressive mode, if the page is trivially non-full,
 		// just try and add the connection
 		if page.connections().len() < max_connections_per_page {
-			return page.add_connection(connection_id)
+			return page.add_connection(connection_id);
 		} else if mode == PageFullnessMode::Trivial {
-			return Err(DsnpGraphError::PageTriviallyFull)
+			return Err(DsnpGraphError::PageTriviallyFull);
 		}
 
 		let max_page_size = self.environment.get_config().max_graph_page_size_bytes as usize;
@@ -720,8 +717,8 @@ impl Graph {
 		let _ = temp_page.add_connection(connection_id)?;
 
 		let page_blob = match connection_type {
-			ConnectionType::Follow(PrivacyType::Public) |
-			ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
+			ConnectionType::Follow(PrivacyType::Public)
+			| ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
 			ConnectionType::Follow(PrivacyType::Private) => {
 				let encryption_key =
 					encryption_key.as_ref().ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
@@ -738,12 +735,13 @@ impl Graph {
 		};
 
 		match page_blob {
-			Ok(blob) =>
+			Ok(blob) => {
 				if blob.content.len() > max_page_size {
 					Err(DsnpGraphError::PageAggressivelyFull)
 				} else {
-					return page.add_connection(connection_id)
-				},
+					return page.add_connection(connection_id);
+				}
+			},
 			Err(e) => Err(e),
 		}
 	}
@@ -1113,8 +1111,9 @@ mod test {
 		updates
 			.iter()
 			.filter_map(|u| match u {
-				Update::PersistPage { page_id, payload, .. } =>
-					Some(PageData { page_id: *page_id, content_hash: 0, content: payload.clone() }),
+				Update::PersistPage { page_id, payload, .. } => {
+					Some(PageData { page_id: *page_id, content_hash: 0, content: payload.clone() })
+				},
 				_ => None,
 			})
 			.collect()
@@ -1248,10 +1247,11 @@ mod test {
 		}
 
 		match connection_type.privacy_type() {
-			PrivacyType::Public =>
+			PrivacyType::Public => {
 				graph.import_public(connection_type, &updates_to_page(&updates)).expect(
 					format!("failed to re-import exported graph ({:?})", connection_type).as_str(),
-				),
+				)
+			},
 			PrivacyType::Private => graph
 				.import_private(&dsnp_version_config, connection_type, &updates_to_page(&updates))
 				.expect(
@@ -1353,10 +1353,11 @@ mod test {
 		});
 
 		match connection_type.privacy_type() {
-			PrivacyType::Public =>
+			PrivacyType::Public => {
 				graph.import_public(connection_type, &updates_to_page(&update_blobs)).expect(
 					format!("failed to re-import exported graph ({:?})", connection_type).as_str(),
-				),
+				)
+			},
 			PrivacyType::Private => graph
 				.import_private(
 					&dsnp_version_config,

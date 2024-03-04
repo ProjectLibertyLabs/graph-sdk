@@ -722,7 +722,7 @@ pub fn action_options_from_js<'a, C: Context<'a>>(
 		None => false,
 	};
 
-	return Ok(ActionOptions { ignore_existing_connections, ignore_missing_connections })
+	return Ok(ActionOptions { ignore_existing_connections, ignore_missing_connections });
 }
 
 /// Function to convert JsObject of Connection to Connection

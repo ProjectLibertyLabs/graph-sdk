@@ -12,7 +12,7 @@ crate-type = ["staticlib"]
 [dependencies]
 dsnp-graph-core = { version = "1.0.0", path = "../../core" }
 dsnp-graph-config = { version = "1.0.0", path = "../../config" }
-libc = "0.2.0"
+libc = "0.2.153"
 lazy_static = "1.4.0"
-anyhow = "1.0.40"
+anyhow = "1.0.80"
 

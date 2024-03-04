@@ -86,7 +86,7 @@ impl SLF4JLogger {
 		let mut env = self.vm.get_env()?;
 		let level: &str = SLF4JLogLevel::from(record.level()).into();
 		let message = match record.level() {
-			log::Level::Error =>
+			log::Level::Error => {
 				if let Some(file) = record.file() {
 					if let Some(line) = record.line() {
 						format!("{}:{}: {}", file, line, record.args())
@@ -95,7 +95,8 @@ impl SLF4JLogger {
 					}
 				} else {
 					format!("{}", record.args())
-				},
+				}
+			},
 			_ => format!("{}", record.args()),
 		};
 

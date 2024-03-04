@@ -100,7 +100,7 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 					Frequency::read_private_graph(&content, &dsnp_version_config, &secret_key)
 				{
 					private_graph_chunk = Some(chunk);
-					break
+					break;
 				}
 			}
 		}
@@ -128,7 +128,7 @@ impl PublicPageDataProvider for GraphPage {
 	#[log_result_err(Level::Info)]
 	fn to_public_page_data(&self) -> DsnpGraphResult<PageData> {
 		if self.privacy_type != PrivacyType::Public {
-			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport)
+			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport);
 		}
 
 		Ok(PageData {
@@ -147,7 +147,7 @@ impl PrivatePageDataProvider for GraphPage {
 		key: &ResolvedKeyPair,
 	) -> DsnpGraphResult<PageData> {
 		if self.privacy_type != PrivacyType::Private {
-			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport)
+			return Err(DsnpGraphError::IncompatiblePrivacyTypeForBlobExport);
 		}
 
 		Ok(PageData {
@@ -245,7 +245,7 @@ impl GraphPage {
 	#[log_result_err(Level::Info)]
 	pub fn add_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if self.contains(connection_id) {
-			return Err(DsnpGraphError::DuplicateConnectionDetected)
+			return Err(DsnpGraphError::DuplicateConnectionDetected);
 		}
 
 		self.connections
@@ -257,7 +257,7 @@ impl GraphPage {
 	#[log_result_err(Level::Info)]
 	pub fn remove_connection(&mut self, connection_id: &DsnpUserId) -> DsnpGraphResult<()> {
 		if !self.contains(connection_id) {
-			return Err(DsnpGraphError::ConnectionNotFound)
+			return Err(DsnpGraphError::ConnectionNotFound);
 		}
 
 		self.connections.retain(|c| c.user_id != *connection_id);
@@ -277,7 +277,7 @@ impl GraphPage {
 				self.page_id,
 				self.connections.len(),
 				prids.len(),
-			))
+			));
 		}
 		self.prids.clear();
 		self.prids.extend_from_slice(&prids);
@@ -287,14 +287,14 @@ impl GraphPage {
 	/// verifies that the size of prids should be the same as connection in private friendship
 	#[log_result_err(Level::Info)]
 	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> DsnpGraphResult<()> {
-		if connection_type == ConnectionType::Friendship(PrivacyType::Private) &&
-			self.connections.len() != self.prids.len()
+		if connection_type == ConnectionType::Friendship(PrivacyType::Private)
+			&& self.connections.len() != self.prids.len()
 		{
 			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
 				self.page_id,
 				self.connections.len(),
 				self.prids.len(),
-			))
+			));
 		}
 		Ok(())
 	}

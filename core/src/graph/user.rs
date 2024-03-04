@@ -188,8 +188,8 @@ impl UserGraph {
 			let remove_update_exists =
 				include_pending && self.update_tracker.contains_complement(add_event);
 
-			return (graph_connection_exists && !remove_update_exists) ||
-				(!graph_connection_exists && add_update_exists)
+			return (graph_connection_exists && !remove_update_exists)
+				|| (!graph_connection_exists && add_update_exists);
 		}
 		false
 	}
@@ -239,7 +239,7 @@ impl UserGraph {
 	pub fn get_dsnp_config(&self, schema_id: SchemaId) -> Option<DsnpVersionConfig> {
 		let config = self.environment.get_config();
 		if let Some(dsnp_version) = config.get_dsnp_version_from_schema_id(schema_id) {
-			return Some(DsnpVersionConfig::new(dsnp_version))
+			return Some(DsnpVersionConfig::new(dsnp_version));
 		}
 		None
 	}
