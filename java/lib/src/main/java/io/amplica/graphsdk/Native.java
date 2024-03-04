@@ -13,8 +13,10 @@ public final class Native {
 
     private static void loadLibrary() {
         try {
+            String target = getNonDefaultTarget();
             String libraryName = System.mapLibraryName("dsnp_graph_sdk_jni");
-            try (InputStream in = Native.class.getResourceAsStream("/" + libraryName)) {
+            String resourcePath = target != null ? ("/" + target + "/" + libraryName) : ("/" + libraryName);
+            try (InputStream in = Native.class.getResourceAsStream(resourcePath)) {
                 if (in != null) {
                     copyToTempFileAndLoad(in, libraryName);
                 } else {
@@ -24,6 +26,17 @@ public final class Native {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static String getNonDefaultTarget() {
+        String os = System.getProperty("os.name", "unknown").toLowerCase();
+        String arch = System.getProperty("os.arch", "unknown").toLowerCase();
+
+        if (os.contains("linux") && arch.contains("aarch64")) {
+            return "aarch64-unknown-linux-gnu";
+        }
+
+        return null;
     }
 
     private static void copyToTempFileAndLoad(InputStream in, String name) throws IOException {
