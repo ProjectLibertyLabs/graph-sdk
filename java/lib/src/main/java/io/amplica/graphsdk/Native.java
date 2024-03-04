@@ -11,10 +11,24 @@ public final class Native {
     private Native() {
     }
 
+    private static String obtainPlatform() {
+        String os = System.getProperty("os.name", "unknown");
+        String arch = System.getProperty("os.arch", "unknown");
+
+        if (os.contains("nux") && arch.contains("amd64")) {
+            return "x86_64-unknown-linux-gnu";
+        } else if (os.contains("nux") && arch.contains("aarch64")) {
+            return "aarch64-unknown-linux-gnu";
+        } else {
+            throw new RuntimeException(String.format("Not supported platform: os = %s; arch = %s", os, arch));
+        }
+    }
+
     private static void loadLibrary() {
         try {
+            String platform = obtainPlatform();
             String libraryName = System.mapLibraryName("dsnp_graph_sdk_jni");
-            try (InputStream in = Native.class.getResourceAsStream("/" + libraryName)) {
+            try (InputStream in = Native.class.getResourceAsStream("/" + platform + "/" + libraryName)) {
                 if (in != null) {
                     copyToTempFileAndLoad(in, libraryName);
                 } else {

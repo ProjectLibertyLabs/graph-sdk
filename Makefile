@@ -129,7 +129,8 @@ test-all: test test-ffi test-jni test-node
 .PHONY: build-jni
 build-jni:
 	@echo "Build JNI ..."
-	cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE)
+	cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE) --target=x86_64-unknown-linux-gnu
+	cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE) --target=aarch64-unknown-linux-gnu
 	# using bash to support windows compatibility
 	bash ./scripts/install_jni.sh
 
