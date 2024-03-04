@@ -51,7 +51,7 @@ jobs:
 
       - name: Set Up Cargo Deny
         run: |
-          cargo install --force cargo-deny
+          cargo install --force cargo-deny --locked
           cargo generate-lockfile
 
       - name: License and Issue Check
