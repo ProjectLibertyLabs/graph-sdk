@@ -3,7 +3,7 @@
 # Run main binary
 output=$(bridge/ffi/src/c_example/main)
 echo "$output"
-echo "output=$output"  >> $GITHUB_OUTPUT
+echo "::set-output name=output::$output"
 
 # Check test result
 if [[ "${output}" == *"passed"* ]]; then
