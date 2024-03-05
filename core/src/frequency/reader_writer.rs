@@ -79,13 +79,10 @@ impl DsnpWriter for Frequency {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::{
-		dsnp::{
-			dsnp_configs::KeyPairType,
-			dsnp_types::{DsnpGraphEdge, DsnpInnerGraph, DsnpPrid},
-			encryption::SealBox,
-		},
-		frequency::Frequency,
+	use crate::dsnp::{
+		dsnp_configs::KeyPairType,
+		dsnp_types::{DsnpGraphEdge, DsnpPrid},
+		encryption::SealBox,
 	};
 	use dryoc::keypair::StackKeyPair;
 	use rand::Rng;

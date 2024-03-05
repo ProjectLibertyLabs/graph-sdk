@@ -103,11 +103,9 @@ impl PridProvider for DsnpPrid {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::dsnp::dsnp_types::DsnpPrid;
 	use dryoc::{
 		dryocsecretbox::Key,
 		keypair::{PublicKey, SecretKey, StackKeyPair},
-		types::ByteArray,
 	};
 
 	#[test]

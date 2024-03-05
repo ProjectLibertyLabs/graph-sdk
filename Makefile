@@ -85,7 +85,10 @@ $(CBINDGEN):
 .PHONY: bindgen
 bindgen: $(CBINDGEN)
 	@echo "Running bindgen..."
+# cbindgen is only supported in nightly
+	@rustup override set nightly
 	@( cd ./bridge/ffi && $(CBINDGEN) --config cbindgen.toml --crate dsnp-graph-sdk-ffi --output ./src/c_example/dsnp_graph_sdk_ffi.h )
+	@( cd ../.. && rustup override set stable )
 
 .PHONY: clean-ffi-bridge
 clean-ffi-bridge:

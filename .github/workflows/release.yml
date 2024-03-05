@@ -259,7 +259,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build Docs
         run: |
-          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
+          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --no-deps --all-features
       - name: Fix file permissions
         shell: sh
         run: |

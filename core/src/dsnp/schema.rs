@@ -83,10 +83,7 @@ impl SchemaHandler {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::dsnp::dsnp_types::{
-		DsnpGraphEdge, DsnpInnerGraph, DsnpPrid, DsnpPublicKey, DsnpUserPrivateGraphChunk,
-		DsnpUserPublicGraphChunk,
-	};
+	use crate::dsnp::dsnp_types::{DsnpGraphEdge, DsnpPrid};
 	use apache_avro::Error as AvroError;
 	use dryoc::keypair::StackKeyPair;
 	use dsnp_graph_config::errors::DsnpGraphError;
