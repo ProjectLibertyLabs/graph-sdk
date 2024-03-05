@@ -37,15 +37,15 @@ jobs:
         with:
           toolchain: stable
           default: true
-          profile: minimal
+          profile: default
           target: wasm32-unknown-unknown
 
       - name: Install Rust Toolchain Nightly
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly-2023-07-13
+          toolchain: nightly-2024-03-01
           default: false
-          profile: minimal
+          profile: default
           target: wasm32-unknown-unknown
 
       - name: Cargo check
@@ -258,7 +258,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly-2023-07-13
+          toolchain: stable
           default: true
           profile: minimal
           target: wasm32-unknown-unknown

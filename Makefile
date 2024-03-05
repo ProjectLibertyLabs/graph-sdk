@@ -35,10 +35,10 @@ deny:
 .PHONY: format
 format:
 	@echo "Running Cargo fmt..."
-	@cargo +nightly-2023-07-13 fmt --all
+	@cargo +nightly-2024-03-01 fmt --all
 format-check:
 	@echo "Running Cargo fmt..."
-	@cargo +nightly-2023-07-13 fmt --all -- --check
+	@cargo +nightly-2024-03-01 fmt --all -- --check
 
 .PHONY: build
 build:
