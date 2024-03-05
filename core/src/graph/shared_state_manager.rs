@@ -338,8 +338,8 @@ impl SharedStateManager {
 			.iter()
 			.filter_map(|key| key.key_id)
 			.max()
-			.unwrap_or(u64::default())
-			+ 1
+			.unwrap_or(u64::default()) +
+			1
 	}
 
 	#[cfg(test)]

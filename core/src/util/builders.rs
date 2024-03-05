@@ -151,9 +151,8 @@ impl PageDataBuilder {
 			.build()
 			.iter()
 			.map(|page| match self.connection_type.privacy_type() {
-				PrivacyType::Public => {
-					page.to_public_page_data().expect("should write public page")
-				},
+				PrivacyType::Public =>
+					page.to_public_page_data().expect("should write public page"),
 				PrivacyType::Private => page
 					.to_private_page_data(&dsnp_config, &self.resolved_key)
 					.expect("should write private page"),
@@ -258,8 +257,8 @@ impl ImportBundleBuilder {
 					payload,
 					prev_hash,
 				} => {
-					if *owner_dsnp_user_id != new_bundle.dsnp_user_id
-						|| *schema_id != new_bundle.schema_id
+					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
+						*schema_id != new_bundle.schema_id
 					{
 						continue;
 					}
@@ -278,8 +277,8 @@ impl ImportBundleBuilder {
 					}
 				},
 				Update::DeletePage { page_id, prev_hash, schema_id, owner_dsnp_user_id } => {
-					if *owner_dsnp_user_id != new_bundle.dsnp_user_id
-						|| *schema_id != new_bundle.schema_id
+					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
+						*schema_id != new_bundle.schema_id
 					{
 						continue;
 					}
@@ -311,13 +310,12 @@ impl ImportBundleBuilder {
 								index: dsnp_keys.keys.len() as u16,
 							});
 						},
-						None => {
+						None =>
 							new_bundle.dsnp_keys = Some(DsnpKeys {
 								dsnp_user_id: new_bundle.dsnp_user_id,
 								keys_hash: 1,
 								keys: vec![KeyData { content: payload.clone(), index: 0u16 }],
-							})
-						},
+							}),
 					};
 				},
 			}

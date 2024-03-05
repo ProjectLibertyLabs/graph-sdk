@@ -329,11 +329,10 @@ impl InputValidation for Action {
 			Action::Disconnect { connection, .. } => {
 				connection.validate()?;
 			},
-			Action::AddGraphKey { new_public_key, .. } => {
+			Action::AddGraphKey { new_public_key, .. } =>
 				if new_public_key.is_empty() {
 					return DsnpGraphResult::Err(InvalidPublicKey);
-				}
-			},
+				},
 		}
 
 		Ok(())

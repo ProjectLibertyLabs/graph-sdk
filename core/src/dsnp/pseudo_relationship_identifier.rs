@@ -81,12 +81,11 @@ impl PridProvider for DsnpPrid {
 	) -> DsnpGraphResult<Key> {
 		// calculate shared secret
 		let root_shared = match (a_secret_key, b_public_key) {
-			(SecretKeyType::Version1_0(a_pair), PublicKeyType::Version1_0(b_public)) => {
+			(SecretKeyType::Version1_0(a_pair), PublicKeyType::Version1_0(b_public)) =>
 				Zeroizing::new(crypto_box_beforenm(
 					b_public.as_array(),
 					a_pair.secret_key.as_array(),
-				))
-			},
+				)),
 		};
 
 		// // derive a new key form pri context

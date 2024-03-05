@@ -287,8 +287,8 @@ impl GraphPage {
 	/// verifies that the size of prids should be the same as connection in private friendship
 	#[log_result_err(Level::Info)]
 	pub fn verify_prid_len(&self, connection_type: ConnectionType) -> DsnpGraphResult<()> {
-		if connection_type == ConnectionType::Friendship(PrivacyType::Private)
-			&& self.connections.len() != self.prids.len()
+		if connection_type == ConnectionType::Friendship(PrivacyType::Private) &&
+			self.connections.len() != self.prids.len()
 		{
 			return Err(DsnpGraphError::PridsLenShouldBeEqualToConnectionsLen(
 				self.page_id,

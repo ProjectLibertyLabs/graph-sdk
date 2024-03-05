@@ -48,10 +48,10 @@ pub struct Graph {
 
 impl PartialEq for Graph {
 	fn eq(&self, other: &Self) -> bool {
-		self.environment == other.environment
-			&& self.user_id == other.user_id
-			&& self.schema_id == other.schema_id
-			&& self.pages.eq(&other.pages)
+		self.environment == other.environment &&
+			self.user_id == other.user_id &&
+			self.schema_id == other.schema_id &&
+			self.pages.eq(&other.pages)
 	}
 }
 
@@ -339,9 +339,8 @@ impl Graph {
 		// as needed to accommodate any remaining connections to be added, filling aggressively.
 		while let Some(_) = add_iter.peek() {
 			let mut new_page = match self.get_next_available_page_id() {
-				Some(next_page_id) => {
-					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id))
-				},
+				Some(next_page_id) =>
+					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id)),
 				None => Err(DsnpGraphError::GraphIsFull),
 			}?;
 
@@ -408,10 +407,9 @@ impl Graph {
 		});
 
 		let updated_blobs: DsnpGraphResult<Vec<PageData>> = match self.get_connection_type() {
-			ConnectionType::Follow(PrivacyType::Public)
-			| ConnectionType::Friendship(PrivacyType::Public) => {
-				updated_pages.values().map(|page| page.to_public_page_data()).collect()
-			},
+			ConnectionType::Follow(PrivacyType::Public) |
+			ConnectionType::Friendship(PrivacyType::Public) =>
+				updated_pages.values().map(|page| page.to_public_page_data()).collect(),
 			ConnectionType::Follow(PrivacyType::Private) => {
 				let encryption_key =
 					encryption_key.ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
@@ -469,8 +467,8 @@ impl Graph {
 			let page_data_result = match page.is_empty() {
 				true => Ok(page.to_removed_page_data()),
 				false => match self.get_connection_type() {
-					ConnectionType::Follow(PrivacyType::Public)
-					| ConnectionType::Friendship(PrivacyType::Public) => page.to_public_page_data(),
+					ConnectionType::Follow(PrivacyType::Public) |
+					ConnectionType::Friendship(PrivacyType::Public) => page.to_public_page_data(),
 					ConnectionType::Follow(PrivacyType::Private) => {
 						let encryption_key = encryption_key
 							.clone()
@@ -658,8 +656,8 @@ impl Graph {
 			.iter()
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
-			if duration_days_since(c.since) > max_allowed_stale_days
-				&& !self
+			if duration_days_since(c.since) > max_allowed_stale_days &&
+				!self
 					.user_key_manager
 					.read()
 					.map_err(|_| DsnpGraphError::FailedtoReadLock(USER_KEY_MANAGER.to_string()))?
@@ -717,8 +715,8 @@ impl Graph {
 		let _ = temp_page.add_connection(connection_id)?;
 
 		let page_blob = match connection_type {
-			ConnectionType::Follow(PrivacyType::Public)
-			| ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
+			ConnectionType::Follow(PrivacyType::Public) |
+			ConnectionType::Friendship(PrivacyType::Public) => temp_page.to_public_page_data(),
 			ConnectionType::Follow(PrivacyType::Private) => {
 				let encryption_key =
 					encryption_key.as_ref().ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
@@ -735,13 +733,12 @@ impl Graph {
 		};
 
 		match page_blob {
-			Ok(blob) => {
+			Ok(blob) =>
 				if blob.content.len() > max_page_size {
 					Err(DsnpGraphError::PageAggressivelyFull)
 				} else {
 					return page.add_connection(connection_id);
-				}
-			},
+				},
 			Err(e) => Err(e),
 		}
 	}
@@ -1111,9 +1108,8 @@ mod test {
 		updates
 			.iter()
 			.filter_map(|u| match u {
-				Update::PersistPage { page_id, payload, .. } => {
-					Some(PageData { page_id: *page_id, content_hash: 0, content: payload.clone() })
-				},
+				Update::PersistPage { page_id, payload, .. } =>
+					Some(PageData { page_id: *page_id, content_hash: 0, content: payload.clone() }),
 				_ => None,
 			})
 			.collect()
@@ -1247,11 +1243,10 @@ mod test {
 		}
 
 		match connection_type.privacy_type() {
-			PrivacyType::Public => {
+			PrivacyType::Public =>
 				graph.import_public(connection_type, &updates_to_page(&updates)).expect(
 					format!("failed to re-import exported graph ({:?})", connection_type).as_str(),
-				)
-			},
+				),
 			PrivacyType::Private => graph
 				.import_private(&dsnp_version_config, connection_type, &updates_to_page(&updates))
 				.expect(
@@ -1353,11 +1348,10 @@ mod test {
 		});
 
 		match connection_type.privacy_type() {
-			PrivacyType::Public => {
+			PrivacyType::Public =>
 				graph.import_public(connection_type, &updates_to_page(&update_blobs)).expect(
 					format!("failed to re-import exported graph ({:?})", connection_type).as_str(),
-				)
-			},
+				),
 			PrivacyType::Private => graph
 				.import_private(
 					&dsnp_version_config,

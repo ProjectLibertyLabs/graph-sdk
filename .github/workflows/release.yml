@@ -32,11 +32,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install Rust Toolchain
+      - name: Install Rust Toolchain Stable
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
           toolchain: stable
           default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
+      - name: Install Rust Toolchain Nightly
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: nightly-2023-12-28
+          default: false
           profile: minimal
           target: wasm32-unknown-unknown
 
@@ -250,7 +258,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly
+          toolchain: nightly-2023-12-28
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
@@ -259,7 +267,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build Docs
         run: |
-          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly doc --no-deps --all-features
+          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly-2023-12-28 doc --no-deps --all-features
       - name: Fix file permissions
         shell: sh
         run: |

@@ -182,9 +182,8 @@ pub fn create_test_graph(connection_arg: Option<ConnectionType>) -> Graph {
 		let ids: Vec<(DsnpUserId, u64)> =
 			(curr_id..(curr_id + ids_per_page)).map(|u| (u, 0)).collect();
 		let prids = match connection_type {
-			ConnectionType::Friendship(PrivacyType::Private) => {
-				ids.iter().cloned().map(|(id, _)| DsnpPrid::from(id)).collect()
-			},
+			ConnectionType::Friendship(PrivacyType::Private) =>
+				ids.iter().cloned().map(|(id, _)| DsnpPrid::from(id)).collect(),
 			_ => Vec::<DsnpPrid>::new(),
 		};
 		page_builder = page_builder.with_page(i, &ids, &prids, 0);
