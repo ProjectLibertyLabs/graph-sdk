@@ -436,7 +436,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-config"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "apache-avro",
@@ -453,7 +453,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-core"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "apache-avro",
@@ -481,7 +481,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-sdk-common"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "dsnp-graph-config",
  "dsnp-graph-core",
@@ -491,7 +491,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-sdk-ffi"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "anyhow",
  "dsnp-graph-config",
@@ -502,7 +502,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-sdk-jni"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "cfg-if",
  "dsnp-graph-config",
@@ -516,7 +516,7 @@ dependencies = [
 
 [[package]]
 name = "dsnp-graph-sdk-node"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "dsnp-graph-config",
  "dsnp-graph-core",
@@ -794,7 +794,7 @@ dependencies = [
 
 [[package]]
 name = "log-result-proc-macro"
-version = "1.0.0"
+version = "1.0.2"
 dependencies = [
  "log",
  "proc-macro2",
