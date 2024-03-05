@@ -66,7 +66,7 @@ impl UpdateTracker {
 					Ok(())
 				},
 				false => Err(DsnpGraphError::EventExists),
-			};
+			}
 		}
 
 		match self.contains_complement(event) {
@@ -87,7 +87,7 @@ impl UpdateTracker {
 		ignore_existing: bool,
 	) -> DsnpGraphResult<()> {
 		if !ignore_existing && events.iter().any(|e| self.contains(e)) {
-			return Err(DsnpGraphError::DuplicateUpdateEvents);
+			return Err(DsnpGraphError::DuplicateUpdateEvents)
 		}
 
 		for e in events {

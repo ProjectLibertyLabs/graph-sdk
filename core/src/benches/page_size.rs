@@ -26,7 +26,7 @@ pub fn benchmark_page_capacity(connection_type: ConnectionType) -> (usize, usize
 		let page_size = page.content.len();
 
 		if page_size >= MAX_PAGE_SIZE {
-			break;
+			break
 		}
 
 		last_result = (*page_len, page_size);

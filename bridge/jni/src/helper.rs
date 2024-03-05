@@ -31,11 +31,11 @@ where
 #[inline(always)]
 pub fn validate_handle(states: &RwLock<Vec<jlong>>, handle: jlong) -> SdkJniResult<()> {
 	if handle == 0 {
-		return Err(SdkJniError::InvalidHandle("is null"));
+		return Err(SdkJniError::InvalidHandle("is null"))
 	}
 	let graph_states = states.read().map_err(|_| SdkJniError::LockError)?;
 	if !graph_states.contains(&handle) {
-		return Err(SdkJniError::InvalidHandle("does not exist"));
+		return Err(SdkJniError::InvalidHandle("does not exist"))
 	}
 	Ok(())
 }

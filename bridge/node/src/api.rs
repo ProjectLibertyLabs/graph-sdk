@@ -83,7 +83,7 @@ pub fn get_schema_id_from_config(mut cx: FunctionContext) -> JsResult<JsNumber> 
 	let config: &Config = environment.get_config();
 	let schema_id = config.get_schema_id_from_connection_type(connection_type);
 	if schema_id.is_none() {
-		return cx.throw_error("SchemaId not found");
+		return cx.throw_error("SchemaId not found")
 	}
 	let schema_id = schema_id.unwrap();
 
@@ -148,7 +148,7 @@ pub fn get_graph_users_count(mut cx: FunctionContext) -> JsResult<JsNumber> {
 	let states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -178,7 +178,7 @@ pub fn contains_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -208,7 +208,7 @@ pub fn remove_user_graph(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let mut graph_state = graph_state.lock().unwrap();
@@ -235,7 +235,7 @@ pub fn import_user_data(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let mut graph_state = graph_state.lock().unwrap();
@@ -262,7 +262,7 @@ pub fn export_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -297,7 +297,7 @@ pub fn export_user_graph_updates(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -337,7 +337,7 @@ pub fn get_connections_for_user_graph(mut cx: FunctionContext) -> JsResult<JsArr
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -379,7 +379,7 @@ pub fn apply_actions(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let mut graph_state = graph_state.lock().unwrap();
@@ -412,7 +412,7 @@ pub fn force_calculate_graphs(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -442,7 +442,7 @@ pub fn get_connections_without_keys(mut cx: FunctionContext) -> JsResult<JsArray
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -482,7 +482,7 @@ pub fn get_one_sided_private_friendship_connections(mut cx: FunctionContext) -> 
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -518,7 +518,7 @@ pub fn get_public_keys(mut cx: FunctionContext) -> JsResult<JsArray> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.get_mut(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();
@@ -586,7 +586,7 @@ pub fn free_graph_state(mut cx: FunctionContext) -> JsResult<JsBoolean> {
 	let mut states = GRAPH_STATES.lock().unwrap();
 	let graph_state = states.remove(&graph_state_id);
 	if graph_state.is_none() {
-		return cx.throw_error("Graph state not found");
+		return cx.throw_error("Graph state not found")
 	}
 	let graph_state = graph_state.unwrap();
 	let graph_state = graph_state.lock().unwrap();

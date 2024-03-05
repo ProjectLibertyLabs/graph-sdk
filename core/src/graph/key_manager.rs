@@ -80,7 +80,7 @@ impl UserKeyProvider for UserKeyManager {
 			if let Some(key_pair) =
 				self.keys.inner().iter().find(|&k| k.get_public_key_raw() == dsnp.key)
 			{
-				return Some(ResolvedKeyPair { key_id, key_pair: key_pair.clone() });
+				return Some(ResolvedKeyPair { key_id, key_pair: key_pair.clone() })
 			}
 		}
 		None
@@ -103,7 +103,7 @@ impl UserKeyProvider for UserKeyManager {
 		if let Some(key) = self.shared_state_manager.read().unwrap().get_active_key(dsnp_user_id) {
 			// can unwrap here since public key returns all keys with their ids
 			let key_id = key.key_id.unwrap();
-			return self.get_resolved_key(key_id);
+			return self.get_resolved_key(key_id)
 		}
 		None
 	}
@@ -162,7 +162,7 @@ impl ConnectionVerifier for UserKeyManager {
 					})?
 					.contains(from, prid)
 				{
-					return Ok(true);
+					return Ok(true)
 				}
 			}
 		}

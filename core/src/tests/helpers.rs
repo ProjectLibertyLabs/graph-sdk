@@ -158,7 +158,7 @@ pub fn create_aggressively_full_page(
 			)
 			.is_err()
 		{
-			break;
+			break
 		}
 
 		connection_id += 1;

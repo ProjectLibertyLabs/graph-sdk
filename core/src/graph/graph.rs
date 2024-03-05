@@ -155,13 +155,13 @@ impl Graph {
 				"Expected {:?} but got {:?}",
 				self.get_connection_type(),
 				connection_type
-			)));
+			)))
 		}
 		let max_page_id = self.environment.get_config().max_page_id;
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(page.page_id));
+				return Err(DsnpGraphError::InvalidPageId(page.page_id))
 			}
 			match GraphPage::try_from(page) {
 				Err(e) => return Err(DsnpGraphError::from(e)),
@@ -192,7 +192,7 @@ impl Graph {
 				"Expected {:?} but got {:?}",
 				self.get_connection_type(),
 				connection_type
-			)));
+			)))
 		}
 
 		let max_page_id = self.environment.get_config().max_page_id;
@@ -204,7 +204,7 @@ impl Graph {
 		let mut page_map = HashMap::new();
 		for page in pages.iter() {
 			if page.page_id > max_page_id as PageId {
-				return Err(DsnpGraphError::InvalidPageId(page.page_id));
+				return Err(DsnpGraphError::InvalidPageId(page.page_id))
 			}
 			match GraphPage::try_from((page, dsnp_version_config, &keys)) {
 				Err(e) => return Err(DsnpGraphError::from(e)),
@@ -269,7 +269,7 @@ impl Graph {
 				if pages_with_removals.contains(page_id) {
 					let mut updated_page = page.clone();
 					updated_page.remove_connections(&ids_to_remove);
-					return Some((*page_id, updated_page));
+					return Some((*page_id, updated_page))
 				}
 
 				None
@@ -292,7 +292,7 @@ impl Graph {
 				);
 
 				if let None = add_iter.peek() {
-					break 'fullness_mode_loop;
+					break 'fullness_mode_loop
 				}
 			}
 		}
@@ -331,7 +331,7 @@ impl Graph {
 			}
 
 			if let None = add_iter.peek() {
-				break;
+				break
 			}
 		}
 
@@ -379,7 +379,7 @@ impl Graph {
 				page_modified = true;
 				let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
 			} else {
-				break;
+				break
 			}
 		}
 
@@ -401,7 +401,7 @@ impl Graph {
 		updated_pages.retain(|_, page| {
 			if page.is_empty() {
 				removed_pages.push(page.to_removed_page_data());
-				return false;
+				return false
 			}
 			true
 		});
@@ -511,7 +511,7 @@ impl Graph {
 		page: Option<GraphPage>,
 	) -> DsnpGraphResult<&mut GraphPage> {
 		if let Some(_existing_page) = self.pages.get(page_id) {
-			return Err(DsnpGraphError::NewPageForExistingPageId);
+			return Err(DsnpGraphError::NewPageForExistingPageId)
 		}
 
 		self.pages.insert(
@@ -546,7 +546,7 @@ impl Graph {
 	pub fn find_connection(&self, dsnp_id: &DsnpUserId) -> Option<PageId> {
 		for (id, page) in self.pages.inner().iter() {
 			if page.contains(dsnp_id) {
-				return Some(*id);
+				return Some(*id)
 			}
 		}
 
@@ -576,7 +576,7 @@ impl Graph {
 		connection_id: &DsnpUserId,
 	) -> DsnpGraphResult<()> {
 		if self.find_connection(connection_id).is_some() {
-			return Err(DsnpGraphError::DuplicateConnectionDetected);
+			return Err(DsnpGraphError::DuplicateConnectionDetected)
 		}
 
 		if !self.pages.inner().contains_key(page_id) {
@@ -607,7 +607,7 @@ impl Graph {
 					Err(e) => Err(e),
 				},
 				None => Err(DsnpGraphError::FailedToRetrieveGraphPage),
-			};
+			}
 		}
 
 		// Return Ok if no-op/connection not found
@@ -618,7 +618,7 @@ impl Graph {
 	#[log_result_err(Level::Info)]
 	pub fn get_one_sided_friendships(&self) -> DsnpGraphResult<Vec<DsnpGraphEdge>> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph);
+			return Err(DsnpGraphError::CallToPrivateFriendsInPublicGraph)
 		}
 
 		let mut result = vec![];
@@ -644,7 +644,7 @@ impl Graph {
 		encryption_key: &ResolvedKeyPair,
 	) -> DsnpGraphResult<()> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
-			return Err(DsnpGraphError::CallToPridsInPublicGraph);
+			return Err(DsnpGraphError::CallToPridsInPublicGraph)
 		}
 
 		// verify connection existence based on prid
@@ -705,9 +705,9 @@ impl Graph {
 		// Regardless of whether we're in aggressive mode, if the page is trivially non-full,
 		// just try and add the connection
 		if page.connections().len() < max_connections_per_page {
-			return page.add_connection(connection_id);
+			return page.add_connection(connection_id)
 		} else if mode == PageFullnessMode::Trivial {
-			return Err(DsnpGraphError::PageTriviallyFull);
+			return Err(DsnpGraphError::PageTriviallyFull)
 		}
 
 		let max_page_size = self.environment.get_config().max_graph_page_size_bytes as usize;
@@ -737,7 +737,7 @@ impl Graph {
 				if blob.content.len() > max_page_size {
 					Err(DsnpGraphError::PageAggressivelyFull)
 				} else {
-					return page.add_connection(connection_id);
+					return page.add_connection(connection_id)
 				},
 			Err(e) => Err(e),
 		}

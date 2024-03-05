@@ -198,7 +198,7 @@ impl Config {
 	/// Returns the DSNP version for the given schema id
 	pub fn get_dsnp_version_from_schema_id(&self, schema_id: SchemaId) -> Option<DsnpVersion> {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
-			return Some(schema_config.dsnp_version);
+			return Some(schema_config.dsnp_version)
 		}
 		log::warn!("no schema config found for schema ID {}", schema_id);
 		None
@@ -210,7 +210,7 @@ impl Config {
 		schema_id: SchemaId,
 	) -> Option<ConnectionType> {
 		if let Some(schema_config) = self.schema_map.get(&schema_id) {
-			return Some(schema_config.connection_type);
+			return Some(schema_config.connection_type)
 		}
 		log::warn!("no schema config found for schema ID {}", schema_id);
 		None
@@ -226,7 +226,7 @@ impl Config {
 			.iter()
 			.filter_map(|(k, v)| {
 				if v.connection_type == connection_type {
-					return Some(*k);
+					return Some(*k)
 				}
 				None
 			})

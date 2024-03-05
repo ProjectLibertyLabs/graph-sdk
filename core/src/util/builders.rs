@@ -260,7 +260,7 @@ impl ImportBundleBuilder {
 					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
 						*schema_id != new_bundle.schema_id
 					{
-						continue;
+						continue
 					}
 					let new_page =
 						PageData { content_hash: 1, content: payload.clone(), page_id: *page_id };
@@ -280,7 +280,7 @@ impl ImportBundleBuilder {
 					if *owner_dsnp_user_id != new_bundle.dsnp_user_id ||
 						*schema_id != new_bundle.schema_id
 					{
-						continue;
+						continue
 					}
 					let ind = original
 						.pages
@@ -293,7 +293,7 @@ impl ImportBundleBuilder {
 				},
 				Update::AddKey { prev_hash, payload, owner_dsnp_user_id } => {
 					if *owner_dsnp_user_id != new_bundle.dsnp_user_id {
-						continue;
+						continue
 					}
 					assert_eq!(
 						match &original.dsnp_keys {
