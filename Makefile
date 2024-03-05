@@ -61,7 +61,7 @@ build-node-download:
 .PHONY: doc
 doc:
 	@echo "Running Cargo doc..."
-	@RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo +nightly doc --no-deps --all-features
+	@RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
 
 .PHONY: clean
 clean:

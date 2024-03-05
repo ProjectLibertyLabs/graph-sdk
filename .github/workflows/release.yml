@@ -267,7 +267,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build Docs
         run: |
-          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo +nightly-2023-12-28 doc --no-deps --all-features
+          RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
       - name: Fix file permissions
         shell: sh
         run: |
