@@ -72,6 +72,7 @@ jobs:
           default: true
           profile: minimal
           target: wasm32-unknown-unknown
+          override: true
 
       - name: Cargo fmt
         run: make format-check
