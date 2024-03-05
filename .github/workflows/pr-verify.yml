@@ -73,6 +73,7 @@ jobs:
           profile: minimal
           target: wasm32-unknown-unknown
           override: true
+          components: rustfmt
 
       - name: Cargo fmt
         run: make format-check
