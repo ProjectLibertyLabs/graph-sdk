@@ -68,10 +68,11 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: stable
+          toolchain: nightly-2024-03-01
           default: true
-          profile: minimal
+          profile: default
           target: wasm32-unknown-unknown
+          override: true
 
       - name: Cargo fmt
         run: make format-check
@@ -121,33 +122,33 @@ jobs:
       - name: Cargo build
         run: make build
   test_binary:
-    name: Generate bindgen and run c_example
-    runs-on: ubuntu-latest
-    needs: [verify, test, lint, build]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-      - name: Install Rust Toolchain
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-        with:
-          toolchain: stable
-          default: true
-          profile: minimal
-          target: wasm32-unknown-unknown
-      - name: Install libsodium
-        run: sudo apt-get install -y libsodium-dev
-      - name: Run tests for ffi
-        run: make test-ffi
-      - name: Upload artifacts dsnp_graph_sdk_ffi.h and libdsnp_graph_sdk_ffi.a
-        uses: actions/upload-artifact@v2
-        with:
-          name: dsnp_graph_sdk_ffi
-          path: |
-            bridge/ffi/src/c_example/dsnp_graph_sdk_ffi.h
-            bridge/ffi/src/c_example/libdsnp_graph_sdk_ffi.a
-            bridge/ffi/src/c_example/main.c
+   name: Generate bindgen and run c_example
+   runs-on: ubuntu-latest
+   needs: [verify, test, lint, build]
+   steps:
+     - name: Checkout code
+       uses: actions/checkout@v2
+       with:
+         fetch-depth: 0
+     - name: Install Rust Toolchain
+       uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+       with:
+         toolchain: stable
+         default: true
+         profile: minimal
+         target: wasm32-unknown-unknown
+     - name: Install libsodium
+       run: sudo apt-get install -y libsodium-dev
+     - name: Run tests for ffi
+       run: make test-ffi
+     - name: Upload artifacts dsnp_graph_sdk_ffi.h and libdsnp_graph_sdk_ffi.a
+       uses: actions/upload-artifact@v2
+       with:
+         name: dsnp_graph_sdk_ffi
+         path: |
+           bridge/ffi/src/c_example/dsnp_graph_sdk_ffi.h
+           bridge/ffi/src/c_example/libdsnp_graph_sdk_ffi.a
+           bridge/ffi/src/c_example/main.c
   generate-docs:
     name: Generate graph sdk rust docs
     runs-on: ubuntu-latest
@@ -175,7 +176,7 @@ jobs:
         uses: actions/configure-pages@v3
       - name: Build Docs
         run: |
-          RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
+          RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
       - name: Fix file permissions
         shell: sh
         run: |

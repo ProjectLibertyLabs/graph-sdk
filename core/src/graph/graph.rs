@@ -116,13 +116,8 @@ impl Graph {
 	/// Get next available PageId for this graph
 	pub fn get_next_available_page_id(&self) -> Option<PageId> {
 		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
-		for pid in 0..=(self.environment.get_config().max_page_id as PageId) {
-			if !existing_pages.contains(&pid) {
-				return Some(pid)
-			}
-		}
-
-		None
+		(0..=(self.environment.get_config().max_page_id as PageId))
+			.find(|&pid| !existing_pages.contains(&pid))
 	}
 
 	/// Remove all pages from this graph

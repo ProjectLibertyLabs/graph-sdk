@@ -79,7 +79,7 @@ impl KeyPairType {
 impl Into<PublicKeyType> for &'_ KeyPairType {
 	fn into(self) -> PublicKeyType {
 		match self {
-			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.clone().public_key),
+			KeyPairType::Version1_0(k) => PublicKeyType::Version1_0(k.public_key.clone()),
 		}
 	}
 }

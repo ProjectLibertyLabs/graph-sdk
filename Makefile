@@ -35,10 +35,10 @@ deny:
 .PHONY: format
 format:
 	@echo "Running Cargo fmt..."
-	@cargo fmt --all
+	@cargo +nightly-2024-03-01 fmt --all
 format-check:
 	@echo "Running Cargo fmt..."
-	@cargo fmt --all -- --check
+	@cargo +nightly-2024-03-01 fmt --all -- --check
 
 .PHONY: build
 build:
@@ -61,7 +61,7 @@ build-node-download:
 .PHONY: doc
 doc:
 	@echo "Running Cargo doc..."
-	@RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
+	@RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page --check -Zunstable-options" cargo doc --no-deps --all-features
 
 .PHONY: clean
 clean:
@@ -85,7 +85,10 @@ $(CBINDGEN):
 .PHONY: bindgen
 bindgen: $(CBINDGEN)
 	@echo "Running bindgen..."
+# cbindgen is only supported in nightly
+	@rustup override set nightly
 	@( cd ./bridge/ffi && $(CBINDGEN) --config cbindgen.toml --crate dsnp-graph-sdk-ffi --output ./src/c_example/dsnp_graph_sdk_ffi.h )
+	@( cd ../.. && rustup override set stable )
 
 .PHONY: clean-ffi-bridge
 clean-ffi-bridge:

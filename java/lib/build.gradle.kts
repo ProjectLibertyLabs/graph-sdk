@@ -12,12 +12,12 @@ plugins {
 }
 
 group = "io.amplica.graphsdk"
-val uploadedBinariesVersion = "1.0.0"
+val uploadedBinariesVersion = "1.0.1"
 java.sourceCompatibility = JavaVersion.VERSION_17
 version = if (project.hasProperty("projVersion")) {
     project.properties["projVersion"]!!
 } else {
-    "1.0.1-SNAPSHOT"
+    "1.0.2-SNAPSHOT"
 }
 
 repositories {

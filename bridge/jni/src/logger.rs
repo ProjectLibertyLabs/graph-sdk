@@ -3,7 +3,6 @@ use jni::{
 	sys::jint,
 	JNIEnv, JavaVM,
 };
-use log;
 use std::{
 	panic::{catch_unwind, AssertUnwindSafe},
 	process::abort,

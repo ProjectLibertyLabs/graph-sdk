@@ -583,15 +583,12 @@ impl GraphState {
 
 #[cfg(test)]
 mod test {
+	use super::*;
 	use crate::{
-		api::api_types::{Connection, DsnpKeys, GraphKeyPair, ResolvedKeyPair},
+		api::api_types::ResolvedKeyPair,
 		dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpPrid},
 		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
-	use dryoc::keypair::StackKeyPair;
-	use dsnp_graph_config::{ConnectionType, GraphKeyType};
-
-	use super::*;
 
 	#[test]
 	fn graph_contains_false() {
