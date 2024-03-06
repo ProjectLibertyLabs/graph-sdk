@@ -1,6 +1,6 @@
 [package]
 name = "dsnp-graph-sdk-jni"
-version = "1.0.0"
+version = "1.0.2"
 edition = "2021"
 license = "Apache-2.0"
 publish = false
@@ -10,12 +10,11 @@ name = "dsnp_graph_sdk_jni"
 crate-type = ["cdylib"]
 
 [dependencies]
-dsnp-graph-core = { version = "1.0.0", path = "../../core" }
-dsnp-graph-config = { version = "1.0.0", path = "../../config" }
-dsnp-graph-sdk-common = { version = "1.0.0", path = "../common" }
+dsnp-graph-core = { version = "1.0.2", path = "../../core" }
+dsnp-graph-config = { version = "1.0.2", path = "../../config" }
+dsnp-graph-sdk-common = { version = "1.0.2", path = "../common" }
 jni = "0.21.1"
-async-trait = "0.1.68"
 cfg-if = "1.0.0"
-log = { version = "^0.4.17", features = ["std", "max_level_debug", "release_max_level_debug"] }
+log = { version = "^0.4.21", features = ["std", "max_level_debug", "release_max_level_debug"] }
 log-panics = { version = "^2.1.0", features = ["with-backtrace"]}
-protobuf = { version = "3.2.0", features = ["with-bytes"] }
+protobuf = { version = "3.4.0", features = ["with-bytes"] }

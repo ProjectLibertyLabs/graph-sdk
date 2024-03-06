@@ -102,11 +102,9 @@ impl PridProvider for DsnpPrid {
 #[cfg(test)]
 mod test {
 	use super::*;
-	use crate::dsnp::dsnp_types::DsnpPrid;
 	use dryoc::{
 		dryocsecretbox::Key,
 		keypair::{PublicKey, SecretKey, StackKeyPair},
-		types::ByteArray,
 	};
 
 	#[test]
@@ -120,14 +118,14 @@ mod test {
 			a,
 			b,
 			&SecretKeyType::Version1_0(key_pair_a.clone()),
-			&PublicKeyType::Version1_0(key_pair_b.clone().public_key),
+			&PublicKeyType::Version1_0(key_pair_b.public_key.clone()),
 		)
 		.expect("should create pri");
 		let pri_a_to_b_2 = DsnpPrid::create_prid(
 			a,
 			b,
 			&SecretKeyType::Version1_0(key_pair_b),
-			&PublicKeyType::Version1_0(key_pair_a.public_key),
+			&PublicKeyType::Version1_0(key_pair_a.public_key.clone()),
 		)
 		.expect("should create pri");
 
