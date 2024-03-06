@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <set>
+#include <string>
 extern "C" {
 #include "dsnp_graph_sdk_ffi.h"
 }
@@ -41,6 +42,7 @@ int test_initialize_and_clear_states() {
     ImportBundle importbundle;
     // Set the values of the importbundle struct
     // ...
+    memset(&importbundle, 0, sizeof(importbundle)); // Initialize all fields to 0/NULL
 
     DsnpGraphBooleanResult_Error importresult = graph_import_users_data(graphstate, &importbundle, 1);
     ASSERT(importresult.error != NULL, "Expected error to import users data");
