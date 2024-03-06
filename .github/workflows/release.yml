@@ -59,7 +59,7 @@ jobs:
 
       - name: Set Up Cargo Deny
         run: |
-          cargo install --force cargo-deny --locked
+          cargo install --force cargo-deny
           cargo generate-lockfile
 
       - name: License and Issue Check
@@ -128,26 +128,26 @@ jobs:
 
       - name: Build Universal Binary for MacOS Jni
         run: |
-          cargo build -p dsnp-graph-sdk-jni --profile release --target ${{ matrix.additional-rust-target }}
+          cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
           lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} target/release/${{ matrix.java_library }}
         if: matrix.os == 'macos-latest'
 
       - name: Build Universal Binary for MacOS Node
         run: |
-          cargo build -p dsnp-graph-sdk-node --profile release --target ${{ matrix.additional-rust-target }}
+          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
           lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} target/release/${{ matrix.node_library }}
         if: matrix.os == 'macos-latest'
 
       - name: Build other targets Binary for Linux Jni
         run: |
-          cargo build -p dsnp-graph-sdk-jni --profile release --target ${{ matrix.additional-rust-target }}
+          cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
           cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest'
 
       - name: Build other targets Binary for Linux Node
         run: |
-          cargo build -p dsnp-graph-sdk-node --profile release --target ${{ matrix.additional-rust-target }}
+          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
           cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
         if: matrix.os == 'ubuntu-latest'
