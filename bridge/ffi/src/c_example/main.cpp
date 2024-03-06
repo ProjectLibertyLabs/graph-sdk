@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <set>
-#include <string>
+#include <cstring>
 extern "C" {
 #include "dsnp_graph_sdk_ffi.h"
 }
