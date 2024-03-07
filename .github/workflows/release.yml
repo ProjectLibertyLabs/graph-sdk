@@ -143,10 +143,9 @@ jobs:
           cargo install cross --git https://github.com/cross-rs/cross
           cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --release
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
-          cd target
-          tree
-          cd ..
           cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
+          cd artifacts
+          tree
         if: matrix.os == 'ubuntu-latest'
 
 #      - name: Build other targets Binary for Linux Node
@@ -158,7 +157,11 @@ jobs:
 
       - name: Build with Gradle
         working-directory: java
-        run: ./gradlew build
+        run: |
+          cd lib/src/main/resources
+          tree
+          cd ../../../..
+          ./gradlew build
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
