@@ -74,13 +74,13 @@ jobs:
             java_library: libdsnp_graph_sdk_jni.so
             node_library: libdsnp_graph_sdk_node.so
             additional-rust-target: aarch64-unknown-linux-gnu
-#          - os: windows-latest
-#            java_library: dsnp_graph_sdk_jni.dll
-#            node_library: dsnp_graph_sdk_node.dll
-#          - os: macos-latest
-#            java_library: libdsnp_graph_sdk_jni.dylib
-#            node_library: libdsnp_graph_sdk_node.dylib
-#            additional-rust-target: aarch64-apple-darwin
+          - os: windows-latest
+            java_library: dsnp_graph_sdk_jni.dll
+            node_library: dsnp_graph_sdk_node.dll
+          - os: macos-latest
+            java_library: libdsnp_graph_sdk_jni.dylib
+            node_library: libdsnp_graph_sdk_node.dylib
+            additional-rust-target: aarch64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
 #    needs: verify
@@ -132,18 +132,18 @@ jobs:
           lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} target/release/${{ matrix.java_library }}
         if: matrix.os == 'macos-latest'
 
-      - name: Build Universal Binary for MacOS Node
-        run: |
-          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} target/release/${{ matrix.node_library }}
-        if: matrix.os == 'macos-latest'
+#      - name: Build Universal Binary for MacOS Node
+#        run: |
+#          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
+#          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} target/release/${{ matrix.node_library }}
+#        if: matrix.os == 'macos-latest'
 
       - name: Build other targets Binary for Linux Jni
         run: |
           cargo install cross --git https://github.com/cross-rs/cross
-          cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --release
+          cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
-          cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
           cd artifacts
           tree
         if: matrix.os == 'ubuntu-latest'
@@ -346,5 +346,6 @@ jobs:
         with:
           files: |
             downloaded/*
+            downloaded/*/*
           prerelease: ${{ env.TEST_RUN }}
           name: ${{env.NEW_RELEASE_TAG}}
