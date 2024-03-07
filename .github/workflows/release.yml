@@ -114,16 +114,16 @@ jobs:
 #          node-version: '18.x'
 #          registry-url: https://registry.npmjs.org/
 
-#      - name: Build Jni bridge
-#        run: make build-jni
+      - name: Build Jni bridge
+        run: make build-jni
 
 #      - name: Build Node bridge
 #        run: make build-node
 
-#      - name: Copy artifacts
-#        run: |
-#          mkdir artifacts
-#          cp target/production/${{ matrix.java_library }} artifacts/${{ matrix.java_library }}
+      - name: Copy artifacts
+        run: |
+          mkdir artifacts
+          cp target/production/${{ matrix.java_library }} artifacts/${{ matrix.java_library }}
 #          cp target/release/${{ matrix.node_library }} artifacts/${{ matrix.node_library }}
 
       - name: Build Universal Binary for MacOS Jni
@@ -165,8 +165,8 @@ jobs:
         with:
           name: artifacts-${{github.run_id}}
           path: |
+            artifacts/${{ matrix.java_library }}
             artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
-#            artifacts/${{ matrix.java_library }}
 #            artifacts/${{ matrix.node_library }}
 #            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
 
