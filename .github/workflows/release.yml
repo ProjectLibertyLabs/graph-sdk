@@ -166,8 +166,8 @@ jobs:
           name: artifacts-${{github.run_id}}
           path: |
             artifacts/${{ matrix.java_library }}
-#            artifacts/${{ matrix.node_library }}
             artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
+#            artifacts/${{ matrix.node_library }}
 #            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
 
   publish-java:
@@ -319,7 +319,7 @@ jobs:
 #        id: deployment
 
   release:
-    needs: [publish-java, publish_npm_package, generate-docs]
+    needs: [publish-java]
     runs-on: ubuntu-latest
     name: Release generated artifacts
     permissions:
