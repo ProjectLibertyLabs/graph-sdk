@@ -346,6 +346,5 @@ jobs:
         with:
           files: |
             downloaded/*
-            downloaded/*/*
           prerelease: ${{ env.TEST_RUN }}
           name: ${{env.NEW_RELEASE_TAG}}
