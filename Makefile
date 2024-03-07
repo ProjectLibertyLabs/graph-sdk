@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-PROFILE := release
+PROFILE := production
 
 # Determine the operating system
 UNAME := $(shell uname)

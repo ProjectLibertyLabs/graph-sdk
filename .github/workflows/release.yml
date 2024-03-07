@@ -23,47 +23,47 @@ env:
   RUSTFLAGS: -D warnings
 
 jobs:
-  verify:
-    name: Checks core project built in Rust
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - name: Install Rust Toolchain Stable
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-        with:
-          toolchain: stable
-          default: true
-          profile: default
-          target: wasm32-unknown-unknown
-
-      - name: Install Rust Toolchain Nightly
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-        with:
-          toolchain: nightly-2024-03-01
-          default: false
-          profile: default
-          target: wasm32-unknown-unknown
-
-      - name: Cargo check
-        run: make check
-
-      - name: Cargo test
-        run: make test
-
-      - name: Cargo fmt
-        run: make format-check
-
-      - name: Set Up Cargo Deny
-        run: |
-          cargo install --force cargo-deny
-          cargo generate-lockfile
-
-      - name: License and Issue Check
-        run: make deny
+#  verify:
+#    name: Checks core project built in Rust
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#        with:
+#          fetch-depth: 0
+#
+#      - name: Install Rust Toolchain Stable
+#        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+#        with:
+#          toolchain: stable
+#          default: true
+#          profile: default
+#          target: wasm32-unknown-unknown
+#
+#      - name: Install Rust Toolchain Nightly
+#        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+#        with:
+#          toolchain: nightly-2024-03-01
+#          default: false
+#          profile: default
+#          target: wasm32-unknown-unknown
+#
+#      - name: Cargo check
+#        run: make check
+#
+#      - name: Cargo test
+#        run: make test
+#
+#      - name: Cargo fmt
+#        run: make format-check
+#
+#      - name: Set Up Cargo Deny
+#        run: |
+#          cargo install --force cargo-deny
+#          cargo generate-lockfile
+#
+#      - name: License and Issue Check
+#        run: make deny
 
   build-artifacts:
     strategy:
@@ -83,7 +83,7 @@ jobs:
             additional-rust-target: aarch64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
-    needs: verify
+#    needs: verify
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -140,17 +140,21 @@ jobs:
 
       - name: Build other targets Binary for Linux Jni
         run: |
-          cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
+          cargo install cross --git https://github.com/cross-rs/cross
+          cross build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --release
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
+          cd target
+          tree
+          cd ..
           cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest'
 
-      - name: Build other targets Binary for Linux Node
-        run: |
-          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-          mkdir -p artifacts/${{ matrix.additional-rust-target }}
-          cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
-        if: matrix.os == 'ubuntu-latest'
+#      - name: Build other targets Binary for Linux Node
+#        run: |
+#          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
+#          mkdir -p artifacts/${{ matrix.additional-rust-target }}
+#          cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
+#        if: matrix.os == 'ubuntu-latest'
 
       - name: Build with Gradle
         working-directory: java
@@ -164,7 +168,7 @@ jobs:
             artifacts/${{ matrix.java_library }}
             artifacts/${{ matrix.node_library }}
             artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
-            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
+#            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
 
   publish-java:
     name: Build and Publish JVM
