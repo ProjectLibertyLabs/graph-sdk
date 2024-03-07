@@ -159,7 +159,7 @@ jobs:
         working-directory: java
         run: |
           cd lib/src/main/resources
-          tree
+          ll
           cd ../../../..
           ./gradlew build
 
