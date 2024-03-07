@@ -124,18 +124,18 @@ jobs:
         run: |
           mkdir artifacts
           cp target/production/${{ matrix.java_library }} artifacts/${{ matrix.java_library }}
-#          cp target/release/${{ matrix.node_library }} artifacts/${{ matrix.node_library }}
+#          cp target/production/${{ matrix.node_library }} artifacts/${{ matrix.node_library }}
 
       - name: Build Universal Binary for MacOS Jni
         run: |
           cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
-          lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.java_library }} target/release/${{ matrix.java_library }}
+          lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} target/production/${{ matrix.java_library }}
         if: matrix.os == 'macos-latest'
 
 #      - name: Build Universal Binary for MacOS Node
 #        run: |
 #          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-#          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} target/release/${{ matrix.node_library }}
+#          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} target/production/${{ matrix.node_library }}
 #        if: matrix.os == 'macos-latest'
 
       - name: Build other targets Binary for Linux Jni
@@ -152,7 +152,7 @@ jobs:
 #        run: |
 #          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
 #          mkdir -p artifacts/${{ matrix.additional-rust-target }}
-#          cp target/${{ matrix.additional-rust-target }}/release/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
+#          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
 #        if: matrix.os == 'ubuntu-latest'
 
       - name: Build with Gradle
