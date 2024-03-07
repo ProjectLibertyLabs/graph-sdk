@@ -143,7 +143,7 @@ jobs:
           cargo install cross --git https://github.com/cross-rs/cross
           cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           mkdir -p artifacts/${{ matrix.additional-rust-target }}
-          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
           cd artifacts
           tree
         if: matrix.os == 'ubuntu-latest'
@@ -167,9 +167,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: artifacts-${{github.run_id}}
-          path: |
-            artifacts/${{ matrix.java_library }}
-            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
+          path: artifacts/
+#            artifacts/${{ matrix.java_library }}
+#            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
 #            artifacts/${{ matrix.node_library }}
 #            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
 
@@ -199,8 +199,8 @@ jobs:
           echo "Download dir: $download_dir"
           echo "Downloaded binaries: $(ls -l $download_dir)"
           ls -R
-      - name: Build JNI package
-        run: make build-jni
+#      - name: Build JNI package
+#        run: make build-jni
       - name: Get current version
         id: version
         run: |
@@ -214,7 +214,7 @@ jobs:
       - name: Publish to GitHub Packages
         working-directory: java
         run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' publish
-        if: env.TEST_RUN != 'true'
+#        if: env.TEST_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
