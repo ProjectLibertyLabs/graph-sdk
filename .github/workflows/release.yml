@@ -102,7 +102,7 @@ jobs:
           profile: minimal
           target: ${{ matrix.rust-target }}
 
-      - run: rustup target add ${{ matrix.additional-rust-target }}
+      - run: rustup target add nightly ${{ matrix.additional-rust-target }}
         if: ${{ matrix.additional-rust-target != '' }}
 
       - name: Set up Java
@@ -140,15 +140,6 @@ jobs:
 #          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
 #          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.node_library }}
 #        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
-
-      - name: Install Rust Toolchain nightly
-        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-        with:
-          toolchain: nightly
-          default: true
-          profile: minimal
-          override: true
-        if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
       - name: Build additional targets for Linux Jni
         run: |
