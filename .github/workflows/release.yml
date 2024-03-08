@@ -149,7 +149,7 @@ jobs:
 #        if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
       - name: cross action
-        uses: houseabsolute/actions-rust-cross@v0
+        uses: houseabsolute/actions-rust-cross@a0b2ccd63176060d61d875a04fabe94da5c75921,
         with:
           command: build
           target: ${{ matrix.additional-rust-target }}
