@@ -144,7 +144,7 @@ jobs:
 
       - name: Build additional targets for Linux Jni
         run: |
-          sudo apt-get install qemu-user gcc-10-aarch64-linux-gnu gcc-arm-none-eabi gdb-multiarch
+          sudo apt install gcc make gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu
           cargo build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
