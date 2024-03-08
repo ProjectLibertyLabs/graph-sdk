@@ -202,7 +202,10 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
       - name: Build and Publish with Gradle
         working-directory: java
-        run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' build
+        run: |
+          pwd
+          ls
+          ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' build
       - name: Publish to GitHub Packages
         working-directory: java
         run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' publish
