@@ -191,8 +191,8 @@ jobs:
           download_dir=${{steps.download-binaries.outputs.download-path}}
           echo "Download dir: $download_dir"
           echo "Downloaded binaries: $(ls -l $download_dir)"
-          find . -type f ! -name '*jni*' -delete
-          echo "After cleanup: $(ls -l $download_dir)"
+#          find . -type f ! -name '*jni*' -delete
+#          echo "After cleanup: $(ls -l $download_dir)"
       - name: Get current version
         id: version
         run: |
