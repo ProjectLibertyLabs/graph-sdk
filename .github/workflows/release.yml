@@ -97,7 +97,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly
+          toolchain: stable
           default: true
           profile: minimal
           target: ${{ matrix.rust-target }}
@@ -144,8 +144,9 @@ jobs:
 
       - name: Build additional targets for Linux Jni
         run: |
-          cargo install cross --git https://github.com/cross-rs/cross
-          cross +nightly build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
+          cargo install cross
+          sudo apt-get -y install podman
+          cross build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
