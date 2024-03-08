@@ -145,7 +145,7 @@ jobs:
       - name: Build additional targets for Linux Jni
         run: |
           cargo install cross
-          cross build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
+          cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
