@@ -13,14 +13,23 @@ public final class Native {
 
     private static void loadLibrary() {
         try {
-            String target = getNonDefaultTarget();
+            String target = getTarget();
             String libraryName = System.mapLibraryName("dsnp_graph_sdk_jni");
-            String resourcePath = target != null ? ("/" + target + "/" + libraryName) : ("/" + libraryName);
+            String resourcePath = "/" + target + "_" + libraryName;
             try (InputStream in = Native.class.getResourceAsStream(resourcePath)) {
                 if (in != null) {
                     copyToTempFileAndLoad(in, libraryName);
                 } else {
-                    System.loadLibrary("dsnp_graph_sdk_jni");
+                    // if it didn't find native, it will fallback to default library name
+                    // which doesn't include the target. This is useful in local development
+                    String fallbackResourcePath = "/" + libraryName;
+                    try (InputStream fallbackIn = Native.class.getResourceAsStream(fallbackResourcePath)) {
+                        if (fallbackIn != null) {
+                            copyToTempFileAndLoad(fallbackIn, libraryName);
+                        } else {
+                            System.loadLibrary("dsnp_graph_sdk_jni");
+                        }
+                    }
                 }
             }
         } catch (Exception e) {
@@ -28,15 +37,28 @@ public final class Native {
         }
     }
 
-    private static String getNonDefaultTarget() {
+    private static String getTarget() {
         String os = System.getProperty("os.name", "unknown").toLowerCase();
         String arch = System.getProperty("os.arch", "unknown").toLowerCase();
 
-        if (os.contains("linux") && arch.contains("aarch64")) {
-            return "aarch64-unknown-linux-gnu";
-        }
+        // Windows
+        if (os.contains("win") && (arch.contains("amd64") || arch.contains("x86_64"))) {
+            return "x86_64-pc-windows-msvc";
 
-        return null;
+        // MacOS
+        } else if (os.contains("mac") && (arch.contains("amd64") || arch.contains("x86_64"))) {
+            return "x86_64-apple-darwin";
+        } else if (os.contains("mac") && arch.contains("aarch64")) {
+            return "aarch64-apple-darwin";
+
+        // Linux
+        } else if (os.contains("nux") && (arch.contains("amd64") || arch.contains("x86_64"))) {
+            return "x86_64-unknown-linux-gnu";
+        } else if (os.contains("nux") && arch.contains("aarch64")) {
+            return "aarch64-unknown-linux-gnu";
+        } else {
+            throw new RuntimeException("OS: " + os + " and ARCH:" + arch + " native build does not exist!");
+        }
     }
 
     private static void copyToTempFileAndLoad(InputStream in, String name) throws IOException {

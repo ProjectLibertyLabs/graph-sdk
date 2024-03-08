@@ -68,7 +68,7 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly-2024-03-01
+          toolchain: nightly-2023-12-28
           default: true
           profile: default
           target: wasm32-unknown-unknown

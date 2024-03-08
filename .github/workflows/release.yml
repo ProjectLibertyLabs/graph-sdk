@@ -43,7 +43,7 @@ jobs:
 #      - name: Install Rust Toolchain Nightly
 #        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
 #        with:
-#          toolchain: nightly-2024-03-01
+#          toolchain: nightly-2023-12-28
 #          default: false
 #          profile: default
 #          target: wasm32-unknown-unknown
@@ -73,13 +73,16 @@ jobs:
           - os: ubuntu-latest
             java_library: libdsnp_graph_sdk_jni.so
             node_library: libdsnp_graph_sdk_node.so
+            rust-target: x86_64-unknown-linux-gnu
             additional-rust-target: aarch64-unknown-linux-gnu
           - os: windows-latest
             java_library: dsnp_graph_sdk_jni.dll
             node_library: dsnp_graph_sdk_node.dll
+            rust-target: x86_64-pc-windows-msvc
           - os: macos-latest
             java_library: libdsnp_graph_sdk_jni.dylib
             node_library: libdsnp_graph_sdk_node.dylib
+            rust-target: x86_64-apple-darwin
             additional-rust-target: aarch64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
@@ -94,10 +97,10 @@ jobs:
       - name: Install Rust Toolchain
         uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
         with:
-          toolchain: nightly
+          toolchain: stable
           default: true
           profile: minimal
-          target: wasm32-unknown-unknown
+          target: ${{ matrix.rust-target }}
 
       - run: rustup target add ${{ matrix.additional-rust-target }}
         if: ${{ matrix.additional-rust-target != '' }}
@@ -115,53 +118,41 @@ jobs:
 #          registry-url: https://registry.npmjs.org/
 
       - name: Build Jni bridge
-        run: make build-jni
+        run: |
+          cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ rust-target }}
+          mkdir artifacts
+          cp target/${{ rust-target }}/production/${{ matrix.java_library }} artifacts/${{ rust-target }}_${{ matrix.java_library }}
 
 #      - name: Build Node bridge
-#        run: make build-node
+#        run: |
+#          make build-node
+#          cp target/${{ rust-target }}/production/${{ matrix.node_library }} artifacts/${{ rust-target }}_${{ matrix.node_library }}
 
-      - name: Copy artifacts
-        run: |
-          mkdir artifacts
-          cp target/production/${{ matrix.java_library }} artifacts/${{ matrix.java_library }}
-#          cp target/production/${{ matrix.node_library }} artifacts/${{ matrix.node_library }}
 
-      - name: Build Universal Binary for MacOS Jni
+      - name: Build additional target for MacOS Jni
         run: |
           cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
-          lipo -create -output artifacts/${{ matrix.java_library }} target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} target/production/${{ matrix.java_library }}
-        if: matrix.os == 'macos-latest'
+          cp target/${{ additional-rust-target }}/production/{{ matrix.java_library }} artifacts/${{ additional-rust-target }}_${{ matrix.java_library }}
+        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
 
-#      - name: Build Universal Binary for MacOS Node
+#      - name: Build additional target for MacOS Node
 #        run: |
 #          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-#          lipo -create -output artifacts/${{ matrix.node_library }} target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} target/production/${{ matrix.node_library }}
-#        if: matrix.os == 'macos-latest'
+#          cp target/${{ additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ additional-rust-target }}_${{ matrix.node_library }}
+#        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
 
-      - name: Build other targets Binary for Linux Jni
+      - name: Build additional targets for Linux Jni
         run: |
           cargo install cross --git https://github.com/cross-rs/cross
-          cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
-          mkdir -p artifacts/${{ matrix.additional-rust-target }}
+          cross build --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
-          cd artifacts
-          tree
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && ${{ matrix.additional-rust-target != '' }}
 
 #      - name: Build other targets Binary for Linux Node
 #        run: |
 #          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-#          mkdir -p artifacts/${{ matrix.additional-rust-target }}
-#          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
-#        if: matrix.os == 'ubuntu-latest'
-
-      - name: Build with Gradle
-        working-directory: java
-        run: |
-          cd lib/src/main/resources
-          ls -R
-          cd ../../../..
-          ./gradlew build
+#          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.node_library }}
+#        if: matrix.os == 'ubuntu-latest' && ${{ matrix.additional-rust-target != '' }}
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@v3
@@ -198,9 +189,8 @@ jobs:
           download_dir=${{steps.download-binaries.outputs.download-path}}
           echo "Download dir: $download_dir"
           echo "Downloaded binaries: $(ls -l $download_dir)"
-          ls -R
-#      - name: Build JNI package
-#        run: make build-jni
+          find . -type f ! -name '*jni*' -delete
+          echo "After cleanup: $(ls -l $download_dir)"
       - name: Get current version
         id: version
         run: |
