@@ -262,9 +262,13 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: artifacts-node-${{github.run_id}}
-          path: |
-            bridge/node/dist/js
-            bridge/node/js
+          path: bridge/node
+
+      - name: Copy binaries
+        working-directory: bridge/node
+        run: |
+          cp *_dsnp_graph_sdk_node.node js/
+          cp *_dsnp_graph_sdk_node.node dist/js/
 
       - name: Publish NPM Package
         working-directory: bridge/node
