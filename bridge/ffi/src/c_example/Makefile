@@ -6,7 +6,7 @@ CC := gcc
 CXX := g++
 CFLAGS :=
 
-PROFILE := release
+PROFILE := production
 
 # Linker options
 LDFLAGS := -L../../../../target/$(PROFILE:dev=debug)
