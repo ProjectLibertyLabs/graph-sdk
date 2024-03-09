@@ -141,7 +141,7 @@ jobs:
         run: |
           cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/node/${{ matrix.additional-rust-target }}_dsnp_graph_sdk_node.node
-        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
+        if: matrix.os == 'macos-latest' && matrix.additional-rust-target != ''
 
       - name: Build additional targets for Linux Jni
         run: |
