@@ -111,60 +111,64 @@ jobs:
           java-version: '17'
           distribution: 'adopt'
 
-#      - name: Set up Node
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: '18.x'
-#          registry-url: https://registry.npmjs.org/
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
 
       - name: Build Jni bridge
         run: |
           cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.rust-target }}
-          mkdir -p artifacts
-          cp target/${{ matrix.rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.rust-target }}_${{ matrix.java_library }}
+          mkdir -p artifacts/java
+          cp target/${{ matrix.rust-target }}/production/${{ matrix.java_library }} artifacts/java/${{ matrix.rust-target }}_${{ matrix.java_library }}
 
-#      - name: Build Node bridge
-#        run: |
-#          make build-node
-#          cp target/${{ matrix.rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.rust-target }}_${{ matrix.node_library }}
+      - name: Build Node bridge
+        run: |
+          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.rust-target }}
+          mkdir -p artifacts/node
+          cp target/${{ matrix.rust-target }}/production/${{ matrix.node_library }} artifacts/node/${{ matrix.rust-target }}_dsnp_graph_sdk_node.node
 
 
       - name: Build additional target for MacOS Jni
         run: |
           cargo build -p dsnp-graph-sdk-jni --profile production --target ${{ matrix.additional-rust-target }}
-          mkdir -p artifacts
-          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
+          mkdir -p artifacts/java
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/java/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'macos-latest' && matrix.additional-rust-target != ''
 
-#      - name: Build additional target for MacOS Node
-#        run: |
-#          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-#          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.node_library }}
-#        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
+      - name: Build additional target for MacOS Node
+        run: |
+          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/node/${{ matrix.additional-rust-target }}_dsnp_graph_sdk_node.node
+        if: matrix.os == 'macos-latest' && ${{ matrix.additional-rust-target != '' }}
 
       - name: Build additional targets for Linux Jni
         run: |
           cargo install cross
           cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-jni --profile production
-          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/java/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
 
-#      - name: Build other targets Binary for Linux Node
-#        run: |
-#          cargo build -p dsnp-graph-sdk-node --profile production --target ${{ matrix.additional-rust-target }}
-#          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/${{ matrix.additional-rust-target }}_${{ matrix.node_library }}
-#        if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
+      - name: Build other targets Binary for Linux Node
+        run: |
+          cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-node --profile production
+          cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.node_library }} artifacts/node/${{ matrix.additional-rust-target }}_dsnp_graph_sdk_node.node
+        if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
-      - name: Upload Artifacts
+      - name: Upload Artifacts Java
         uses: actions/upload-artifact@v3
         with:
-          name: artifacts-${{github.run_id}}
-          path: artifacts/
-#            artifacts/${{ matrix.java_library }}
-#            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.java_library }}
-#            artifacts/${{ matrix.node_library }}
-#            artifacts/${{ matrix.additional-rust-target }}/${{ matrix.node_library }}
+          name: artifacts-java-${{github.run_id}}
+          path: artifacts/java/
+
+      - name: Upload Artifacts Node
+        uses: actions/upload-artifact@v3
+        with:
+          name: artifacts-node-${{github.run_id}}
+          path: artifacts/node/
+
 
   publish-java:
     name: Build and Publish JVM
@@ -184,15 +188,13 @@ jobs:
         id: download-binaries
         uses: actions/download-artifact@v3
         with:
-          name: artifacts-${{github.run_id}}
+          name: artifacts-java-${{github.run_id}}
           path: java/lib/src/main/resources
       - name: List Downloaded Binaries
         run: |
           download_dir=${{steps.download-binaries.outputs.download-path}}
           echo "Download dir: $download_dir"
           echo "Downloaded binaries: $(ls -l $download_dir)"
-#          find . -type f ! -name '*jni*' -delete
-#          echo "After cleanup: $(ls -l $download_dir)"
       - name: Get current version
         id: version
         run: |
@@ -202,74 +204,81 @@ jobs:
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
       - name: Build and Publish with Gradle
         working-directory: java
-        run: |
-          pwd
-          ls
-          ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' build
+        run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' build
       - name: Publish to GitHub Packages
         working-directory: java
         run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' publish
-        if: env.TEST_RUN != 'true'
+#        if: env.TEST_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
 
-#  publish_npm_package:
-#    name: Publish NPM Package
-#    runs-on: ubuntu-latest
-#    needs: build-artifacts
-#    permissions:
-#      contents: read
-#      packages: write
-#    steps:
-#      - uses: actions/checkout@v3
-#      - name: Set up Node
-#        uses: actions/setup-node@v3
-#        with:
-#          node-version: '18.x'
-#          registry-url: https://registry.npmjs.org/
-#
-#      - name: Install NPM Dependencies
-#        working-directory: bridge/node
-#        run: npm install
-#
-#      - name: Get current version
-#        id: version
-#        working-directory: bridge/node
-#        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
-#
-#      - name: Show versions
-#        working-directory: bridge/node
-#        run: |
-#          echo "Package: v${{ steps.version.outputs.version }}"
-#          echo " Actual: ${{ env.NEW_RELEASE_TAG }}"
-#
-#      - name: Use the new version
-#        working-directory: bridge/node
-#        run: |
-#          npm version --new-version "${{ env.NEW_RELEASE_TAG }}" --allow-same-version
-#          NEW_VERSION=$(node -p "require('./package.json').version")
-#          echo "New version: $NEW_VERSION"
-#        env:
-#          FULL_SHA: ${{ github.sha }}
-#
-#      - name: Build NPM Package
-#        working-directory: bridge/node
-#        run: npm run native:build-release && cp README.md dist/README.md
-#
-#      - name: Publish NPM Package
-#        working-directory: bridge/node
-#        if: env.TEST_RUN != 'true'
-#        run: npm publish --access public
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
-#
-#      - name: Dry run NPM Package
-#        working-directory: bridge/node
-#        if: env.TEST_RUN == 'true'
-#        run: npm publish --access public --dry-run
-#        env:
-#          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+  publish_npm_package:
+    name: Publish NPM Package
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          registry-url: https://registry.npmjs.org/
+
+      - name: Install NPM Dependencies
+        working-directory: bridge/node
+        run: npm install
+
+      - name: Get current version
+        id: version
+        working-directory: bridge/node
+        run: echo ::set-output name=version::$(node -p "require('./package.json').version")
+
+      - name: Show versions
+        working-directory: bridge/node
+        run: |
+          echo "Package: v${{ steps.version.outputs.version }}"
+          echo " Actual: ${{ env.NEW_RELEASE_TAG }}"
+
+      - name: Use the new version
+        working-directory: bridge/node
+        run: |
+          npm version --new-version "${{ env.NEW_RELEASE_TAG }}" --allow-same-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
+          echo "New version: $NEW_VERSION"
+        env:
+          FULL_SHA: ${{ github.sha }}
+
+      - name: Build NPM Package
+        working-directory: bridge/node
+        run: |
+          npm run tsc && cp README.md dist/README.md
+
+      - name: Download Binaries
+        id: download-binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: artifacts-node-${{github.run_id}}
+          path: |
+            bridge/node/dist/js
+            bridge/node/js
+
+      - name: Publish NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN != 'true'
+        run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+
+      - name: Dry run NPM Package
+        working-directory: bridge/node
+        if: env.TEST_RUN == 'true'
+        run: npm publish --access public --dry-run
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
 #  generate-docs:
 #    name: Generate graph sdk rust docs
@@ -324,15 +333,21 @@ jobs:
       contents: write
       packages: write
     steps:
-      - name: Download Binaries
-        id: download-binaries
+      - name: Download Java Binaries
+        id: download-binaries-java
         uses: actions/download-artifact@v3
         with:
-          name: artifacts-${{github.run_id}}
+          name: artifacts-java-${{github.run_id}}
+          path: downloaded
+      - name: Download Java Binaries
+        id: download-binaries-node
+        uses: actions/download-artifact@v3
+        with:
+          name: artifacts-node-${{github.run_id}}
           path: downloaded
       - name: List Downloaded Binaries
         run: |
-          download_dir=${{steps.download-binaries.outputs.download-path}}
+          download_dir=${{steps.download-binaries-node.outputs.download-path}}
           echo "Download dir: $download_dir"
           echo "Downloaded binaries: $(ls -l $download_dir)"
           ls -R
