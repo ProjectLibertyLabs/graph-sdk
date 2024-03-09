@@ -23,52 +23,52 @@ env:
   RUSTFLAGS: -D warnings
 
 jobs:
-#  verify:
-#    name: Checks core project built in Rust
-#    runs-on: ubuntu-latest
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Install Rust Toolchain Stable
-#        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-#        with:
-#          toolchain: stable
-#          default: true
-#          profile: default
-#          target: wasm32-unknown-unknown
-#
-#      - name: Install Rust Toolchain Nightly
-#        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-#        with:
-#          toolchain: nightly-2023-12-28
-#          default: false
-#          profile: default
-#          target: wasm32-unknown-unknown
-#
-#      - name: Cargo check
-#        run: make check
-#
-#      - name: Cargo test
-#        run: make test
-#
-#      - name: Cargo fmt
-#        run: make format-check
-#
-#      - name: Set Up Cargo Deny
-#        run: |
-#          cargo install --force cargo-deny
-#          cargo generate-lockfile
-#
-#      - name: License and Issue Check
-#        run: make deny
+  verify:
+    name: Checks core project built in Rust
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust Toolchain Stable
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          default: true
+          profile: default
+          target: wasm32-unknown-unknown
+
+      - name: Install Rust Toolchain Nightly
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: nightly-2023-12-28
+          default: false
+          profile: default
+          target: wasm32-unknown-unknown
+
+      - name: Cargo check
+        run: make check
+
+      - name: Cargo test
+        run: make test
+
+      - name: Cargo fmt
+        run: make format-check
+
+      - name: Set Up Cargo Deny
+        run: |
+          cargo install --force cargo-deny
+          cargo generate-lockfile
+
+      - name: License and Issue Check
+        run: make deny
 
   build-artifacts:
     strategy:
       matrix:
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, macos-latest, windows-latest]
         include:
           - os: ubuntu-latest
             java_library: libdsnp_graph_sdk_jni.so
@@ -86,7 +86,7 @@ jobs:
             additional-rust-target: aarch64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
-#    needs: verify
+    needs: verify
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout code
@@ -150,7 +150,6 @@ jobs:
           cp target/${{ matrix.additional-rust-target }}/production/${{ matrix.java_library }} artifacts/java/${{ matrix.additional-rust-target }}_${{ matrix.java_library }}
         if: matrix.os == 'ubuntu-latest' && matrix.additional-rust-target != ''
 
-
       - name: Build other targets Binary for Linux Node
         run: |
           cross build +nightly --target ${{ matrix.additional-rust-target }} -p dsnp-graph-sdk-node --profile production
@@ -208,7 +207,7 @@ jobs:
       - name: Publish to GitHub Packages
         working-directory: java
         run: ./gradlew -PprojVersion='${{ steps.version.outputs.version }}' publish
-#        if: env.TEST_RUN != 'true'
+        if: env.TEST_RUN != 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
@@ -284,53 +283,53 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
 
-#  generate-docs:
-#    name: Generate graph sdk rust docs
-#    runs-on: ubuntu-latest
-#    needs: build-artifacts
-#    permissions:
-#      contents: read
-#      packages: write
-#      pages: write
-#      id-token: write
-#    steps:
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#        with:
-#          fetch-depth: 0
-#
-#      - name: Install Rust Toolchain
-#        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
-#        with:
-#          toolchain: stable
-#          default: true
-#          profile: minimal
-#          target: wasm32-unknown-unknown
-#
-#      - name: Setup Pages
-#        uses: actions/configure-pages@v3
-#      - name: Build Docs
-#        run: |
-#          RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
-#      - name: Fix file permissions
-#        shell: sh
-#        run: |
-#          chmod -c -R +rX "target/doc" |
-#          while read line; do
-#              echo "::warning title=Invalid file permissions automatically fixed::$line"
-#          done
-#      - name: Upload Docs
-#        uses: actions/upload-pages-artifact@v1
-#        if: env.TEST_RUN != 'true'
-#        with:
-#          path: ./target/doc
-#      - name: Deploy Docs
-#        uses: actions/deploy-pages@v2
-#        if: env.TEST_RUN != 'true'
-#        id: deployment
+  generate-docs:
+    name: Generate graph sdk rust docs
+    runs-on: ubuntu-latest
+    needs: build-artifacts
+    permissions:
+      contents: read
+      packages: write
+      pages: write
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Install Rust Toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          default: true
+          profile: minimal
+          target: wasm32-unknown-unknown
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+      - name: Build Docs
+        run: |
+          RUSTC_BOOTSTRAP=1 RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --no-deps --all-features
+      - name: Fix file permissions
+        shell: sh
+        run: |
+          chmod -c -R +rX "target/doc" |
+          while read line; do
+              echo "::warning title=Invalid file permissions automatically fixed::$line"
+          done
+      - name: Upload Docs
+        uses: actions/upload-pages-artifact@v1
+        if: env.TEST_RUN != 'true'
+        with:
+          path: ./target/doc
+      - name: Deploy Docs
+        uses: actions/deploy-pages@v2
+        if: env.TEST_RUN != 'true'
+        id: deployment
 
   release:
-    needs: [publish-java]
+    needs: [publish-java, publish_npm_package, generate-docs]
     runs-on: ubuntu-latest
     name: Release generated artifacts
     permissions:
