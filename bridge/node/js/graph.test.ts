@@ -514,7 +514,12 @@ describe("Graph tests", () => {
       keys: [
         {
           index: 0,
-          content:Uint8Array.from(Buffer.from('40e3b18e1aa5c84175ec0c516838fb89dd9c947dd348fa38fe2082764bbc82a86f', 'hex')),
+          content: Uint8Array.from(
+            Buffer.from(
+              "40e3b18e1aa5c84175ec0c516838fb89dd9c947dd348fa38fe2082764bbc82a86f",
+              "hex",
+            ),
+          ),
         },
       ] as KeyData[],
     } as DsnpKeys;
@@ -529,18 +534,18 @@ describe("Graph tests", () => {
 
     const imported = graph.importUserData([importBundle]);
     expect(imported).toEqual(true);
-    let connectionPrivate: Connection = {
+    const connectionPrivate: Connection = {
       dsnpUserId: "1000",
       schemaId: 3,
     };
 
-    let privateConnectAction: ConnectAction ={
+    const privateConnectAction: ConnectAction = {
       type: "Connect",
       ownerDsnpUserId: "1000",
       dsnpKeys,
       connection: connectionPrivate,
-    }
-    const appliedAction = await  graph.applyActions([privateConnectAction]);
+    };
+    const appliedAction = await graph.applyActions([privateConnectAction]);
     expect(appliedAction).toEqual(true);
     const exported = graph.exportUpdates();
     expect(exported).toBeDefined();

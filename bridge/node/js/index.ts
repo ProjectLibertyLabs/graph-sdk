@@ -1,4 +1,6 @@
 import path from "path";
+import os from "os";
+import fs from "fs";
 import {
   Action,
   ActionOptions,
@@ -18,12 +20,49 @@ import {
 // Load the native neon graphsdk module
 function loadNativeModule(): Native {
   try {
-    return require(path.join(__dirname, "/dsnp_graph_sdk_node.node"));
+    const targetPath = path.join(
+      __dirname,
+      `/${getTarget()}_dsnp_graph_sdk_node.node`,
+    );
+    if (fs.existsSync(targetPath)) {
+      return require(targetPath);
+    }else {
+      // using the default library name (useful for local testing)
+      return require(path.join(__dirname, "/dsnp_graph_sdk_node.node"));
+    }
   } catch (error) {
+    let message = 'Unknown Error'
+    if (error instanceof Error) message = error.message
     throw new Error(
-      "Unable to load the native module dsnp_graph_sdk_node.node",
+      `Unable to load the native module dsnp_graph_sdk_node.node (${message})`,
     );
   }
+}
+
+function getTarget(): String {
+  const platform = os.platform().toLowerCase();
+  const arch = os.arch().toLowerCase();
+
+  // Windows
+  if (platform.includes("win") && arch.includes("x64")) {
+    return "x86_64-pc-windows-msvc";
+
+    // MacOS
+  } else if (platform.includes("darwin") && arch.includes("x64")) {
+    return "x86_64-apple-darwin";
+  } else if (platform.includes("darwin") && arch.includes("arm64")) {
+    return "aarch64-apple-darwin";
+
+    // Linux
+  } else if (platform.includes("linux") && arch.includes("x64")) {
+    return "x86_64-unknown-linux-gnu";
+  } else if (platform.includes("linux") && arch.includes("arm64")) {
+    return "aarch64-unknown-linux-gnu";
+  }
+
+  throw new Error(
+    `Operating System: ${platform} Architecture: ${arch} is not supported!`,
+  );
 }
 
 // Define the Native interface

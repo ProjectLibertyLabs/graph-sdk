@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := all
 
-PROFILE := release
+PROFILE := production
 
 # Determine the operating system
 UNAME := $(shell uname)
@@ -35,10 +35,10 @@ deny:
 .PHONY: format
 format:
 	@echo "Running Cargo fmt..."
-	@cargo +nightly-2024-03-01 fmt --all
+	@cargo +nightly-2023-12-28 fmt --all
 format-check:
 	@echo "Running Cargo fmt..."
-	@cargo +nightly-2024-03-01 fmt --all -- --check
+	@cargo +nightly-2023-12-28 fmt --all -- --check
 
 .PHONY: build
 build:
