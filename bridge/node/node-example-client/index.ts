@@ -8,13 +8,13 @@ async function interactWithGraph() {
 
     let connect_action: ConnectAction = {
         type: "Connect",
-        ownerDsnpUserId: 1,
+        ownerDsnpUserId: "1",
         connection: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             schemaId: public_follow_graph_schema_id,
         } as Connection,
         dsnpKeys: {
-            dsnpUserId: 2,
+            dsnpUserId: "2",
             keysHash: 100,
             keys: [],
         } as DsnpKeys,
@@ -26,7 +26,7 @@ async function interactWithGraph() {
     let applied = await graph.applyActions(actions);
     console.log(applied);
 
-    let connections_including_pending = await graph.getConnectionsForUserGraph(1, public_follow_graph_schema_id, true);
+    let connections_including_pending = await graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
     console.log(connections_including_pending);
 
     let exported = await graph.exportUpdates();
