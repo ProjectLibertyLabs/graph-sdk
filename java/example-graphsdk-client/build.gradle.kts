@@ -35,7 +35,7 @@ repositories {
 dependencies {
     implementation("org.slf4j:slf4j-api:2.0.7")
     implementation("org.slf4j:slf4j-simple:2.0.7")
-    implementation("io.amplica.graphsdk:lib:1.0.1")
+    implementation("io.amplica.graphsdk:lib:1.0.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
     testImplementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.6.21")
     testImplementation("org.jetbrains.kotlin:kotlin-script-runtime:1.6.21")
