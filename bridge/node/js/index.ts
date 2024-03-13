@@ -42,13 +42,9 @@ function loadNativeModule(): Native {
 function getTarget(): String {
   const platform = os.platform().toLowerCase();
   const arch = os.arch().toLowerCase();
-
-  // Windows
-  if (platform.includes("win") && arch.includes("x64")) {
-    return "x86_64-pc-windows-msvc";
-
+  
     // MacOS
-  } else if (platform.includes("darwin") && arch.includes("x64")) {
+  if (platform.includes("darwin") && arch.includes("x64")) {
     return "x86_64-apple-darwin";
   } else if (platform.includes("darwin") && arch.includes("arm64")) {
     return "aarch64-apple-darwin";
@@ -58,9 +54,13 @@ function getTarget(): String {
     return "x86_64-unknown-linux-gnu";
   } else if (platform.includes("linux") && arch.includes("arm64")) {
     return "aarch64-unknown-linux-gnu";
+
+    // Windows
+  } else if (platform.includes("win32") && arch.includes("x64")) {
+    return "x86_64-pc-windows-msvc";
   }
 
-  throw new Error(
+    throw new Error(
     `Operating System: ${platform} Architecture: ${arch} is not supported!`,
   );
 }
