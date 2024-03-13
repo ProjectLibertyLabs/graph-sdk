@@ -43,15 +43,15 @@ function getTarget(): String {
   const platform = os.platform().toLowerCase();
   const arch = os.arch().toLowerCase();
 
-  // Windows
-  if (platform.includes("win") && arch.includes("x64")) {
-    return "x86_64-pc-windows-msvc";
-
-    // MacOS
-  } else if (platform.includes("darwin") && arch.includes("x64")) {
+  // MacOS
+  if (platform.includes("darwin") && arch.includes("x64")) {
     return "x86_64-apple-darwin";
   } else if (platform.includes("darwin") && arch.includes("arm64")) {
     return "aarch64-apple-darwin";
+
+    // Windows
+  } else if (platform.includes("win") && arch.includes("x64")) {
+    return "x86_64-pc-windows-msvc";
 
     // Linux
   } else if (platform.includes("linux") && arch.includes("x64")) {
