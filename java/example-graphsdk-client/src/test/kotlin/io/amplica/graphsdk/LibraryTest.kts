@@ -32,6 +32,16 @@ class LibraryTest {
     }
 
     @Test
+    fun initiateTestnetPaseoStateShouldWork() {
+        // act
+        val graph = Graph(Configuration.getTestnetPaseo())
+
+        // assert
+        assertNotEquals(0, graph.unsafeNativeHandleWithoutGuard())
+        graph.finalize()
+    }
+
+    @Test
     fun initiateRococoStateShouldWork() {
         // act
         val graph = Graph(Configuration.getRococo())

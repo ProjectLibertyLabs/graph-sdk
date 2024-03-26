@@ -38,6 +38,7 @@ enum EnvironmentType {
   MainNet = 0;
   Rococo = 1;
   Dev = 2;
+  TestnetPaseo = 3;
 }
 
 message Environment {

@@ -4,6 +4,7 @@ enum EnvironmentType {
   Mainnet = "Mainnet",
   Rococo = "Rococo",
   Dev = "Dev",
+  TestnetPaseo = "TestnetPaseo",
 }
 
 interface EnvironmentInterface {

@@ -176,6 +176,7 @@ pub struct Config {
 pub enum Environment {
 	Mainnet,
 	Rococo,
+	TestnetPaseo,
 	Dev(Config),
 }
 

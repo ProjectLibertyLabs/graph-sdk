@@ -11,6 +11,7 @@ import java.util.HashMap;
 public class Configuration {
     private static Configuration MAIN_NET_INSTANCE;
     private static Configuration ROCOCO_INSTANCE;
+    private static Configuration TESTNET_PASEO_INSTANCE;
 
     private final Config inner;
     private final Environment environment;
@@ -53,6 +54,13 @@ public class Configuration {
             MAIN_NET_INSTANCE = new Configuration(EnvironmentType.MainNet);
         }
         return MAIN_NET_INSTANCE;
+    }
+
+    public static Configuration getTestnetPaseo() throws InvalidProtocolBufferException {
+        if(TESTNET_PASEO_INSTANCE == null) {
+            TESTNET_PASEO_INSTANCE = new Configuration(EnvironmentType.TestnetPaseo);
+        }
+        return TESTNET_PASEO_INSTANCE;
     }
 
     public static Configuration getRococo() throws InvalidProtocolBufferException {

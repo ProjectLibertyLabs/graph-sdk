@@ -44,8 +44,11 @@ lazy_static! {
 	/// Mainnet `Config`
 	pub static ref MAINNET_CONFIG: Config = include_str!("../resources/configs/frequency.json")
 		.try_into().unwrap();
-	/// Rococo `Config`
+	/// Testnet Rococo `Config`
 	pub static ref ROCOCO_CONFIG: Config = include_str!("../resources/configs/frequency-rococo.json")
+		.try_into().unwrap();
+	/// Testnet Paseo `Config`
+	pub static ref TESTNET_PASEO_CONFIG: Config = include_str!("../resources/configs/frequency-testnet-paseo.json")
 		.try_into().unwrap();
 }
 
@@ -121,6 +124,7 @@ pub enum GraphKeyType {
 pub enum Environment {
 	Mainnet,
 	Rococo,
+	TestnetPaseo,
 	Dev(Config),
 }
 
@@ -130,6 +134,7 @@ impl Environment {
 		match self {
 			Environment::Mainnet => &MAINNET_CONFIG,
 			Environment::Rococo => &ROCOCO_CONFIG,
+			Environment::TestnetPaseo => &TESTNET_PASEO_CONFIG,
 			Environment::Dev(cfg) => &cfg,
 		}
 	}
@@ -320,6 +325,7 @@ mod config_tests {
 	fn lazy_static_configs_are_valid() -> Result<(), apache_avro::Error> {
 		let _ = MAINNET_CONFIG;
 		let _ = ROCOCO_CONFIG;
+		let _ = TESTNET_PASEO_CONFIG;
 		Ok(())
 	}
 }

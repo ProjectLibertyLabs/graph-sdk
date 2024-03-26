@@ -20,6 +20,10 @@ public enum EnvironmentType
    * <code>Dev = 2;</code>
    */
   Dev(2),
+  /**
+   * <code>TestnetPaseo = 3;</code>
+   */
+  TestnetPaseo(3),
   UNRECOGNIZED(-1),
   ;
 
@@ -35,6 +39,10 @@ public enum EnvironmentType
    * <code>Dev = 2;</code>
    */
   public static final int Dev_VALUE = 2;
+  /**
+   * <code>TestnetPaseo = 3;</code>
+   */
+  public static final int TestnetPaseo_VALUE = 3;
 
 
   public final int getNumber() {
@@ -64,6 +72,7 @@ public enum EnvironmentType
       case 0: return MainNet;
       case 1: return Rococo;
       case 2: return Dev;
+      case 3: return TestnetPaseo;
       default: return null;
     }
   }
