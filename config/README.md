@@ -6,8 +6,10 @@ All of different settings and configuration parameters are encapsulated inside t
 #### Supported `Environments` and their corresponding configurations:
 - `Mainnet`: This environment corresponds to the **production** settings. It is used for live deployments and real-world
 usage.
-- `Rococo`: This environment represents the **staging** settings. It is typically used for pre-production testing and
-validation before deployment to the production environment.
+- `TestnetPaseo`: This environment represents **staging** settings. It is typically used for pre-production testing and
+  validation before deployment to the production environment.
+- `Rococo`: This environment represents **staging** settings. It is typically used for pre-production testing and
+  validation before deployment to the production environment.
 - `Dev`: This environment is specifically designed for **local** development and testing purposes. It allows
 developers to experiment and iterate on their code locally without affecting the production or staging environments.
 

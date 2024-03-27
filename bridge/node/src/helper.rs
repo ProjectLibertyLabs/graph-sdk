@@ -36,6 +36,7 @@ pub unsafe fn environment_from_js(
 	match environment_type_str.value(cx).as_str() {
 		"Mainnet" => Ok(Environment::Mainnet),
 		"Rococo" => Ok(Environment::Rococo),
+		"TestnetPaseo" => Ok(Environment::TestnetPaseo),
 		"Dev" => {
 			let config: Handle<JsObject> = environment_from_js.get(cx, "config").unwrap();
 			let config = config_from_js(cx, config)?;

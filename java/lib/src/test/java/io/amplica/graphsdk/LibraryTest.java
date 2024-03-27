@@ -86,6 +86,16 @@ class LibraryTest {
         }
 
         @Test
+        void initiate_testnet_paseo_state_should_work() throws Exception {
+                // act
+                var graph = new Graph(Configuration.getTestnetPaseo());
+
+                // assert
+                assertNotEquals(0, graph.unsafeNativeHandleWithoutGuard());
+                graph.finalize();
+        }
+
+        @Test
         void initiate_rococo_state_should_work() throws Exception {
                 // act
                 var graph = new Graph(Configuration.getRococo());

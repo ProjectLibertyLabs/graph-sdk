@@ -1,11 +1,14 @@
 use crate::bindings::*;
-use dsnp_graph_config::{Config as RustConfig, DsnpVersion, MAINNET_CONFIG, ROCOCO_CONFIG};
+use dsnp_graph_config::{
+	Config as RustConfig, DsnpVersion, MAINNET_CONFIG, ROCOCO_CONFIG, TESTNET_PASEO_CONFIG,
+};
 use std::{collections::HashMap, mem::ManuallyDrop};
 
 pub fn get_config_for_ffi(environment: &Environment) -> Config {
 	match environment {
 		Environment::Mainnet => get_config_from_rust_config(&MAINNET_CONFIG),
 		Environment::Rococo => get_config_from_rust_config(&ROCOCO_CONFIG),
+		Environment::TestnetPaseo => get_config_from_rust_config(&TESTNET_PASEO_CONFIG),
 		Environment::Dev(config) => config.clone(),
 	}
 }
@@ -82,6 +85,7 @@ pub fn environment_from_ffi(environment: &Environment) -> dsnp_graph_config::Env
 	match environment {
 		Environment::Mainnet => dsnp_graph_config::Environment::Mainnet,
 		Environment::Rococo => dsnp_graph_config::Environment::Rococo,
+		Environment::TestnetPaseo => dsnp_graph_config::Environment::TestnetPaseo,
 		Environment::Dev(config) => {
 			let rust_config = config_from_ffi(config);
 			dsnp_graph_config::Environment::Dev(rust_config)

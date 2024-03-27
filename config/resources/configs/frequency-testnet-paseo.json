@@ -1,0 +1,41 @@
+{
+  "sdkMaxUsersGraphSize": 10000,
+  "sdkMaxStaleFriendshipDays": 90,
+  "maxGraphPageSizeBytes": 1024,
+  "maxPageId": 16,
+  "maxKeyPageSizeBytes": 65536,
+  "graphPublicKeySchemaId": 7,
+  "schemaMap": [
+    [
+      8,
+      [
+        "1.0",
+        {
+          "connectionType": "follow",
+          "privacyType": "public"
+        }
+      ]
+    ],
+    [
+      9,
+      [
+        "1.0",
+        {
+          "connectionType": "follow",
+          "privacyType": "private"
+        }
+      ]
+    ],
+    [
+      10,
+      [
+        "1.0",
+        {
+          "connectionType": "friendship",
+          "privacyType": "private"
+        }
+      ]
+    ]
+  ],
+  "dsnpVersions": ["1.0"]
+}

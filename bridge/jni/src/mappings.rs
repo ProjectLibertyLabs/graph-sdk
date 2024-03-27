@@ -45,6 +45,7 @@ pub fn map_to_environment(
 	{
 		proto_output::EnvironmentType::MainNet => RustEnvironment::Mainnet,
 		proto_output::EnvironmentType::Rococo => RustEnvironment::Rococo,
+		proto_output::EnvironmentType::TestnetPaseo => RustEnvironment::TestnetPaseo,
 		proto_output::EnvironmentType::Dev => {
 			let cfg = env_proto
 				.config
