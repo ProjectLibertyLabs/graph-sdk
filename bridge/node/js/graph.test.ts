@@ -104,6 +104,16 @@ describe("Graph tests", () => {
     expect(schema_id).toEqual(8);
     graph.freeGraphState();
   });
+  
+  test("getGraphConfig with Testnet Paseo environment should return the graph config", async () => {
+    const environment: EnvironmentInterface = {
+      environmentType: EnvironmentType.TestnetPaseo,
+    };
+    const graph = new Graph(environment);
+    const config = graph.getGraphConfig(environment);
+    expect(config).toBeDefined();
+    graph.freeGraphState();
+  });
 
   test("getGraphConfig with Rococo environment should return the graph config", async () => {
     const environment: EnvironmentInterface = {

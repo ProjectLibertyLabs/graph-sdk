@@ -36,9 +36,9 @@ message Config {
 
 enum EnvironmentType {
   MainNet = 0;
-  Rococo = 1;
-  Dev = 2;
-  TestnetPaseo = 3;
+  TestnetPaseo = 1;
+  Rococo = 2;
+  Dev = 3;
 }
 
 message Environment {

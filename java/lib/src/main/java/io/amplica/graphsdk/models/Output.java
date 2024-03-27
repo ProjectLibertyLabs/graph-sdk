@@ -131,8 +131,8 @@ public final class Output {
       "ic\020\000\022\021\n\rFollowPrivate\020\001\022\024\n\020FriendshipPub" +
       "lic\020\002\022\025\n\021FriendshipPrivate\020\003*\035\n\013DsnpVers" +
       "ion\022\016\n\nVersion1_0\020\000*E\n\017EnvironmentType\022\013" +
-      "\n\007MainNet\020\000\022\n\n\006Rococo\020\001\022\007\n\003Dev\020\002\022\020\n\014Test" +
-      "netPaseo\020\003B\036\n\032io.amplica.graphsdk.models" +
+      "\n\007MainNet\020\000\022\020\n\014TestnetPaseo\020\001\022\n\n\006Rococo\020" +
+      "\002\022\007\n\003Dev\020\003B\036\n\032io.amplica.graphsdk.models" +
       "P\001b\006proto3"
     };
     descriptor = com.google.protobuf.Descriptors.FileDescriptor

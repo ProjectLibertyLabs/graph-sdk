@@ -13,17 +13,17 @@ public enum EnvironmentType
    */
   MainNet(0),
   /**
-   * <code>Rococo = 1;</code>
+   * <code>TestnetPaseo = 1;</code>
    */
-  Rococo(1),
+  TestnetPaseo(1),
   /**
-   * <code>Dev = 2;</code>
+   * <code>Rococo = 2;</code>
    */
-  Dev(2),
+  Rococo(2),
   /**
-   * <code>TestnetPaseo = 3;</code>
+   * <code>Dev = 3;</code>
    */
-  TestnetPaseo(3),
+  Dev(3),
   UNRECOGNIZED(-1),
   ;
 
@@ -32,17 +32,17 @@ public enum EnvironmentType
    */
   public static final int MainNet_VALUE = 0;
   /**
-   * <code>Rococo = 1;</code>
+   * <code>TestnetPaseo = 1;</code>
    */
-  public static final int Rococo_VALUE = 1;
+  public static final int TestnetPaseo_VALUE = 1;
   /**
-   * <code>Dev = 2;</code>
+   * <code>Rococo = 2;</code>
    */
-  public static final int Dev_VALUE = 2;
+  public static final int Rococo_VALUE = 2;
   /**
-   * <code>TestnetPaseo = 3;</code>
+   * <code>Dev = 3;</code>
    */
-  public static final int TestnetPaseo_VALUE = 3;
+  public static final int Dev_VALUE = 3;
 
 
   public final int getNumber() {
@@ -70,9 +70,9 @@ public enum EnvironmentType
   public static EnvironmentType forNumber(int value) {
     switch (value) {
       case 0: return MainNet;
-      case 1: return Rococo;
-      case 2: return Dev;
-      case 3: return TestnetPaseo;
+      case 1: return TestnetPaseo;
+      case 2: return Rococo;
+      case 3: return Dev;
       default: return null;
     }
   }

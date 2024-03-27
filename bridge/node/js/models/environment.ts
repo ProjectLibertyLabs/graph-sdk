@@ -2,9 +2,9 @@ import { Config } from "./config";
 
 enum EnvironmentType {
   Mainnet = "Mainnet",
+  TestnetPaseo = "TestnetPaseo",
   Rococo = "Rococo",
   Dev = "Dev",
-  TestnetPaseo = "TestnetPaseo",
 }
 
 interface EnvironmentInterface {
@@ -12,7 +12,7 @@ interface EnvironmentInterface {
 }
 
 interface Environment extends EnvironmentInterface {
-  environmentType: EnvironmentType.Mainnet | EnvironmentType.Rococo;
+  environmentType: EnvironmentType.Mainnet | EnvironmentType.Rococo | EnvironmentType.TestnetPaseo;
 }
 
 interface DevEnvironment extends EnvironmentInterface {
@@ -22,10 +22,4 @@ interface DevEnvironment extends EnvironmentInterface {
 
 type EnvironmentConfig = DevEnvironment;
 
-export {
-  EnvironmentType,
-  Environment,
-  DevEnvironment,
-  EnvironmentConfig,
-  EnvironmentInterface,
-};
+export { EnvironmentType, Environment, DevEnvironment, EnvironmentConfig, EnvironmentInterface };
