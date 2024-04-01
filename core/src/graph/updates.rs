@@ -49,10 +49,10 @@ impl UpdateTracker {
 	#[log_result_err(Level::Info)]
 	pub fn register_update(
 		&mut self,
-		event: &UpdateEvent,
+		event: UpdateEvent,
 		ignore_existing: bool,
 	) -> DsnpGraphResult<()> {
-		if self.contains(event) {
+		if self.contains(&event) {
 			return match ignore_existing {
 				true => {
 					match event {
@@ -66,10 +66,10 @@ impl UpdateTracker {
 					Ok(())
 				},
 				false => Err(DsnpGraphError::EventExists),
-			}
+			};
 		}
 
-		match self.contains_complement(event) {
+		match self.contains_complement(&event) {
 			// removing the complement to cancel out a prior update
 			true => self.remove(&event.get_complement()),
 			// adding new update
@@ -83,14 +83,14 @@ impl UpdateTracker {
 	#[log_result_err(Level::Info)]
 	pub fn register_updates(
 		&mut self,
-		events: &[UpdateEvent],
+		mut events: Vec<UpdateEvent>,
 		ignore_existing: bool,
 	) -> DsnpGraphResult<()> {
 		if !ignore_existing && events.iter().any(|e| self.contains(e)) {
-			return Err(DsnpGraphError::DuplicateUpdateEvents)
+			return Err(DsnpGraphError::DuplicateUpdateEvents);
 		}
 
-		for e in events {
+		for e in events.drain(..) {
 			self.register_update(e, ignore_existing)?;
 		}
 
@@ -130,10 +130,14 @@ impl UpdateTracker {
 			synced_updates.retain(|e| match e {
 				UpdateEvent::Add { dsnp_user_id, .. }
 					if existing_connections.contains(&dsnp_user_id) =>
-					false,
+				{
+					false
+				},
 				UpdateEvent::Remove { dsnp_user_id, .. }
 					if !existing_connections.contains(&dsnp_user_id) =>
-					false,
+				{
+					false
+				},
 				_ => true,
 			});
 			if synced_updates.len() != arr.len() {
@@ -155,8 +159,8 @@ impl UpdateTracker {
 	}
 
 	/// adds the update event
-	fn add(&mut self, event: &UpdateEvent) {
-		self.updates.entry(*event.get_schema_id()).or_default().push(event.clone());
+	fn add(&mut self, event: UpdateEvent) {
+		self.updates.entry(*event.get_schema_id()).or_default().push(event);
 	}
 }
 
@@ -174,10 +178,12 @@ impl UpdateEvent {
 	/// returns the complement of the event
 	pub fn get_complement(&self) -> Self {
 		match self {
-			Add { dsnp_user_id, schema_id } =>
-				Remove { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
-			Remove { dsnp_user_id, schema_id } =>
-				Add { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
+			Add { dsnp_user_id, schema_id } => {
+				Remove { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id }
+			},
+			Remove { dsnp_user_id, schema_id } => {
+				Add { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id }
+			},
 		}
 	}
 
@@ -211,13 +217,13 @@ mod test {
 		let schema_id = 4;
 		let event = UpdateEvent::create_add(1, schema_id);
 		tracker
-			.register_update(&event.clone(), false)
+			.register_update(event.clone(), false)
 			.expect("Should have registered successfully!");
 
 		// act
 		let exists = tracker.contains(&event);
-		let res1 = tracker.register_update(&event, false);
-		let res2 = tracker.register_update(&event, true);
+		let res1 = tracker.register_update(event.clone(), false);
+		let res2 = tracker.register_update(event, true);
 
 		// assert
 		assert!(exists);
@@ -238,13 +244,13 @@ mod test {
 		let events =
 			vec![UpdateEvent::create_add(1, schema_id), UpdateEvent::create_remove(2, schema_id)];
 		tracker
-			.register_updates(&events, false)
+			.register_updates(events.clone(), false)
 			.expect("Should have registered successfully!");
 		let complements: Vec<UpdateEvent> =
 			events.as_slice().iter().map(|e| e.get_complement()).collect();
 
 		// act
-		let res = tracker.register_updates(&complements, false);
+		let res = tracker.register_updates(complements, false);
 
 		// assert
 		assert!(res.is_ok());
@@ -267,7 +273,7 @@ mod test {
 		];
 
 		// act
-		let res = tracker.register_updates(&events, false);
+		let res = tracker.register_updates(events.clone(), false);
 
 		// assert
 		assert!(res.is_ok());
@@ -310,7 +316,7 @@ mod test {
 			UpdateEvent::create_remove(4, schema_1),
 		];
 		let existing_connections = HashSet::from([3, 2]);
-		tracker.register_updates(&events, false).expect("should register");
+		tracker.register_updates(events.clone(), false).expect("should register");
 
 		// act
 		tracker.sync_updates(schema_1, &existing_connections);

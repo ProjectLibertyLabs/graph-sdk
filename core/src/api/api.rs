@@ -443,7 +443,7 @@ impl GraphState {
 
 			if pages.is_empty() {
 				// case where only keys are imported
-				continue
+				continue;
 			}
 
 			let dsnp_config = user_graph
@@ -506,8 +506,9 @@ impl GraphState {
 					..
 				} => {
 					let ignore_existing_connections = match options {
-						Some(ActionOptions { ignore_existing_connections, .. }) =>
-							*ignore_existing_connections,
+						Some(ActionOptions { ignore_existing_connections, .. }) => {
+							*ignore_existing_connections
+						},
 						None => false,
 					};
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
@@ -517,16 +518,16 @@ impl GraphState {
 								action.owner_dsnp_user_id(),
 								*dsnp_user_id
 							);
-							continue
+							continue;
 						}
 
 						return Err(DsnpGraphError::ConnectionAlreadyExists(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
-						))
+						));
 					}
 					owner_graph.update_tracker_mut().register_update(
-						&UpdateEvent::create_add(*dsnp_user_id, *schema_id),
+						UpdateEvent::create_add(*dsnp_user_id, *schema_id),
 						ignore_existing_connections,
 					)?;
 					if let Some(inner_keys) = dsnp_keys {
@@ -543,8 +544,9 @@ impl GraphState {
 					..
 				} => {
 					let ignore_missing_connections = match options {
-						Some(ActionOptions { ignore_missing_connections, .. }) =>
-							*ignore_missing_connections,
+						Some(ActionOptions { ignore_missing_connections, .. }) => {
+							*ignore_missing_connections
+						},
 						None => false,
 					};
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
@@ -554,16 +556,16 @@ impl GraphState {
 								action.owner_dsnp_user_id(),
 								*dsnp_user_id
 							);
-							continue
+							continue;
 						}
 
 						return Err(DsnpGraphError::ConnectionDoesNotExist(
 							action.owner_dsnp_user_id(),
 							*dsnp_user_id,
-						))
+						));
 					}
 					owner_graph.update_tracker_mut().register_update(
-						&UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
+						UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
 						ignore_missing_connections,
 					)?;
 				},
@@ -727,8 +729,7 @@ mod test {
 	}
 
 	#[test]
-	fn import_user_data_should_without_private_keys_should_add_prids_for_private_friendship_graph()
-	{
+	fn import_user_data_without_private_keys_should_add_prids_for_private_friendship_graph() {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id = env
