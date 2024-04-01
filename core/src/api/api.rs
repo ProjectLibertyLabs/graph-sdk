@@ -506,9 +506,8 @@ impl GraphState {
 					..
 				} => {
 					let ignore_existing_connections = match options {
-						Some(ActionOptions { ignore_existing_connections, .. }) => {
-							*ignore_existing_connections
-						},
+						Some(ActionOptions { ignore_existing_connections, .. }) =>
+							*ignore_existing_connections,
 						None => false,
 					};
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
@@ -544,9 +543,8 @@ impl GraphState {
 					..
 				} => {
 					let ignore_missing_connections = match options {
-						Some(ActionOptions { ignore_missing_connections, .. }) => {
-							*ignore_missing_connections
-						},
+						Some(ActionOptions { ignore_missing_connections, .. }) =>
+							*ignore_missing_connections,
 						None => false,
 					};
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
