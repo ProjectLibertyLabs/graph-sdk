@@ -589,6 +589,7 @@ mod test {
 		dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpPrid},
 		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
+	use memory_stats::memory_stats;
 	use ntest::*;
 
 	#[test]
@@ -752,7 +753,13 @@ mod test {
 			.build();
 
 		// act
+		let mem_usage = memory_stats().unwrap();
+		println!("before data import physical mem: {}", mem_usage.physical_mem);
+
 		let res = state.import_users_data(&vec![input]);
+
+		let mem_usage = memory_stats().unwrap();
+		println!("after data import physical mem: {}", mem_usage.physical_mem);
 
 		// assert
 		assert!(res.is_ok());
@@ -764,6 +771,8 @@ mod test {
 				dsnp_keys: None,
 			})
 			.collect();
+		let mem_usage = memory_stats().unwrap();
+		println!("before action import physical mem: {}", mem_usage.physical_mem);
 
 		let res = state.apply_actions(
 			&actions,
@@ -772,6 +781,9 @@ mod test {
 				ignore_missing_connections: false,
 			}),
 		);
+
+		let mem_usage = memory_stats().unwrap();
+		println!("after action import physical mem: {}", mem_usage.physical_mem);
 
 		// assert
 		assert!(res.is_ok());

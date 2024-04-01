@@ -18,7 +18,7 @@ where
 	V: Clone,
 {
 	inner: HashMap<K, V>,
-	original_items: HashMap<K, Option<V>>,
+	overridden_originals: HashMap<K, Option<V>>,
 }
 
 impl<K, V> TransactionalHashMap<K, V>
@@ -27,14 +27,14 @@ where
 	V: Clone,
 {
 	pub fn new() -> Self {
-		Self { inner: HashMap::new(), original_items: HashMap::new() }
+		Self { inner: HashMap::new(), overridden_originals: HashMap::new() }
 	}
 
 	#[inline]
 	pub fn with_capacity(capacity: usize) -> Self {
 		Self {
 			inner: HashMap::with_capacity(capacity),
-			original_items: HashMap::with_capacity(capacity),
+			overridden_originals: HashMap::with_capacity(capacity),
 		}
 	}
 
@@ -46,15 +46,15 @@ where
 	pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
 		match self.inner.entry(key.clone()) {
 			Entry::Vacant(v) => {
-				if !self.original_items.contains_key(&key) {
-					self.original_items.insert(key, None);
+				if !self.overridden_originals.contains_key(&key) {
+					self.overridden_originals.insert(key, None);
 				}
 				Entry::Vacant(v)
 			},
 			Entry::Occupied(o) => {
-				if !self.original_items.contains_key(&key) {
+				if !self.overridden_originals.contains_key(&key) {
 					// extra clone of the value since we have to keep the original
-					self.original_items.insert(key, Some(o.get().clone()));
+					self.overridden_originals.insert(key, Some(o.get().clone()));
 				}
 				Entry::Occupied(o)
 			},
@@ -64,8 +64,8 @@ where
 	#[inline]
 	pub fn insert(&mut self, k: K, v: V) -> Option<V> {
 		let prev = self.inner.remove(&k);
-		if !self.original_items.contains_key(&k) {
-			self.original_items.insert(k.clone(), prev);
+		if !self.overridden_originals.contains_key(&k) {
+			self.overridden_originals.insert(k.clone(), prev);
 		}
 		self.inner.insert(k, v)
 	}
@@ -73,9 +73,9 @@ where
 	#[inline]
 	pub fn remove(&mut self, k: &K) -> Option<V> {
 		if let Some(v) = self.inner.remove(&k) {
-			if !self.original_items.contains_key(&k) {
+			if !self.overridden_originals.contains_key(&k) {
 				// extra clone of the value since we have to keep the original
-				self.original_items.insert(k.clone(), Some(v.clone()));
+				self.overridden_originals.insert(k.clone(), Some(v.clone()));
 			}
 			return Some(v)
 		}
@@ -85,8 +85,8 @@ where
 	#[inline]
 	pub fn clear(&mut self) {
 		for (key, value) in self.inner.drain() {
-			if !self.original_items.contains_key(&key) {
-				self.original_items.insert(key.clone(), Some(value));
+			if !self.overridden_originals.contains_key(&key) {
+				self.overridden_originals.insert(key.clone(), Some(value));
 			}
 		}
 	}
@@ -146,11 +146,11 @@ where
 	V: Clone,
 {
 	fn commit(&mut self) {
-		self.original_items = HashMap::new();
+		self.overridden_originals = HashMap::new();
 	}
 
 	fn rollback(&mut self) {
-		for (key, v) in self.original_items.drain() {
+		for (key, v) in self.overridden_originals.drain() {
 			match v {
 				Some(old) => self.inner.insert(key, old),
 				None => self.inner.remove(&key),
@@ -220,7 +220,7 @@ mod tests {
 		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
 		assert_eq!(inner_sorted, expected);
 
-		assert_eq!(transactional.original_items.len(), 0);
+		assert_eq!(transactional.overridden_originals.len(), 0);
 	}
 
 	#[test]
@@ -251,7 +251,7 @@ mod tests {
 			transactional.entry(2).or_default().push(i);
 		}
 
-		assert_eq!(transactional.original_items.len(), 2);
+		assert_eq!(transactional.overridden_originals.len(), 2);
 
 		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
 		assert_eq!(
@@ -274,6 +274,6 @@ mod tests {
 			inner_sorted,
 			BTreeMap::from([(1, vec![1, 2, 3, 4]), (2, vec![10, 11, 12, 13, 14])])
 		);
-		assert_eq!(transactional.original_items.len(), 0);
+		assert_eq!(transactional.overridden_originals.len(), 0);
 	}
 }
