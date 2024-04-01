@@ -188,8 +188,8 @@ impl UserGraph {
 			let remove_update_exists =
 				include_pending && self.update_tracker.contains_complement(add_event);
 
-			return (graph_connection_exists && !remove_update_exists)
-				|| (!graph_connection_exists && add_update_exists);
+			return (graph_connection_exists && !remove_update_exists) ||
+				(!graph_connection_exists && add_update_exists);
 		}
 		false
 	}

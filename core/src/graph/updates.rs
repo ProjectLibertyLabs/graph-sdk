@@ -130,14 +130,10 @@ impl UpdateTracker {
 			synced_updates.retain(|e| match e {
 				UpdateEvent::Add { dsnp_user_id, .. }
 					if existing_connections.contains(&dsnp_user_id) =>
-				{
-					false
-				},
+					false,
 				UpdateEvent::Remove { dsnp_user_id, .. }
 					if !existing_connections.contains(&dsnp_user_id) =>
-				{
-					false
-				},
+					false,
 				_ => true,
 			});
 			if synced_updates.len() != arr.len() {
@@ -178,12 +174,10 @@ impl UpdateEvent {
 	/// returns the complement of the event
 	pub fn get_complement(&self) -> Self {
 		match self {
-			Add { dsnp_user_id, schema_id } => {
-				Remove { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id }
-			},
-			Remove { dsnp_user_id, schema_id } => {
-				Add { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id }
-			},
+			Add { dsnp_user_id, schema_id } =>
+				Remove { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
+			Remove { dsnp_user_id, schema_id } =>
+				Add { dsnp_user_id: *dsnp_user_id, schema_id: *schema_id },
 		}
 	}
 
