@@ -728,7 +728,7 @@ mod test {
 	}
 
 	#[test]
-	#[timeout(180000)]
+	#[timeout(3000)]
 	fn add_large_number_of_follows_to_private_follow_graph_should_succeed() {
 		// arrange
 		let env = Environment::Mainnet;
@@ -746,11 +746,9 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 7002;
-		// let connections = vec![(2, 0), (3, 0), (4, 0), (5, 0)];
 		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
 			.with_key_pairs(&vec![keypair])
 			.with_encryption_key(resolved_key)
-			// .with_page(1, &connections, &vec![], 100)
 			.build();
 
 		// act
@@ -759,7 +757,6 @@ mod test {
 		// assert
 		assert!(res.is_ok());
 
-		println!("Creating action vector");
 		let actions: Vec<Action> = (1u64..7000u64)
 			.map(|id| Action::Connect {
 				owner_dsnp_user_id: dsnp_user_id,
@@ -767,7 +764,6 @@ mod test {
 				dsnp_keys: None,
 			})
 			.collect();
-		println!("Finished creating action vector");
 
 		let res = state.apply_actions(
 			&actions,
