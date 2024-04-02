@@ -783,6 +783,7 @@ mod test {
 			&Some(ActionOptions {
 				ignore_existing_connections: true,
 				ignore_missing_connections: false,
+				disable_auto_commit: false,
 			}),
 		);
 
