@@ -83,14 +83,14 @@ impl UpdateTracker {
 	#[log_result_err(Level::Info)]
 	pub fn register_updates(
 		&mut self,
-		mut events: Vec<UpdateEvent>,
+		events: Vec<UpdateEvent>,
 		ignore_existing: bool,
 	) -> DsnpGraphResult<()> {
 		if !ignore_existing && events.iter().any(|e| self.contains(e)) {
 			return Err(DsnpGraphError::DuplicateUpdateEvents);
 		}
 
-		for e in events.drain(..) {
+		for e in events.into_iter() {
 			self.register_update(e, ignore_existing)?;
 		}
 
