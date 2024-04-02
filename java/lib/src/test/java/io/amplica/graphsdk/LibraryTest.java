@@ -214,6 +214,74 @@ class LibraryTest {
         }
 
         @Test
+        void graph_commit_and_rollback_should_work() throws Exception {
+                // arrange
+                var ownerUserId = 1;
+                var schemaId = Configuration.getMainNet().getSchemaId(ConnectionType.FollowPublic);
+                var connectionUserId_1 = 1000;
+                var connectionUserId_2 = 1001;
+                var connectionUserId_3 = 1002;
+
+                var options = Actions.ActionOptions.newBuilder().setDisableAutoCommit(true).build();
+                var actions = Actions.newBuilder().setOptions(options)
+                                .addActions(
+                                                Actions.Action.newBuilder().setConnectAction(
+                                                                Actions.Action.ConnectAction.newBuilder()
+                                                                                .setOwnerDsnpUserId(connectionUserId_1)
+                                                                                .setConnection(
+                                                                                                Connection.newBuilder()
+                                                                                                                .setDsnpUserId(
+                                                                                                                                ownerUserId)
+                                                                                                                .setSchemaId(schemaId)
+                                                                                                                .build())
+                                                                                .build()))
+                                .addActions(
+                                                Actions.Action.newBuilder().setConnectAction(
+                                                                Actions.Action.ConnectAction.newBuilder()
+                                                                                .setOwnerDsnpUserId(connectionUserId_2)
+                                                                                .setConnection(
+                                                                                                Connection.newBuilder()
+                                                                                                                .setDsnpUserId(
+                                                                                                                                ownerUserId)
+                                                                                                                .setSchemaId(schemaId)
+                                                                                                                .build())
+                                                                                .build()))
+
+                                .build();
+
+                var actions_2 = Actions.newBuilder().setOptions(options)
+                                .addActions(
+                                                Actions.Action.newBuilder().setConnectAction(
+                                                                Actions.Action.ConnectAction.newBuilder()
+                                                                                .setOwnerDsnpUserId(connectionUserId_3)
+                                                                                .setConnection(
+                                                                                                Connection.newBuilder()
+                                                                                                                .setDsnpUserId(
+                                                                                                                                ownerUserId)
+                                                                                                                .setSchemaId(schemaId)
+                                                                                                                .build())
+                                                                                .build()))
+                                .build();
+
+                var graph = new Graph(Configuration.getMainNet());
+
+                // act
+                graph.applyActions(actions);
+                graph.rollback();
+                var updates = graph.exportUpdates();
+
+                assertEquals(0, updates.size());
+
+                graph.applyActions(actions);
+                graph.commit();
+                graph.applyActions(actions_2);
+                graph.rollback();
+                updates = graph.exportUpdates();
+
+                assertEquals(2, updates.size());
+        }
+
+        @Test
         void graph_applyActions_addingConnection_with_invalid_request_should_throw_exception() throws Exception {
                 // arrange
                 var ownerUserId = 1;

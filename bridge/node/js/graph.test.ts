@@ -258,9 +258,9 @@ describe("Graph tests", () => {
     let actions_2: Action[] = [
       {
         type: "Connect",
-        ownerDsnpUserId: dsnpId_1,
+        ownerDsnpUserId: dsnpId_3,
         connection: {
-          dsnpUserId: dsnpId_3,
+          dsnpUserId: dsnpId_1,
           schemaId
         }
       }
