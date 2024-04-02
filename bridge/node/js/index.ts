@@ -85,6 +85,8 @@ export interface Native {
     actions: Action[],
     options?: ActionOptions,
   ): boolean;
+  commit(handle: number): void;
+  rollback(handle: number): void;
   exportUpdates(handle: number): Update[];
   exportUserGraphUpdates(handle: number, dsnpUserId: string): Update[];
   getConnectionsForUserGraph(

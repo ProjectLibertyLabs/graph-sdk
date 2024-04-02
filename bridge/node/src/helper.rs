@@ -722,8 +722,18 @@ pub fn action_options_from_js<'a, C: Context<'a>>(
 		Some(ignore) => ignore.value(cx),
 		None => false,
 	};
+	let disable_auto_commit: Option<Handle<'_, JsBoolean>> =
+		action_options_js.get_opt(cx, "disableAutoCommit")?;
+	let disable_auto_commit = match disable_auto_commit {
+		Some(disable) => disable.value(cx),
+		None => false,
+	};
 
-	return Ok(ActionOptions { ignore_existing_connections, ignore_missing_connections })
+	return Ok(ActionOptions {
+		ignore_existing_connections,
+		ignore_missing_connections,
+		disable_auto_commit,
+	});
 }
 
 /// Function to convert JsObject of Connection to Connection

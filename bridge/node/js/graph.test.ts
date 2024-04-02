@@ -104,7 +104,7 @@ describe("Graph tests", () => {
     expect(schema_id).toEqual(8);
     graph.freeGraphState();
   });
-  
+
   test("getGraphConfig with Testnet Paseo environment should return the graph config", async () => {
     const environment: EnvironmentInterface = {
       environmentType: EnvironmentType.TestnetPaseo,
@@ -233,6 +233,7 @@ describe("Graph tests", () => {
     // Add some connections to 2 empty graphs
     const dsnpId_1 = "1";
     const dsnpId_2 = "2";
+    const dsnpId_3 = "3";
     const schemaId = 1;
 
     let actions: Action[] = [
@@ -254,8 +255,38 @@ describe("Graph tests", () => {
       },
     ];
 
-    graph.applyActions(actions);
-    const exports: Update[] = graph.exportUpdates();
+    let actions_2: Action[] = [
+      {
+        type: "Connect",
+        ownerDsnpUserId: dsnpId_1,
+        connection: {
+          dsnpUserId: dsnpId_3,
+          schemaId
+        }
+      }
+    ]
+
+    // Test commit & rollback
+    // (NOTE: this works the opposite of expected; all applied actions
+    //  are immediately applied to the "live" copy, but maintain an ability
+    //  to be rolled back. Commit resets the point to which rollback refers.
+    //  this is more like an "edit/undo" paradigm than a DB commit/rollback scheme)
+
+    // Rollback before export should result in no updates
+    graph.applyActions(actions, { disableAutoCommit: true });
+    graph.rollback();
+    let exports: Update[] = graph.exportUpdates();
+    expect(exports.length).toBe(0);
+
+    // Now test that rollback resets to point of last commit
+    graph.applyActions(actions, { disableAutoCommit: true });
+    exports = graph.exportUpdates();
+    expect(exports.length).toBe(2);
+    graph.commit();
+    graph.applyActions(actions_2, { disableAutoCommit: true });
+    graph.rollback();
+    expect(graph.exportUpdates()).toEqual(exports);
+
     const imports = exports
       .filter((update) => update.type === "PersistPage")
       .map((update) => {

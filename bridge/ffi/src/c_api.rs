@@ -6,6 +6,7 @@ use dsnp_graph_core::{
 		api_types::ActionOptions,
 	},
 	dsnp::dsnp_types::DsnpUserId,
+	util::transactional_hashmap::Transactional,
 };
 use std::{
 	ffi::{c_char, CString},
@@ -145,7 +146,7 @@ pub unsafe extern "C" fn graph_contains_user(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -176,7 +177,7 @@ pub unsafe extern "C" fn graph_users_count(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		FFIResult::new(graph_state.len())
@@ -208,7 +209,7 @@ pub unsafe extern "C" fn graph_remove_user(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -244,7 +245,7 @@ pub unsafe extern "C" fn graph_import_users_data(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let payloads = std::slice::from_raw_parts(payloads, payloads_len);
@@ -280,7 +281,7 @@ pub unsafe extern "C" fn graph_export_updates(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		match graph_state.export_updates() {
@@ -320,7 +321,7 @@ pub unsafe extern "C" fn graph_export_user_graph_updates(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		match graph_state.export_user_graph_updates(&*user_id) {
@@ -401,7 +402,7 @@ pub unsafe extern "C" fn graph_apply_actions(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let actions = std::slice::from_raw_parts(actions, actions_len);
@@ -419,6 +420,64 @@ pub unsafe extern "C" fn graph_apply_actions(
 	result.unwrap_or_else(|error| {
 		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
 			"Failed to apply actions to graph: {:?}",
+			error
+		))))
+	})
+}
+
+/// Commit pending actions to a graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `void`
+/// # Errors
+/// * `GraphError` - if the actions cannot be applied to the graph state
+#[no_mangle]
+pub unsafe extern "C" fn graph_commit(graph_state: *mut GraphState) -> FFIResult<(), GraphError> {
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)));
+		}
+		let graph_state = &mut *graph_state;
+		graph_state.commit();
+		FFIResult::new(())
+	});
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to commit pending changes to graph: {:?}",
+			error
+		))))
+	})
+}
+
+/// Rollback pending actions in a graph state
+/// # Safety
+/// This function is unsafe because it dereferences a raw pointer
+/// # Arguments
+/// * `graph_state` - a pointer to a graph state
+/// # Returns
+/// * `void`
+/// # Errors
+/// * `GraphError` - if the actions cannot be applied to the graph state
+#[no_mangle]
+pub unsafe extern "C" fn graph_rollback(graph_state: *mut GraphState) -> FFIResult<(), GraphError> {
+	let result = panic::catch_unwind(|| {
+		if graph_state.is_null() {
+			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
+				"Graph state is null".to_string(),
+			)));
+		}
+		let graph_state = &mut *graph_state;
+		graph_state.rollback();
+		FFIResult::new(())
+	});
+	result.unwrap_or_else(|error| {
+		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
+			"Failed to roll back pending changes to graph: {:?}",
 			error
 		))))
 	})
@@ -447,7 +506,7 @@ pub unsafe extern "C" fn graph_get_connections_for_user(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -488,7 +547,7 @@ pub unsafe extern "C" fn graph_get_connections_without_keys(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		match graph_state.get_connections_without_keys() {
@@ -529,7 +588,7 @@ pub unsafe extern "C" fn graph_get_one_sided_private_friendship_connections(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -571,7 +630,7 @@ pub unsafe extern "C" fn graph_get_public_keys(
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
 				"Graph state is null".to_string(),
-			)))
+			)));
 		}
 		let graph_state = &mut *graph_state;
 		let user_id = &*user_id;
@@ -637,7 +696,7 @@ pub unsafe extern "C" fn graph_deserialize_dsnp_keys(
 pub unsafe extern "C" fn free_graph_state(graph_state: *mut GraphState) {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
-			return
+			return;
 		}
 		let mut graph_states = GRAPH_STATES.lock().unwrap();
 		let index =
