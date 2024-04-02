@@ -593,6 +593,8 @@ mod test {
 		dsnp::{dsnp_configs::KeyPairType, dsnp_types::DsnpPrid},
 		util::builders::{ImportBundleBuilder, KeyDataBuilder},
 	};
+	use memory_stats::memory_stats;
+	use ntest::*;
 
 	#[test]
 	fn graph_contains_false() {
@@ -731,8 +733,68 @@ mod test {
 	}
 
 	#[test]
-	fn import_user_data_should_without_private_keys_should_add_prids_for_private_friendship_graph()
-	{
+	#[timeout(3000)]
+	fn add_large_number_of_follows_to_private_follow_graph_should_succeed() {
+		// arrange
+		let env = Environment::Mainnet;
+		let schema_id = env
+			.get_config()
+			.get_schema_id_from_connection_type(ConnectionType::Follow(PrivacyType::Private))
+			.expect("should exist");
+		let mut state = GraphState::new(env.clone());
+		let key_pair_raw = StackKeyPair::gen();
+		let resolved_key =
+			ResolvedKeyPair { key_pair: KeyPairType::Version1_0(key_pair_raw.clone()), key_id: 1 };
+		let keypair = GraphKeyPair {
+			secret_key: key_pair_raw.secret_key.to_vec(),
+			public_key: key_pair_raw.public_key.to_vec(),
+			key_type: GraphKeyType::X25519,
+		};
+		let dsnp_user_id = 7002;
+		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key)
+			.build();
+
+		// act
+		let mem_usage = memory_stats().unwrap();
+		println!("before data import physical mem: {}", mem_usage.physical_mem);
+
+		let res = state.import_users_data(&vec![input]);
+
+		let mem_usage = memory_stats().unwrap();
+		println!("after data import physical mem: {}", mem_usage.physical_mem);
+
+		// assert
+		assert!(res.is_ok());
+
+		let actions: Vec<Action> = (1u64..7000u64)
+			.map(|id| Action::Connect {
+				owner_dsnp_user_id: dsnp_user_id,
+				connection: Connection { dsnp_user_id: id, schema_id },
+				dsnp_keys: None,
+			})
+			.collect();
+		let mem_usage = memory_stats().unwrap();
+		println!("before action import physical mem: {}", mem_usage.physical_mem);
+
+		let res = state.apply_actions(
+			&actions,
+			&Some(ActionOptions {
+				ignore_existing_connections: true,
+				ignore_missing_connections: false,
+			}),
+		);
+
+		let mem_usage = memory_stats().unwrap();
+		println!("after action import physical mem: {}", mem_usage.physical_mem);
+
+		// assert
+		assert!(res.is_ok());
+	}
+
+	#[test]
+	fn import_user_data_without_private_keys_should_add_prids_for_private_friendship_graph() {
 		// arrange
 		let env = Environment::Mainnet;
 		let schema_id = env
