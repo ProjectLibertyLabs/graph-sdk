@@ -435,7 +435,7 @@ pub unsafe extern "C" fn graph_apply_actions(
 /// # Errors
 /// * `GraphError` - if the actions cannot be applied to the graph state
 #[no_mangle]
-pub unsafe extern "C" fn graph_commit(graph_state: *mut GraphState) -> FFIResult<(), GraphError> {
+pub unsafe extern "C" fn graph_commit(graph_state: *mut GraphState) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
@@ -444,7 +444,7 @@ pub unsafe extern "C" fn graph_commit(graph_state: *mut GraphState) -> FFIResult
 		}
 		let graph_state = &mut *graph_state;
 		graph_state.commit();
-		FFIResult::new(())
+		FFIResult::new(true)
 	});
 	result.unwrap_or_else(|error| {
 		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
@@ -464,7 +464,9 @@ pub unsafe extern "C" fn graph_commit(graph_state: *mut GraphState) -> FFIResult
 /// # Errors
 /// * `GraphError` - if the actions cannot be applied to the graph state
 #[no_mangle]
-pub unsafe extern "C" fn graph_rollback(graph_state: *mut GraphState) -> FFIResult<(), GraphError> {
+pub unsafe extern "C" fn graph_rollback(
+	graph_state: *mut GraphState,
+) -> FFIResult<bool, GraphError> {
 	let result = panic::catch_unwind(|| {
 		if graph_state.is_null() {
 			return FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::FFIError(
@@ -473,11 +475,11 @@ pub unsafe extern "C" fn graph_rollback(graph_state: *mut GraphState) -> FFIResu
 		}
 		let graph_state = &mut *graph_state;
 		graph_state.rollback();
-		FFIResult::new(())
+		FFIResult::new(true)
 	});
 	result.unwrap_or_else(|error| {
 		FFIResult::new_mut_error(GraphError::from_error(DsnpGraphError::Unknown(anyhow::anyhow!(
-			"Failed to roll back pending changes to graph: {:?}",
+			"Failed to roll back pending changes in graph: {:?}",
 			error
 		))))
 	})
