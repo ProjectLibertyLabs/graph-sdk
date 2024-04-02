@@ -12,19 +12,13 @@ pub trait Transactional {
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
-enum Reversible<K, V> {
-	Add { key: K, prev: Option<V> },
-	Remove { key: K, prev: V },
-}
-
-#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct TransactionalHashMap<K, V>
 where
 	K: Eq + Hash + Clone,
 	V: Clone,
 {
 	inner: HashMap<K, V>,
-	rollback_operations: Vec<Reversible<K, V>>,
+	overridden_originals: HashMap<K, Option<V>>,
 }
 
 impl<K, V> TransactionalHashMap<K, V>
@@ -33,12 +27,15 @@ where
 	V: Clone,
 {
 	pub fn new() -> Self {
-		Self { inner: HashMap::new(), rollback_operations: vec![] }
+		Self { inner: HashMap::new(), overridden_originals: HashMap::new() }
 	}
 
 	#[inline]
 	pub fn with_capacity(capacity: usize) -> Self {
-		Self { inner: HashMap::with_capacity(capacity), rollback_operations: vec![] }
+		Self {
+			inner: HashMap::with_capacity(capacity),
+			overridden_originals: HashMap::with_capacity(capacity),
+		}
 	}
 
 	pub fn inner(&self) -> &HashMap<K, V> {
@@ -49,12 +46,16 @@ where
 	pub fn entry(&mut self, key: K) -> Entry<'_, K, V> {
 		match self.inner.entry(key.clone()) {
 			Entry::Vacant(v) => {
-				self.rollback_operations.push(Reversible::Add { prev: None, key });
+				if !self.overridden_originals.contains_key(&key) {
+					self.overridden_originals.insert(key, None);
+				}
 				Entry::Vacant(v)
 			},
 			Entry::Occupied(o) => {
-				self.rollback_operations
-					.push(Reversible::Add { prev: Some(o.get().clone()), key });
+				if !self.overridden_originals.contains_key(&key) {
+					// extra clone of the value since we have to keep the original
+					self.overridden_originals.insert(key, Some(o.get().clone()));
+				}
 				Entry::Occupied(o)
 			},
 		}
@@ -63,15 +64,19 @@ where
 	#[inline]
 	pub fn insert(&mut self, k: K, v: V) -> Option<V> {
 		let prev = self.inner.remove(&k);
-		self.rollback_operations.push(Reversible::Add { prev, key: k.clone() });
+		if !self.overridden_originals.contains_key(&k) {
+			self.overridden_originals.insert(k.clone(), prev);
+		}
 		self.inner.insert(k, v)
 	}
 
 	#[inline]
 	pub fn remove(&mut self, k: &K) -> Option<V> {
 		if let Some(v) = self.inner.remove(&k) {
-			self.rollback_operations
-				.push(Reversible::Remove { prev: v.clone(), key: k.clone() });
+			if !self.overridden_originals.contains_key(&k) {
+				// extra clone of the value since we have to keep the original
+				self.overridden_originals.insert(k.clone(), Some(v.clone()));
+			}
 			return Some(v)
 		}
 		None
@@ -79,12 +84,11 @@ where
 
 	#[inline]
 	pub fn clear(&mut self) {
-		for (key, value) in self.inner.iter() {
-			self.rollback_operations
-				.push(Reversible::Remove { key: key.clone(), prev: value.clone() });
+		for (key, value) in self.inner.drain() {
+			if !self.overridden_originals.contains_key(&key) {
+				self.overridden_originals.insert(key.clone(), Some(value));
+			}
 		}
-
-		self.inner.clear()
 	}
 
 	#[inline]
@@ -142,18 +146,14 @@ where
 	V: Clone,
 {
 	fn commit(&mut self) {
-		self.rollback_operations = vec![];
+		self.overridden_originals = HashMap::new();
 	}
 
 	fn rollback(&mut self) {
-		while !self.rollback_operations.is_empty() {
-			let op = self.rollback_operations.pop().unwrap();
-			match op {
-				Reversible::Add { prev, key } => match prev {
-					Some(old) => self.inner.insert(key, old),
-					None => self.inner.remove(&key),
-				},
-				Reversible::Remove { prev, key } => self.inner.insert(key, prev),
+		for (key, v) in self.overridden_originals.drain() {
+			match v {
+				Some(old) => self.inner.insert(key, old),
+				None => self.inner.remove(&key),
 			};
 		}
 	}
@@ -220,7 +220,7 @@ mod tests {
 		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
 		assert_eq!(inner_sorted, expected);
 
-		assert_eq!(transactional.rollback_operations.len(), 0);
+		assert_eq!(transactional.overridden_originals.len(), 0);
 	}
 
 	#[test]
@@ -239,5 +239,41 @@ mod tests {
 		transactional.rollback();
 		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
 		assert_eq!(inner_sorted, BTreeMap::from([(5, 200)]));
+	}
+
+	#[test]
+	fn transactional_hashmap_vec() {
+		let mut transactional: TransactionalHashMap<u32, Vec<u32>> = TransactionalHashMap::new();
+		for i in 1..5 {
+			transactional.entry(1).or_default().push(i);
+		}
+		for i in 10..15 {
+			transactional.entry(2).or_default().push(i);
+		}
+
+		assert_eq!(transactional.overridden_originals.len(), 2);
+
+		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
+		assert_eq!(
+			inner_sorted,
+			BTreeMap::from([(1, vec![1, 2, 3, 4]), (2, vec![10, 11, 12, 13, 14])])
+		);
+
+		transactional.commit();
+
+		for i in (0..3).rev() {
+			transactional.entry(1).or_default().remove(i);
+		}
+
+		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
+		assert_eq!(inner_sorted, BTreeMap::from([(1, vec![4]), (2, vec![10, 11, 12, 13, 14])]));
+
+		transactional.rollback();
+		let inner_sorted: BTreeMap<_, _> = transactional.inner.clone().into_iter().collect();
+		assert_eq!(
+			inner_sorted,
+			BTreeMap::from([(1, vec![1, 2, 3, 4]), (2, vec![10, 11, 12, 13, 14])])
+		);
+		assert_eq!(transactional.overridden_originals.len(), 0);
 	}
 }
