@@ -42,7 +42,7 @@ impl InputValidation for PageData {
 			return DsnpGraphResult::Err(InvalidInput(format!(
 				"Imported Page Data and page hash {0} does not match!",
 				self.content_hash
-			)))
+			)));
 		}
 
 		Ok(())
@@ -66,7 +66,7 @@ impl InputValidation for KeyData {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.content.is_empty() {
-			return DsnpGraphResult::Err(InvalidInput("key_data content is empty!".to_string()))
+			return DsnpGraphResult::Err(InvalidInput("key_data content is empty!".to_string()));
 		}
 		Ok(())
 	}
@@ -93,10 +93,10 @@ impl InputValidation for GraphKeyPair {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.public_key.is_empty() {
-			return DsnpGraphResult::Err(InvalidPublicKey)
+			return DsnpGraphResult::Err(InvalidPublicKey);
 		}
 		if self.secret_key.is_empty() {
-			return DsnpGraphResult::Err(InvalidSecretKey)
+			return DsnpGraphResult::Err(InvalidSecretKey);
 		}
 		Ok(())
 	}
@@ -141,10 +141,10 @@ impl InputValidation for ImportBundle {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
-			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id));
 		}
 		if self.schema_id == 0 && self.pages.len() > 0 {
-			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id))
+			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id));
 		}
 
 		for k in &self.key_pairs {
@@ -164,7 +164,7 @@ impl InputValidation for ImportBundle {
 
 		let unique_pages: HashSet<_> = self.pages.iter().map(|p| p.page_id).collect();
 		if unique_pages.len() < self.pages.len() {
-			return DsnpGraphResult::Err(InvalidInput("Duplicated pageId in PageData".to_string()))
+			return DsnpGraphResult::Err(InvalidInput("Duplicated pageId in PageData".to_string()));
 		}
 
 		Ok(())
@@ -194,14 +194,14 @@ impl InputValidation for DsnpKeys {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
-			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id));
 		}
 
 		if self.keys.len() > 0 && self.keys_hash == PageHash::default() {
 			return DsnpGraphResult::Err(InvalidInput(format!(
 				"Imported Keys and page hash {0} does not match!",
 				self.keys_hash
-			)))
+			)));
 		}
 
 		for k in &self.keys {
@@ -209,7 +209,9 @@ impl InputValidation for DsnpKeys {
 		}
 		let unique_indices: HashSet<_> = self.keys.iter().map(|k| k.index).collect();
 		if unique_indices.len() < self.keys.len() {
-			return DsnpGraphResult::Err(InvalidInput("Duplicated key index in KeyData".to_string()))
+			return DsnpGraphResult::Err(InvalidInput(
+				"Duplicated key index in KeyData".to_string(),
+			));
 		}
 
 		Ok(())
@@ -234,10 +236,10 @@ impl InputValidation for Connection {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.dsnp_user_id == 0 {
-			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id))
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.dsnp_user_id));
 		}
 		if self.schema_id == 0 {
-			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id))
+			return DsnpGraphResult::Err(InvalidSchemaId(self.schema_id));
 		}
 
 		Ok(())
@@ -297,7 +299,7 @@ impl Action {
 }
 
 #[repr(C)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ActionOptions {
 	/// ignore existing connection on add
 	#[serde(rename = "ignoreExistingConnections")]
@@ -306,6 +308,11 @@ pub struct ActionOptions {
 	/// ignore missing connection on remove
 	#[serde(rename = "ignoreMissingConnections")]
 	pub ignore_missing_connections: bool,
+
+	/// disable auto-commit behavior when
+	/// calling apply_actions
+	#[serde(rename = "disableAutoCommit")]
+	pub disable_auto_commit: bool,
 }
 
 /// implementing input validation for Action
@@ -313,7 +320,7 @@ impl InputValidation for Action {
 	#[log_result_err(Level::Info)]
 	fn validate(&self) -> DsnpGraphResult<()> {
 		if self.owner_dsnp_user_id() == 0 {
-			return DsnpGraphResult::Err(InvalidDsnpUserId(self.owner_dsnp_user_id()))
+			return DsnpGraphResult::Err(InvalidDsnpUserId(self.owner_dsnp_user_id()));
 		}
 
 		match self {
@@ -329,7 +336,7 @@ impl InputValidation for Action {
 			},
 			Action::AddGraphKey { new_public_key, .. } =>
 				if new_public_key.is_empty() {
-					return DsnpGraphResult::Err(InvalidPublicKey)
+					return DsnpGraphResult::Err(InvalidPublicKey);
 				},
 		}
 

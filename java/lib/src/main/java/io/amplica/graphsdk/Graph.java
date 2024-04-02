@@ -65,6 +65,18 @@ public class Graph implements NativeHandleGuard.Owner {
         }
     }
 
+    public void commit() throws BaseGraphSdkException {
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            Native.commit(guard.nativeHandle());
+        }
+    }
+
+    public void rollback() throws BaseGraphSdkException {
+        try (NativeHandleGuard guard = new NativeHandleGuard(this)) {
+            Native.rollback(guard.nativeHandle());
+        }
+    }
+
     public List<Updates.Update> forceRecalculateGraph(long dsnpUserId)
             throws BaseGraphSdkException, InvalidProtocolBufferException {
         try (NativeHandleGuard guard = new NativeHandleGuard(this)) {

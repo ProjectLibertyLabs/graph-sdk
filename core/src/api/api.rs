@@ -260,11 +260,19 @@ impl GraphAPI for GraphState {
 		actions: &[Action],
 		options: &Option<ActionOptions>,
 	) -> DsnpGraphResult<()> {
-		let result = self.do_apply_actions(actions, options);
-		match result {
-			DsnpGraphResult::Ok(_) => self.commit(),
-			DsnpGraphResult::Err(_) => self.rollback(),
+		let disable_auto_commit = match options {
+			Some(ActionOptions { disable_auto_commit, .. }) => disable_auto_commit,
+			None => &false,
 		};
+
+		let result = self.do_apply_actions(actions, options);
+
+		if !disable_auto_commit {
+			match result {
+				DsnpGraphResult::Ok(_) => self.commit(),
+				DsnpGraphResult::Err(_) => self.rollback(),
+			}
+		}
 		result
 	}
 
@@ -496,6 +504,12 @@ impl GraphState {
 		for action in actions {
 			action.validate()?;
 		}
+
+		let (ignore_existing_connections, ignore_missing_connections) = match options {
+			Some(options) =>
+				(options.ignore_existing_connections, options.ignore_missing_connections),
+			None => (false, false),
+		};
 		// apply actions
 		for action in actions {
 			let owner_graph = self.get_or_create_user_graph(action.owner_dsnp_user_id())?;
@@ -505,11 +519,6 @@ impl GraphState {
 					dsnp_keys,
 					..
 				} => {
-					let ignore_existing_connections = match options {
-						Some(ActionOptions { ignore_existing_connections, .. }) =>
-							*ignore_existing_connections,
-						None => false,
-					};
 					if owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						if ignore_existing_connections {
 							log::warn!(
@@ -542,11 +551,6 @@ impl GraphState {
 					connection: Connection { ref dsnp_user_id, ref schema_id },
 					..
 				} => {
-					let ignore_missing_connections = match options {
-						Some(ActionOptions { ignore_missing_connections, .. }) =>
-							*ignore_missing_connections,
-						None => false,
-					};
 					if !owner_graph.graph_has_connection(*schema_id, *dsnp_user_id, true) {
 						if ignore_missing_connections {
 							log::warn!(
@@ -779,6 +783,7 @@ mod test {
 			&Some(ActionOptions {
 				ignore_existing_connections: true,
 				ignore_missing_connections: false,
+				disable_auto_commit: false,
 			}),
 		);
 

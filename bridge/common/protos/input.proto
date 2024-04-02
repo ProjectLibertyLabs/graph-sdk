@@ -51,6 +51,7 @@ message Actions {
   message ActionOptions {
     bool ignore_existing_connections = 1;
     bool ignore_missing_connections = 2;
+    bool disable_auto_commit = 3;
   }
 
   message Action {

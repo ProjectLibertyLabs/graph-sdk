@@ -74,6 +74,7 @@ pub fn map_to_actions(
 		Some(options) => Some(RustActionOptions {
 			ignore_existing_connections: options.ignore_existing_connections,
 			ignore_missing_connections: options.ignore_missing_connections,
+			disable_auto_commit: options.disable_auto_commit,
 		}),
 		None => None,
 	};

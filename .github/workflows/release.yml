@@ -342,7 +342,7 @@ jobs:
         with:
           name: artifacts-java-${{github.run_id}}
           path: downloaded
-      - name: Download Java Binaries
+      - name: Download Node.js Binaries
         id: download-binaries-node
         uses: actions/download-artifact@v3
         with:

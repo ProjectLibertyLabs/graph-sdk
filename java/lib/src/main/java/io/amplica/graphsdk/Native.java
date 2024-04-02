@@ -45,13 +45,13 @@ public final class Native {
         if (os.contains("win") && (arch.contains("amd64") || arch.contains("x86_64"))) {
             return "x86_64-pc-windows-msvc";
 
-        // MacOS
+            // MacOS
         } else if (os.contains("mac") && (arch.contains("amd64") || arch.contains("x86_64"))) {
             return "x86_64-apple-darwin";
         } else if (os.contains("mac") && arch.contains("aarch64")) {
             return "aarch64-apple-darwin";
 
-        // Linux
+            // Linux
         } else if (os.contains("nux") && (arch.contains("amd64") || arch.contains("x86_64"))) {
             return "x86_64-unknown-linux-gnu";
         } else if (os.contains("nux") && arch.contains("aarch64")) {
@@ -119,6 +119,10 @@ public final class Native {
     public static native byte[] exportUserGraphUpdates(long stateHandle, long dsnpUserId);
 
     public static native void applyActions(long stateHandle, byte[] actions);
+
+    public static native void commit(long stateHandle);
+
+    public static native void rollback(long stateHandle);
 
     public static native byte[] forceCalculateGraphs(long stateHandle, long dsnpUserId);
 

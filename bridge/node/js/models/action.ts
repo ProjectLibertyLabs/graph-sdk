@@ -4,6 +4,7 @@ import { DsnpKeys } from "./import_bundle";
 export interface ActionOptions {
   ignoreExistingConnections?: boolean;
   ignoreMissingConnections?: boolean;
+  disableAutoCommit?: boolean;
 }
 
 export interface ConnectAction {

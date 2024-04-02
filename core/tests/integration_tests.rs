@@ -717,6 +717,7 @@ mod integration_tests {
 			&Some(ActionOptions {
 				ignore_existing_connections: true,
 				ignore_missing_connections: false,
+				disable_auto_commit: false,
 			}),
 		);
 
@@ -785,6 +786,7 @@ mod integration_tests {
 			&Some(ActionOptions {
 				ignore_existing_connections: false,
 				ignore_missing_connections: true,
+				disable_auto_commit: false,
 			}),
 		);
 
@@ -858,7 +860,8 @@ mod integration_tests {
 				&vec![action],
 				&Some(ActionOptions {
 					ignore_existing_connections: true,
-					ignore_missing_connections: false
+					ignore_missing_connections: false,
+					disable_auto_commit: false,
 				})
 			)
 			.is_ok());
@@ -892,7 +895,8 @@ mod integration_tests {
 				&vec![disconnect_action],
 				&Some(ActionOptions {
 					ignore_existing_connections: false,
-					ignore_missing_connections: true
+					ignore_missing_connections: true,
+					disable_auto_commit: false,
 				}),
 			)
 			.is_ok());

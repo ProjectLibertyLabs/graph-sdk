@@ -8,7 +8,10 @@ use crate::{
 	},
 };
 use dsnp_graph_config::{DsnpUserId, GraphKeyType, SchemaId};
-use dsnp_graph_core::api::api::{GraphAPI, GraphState};
+use dsnp_graph_core::{
+	api::api::{GraphAPI, GraphState},
+	util::transactional_hashmap::Transactional,
+};
 use jni::{
 	objects::{JByteArray, JClass, JObject, JString},
 	sys::{jboolean, jint, jlong},
@@ -93,7 +96,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 ) {
 	let result = panic::catch_unwind(|| {
 		if handle == 0 {
-			return Err(SdkJniError::InvalidHandle("is null"))
+			return Err(SdkJniError::InvalidHandle("is null"));
 		}
 		let mut graph_states =
 			GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
@@ -355,6 +358,62 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 		// pulling out of the box as raw so that memory stays allocated
 		let _ = Box::into_raw(graph) as jlong;
 		result
+	});
+	handle_result(&mut env, result)
+}
+
+/// Commit pending actions to a graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `actions` - the serialized actions
+/// # Errors
+/// * `SdkJniError` - if applying actions fails
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_commit<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	handle: jlong,
+) {
+	let result = panic::catch_unwind(|| {
+		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
+
+		// locking to write in state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
+		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
+		// do not use `?` here to handle the error since it would drop the memory
+		graph.deref_mut().commit();
+
+		// pulling out of the box as raw so that memory stays allocated
+		let _ = Box::into_raw(graph) as jlong;
+		Ok(())
+	});
+	handle_result(&mut env, result)
+}
+
+/// Rollback pending actions in a graph state.
+/// # Arguments
+/// * `handle` - the handle to the graph state
+/// * `actions` - the serialized actions
+/// # Errors
+/// * `SdkJniError` - if applying actions fails
+#[no_mangle]
+pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_rollback<'local>(
+	mut env: JNIEnv<'local>,
+	_class: JClass<'local>,
+	handle: jlong,
+) {
+	let result = panic::catch_unwind(|| {
+		validate_handle(&GRAPH_STATES_MEMORY_LOCATIONS, handle)?;
+
+		// locking to write in state
+		let _lock = GRAPH_STATES_MEMORY_LOCATIONS.write().map_err(|_| SdkJniError::LockError)?;
+		let mut graph = unsafe { Box::from_raw(handle as *mut GraphState) };
+		// do not use `?` here to handle the error since it would drop the memory
+		graph.deref_mut().rollback();
+
+		// pulling out of the box as raw so that memory stays allocated
+		let _ = Box::into_raw(graph) as jlong;
+		Ok(())
 	});
 	handle_result(&mut env, result)
 }

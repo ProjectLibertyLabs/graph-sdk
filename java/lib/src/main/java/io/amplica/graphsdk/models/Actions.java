@@ -59,6 +59,12 @@ private static final long serialVersionUID = 0L;
      * @return The ignoreMissingConnections.
      */
     boolean getIgnoreMissingConnections();
+
+    /**
+     * <code>bool disable_auto_commit = 3;</code>
+     * @return The disableAutoCommit.
+     */
+    boolean getDisableAutoCommit();
   }
   /**
    * Protobuf type {@code Actions.ActionOptions}
@@ -122,6 +128,17 @@ private static final long serialVersionUID = 0L;
       return ignoreMissingConnections_;
     }
 
+    public static final int DISABLE_AUTO_COMMIT_FIELD_NUMBER = 3;
+    private boolean disableAutoCommit_ = false;
+    /**
+     * <code>bool disable_auto_commit = 3;</code>
+     * @return The disableAutoCommit.
+     */
+    @java.lang.Override
+    public boolean getDisableAutoCommit() {
+      return disableAutoCommit_;
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -142,6 +159,9 @@ private static final long serialVersionUID = 0L;
       if (ignoreMissingConnections_ != false) {
         output.writeBool(2, ignoreMissingConnections_);
       }
+      if (disableAutoCommit_ != false) {
+        output.writeBool(3, disableAutoCommit_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -158,6 +178,10 @@ private static final long serialVersionUID = 0L;
       if (ignoreMissingConnections_ != false) {
         size += com.google.protobuf.CodedOutputStream
           .computeBoolSize(2, ignoreMissingConnections_);
+      }
+      if (disableAutoCommit_ != false) {
+        size += com.google.protobuf.CodedOutputStream
+          .computeBoolSize(3, disableAutoCommit_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSize = size;
@@ -178,6 +202,8 @@ private static final long serialVersionUID = 0L;
           != other.getIgnoreExistingConnections()) return false;
       if (getIgnoreMissingConnections()
           != other.getIgnoreMissingConnections()) return false;
+      if (getDisableAutoCommit()
+          != other.getDisableAutoCommit()) return false;
       if (!getUnknownFields().equals(other.getUnknownFields())) return false;
       return true;
     }
@@ -195,6 +221,9 @@ private static final long serialVersionUID = 0L;
       hash = (37 * hash) + IGNORE_MISSING_CONNECTIONS_FIELD_NUMBER;
       hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
           getIgnoreMissingConnections());
+      hash = (37 * hash) + DISABLE_AUTO_COMMIT_FIELD_NUMBER;
+      hash = (53 * hash) + com.google.protobuf.Internal.hashBoolean(
+          getDisableAutoCommit());
       hash = (29 * hash) + getUnknownFields().hashCode();
       memoizedHashCode = hash;
       return hash;
@@ -326,6 +355,7 @@ private static final long serialVersionUID = 0L;
         bitField0_ = 0;
         ignoreExistingConnections_ = false;
         ignoreMissingConnections_ = false;
+        disableAutoCommit_ = false;
         return this;
       }
 
@@ -364,6 +394,9 @@ private static final long serialVersionUID = 0L;
         }
         if (((from_bitField0_ & 0x00000002) != 0)) {
           result.ignoreMissingConnections_ = ignoreMissingConnections_;
+        }
+        if (((from_bitField0_ & 0x00000004) != 0)) {
+          result.disableAutoCommit_ = disableAutoCommit_;
         }
       }
 
@@ -417,6 +450,9 @@ private static final long serialVersionUID = 0L;
         if (other.getIgnoreMissingConnections() != false) {
           setIgnoreMissingConnections(other.getIgnoreMissingConnections());
         }
+        if (other.getDisableAutoCommit() != false) {
+          setDisableAutoCommit(other.getDisableAutoCommit());
+        }
         this.mergeUnknownFields(other.getUnknownFields());
         onChanged();
         return this;
@@ -453,6 +489,11 @@ private static final long serialVersionUID = 0L;
                 bitField0_ |= 0x00000002;
                 break;
               } // case 16
+              case 24: {
+                disableAutoCommit_ = input.readBool();
+                bitField0_ |= 0x00000004;
+                break;
+              } // case 24
               default: {
                 if (!super.parseUnknownField(input, extensionRegistry, tag)) {
                   done = true; // was an endgroup tag
@@ -530,6 +571,38 @@ private static final long serialVersionUID = 0L;
       public Builder clearIgnoreMissingConnections() {
         bitField0_ = (bitField0_ & ~0x00000002);
         ignoreMissingConnections_ = false;
+        onChanged();
+        return this;
+      }
+
+      private boolean disableAutoCommit_ ;
+      /**
+       * <code>bool disable_auto_commit = 3;</code>
+       * @return The disableAutoCommit.
+       */
+      @java.lang.Override
+      public boolean getDisableAutoCommit() {
+        return disableAutoCommit_;
+      }
+      /**
+       * <code>bool disable_auto_commit = 3;</code>
+       * @param value The disableAutoCommit to set.
+       * @return This builder for chaining.
+       */
+      public Builder setDisableAutoCommit(boolean value) {
+        
+        disableAutoCommit_ = value;
+        bitField0_ |= 0x00000004;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>bool disable_auto_commit = 3;</code>
+       * @return This builder for chaining.
+       */
+      public Builder clearDisableAutoCommit() {
+        bitField0_ = (bitField0_ & ~0x00000004);
+        disableAutoCommit_ = false;
         onChanged();
         return this;
       }

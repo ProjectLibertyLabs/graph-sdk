@@ -90,6 +90,14 @@ export class Graph {
     return graphsdkModule.applyActions(this.handle, actions);
   }
 
+  commit(): void {
+    return graphsdkModule.commit(this.handle);
+  }
+
+  rollback(): void {
+    return graphsdkModule.rollback(this.handle);
+  }
+
   forceCalculateGraphs(dsnpUserId: string): Update[] {
     return graphsdkModule.forceCalculateGraphs(this.handle, dsnpUserId);
   }
