@@ -71,7 +71,7 @@ clean:
 .PHONY: capacities
 capacities:
 	@echo "Generating graph page capacities..."
-	@cargo test --features=calculate-page-capacity calculate_page_capacities; cargo fmt
+	@cargo test --features=calculate-page-capacity calculate_page_capacities; rustfmt core/src/graph/page_capacities.rs
 
 .PHONY: all
 all: check test clippy deny format build doc
