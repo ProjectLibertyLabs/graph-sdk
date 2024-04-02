@@ -526,7 +526,7 @@ impl GraphState {
 						));
 					}
 					owner_graph.update_tracker_mut().register_update(
-						&UpdateEvent::create_add(*dsnp_user_id, *schema_id),
+						UpdateEvent::create_add(*dsnp_user_id, *schema_id),
 						ignore_existing_connections,
 					)?;
 					if let Some(inner_keys) = dsnp_keys {
@@ -563,7 +563,7 @@ impl GraphState {
 						));
 					}
 					owner_graph.update_tracker_mut().register_update(
-						&UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
+						UpdateEvent::create_remove(*dsnp_user_id, *schema_id),
 						ignore_missing_connections,
 					)?;
 				},
