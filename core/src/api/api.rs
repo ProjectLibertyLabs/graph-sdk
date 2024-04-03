@@ -733,7 +733,7 @@ mod test {
 	}
 
 	#[test]
-	#[timeout(3000)]
+	#[timeout(100000)]
 	fn add_large_number_of_follows_to_private_follow_graph_should_succeed() {
 		// arrange
 		let env = Environment::Mainnet;
@@ -751,9 +751,9 @@ mod test {
 			key_type: GraphKeyType::X25519,
 		};
 		let dsnp_user_id = 7002;
-		let input = ImportBundleBuilder::new(env, dsnp_user_id, schema_id)
-			.with_key_pairs(&vec![keypair])
-			.with_encryption_key(resolved_key)
+		let input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair.clone()])
+			.with_encryption_key(resolved_key.clone())
 			.build();
 
 		// act
@@ -792,6 +792,34 @@ mod test {
 
 		// assert
 		assert!(res.is_ok());
+
+		let connections =
+			state.get_connections_for_user_graph(&dsnp_user_id, &schema_id, true).unwrap();
+		let before_export_set: HashSet<_> = connections.iter().map(|e| e.user_id).collect();
+
+		let export = state.export_updates();
+
+		assert!(export.is_ok());
+		println!("after export physical mem: {}", mem_usage.physical_mem);
+
+		let updates = export.unwrap();
+
+		let mut updated_state = GraphState::new(env.clone());
+		let updated_input = ImportBundleBuilder::new(env.clone(), dsnp_user_id, schema_id)
+			.with_key_pairs(&vec![keypair])
+			.with_encryption_key(resolved_key.clone())
+			.build();
+
+		let new_import = ImportBundleBuilder::build_from(&updated_input, &updates);
+		let res = updated_state.import_users_data(&vec![new_import]);
+
+		assert!(res.is_ok());
+
+		let connections = updated_state
+			.get_connections_for_user_graph(&dsnp_user_id, &schema_id, false)
+			.unwrap();
+		let after_reimport_set: HashSet<_> = connections.iter().map(|e| e.user_id).collect();
+		assert_eq!(before_export_set, after_reimport_set);
 	}
 
 	#[test]

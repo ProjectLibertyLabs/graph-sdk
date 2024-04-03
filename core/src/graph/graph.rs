@@ -114,8 +114,17 @@ impl Graph {
 	}
 
 	/// Get next available PageId for this graph
-	pub fn get_next_available_page_id(&self) -> Option<PageId> {
-		let existing_pages = self.pages.inner().keys().cloned().collect::<HashSet<PageId>>();
+	pub fn get_next_available_page_id(
+		&self,
+		updated_pages: &BTreeMap<PageId, GraphPage>,
+	) -> Option<PageId> {
+		let existing_pages = self
+			.pages
+			.inner()
+			.keys()
+			.cloned()
+			.chain(updated_pages.keys().cloned())
+			.collect::<HashSet<PageId>>();
 		(0..=(self.environment.get_config().max_page_id as PageId))
 			.find(|&pid| !existing_pages.contains(&pid))
 	}
@@ -338,7 +347,7 @@ impl Graph {
 		// At this point, all existing pages are aggressively full. Add new pages
 		// as needed to accommodate any remaining connections to be added, filling aggressively.
 		while let Some(_) = add_iter.peek() {
-			let mut new_page = match self.get_next_available_page_id() {
+			let mut new_page = match self.get_next_available_page_id(&updated_pages) {
 				Some(next_page_id) =>
 					Ok(GraphPage::new(self.get_connection_type().privacy_type(), next_page_id)),
 				None => Err(DsnpGraphError::GraphIsFull),
@@ -862,7 +871,7 @@ mod test {
 			))),
 		};
 
-		assert_eq!(graph.get_next_available_page_id(), None);
+		assert_eq!(graph.get_next_available_page_id(&BTreeMap::default()), None);
 	}
 
 	#[test]
@@ -890,7 +899,35 @@ mod test {
 			))),
 		};
 
-		assert_eq!(graph.get_next_available_page_id(), Some(8));
+		assert_eq!(graph.get_next_available_page_id(&BTreeMap::default()), Some(8));
+	}
+
+	#[test]
+	fn get_next_available_page_should_include_updated_pages() {
+		let environment = Environment::Mainnet;
+		let user_id = 3;
+		const CONN_TYPE: ConnectionType = ConnectionType::Follow(PrivacyType::Public);
+		const PRIV_TYPE: PrivacyType = CONN_TYPE.privacy_type();
+		let schema_id = environment
+			.get_config()
+			.get_schema_id_from_connection_type(CONN_TYPE)
+			.expect("should exist");
+		let mut updated_pages: BTreeMap<_, _> = (0..environment.get_config().max_page_id as PageId)
+			.map(|page_id: PageId| (page_id, GraphPage::new(PRIV_TYPE, page_id)))
+			.collect();
+		updated_pages.remove(&8);
+		let graph = Graph {
+			environment,
+			schema_id, // doesn't matter which type
+			user_id,
+			pages: PageMap::new(),
+			user_key_manager: Arc::new(RwLock::new(UserKeyManager::new(
+				user_id,
+				Arc::new(RwLock::new(SharedStateManager::new())),
+			))),
+		};
+
+		assert_eq!(graph.get_next_available_page_id(&updated_pages), Some(8));
 	}
 
 	#[test]

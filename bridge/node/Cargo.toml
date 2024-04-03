@@ -1,6 +1,6 @@
 [package]
 name = "dsnp-graph-sdk-node"
-version = "1.1.0"
+version = "1.1.1"
 edition = "2021"
 license = "Apache-2.0"
 publish = false
@@ -11,8 +11,8 @@ name = "dsnp_graph_sdk_node"
 crate-type = ["cdylib"]
 
 [dependencies]
-dsnp-graph-core = { version = "1.1.0", path = "../../core" }
-dsnp-graph-config = { version = "1.1.0", path = "../../config" }
+dsnp-graph-core = { version = "1.1.1", path = "../../core" }
+dsnp-graph-config = { version = "1.1.1", path = "../../config" }
 neon = { version = "1.0.0", default-features = false, features = ["napi-6"] }
 serde = { version = "1.0.197", features = ["derive"] }
 serde_json = "1.0.114"

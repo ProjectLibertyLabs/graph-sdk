@@ -20,7 +20,10 @@ use base64::{engine::general_purpose, Engine as _};
 use ctor::ctor;
 use dryoc::keypair::StackKeyPair;
 use dsnp_graph_config::{DsnpVersion, Environment, GraphKeyType};
-use std::sync::{Arc, RwLock};
+use std::{
+	collections::BTreeMap,
+	sync::{Arc, RwLock},
+};
 
 #[ctor]
 fn test_harness_init() {
@@ -134,7 +137,7 @@ pub fn create_aggressively_full_page(
 	shared_state: &Arc<RwLock<SharedStateManager>>,
 ) -> PageId {
 	let connection_type = graph.get_connection_type();
-	let page_id = graph.get_next_available_page_id().unwrap();
+	let page_id = graph.get_next_available_page_id(&BTreeMap::default()).unwrap();
 	let mut page = GraphPage::new(connection_type.privacy_type(), page_id);
 	let mut connection_id = start_conn_id;
 	let encryption_key = graph
