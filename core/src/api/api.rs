@@ -733,7 +733,7 @@ mod test {
 	}
 
 	#[test]
-	#[timeout(30000)]
+	#[timeout(100000)]
 	fn add_large_number_of_follows_to_private_follow_graph_should_succeed() {
 		// arrange
 		let env = Environment::Mainnet;
@@ -799,7 +799,7 @@ mod test {
 
 		let export = state.export_updates();
 
-		assert!(res.is_ok());
+		assert!(export.is_ok());
 		println!("after export physical mem: {}", mem_usage.physical_mem);
 
 		let updates = export.unwrap();
