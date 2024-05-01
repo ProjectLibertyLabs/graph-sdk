@@ -287,6 +287,8 @@ impl Graph {
 			})
 			.collect();
 
+		// we skip checking PRIDs for connections that we just added
+		let prids_skip_list = ids_to_add.clone();
 		// Now try to add new connections into pages already being updated
 		// Note: these pages have already been cloned, so we don't clone them again
 		let mut add_iter = ids_to_add.iter().cloned().peekable();
@@ -300,6 +302,7 @@ impl Graph {
 					aggressive,
 					dsnp_version_config,
 					&encryption_key,
+					&prids_skip_list,
 				);
 
 				if let None = add_iter.peek() {
@@ -335,6 +338,7 @@ impl Graph {
 				PageFullnessMode::Aggressive,
 				dsnp_version_config,
 				&encryption_key,
+				&prids_skip_list,
 			);
 
 			if page_modified {
@@ -361,6 +365,7 @@ impl Graph {
 				PageFullnessMode::Aggressive,
 				dsnp_version_config,
 				&encryption_key,
+				&prids_skip_list,
 			) {
 				updated_pages.insert(new_page.page_id(), new_page);
 			}
@@ -377,6 +382,7 @@ impl Graph {
 		fullness_mode: PageFullnessMode,
 		dsnp_version_config: &DsnpVersionConfig,
 		encryption_key: &Option<ResolvedKeyPair>,
+		prid_skip_list: &Vec<DsnpUserId>,
 	) -> bool {
 		let mut page_modified = false;
 		while let Some(id_to_add) = add_iter.peek() {
@@ -386,6 +392,7 @@ impl Graph {
 				fullness_mode,
 				dsnp_version_config,
 				encryption_key,
+				prid_skip_list,
 			) {
 				page_modified = true;
 				let _ = add_iter.next(); // TODO: prefer advance_by(1) once that stabilizes
@@ -651,7 +658,7 @@ impl Graph {
 	fn apply_prids(
 		&self,
 		updated_page: &mut GraphPage,
-		ids_to_add: &Vec<DsnpUserId>,
+		prid_skip_list: &Vec<DsnpUserId>,
 		encryption_key: &ResolvedKeyPair,
 	) -> DsnpGraphResult<()> {
 		if self.get_connection_type() != ConnectionType::Friendship(PrivacyType::Private) {
@@ -665,9 +672,9 @@ impl Graph {
 			.connections()
 			.clone()
 			.iter()
-			.filter(|c| !ids_to_add.contains(&c.user_id))
+			.filter(|c| !prid_skip_list.contains(&c.user_id))
 		{
-			if duration_days_since(c.since) > max_allowed_stale_days &&
+			if // duration_days_since(c.since) > max_allowed_stale_days &&
 				!self
 					.user_key_manager
 					.read()
@@ -704,6 +711,7 @@ impl Graph {
 		mode: PageFullnessMode,
 		dsnp_version_config: &DsnpVersionConfig,
 		encryption_key: &Option<ResolvedKeyPair>,
+		prid_skip_list: &Vec<DsnpUserId>,
 	) -> DsnpGraphResult<()> {
 		let connection_type = self.get_connection_type();
 		let max_connections_per_page =
@@ -737,7 +745,7 @@ impl Graph {
 			ConnectionType::Friendship(PrivacyType::Private) => {
 				let encryption_key =
 					encryption_key.as_ref().ok_or(DsnpGraphError::NoResolvedActiveKeyFound)?;
-				self.apply_prids(&mut temp_page, &vec![*connection_id], &encryption_key)
+				self.apply_prids(&mut temp_page, prid_skip_list, &encryption_key)
 					.expect("Error applying prids to page");
 				temp_page.to_private_page_data(dsnp_version_config, &encryption_key)
 			},
