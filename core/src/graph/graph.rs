@@ -256,13 +256,15 @@ impl Graph {
 			})
 			.collect();
 
-		let ids_to_add: Vec<DsnpUserId> = updates
+		let mut ids_to_add: Vec<DsnpUserId> = updates
 			.iter()
 			.filter_map(|event| match event {
 				UpdateEvent::Add { dsnp_user_id, .. } => Some(*dsnp_user_id),
 				_ => None,
 			})
 			.collect();
+		// helps with the compression
+		ids_to_add.sort();
 
 		// First calculate pages that have had connections removed. Later, we will
 		// prefer to use these pages first to add new connections, so as to minimize

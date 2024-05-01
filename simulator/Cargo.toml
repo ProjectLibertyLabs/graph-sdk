@@ -1,0 +1,16 @@
+[package]
+name = "simulator"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+dsnp-graph-core = { path = "../core" }
+dsnp-graph-config = { path = "../config" }
+bincode = "1.3.3"
+serde = { version = "1.0.197", features = ["derive"] }
+rand = "0.8.5"
+miniz_oxide = "0.7.2"
+dryoc = "0.5.3"
+rayon = "1.10.0"
+
+[workspace]
