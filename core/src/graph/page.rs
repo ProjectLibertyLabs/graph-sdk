@@ -92,18 +92,18 @@ impl TryFrom<(&PageData, &DsnpVersionConfig, &Vec<ResolvedKeyPair>)> for GraphPa
 			}
 		}
 
-		// if private_graph_chunk.is_none() {
-		// 	// could not decrypt using the indicated key id ,lets try with other keys
-		// 	for other_key in keys.iter().filter(|k| k.key_id != key_id) {
-		// 		let secret_key = other_key.key_pair.clone().into();
-		// 		if let Ok(chunk) =
-		// 			Frequency::read_private_graph(&content, &dsnp_version_config, &secret_key)
-		// 		{
-		// 			private_graph_chunk = Some(chunk);
-		// 			break
-		// 		}
-		// 	}
-		// }
+		if private_graph_chunk.is_none() {
+			// could not decrypt using the indicated key id ,lets try with other keys
+			for other_key in keys.iter().filter(|k| k.key_id != key_id) {
+				let secret_key = other_key.key_pair.clone().into();
+				if let Ok(chunk) =
+					Frequency::read_private_graph(&content, &dsnp_version_config, &secret_key)
+				{
+					private_graph_chunk = Some(chunk);
+					break
+				}
+			}
+		}
 
 		match private_graph_chunk {
 			None => Err(DsnpGraphError::UnableToDecryptGraphChunkWithAnyKey),

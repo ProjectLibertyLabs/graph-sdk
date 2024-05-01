@@ -667,6 +667,10 @@ impl Graph {
 			.iter()
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
+			// This timestamp condition is eliminating PRID checks for 2 categories of connections
+			// 1. Connections that are just added but not included in `ids_to_add` list
+			// 2. Connections that are added less than `max_allowed_stale_days` since we need some time for the other
+			// side of the connection to act on it
 			if duration_days_since(c.since) > max_allowed_stale_days &&
 				!self
 					.user_key_manager
