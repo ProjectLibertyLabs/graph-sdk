@@ -256,15 +256,13 @@ impl Graph {
 			})
 			.collect();
 
-		let mut ids_to_add: Vec<DsnpUserId> = updates
+		let ids_to_add: Vec<DsnpUserId> = updates
 			.iter()
 			.filter_map(|event| match event {
 				UpdateEvent::Add { dsnp_user_id, .. } => Some(*dsnp_user_id),
 				_ => None,
 			})
 			.collect();
-		// helps with the compression
-		ids_to_add.sort();
 
 		// First calculate pages that have had connections removed. Later, we will
 		// prefer to use these pages first to add new connections, so as to minimize
@@ -667,10 +665,6 @@ impl Graph {
 			.iter()
 			.filter(|c| !ids_to_add.contains(&c.user_id))
 		{
-			// This timestamp condition is eliminating PRID checks for 2 categories of connections
-			// 1. Connections that are just added but not included in `ids_to_add` list
-			// 2. Connections that are added less than `max_allowed_stale_days` since we need some time for the other
-			// side of the connection to act on it
 			if duration_days_since(c.since) > max_allowed_stale_days &&
 				!self
 					.user_key_manager
