@@ -9,7 +9,7 @@ use dsnp_graph_core::api::{
 use rand::{prelude::SliceRandom, thread_rng, Rng};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
-use crate::{constants, GlobalState};
+use crate::GlobalState;
 
 pub fn add_keys_for_users(
 	env: Environment,
@@ -74,6 +74,7 @@ pub fn modify_random_pages(
 	state: &mut GlobalState,
 	selected_users: &[u64],
 	schema_id: SchemaId,
+	max_connections: usize,
 	is_friendship: bool,
 ) {
 	let public_key_schema_id = env.get_config().graph_public_key_schema_id;
@@ -99,7 +100,7 @@ pub fn modify_random_pages(
 			let graph_users: Vec<_> = graph_users_set.clone().into_iter().collect();
 			let remove_size: usize = rng.gen_range(0..=(graph_users.len() / 2)).into();
 			let add_size: usize =
-				rng.gen_range(0..=((constants::CONNECTIONS - graph_users.len()) / 2)).into();
+				rng.gen_range(0..=((max_connections - graph_users.len()) / 2)).into();
 			// removal operation
 			let connections_to_remove: Vec<_> =
 				graph_users.choose_multiple(&mut rng, remove_size).copied().collect();

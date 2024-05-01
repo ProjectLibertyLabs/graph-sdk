@@ -1,15 +1,15 @@
 use dsnp_graph_config::{ConnectionType, Environment, PrivacyType};
-use scenarions::key_rotation::execute_key_rotation_private_friendship;
+use scenarios::key_rotation::execute_key_rotation_private_friendship;
 use std::{
 	fs::File,
 	io::{Read, Write},
 };
 mod constants;
 mod init;
-mod scenarions;
+mod scenarios;
 mod types;
 
-use crate::{scenarions::key_rotation::execute_key_rotation_private_follow, types::*};
+use crate::{scenarios::key_rotation::execute_key_rotation_private_follow, types::*};
 
 fn main() {
 	let env = Environment::Mainnet;
@@ -57,7 +57,7 @@ fn init_state_machine(state: &mut GlobalState, env: Environment) {
 
 				init::setup_initial_private_follows(
 					env.clone(),
-					constants::CONNECTIONS,
+					constants::PRIVATE_FOLLOW_CONNECTIONS,
 					private_follow_schema_id,
 					state,
 				);
@@ -77,7 +77,7 @@ fn init_state_machine(state: &mut GlobalState, env: Environment) {
 
 				init::setup_initial_private_friendships(
 					env.clone(),
-					constants::CONNECTIONS,
+					constants::PRIVATE_FRIENDSHIP_CONNECTIONS,
 					private_friendship_schema_id,
 					state,
 				);

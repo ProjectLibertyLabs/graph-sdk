@@ -1,6 +1,9 @@
 use crate::{
-	constants::{self, PRIVATE_FRIENDSHIP_PAGE_MODIFICATIONS},
-	scenarions::common::{add_keys_for_users, compare_on_chain_with_expected, modify_random_pages},
+	constants::{
+		self, PRIVATE_FOLLOW_CONNECTIONS, PRIVATE_FRIENDSHIP_CONNECTIONS,
+		PRIVATE_FRIENDSHIP_PAGE_MODIFICATIONS,
+	},
+	scenarios::common::{add_keys_for_users, compare_on_chain_with_expected, modify_random_pages},
 	GlobalState,
 };
 use dsnp_graph_config::Environment;
@@ -21,7 +24,14 @@ pub fn execute_key_rotation_private_follow(state: &mut GlobalState, env: Environ
 
 	add_keys_for_users(env.clone(), state, &selected_users, private_follow_schema_id);
 
-	modify_random_pages(env.clone(), state, &selected_users, private_follow_schema_id, false);
+	modify_random_pages(
+		env.clone(),
+		state,
+		&selected_users,
+		private_follow_schema_id,
+		PRIVATE_FOLLOW_CONNECTIONS,
+		false,
+	);
 
 	compare_on_chain_with_expected(env.clone(), state, None, private_follow_schema_id);
 
@@ -58,15 +68,11 @@ pub fn execute_key_rotation_private_friendship(state: &mut GlobalState, env: Env
 		state,
 		&modification_users,
 		private_friendship_schema_id,
+		PRIVATE_FRIENDSHIP_CONNECTIONS,
 		true,
 	);
 
-	compare_on_chain_with_expected(
-		env.clone(),
-		state,
-		None,
-		private_friendship_schema_id,
-	);
+	compare_on_chain_with_expected(env.clone(), state, None, private_friendship_schema_id);
 
 	println!("Success: All graphs matched after execute_key_rotation_private_friendship!");
 }

@@ -55,6 +55,16 @@ build-node-download:
 	@echo "Build Bridge by downloading native binaries for GraphSDK..."
 	@cd bridge/node && npm install && npm run native:download
 
+.PHONY: build-sim
+build-sim:
+	@echo "Build Simulator for GraphSDK..."
+	@cargo build --release -p simulator
+
+.PHONY: run-sim
+run-sim:
+	@echo "Running Simulator for GraphSDK..."
+	@( ./target/release/simulator )
+
 .PHONY: dsnp-graph-sdk-jni
 	@cargo build -p dsnp-graph-sdk-jni --profile $(PROFILE)
 
