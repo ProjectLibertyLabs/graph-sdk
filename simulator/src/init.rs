@@ -11,8 +11,6 @@ use rand::{prelude::SliceRandom, thread_rng, Rng};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{
 	collections::{HashMap, HashSet},
-	fs::{File, OpenOptions},
-	io::{Read, Write},
 	vec,
 };
 
@@ -307,48 +305,5 @@ pub fn setup_initial_private_friendships(
 		state
 			.on_chain_graph
 			.insert((temp_data.user_id, temp_data.schema_id), temp_data.pages);
-	}
-}
-
-#[warn(dead_code)]
-fn _append_to_temp(data: Vec<TempData>) {
-	let mut data_file = match OpenOptions::new().append(true).open("temp.bin") {
-		Ok(f) => f,
-		Err(_) => File::create_new("temp.bin").expect("Should be able to create new file"),
-	};
-
-	for d in data {
-		let encoded: Vec<u8> = bincode::serialize(&d).expect("TempData encoding should work!");
-		data_file.write(&encoded).expect("Writing to temp should work!");
-	}
-
-	data_file.flush().expect("Flush should work!");
-}
-
-#[warn(dead_code)]
-fn _read_temp() -> Vec<TempData> {
-	let data_file = OpenOptions::new().read(true).open("temp.bin");
-	match data_file {
-		Err(_) => {
-			println!("No file to open for temp!");
-			return vec![]
-		},
-		Ok(mut file) => {
-			let mut result = vec![];
-
-			let mut buffer = vec![];
-			file.read_to_end(&mut buffer).expect("Read to end should work");
-
-			let mut slice = &buffer[..];
-			while !slice.is_empty() {
-				let temp: TempData = bincode::deserialize(&slice).expect("should deserialize");
-				let my_serialized = bincode::serialize(&temp).expect("should serialize");
-				slice = &slice[my_serialized.len()..];
-
-				result.push(temp);
-			}
-
-			return result
-		},
 	}
 }
