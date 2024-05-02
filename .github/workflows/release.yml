@@ -82,8 +82,8 @@ jobs:
           - os: macos-latest
             java_library: libdsnp_graph_sdk_jni.dylib
             node_library: libdsnp_graph_sdk_node.dylib
-            rust-target: x86_64-apple-darwin
-            additional-rust-target: aarch64-apple-darwin
+            rust-target: aarch64-apple-darwin
+            additional-rust-target: x86_64-apple-darwin
 
     name: Build project in ${{ matrix.os }}
     needs: verify
