@@ -274,7 +274,7 @@ mod config_tests {
 		let expected_config = Config {
 			sdk_max_stale_friendship_days: 90,
 			max_graph_page_size_bytes: 1024,
-			max_page_id: 32,
+			max_page_id: 16,
 			max_key_page_size_bytes: 65536,
 			dsnp_versions: vec![DsnpVersion::Version1_0],
 			graph_public_key_schema_id: 7,
