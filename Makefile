@@ -62,6 +62,7 @@ build-sim:
 
 .PHONY: run-sim
 run-sim:
+	@make build-sim
 	@echo "Running Simulator for GraphSDK..."
 	@( ./target/release/simulator )
 
