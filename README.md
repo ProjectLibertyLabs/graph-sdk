@@ -10,7 +10,7 @@
 [![Release][release-shield]][release-url]
 [![Issues][issues-shield]][issues-url]
 
-**Graph-Sdk** is a utility to read and modify social graphs defined by [DSNP](https://www.dsnp.org) protocol and stored on [Frequency](https://github.com/LibertyDSNP/frequency) blockchain.
+**Graph-Sdk** is a utility to read and modify social graphs defined by [DSNP](https://www.dsnp.org) protocol and stored on [Frequency](https://github.com/frequency-chain/frequency) blockchain.
 
 # Overview
 
