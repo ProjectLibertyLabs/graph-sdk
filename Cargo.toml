@@ -6,6 +6,7 @@ members = [
     "bridge/jni",
     "log-result-proc-macro",
     "bridge/node",
+    "simulator"
 ]
 
 default-members = [
