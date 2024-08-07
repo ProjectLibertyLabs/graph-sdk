@@ -58,7 +58,7 @@ const importBundle2: ImportBundle = {
   pages: [pageData1],
 };
 // Import user data for each ImportBundle
-const imported = await graph.importUserData([importBundle1, importBundle2]);
+const imported = graph.importUserData([importBundle1, importBundle2]);
 
 // Apply actions to the graph
 // Set up actions
@@ -77,20 +77,20 @@ const action_1 = {
     } as DsnpKeys,
 } as ConnectAction;
 
-await graph.applyActions(actions.push(action_1));
+graph.applyActions(actions.push(action_1));
 
 // Get graph updates
-const updates: Update[] = await graph.exportUpdates();
+const updates: Update[] = graph.exportUpdates();
 
 // One can retrieve the graph configuration and respective schema mappings
-const graph_config = await graph.getGraphConfig(environment);
+const graph_config = graph.getGraphConfig(environment);
 
 // Get connections for a user graph
 const dsnpUserId: number = 1;
 const schemaId: number = 1;
 const includePending: boolean = true;
 
-const connections: DsnpGraphEdge[] = await graph.getConnectionsForUserGraph(dsnpUserId, schemaId, includePending);
+const connections: DsnpGraphEdge[] = graph.getConnectionsForUserGraph(dsnpUserId, schemaId, includePending);
 
 // Free the graph state
 graph.freeGraphState();
@@ -110,22 +110,26 @@ Creates a new instance of the Graph class.
 #### Methods
 
 - `getGraphHandle(): number`: Returns the handle to the native graph state.
-- `getGraphSize(): Promise<number>`: Retrieves the current size of the graph.
-- `containsUserGraph(dsnpUserId: number): Promise<boolean>`: Checks if the graph contains the user graph for the specified DSNP user ID.
-- `getGraphUsersCount(): Promise<number>`: Retrieves the count of user graphs in the graph.
-- `removeUserGraph(dsnpUserId: number): Promise<void>`: Removes the user graph for the specified DSNP user ID from the graph.
-- `importUserData(payload: ImportBundle[]): Promise<void>`: Imports user data into the graph.
-- `exportUpdates(): Promise<Update>`: Retrieves the graph updates.
-- `getConnectionsForUserGraphUpdates(dsnpUserId: number, schemaId: string, includePending: boolean): Promise<DsnpGraphEdge[]>`: Retrieves the connections for a user graph.
-- `applyActions(actions: Action[]): Promise<void>`: Applies actions to the graph.
-- `forceCalculateGraphs(dsnpUserId: number): Promise<Update>`: Forces the calculation of graphs for the specified DSNP user ID.
-- `getConnectionsWithoutKeys(): Promise<number[]>`: Retrieves the connections without keys in the graph.
-- `getOneSidedPrivateFriendshipConnections(dsnpUserId: number): Promise<DsnpGraphEdge[]>`: Retrieves the one-sided private friendship connections for the specified DSNP user ID.
-- `getPublicKeys(dsnpUserId: number): Promise<DsnpPublicKey[]>`: Retrieves the public keys for the specified DSNP user ID.
-- `deserializeDsnpKeys(keys: DsnpKeys): Promise<DsnpPublicKey[]>`: Deserializes DSNP keys.
-- `getGraphConfig(environment: EnvironmentInterface): Promise<Config>`: Retrieves the graph configuration.
-- `getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): Promise<number>`: Retrieves the schema ID from the graph configuration.
-- `freeGraphState(): void`: Frees the graph state.
+- `getGraphConfig(environment: EnvironmentInterface): Config`: Retrieves the graph configuration.
+- `getSchemaIdFromConfig(environment: EnvironmentInterface, connectionType: ConnectionType, privacyType: PrivacyType): number`: Retrieves the schema ID from the graph configuration.
+- `getGraphStatesCount(): number`: Number of different graph states in memory. Each instance of the Graph class creates a new graph state.
+- `containsUserGraph(dsnpUserId: number): boolean`: Checks if the graph contains the user graph for the specified DSNP user ID.
+- `getGraphUsersCount(): number`: Retrieves the count of user graphs in the graph.
+- `removeUserGraph(dsnpUserId: number): boolean`: Removes the user graph for the specified DSNP user ID from the graph.
+- `importUserData(payload: ImportBundle[]): boolean`: Imports user data into the graph.
+- `exportUpdates(): Update[]`: Retrieves the graph updates.
+- `exportUserGraphUpdates(dsnpUserId: string): Update[]`: Retrieves the graph updates for a specific user.
+- `getConnectionsForUserGraph(dsnpUserId: string, schemaId: number, includePending: boolean): DsnpGraphEdge[]`: Retrieves the connections for a user graph.
+- `applyActions(actions: Action[], options?: ActionOptions): boolean`: Applies actions to the graph.
+- `commit(): void`: Any changes applied to the graph lives inside a transaction that can get rollbacked until committed.
+- `rollback(): void`: Any changes applied to the graph lives inside a transaction will get rollbacked.
+- `forceCalculateGraphs(dsnpUserId: string): Update[]`: Forces the calculation of graphs for the specified DSNP user ID.
+- `getConnectionsWithoutKeys(): string[]`: Retrieves the connections without keys in the graph.
+- `getOneSidedPrivateFriendshipConnections(dsnpUserId: string): DsnpGraphEdge[]`: Retrieves the one-sided private friendship connections for the specified DSNP user ID.
+- `getPublicKeys(dsnpUserId: string): DsnpPublicKey[]`: Retrieves the public keys for the specified DSNP user ID.
+- `deserializeDsnpKeys(keys: DsnpKeys): DsnpPublicKey[]`: Deserializes DSNP keys.
+- `generateKeyPair(keyType: number): GraphKeyPair`: Generates a new key pair for the requested keyType.
+- `freeGraphState(): boolean`: Frees the graph state from memory.
 
 ### Type Definitions
 
@@ -154,7 +158,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const graph = new Graph(environment);
 
-  const public_follow_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
+  const public_follow_schema_id = graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
 
   const connect_action = {
     type: "Connect",
@@ -170,9 +174,9 @@ The SDK provides various type definitions that can be used with the Graph class 
     },
   };
 
-  await graph.applyActions([connect_action]);
+  graph.applyActions([connect_action]);
 
-  const updates = await graph.exportUpdates();
+  const updates = graph.exportUpdates();
 
   graph.freeGraphState();
 
@@ -196,9 +200,9 @@ The SDK provides various type definitions that can be used with the Graph class 
       newPublicKey: new Uint8Array(x25519_public_key),
   } as AddGraphKeyAction;
 
-  await graph.applyActions([addGraphKeyAction]);
+  graph.applyActions([addGraphKeyAction]);
 
-  const updates = await graph.exportUpdates();
+  const updates = graph.exportUpdates();
 
   graph.freeGraphState();
 
@@ -230,7 +234,7 @@ The SDK provides various type definitions that can be used with the Graph class 
          ] as KeyData[],
     } as DsnpKeys;
 
-  const deserialized_keys = await Graph.deserializeDsnpKeys(dsnp_keys);
+  const deserialized_keys = Graph.deserializeDsnpKeys(dsnp_keys);
 
   graph.freeGraphState();
 
@@ -242,7 +246,7 @@ The SDK provides various type definitions that can be used with the Graph class 
   const environment: EnvironmentInterface = { environmentType: EnvironmentType Mainnet };
   const graph = new Graph(environment);
   const dsnpOwnerId = 1;
-  const private_follow_graph_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Private);
+  const private_follow_graph_schema_id = graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Private);
   const import_bundle = {
       dsnpUserId: dsnpOwnerId,
       schemaId: private_follow_graph_schema_id,
@@ -255,7 +259,7 @@ The SDK provides various type definitions that can be used with the Graph class 
       pages: [/* published graph pages got from blockchain */],
   } as ImportBundle;
 
-  const imported = await graph.importUserData([import_bundle]);
+  const imported = graph.importUserData([import_bundle]);
 
   const connect_action: ConnectAction = {
       type: "Connect",
@@ -267,9 +271,9 @@ The SDK provides various type definitions that can be used with the Graph class 
   } as ConnectAction;
   const actions = [] as Action[];
   actions.push(connect_action);
-  const applied = await graph.applyActions(actions);
+  const applied = graph.applyActions(actions);
 
-  const exported_updates = await graph.exportUpdates();
+  const exported_updates = graph.exportUpdates();
 
   graph.freeGraphState();
 
@@ -284,7 +288,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const dsnpOwnerId = 1;
 
-  const private_friendship_graph_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Friendship, PrivacyType.Private);
+  const private_friendship_graph_schema_id = graph.getSchemaIdFromConfig(environment, ConnectionType.Friendship, PrivacyType.Private);
 
   const import_bundle = {
       dsnpUserId: dsnpOwnerId,
@@ -298,10 +302,10 @@ The SDK provides various type definitions that can be used with the Graph class 
       pages: [/* published graph pages got from blockchain */],
   } as ImportBundle;
 
-  const imported = await graph.importUserData([import_bundle]);
+  const imported = graph.importUserData([import_bundle]);
 
   // get all associated user without keys so we can fetch and import keys for them
-  const user_without_keys = await graph.getConnectionsWithoutKeys();
+  const user_without_keys = graph.getConnectionsWithoutKeys();
   let users_import_bundles = [] as ImportBundle[];
   for (const user of user_without_keys) {
     let user_dsnp_keys = DsnpKeys {..}  // fetch published DsnpKeys for user
@@ -315,7 +319,7 @@ The SDK provides various type definitions that can be used with the Graph class 
     } as ImportBundle;
   }
 
-  const imported = await graph.importUserData(users_import_bundles);
+  const imported = graph.importUserData(users_import_bundles);
 
   const connect_action: ConnectAction = {
       type: "Connect",
@@ -334,6 +338,6 @@ The SDK provides various type definitions that can be used with the Graph class 
   const actions = [] as Action[];
   actions.push(connect_action);
 
-  const applied = await graph.applyActions(actions);
+  const applied = graph.applyActions(actions);
 
   ```
