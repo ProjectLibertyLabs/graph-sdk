@@ -1,6 +1,6 @@
 {
   "name": "@dsnp/graph-sdk",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "author": "Amplica Labs",
   "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",

@@ -7,7 +7,7 @@ UNAME := $(shell uname)
 
 PROTOC := protoc
  ifeq ($(UNAME), Darwin)
-	PROTOC = /opt/homebrew/opt/protobuf@21/bin/protoc
+	PROTOC = /opt/homebrew/opt/protobuf@27/bin/protoc
 endif
 
 CBINDGEN=${HOME}/.cargo/bin/cbindgen
@@ -159,9 +159,7 @@ install-protobuf-codegen:
 ifeq ($(UNAME), Darwin)
 install-protos: install-protobuf-codegen
 	@echo "Installing protobuf package..."
-	# Latest version of protobuf (@23) has flagged Rust codegen as experimental;
-	# we'll stick with an earlier version (@21) until that's resolved.
-	@brew install protobuf@21
+	@brew install protobuf@27
 endif
 ifeq ($(UNAME), Linux)
 install-protos: install-protobuf-codegen
