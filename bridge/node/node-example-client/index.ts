@@ -1,10 +1,10 @@
 import { Graph, EnvironmentInterface, Action, DsnpKeys, EnvironmentType, ConnectAction, Connection, ConnectionType, PrivacyType } from "@dsnp/graph-sdk";
 
-const environment: EnvironmentInterface =  {environmentType: EnvironmentType.Mainnet};
-const graph = new Graph(environment);
+function interactWithGraph() {
+    const environment: EnvironmentInterface =  {environmentType: EnvironmentType.Mainnet};
+    const graph= new Graph(environment);
 
-async function interactWithGraph() {
-    let public_follow_graph_schema_id = await graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
+    let public_follow_graph_schema_id = graph.getSchemaIdFromConfig(environment, ConnectionType.Follow, PrivacyType.Public);
 
     let connect_action: ConnectAction = {
         type: "Connect",
@@ -23,14 +23,17 @@ async function interactWithGraph() {
     let actions = [] as Action[];
     actions.push(connect_action);
 
-    let applied = await graph.applyActions(actions);
+    let applied = graph.applyActions(actions);
     console.log(applied);
 
-    let connections_including_pending = await graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
+    let connections_including_pending = graph.getConnectionsForUserGraph("1", public_follow_graph_schema_id, true);
     console.log(connections_including_pending);
 
-    let exported = await graph.exportUpdates();
+    let exported = graph.exportUpdates();
     console.log(exported);
+
+    // always clean up the allocated memory in the end
+    graph.freeGraphState();
 }
-  
+
 interactWithGraph();

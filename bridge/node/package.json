@@ -9,6 +9,7 @@
   "scripts": {
     "tsc": "tsc",
     "build": "tsc",
+    "test": "jest",
     "cp:dsnp_graph_sdk_node.node": "cp dsnp_graph_sdk_node.node dist/js/ && cp dsnp_graph_sdk_node.node js/",
     "native:build": "tsc && cargo-cp-artifact -a cdylib dsnp_graph_sdk_node dsnp_graph_sdk_node.node -- cargo build --message-format=json-render-diagnostics",
     "native:build-debug": "npm run native:build --",

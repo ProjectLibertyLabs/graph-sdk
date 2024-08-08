@@ -15,11 +15,28 @@ import {
 import { EnvironmentInterface } from "./models/environment";
 
 export class Graph {
+  /// while there is no guarantee that this will free the allocated resources, and we should always manually
+  /// call freeGraphState for cleanup, having FinalizationRegistry might help in some cases that we forgot.
+  static #finalizerInstance: FinalizationRegistry<number>;
+
   /// The handle to the native graph state
-  private handle: number;
+  private readonly handle: number;
 
   constructor(environment: EnvironmentInterface) {
-    this.handle = graphsdkModule.initializeGraphState(environment);
+    if (!Graph.#finalizerInstance) {
+      Graph.#finalizerInstance = new FinalizationRegistry<number>(
+        (handle: number) => {
+          try {
+            graphsdkModule.freeGraphState(handle);
+          } catch {
+            // nothing to do here
+          }
+        },
+      );
+    }
+    const my_handle = graphsdkModule.initializeGraphState(environment);
+    Graph.#finalizerInstance.register(this, my_handle);
+    this.handle = my_handle;
   }
 
   getGraphHandle(): number {
