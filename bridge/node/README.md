@@ -92,7 +92,7 @@ const includePending: boolean = true;
 
 const connections: DsnpGraphEdge[] = graph.getConnectionsForUserGraph(dsnpUserId, schemaId, includePending);
 
-// Free the graph state
+// It is important to free the graph state from memory
 graph.freeGraphState();
 
 ```
@@ -178,6 +178,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const updates = graph.exportUpdates();
 
+  // It is important to free the graph state from memory
   graph.freeGraphState();
 
   ```
@@ -204,6 +205,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const updates = graph.exportUpdates();
 
+  // It is important to free the graph state from memory
   graph.freeGraphState();
 
   ```
@@ -236,6 +238,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const deserialized_keys = Graph.deserializeDsnpKeys(dsnp_keys);
 
+  // It is important to free the graph state from memory
   graph.freeGraphState();
 
   ```
@@ -275,6 +278,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const exported_updates = graph.exportUpdates();
 
+  // It is important to free the graph state from memory
   graph.freeGraphState();
 
   ```
@@ -340,4 +344,13 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   const applied = graph.applyActions(actions);
 
+  // It is important to free the graph state from memory
+  graph.freeGraphState();
+  
   ```
+### Memory management
+Creating any `Graph` instance allocates some memory which should be released manually by calling `graph.freeGraphState()` at the end of
+graph operations.
+
+Even though we have implemented `FinalizationRegistry`, based on the [documentations](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/FinalizationRegistry#avoid_where_possible) it is not a reliable
+way of releasing memory and the best practice is still manual release.
