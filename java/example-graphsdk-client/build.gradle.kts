@@ -17,10 +17,6 @@ java.sourceCompatibility = JavaVersion.VERSION_17
 
 // Use the 'repositories' block to declare where to find your dependencies
 repositories {
-    // Use 'jcenter' for resolving your dependencies.
-    // You can declare any Maven/Ivy/file repository here.
-    jcenter()
-
     // Add the GitHub Packages repository as a source for resolving dependencies
     maven {
         name = "GithubPackages"
@@ -30,6 +26,11 @@ repositories {
             password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
         }
     }
+
+    // You can declare any Maven/Ivy/file repository here.
+    mavenLocal()
+    mavenCentral()
+    maven("https://jitpack.io")
 }
 
 dependencies {
