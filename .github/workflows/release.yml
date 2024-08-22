@@ -274,14 +274,14 @@ jobs:
         if: env.TEST_RUN != 'true'
         run: npm publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
       - name: Dry run NPM Package
         working-directory: bridge/node
         if: env.TEST_RUN == 'true'
         run: npm publish --access public --dry-run
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
 
   generate-docs:
     name: Generate graph sdk rust docs

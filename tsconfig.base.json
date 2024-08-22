@@ -11,7 +11,7 @@
       "module": "commonjs",
       "baseUrl": ".",
       "paths": {
-        "@dsnp/dsnp_graph_sdk_node": [
+        "@projectlibertylabs/dsnp_graph_sdk_node": [
           "bridge/node/*",
           "bridge/node/src/*",
           "bridge/node/js/*"

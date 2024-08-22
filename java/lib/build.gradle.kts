@@ -11,7 +11,7 @@ plugins {
     id("de.undercouch.download") version "5.0.2"
 }
 
-group = "io.amplica.graphsdk"
+group = "io.projectliberty.graphsdk"
 val uploadedBinariesVersion = "1.0.1"
 java.sourceCompatibility = JavaVersion.VERSION_17
 version = if (project.hasProperty("projVersion")) {
@@ -23,7 +23,7 @@ version = if (project.hasProperty("projVersion")) {
 repositories {
 	maven {
 		name = "GithubPackages"
-		url = uri("https://maven.pkg.github.com/LibertyDSNP/graph-sdk")
+		url = uri("https://maven.pkg.github.com/ProjectLibertyLabs/graph-sdk")
 		credentials {
 			username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
 			password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
@@ -75,7 +75,7 @@ tasks.register("downloadJniBinaries", Download::class.java) {
     val extraResources = arrayOf("dsnp_graph_sdk_jni.dll", "libdsnp_graph_sdk_jni.dylib", "libdsnp_graph_sdk_jni.so")
 
     src(extraResources.map {
-        "https://github.com/LibertyDSNP/graph-sdk/releases/download/v$uploadedBinariesVersion/$it"
+        "https://github.com/ProjectLibertyLabs/graph-sdk/releases/download/v$uploadedBinariesVersion/$it"
     })
     overwrite(true)
     dest("src/main/resources")
@@ -91,7 +91,7 @@ publishing {
     repositories {
         maven {
             name = "GitHubPackages"
-            url = uri("https://maven.pkg.github.com/LibertyDSNP/graph-sdk")
+            url = uri("https://maven.pkg.github.com/ProjectLibertyLabs/graph-sdk")
             credentials {
                 username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
                 password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")

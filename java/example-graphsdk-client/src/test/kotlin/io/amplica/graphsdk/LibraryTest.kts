@@ -1,9 +1,9 @@
-package io.amplica.graphsdk
-import io.amplica.graphsdk.exceptions.GraphSdkException
-import io.amplica.graphsdk.exceptions.InvalidHandleException
-import io.amplica.graphsdk.Configuration
-import io.amplica.graphsdk.Graph
-import io.amplica.graphsdk.Logger
+package io.projectliberty.graphsdk
+import io.projectliberty.graphsdk.exceptions.GraphSdkException
+import io.projectliberty.graphsdk.exceptions.InvalidHandleException
+import io.projectliberty.graphsdk.Configuration
+import io.projectliberty.graphsdk.Graph
+import io.projectliberty.graphsdk.Logger
 import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertTrue

@@ -29,7 +29,7 @@ pub type SdkJniResult<V> = Result<V, SdkJniError>;
 static GRAPH_STATES_MEMORY_LOCATIONS: RwLock<Vec<jlong>> = RwLock::new(Vec::new());
 
 #[no_mangle]
-pub extern "C" fn Java_io_amplica_graphsdk_Native_hello<'local>(
+pub extern "C" fn Java_io_projectliberty_graphsdk_Native_hello<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	input: JString<'local>,
@@ -46,7 +46,7 @@ pub extern "C" fn Java_io_amplica_graphsdk_Native_hello<'local>(
 ///
 /// cbindgen:ignore
 #[no_mangle]
-pub extern "C" fn Java_io_amplica_graphsdk_Native_keepAlive<'local>(
+pub extern "C" fn Java_io_projectliberty_graphsdk_Native_keepAlive<'local>(
 	mut _env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	_input: JObject<'local>,
@@ -63,7 +63,7 @@ pub extern "C" fn Java_io_amplica_graphsdk_Native_keepAlive<'local>(
 /// # Errors
 /// * `SdkJniError` - if initializing graph state fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_initializeGraphState<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_initializeGraphState<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	environment: JByteArray,
@@ -89,7 +89,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_initializeGraphState<'l
 /// # Errors
 /// * `SdkJniError` - if freeing graph state fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_freeGraphState<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -121,7 +121,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_freeGraphState<'local>(
 /// # Errors
 /// * `SdkJniError` - if getting config fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConfig<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getConfig<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	environment: JByteArray,
@@ -144,7 +144,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConfig<'local>(
 /// # Errors
 /// * `SdkJniError` - if checking user graph fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_containsUserGraph<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -176,7 +176,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_containsUserGraph<'loca
 /// # Errors
 /// * `SdkJniError` - if getting user graph length fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getGraphUsersLength<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -203,7 +203,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getGraphUsersLength<'lo
 /// # Errors
 /// * `SdkJniError` - if removing user fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_removeUserGraph<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -233,7 +233,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_removeUserGraph<'local>
 /// # Errors
 /// * `SdkJniError` - if imports are invalid
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_importUserData<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -267,7 +267,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_importUserData<'local>(
 /// # Errors
 /// * `SdkJniError` - if exporting updates fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_exportUpdates<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -301,7 +301,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUpdates<'local>(
 /// # Errors
 /// * `SdkJniError` - if exporting updates fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUserGraphUpdates<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_exportUserGraphUpdates<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -336,7 +336,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_exportUserGraphUpdates<
 /// # Errors
 /// * `SdkJniError` - if applying actions fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_applyActions<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -369,7 +369,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_applyActions<'local>(
 /// # Errors
 /// * `SdkJniError` - if applying actions fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_commit<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_commit<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -397,7 +397,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_commit<'local>(
 /// # Errors
 /// * `SdkJniError` - if applying actions fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_rollback<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_rollback<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -427,7 +427,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_rollback<'local>(
 /// # Errors
 /// * `SdkJniError` - if calculating updates fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_forceCalculateGraphs<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -466,7 +466,9 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_forceCalculateGraphs<'l
 /// # Errors
 /// * `SdkJniError` - if getting connections fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGraph<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getConnectionsForUserGraph<
+	'local,
+>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -508,7 +510,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getConnectionsForUserGr
 /// # Errors
 /// * `SdkJniError` - if getting users fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getUsersWithoutKeys<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -542,7 +544,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getUsersWithoutKeys<'lo
 /// # Errors
 /// * `SdkJniError` - if getting connections fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFriendshipConnections<
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getOneSidedPrivateFriendshipConnections<
 	'local,
 >(
 	mut env: JNIEnv<'local>,
@@ -581,7 +583,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getOneSidedPrivateFrien
 /// # Errors
 /// * `SdkJniError` - if getting public keys fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_getPublicKeys<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	handle: jlong,
@@ -617,7 +619,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_getPublicKeys<'local>(
 /// # Errors
 /// * `SdkJniError` - if deserializing DSNP keys fails
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_deserializeDsnpKeys<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_deserializeDsnpKeys<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	dsnp_keys: JByteArray,
@@ -640,7 +642,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_deserializeDsnpKeys<'lo
 /// * `SdkJniError` - if generating GraphKeyPair fails
 /// * `SdkJniError` - if GraphKeyType is InvalidHandle
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_generateKeyPair<'local>(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_generateKeyPair<'local>(
 	mut env: JNIEnv<'local>,
 	_class: JClass<'local>,
 	graph_key_type: jint,

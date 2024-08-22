@@ -262,4 +262,4 @@ jobs:
         working-directory: bridge/node/node-example-client
         run: npm run test
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
