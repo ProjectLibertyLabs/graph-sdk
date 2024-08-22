@@ -220,46 +220,47 @@ jobs:
       - name: Build Node Bridge
         run: make test-node
 
-  test_java_lib_gradle:
-    name: Test Java Library
-    runs-on: ubuntu-latest
-    needs: [verify, test, lint, build, build_gradlew_jvm]
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Java
-        uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
-        with:
-          java-version: '17'
-          distribution: 'adopt'
-      - name: Test Java Library
-        working-directory: java/example-graphsdk-client
-        run: ./gradlew test
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_ACTOR: ${{ github.actor }}
-
-  test_published_npm:
-    name: Test Published NPM Package
-    runs-on: ubuntu-latest
-    needs: [verify, test, lint, build, build_gradlew_jvm]
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18.x'
-          registry-url: https://registry.npmjs.org/
-      - name: Install NPM Dependencies
-        working-directory: bridge/node/node-example-client
-        run: npm install
-      - name: Test Published NPM Package
-        working-directory: bridge/node/node-example-client
-        run: npm run test
-        env:
-          NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+# Uncomment after first deployment
+  # test_java_lib_gradle:
+  #   name: Test Java Library
+  #   runs-on: ubuntu-latest
+  #   needs: [verify, test, lint, build, build_gradlew_jvm]
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up Java
+  #       uses: actions/setup-java@5ffc13f4174014e2d4d4572b3d74c3fa61aeb2c2
+  #       with:
+  #         java-version: '17'
+  #         distribution: 'adopt'
+  #     - name: Test Java Library
+  #       working-directory: java/example-graphsdk-client
+  #       run: ./gradlew test
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         GITHUB_ACTOR: ${{ github.actor }}
+  # 
+  # test_published_npm:
+  #   name: Test Published NPM Package
+  #   runs-on: ubuntu-latest
+  #   needs: [verify, test, lint, build, build_gradlew_jvm]
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Set up Node
+  #       uses: actions/setup-node@v3
+  #       with:
+  #         node-version: '18.x'
+  #         registry-url: https://registry.npmjs.org/
+  #     - name: Install NPM Dependencies
+  #       working-directory: bridge/node/node-example-client
+  #       run: npm install
+  #     - name: Test Published NPM Package
+  #       working-directory: bridge/node/node-example-client
+  #       run: npm run test
+  #       env:
+  #         NPM_AUTH_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
