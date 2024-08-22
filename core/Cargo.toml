@@ -5,7 +5,7 @@ homepage = "https://spec.dsnp.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/ProjectLibertyLabs/graph-sdk/"
-version = "1.1.4"
+version = "2.0.0"
 
 [lib]
 name = "dsnp_graph_core"
@@ -16,7 +16,7 @@ doctest = false
 anyhow = "1.0.86"
 apache-avro = { version = "0.17.0", features = ["snappy"] }
 dryoc = "0.5.4"
-dsnp-graph-config = { version = "1.1.4", path = "../config" }
+dsnp-graph-config = { version = "2.0.0", path = "../config" }
 lazy_static = "1.5.0"
 log = { version = "^0.4.22", features = ["std", "max_level_debug", "release_max_level_debug"] }
 log-result-proc-macro = { path = "../log-result-proc-macro" }

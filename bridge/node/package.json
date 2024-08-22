@@ -1,6 +1,6 @@
 {
   "name": "@projectlibertylabs/graph-sdk",
-  "version": "1.1.4",
+  "version": "2.0.0",
   "author": "Project Liberty LLC",
   "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",

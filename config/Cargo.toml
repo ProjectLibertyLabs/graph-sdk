@@ -5,7 +5,7 @@ homepage = "https://spec.dsnp.org"
 license = "Apache-2.0"
 publish = false
 repository = "https://github.com/ProjectLibertyLabs/graph-sdk/"
-version = "1.1.4"
+version = "2.0.0"
 
 [lib]
 name = "dsnp_graph_config"
