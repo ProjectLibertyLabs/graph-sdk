@@ -80,7 +80,7 @@ Here are a few examples of how to use this library:
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
-[issues-shield]: https://img.shields.io/github/issues/LibertyDSNP/graph-sdk.svg?style=for-the-badge
-[issues-url]: https://github.com/LibertyDSNP/graph-sdk/issues
-[release-shield]: https://img.shields.io/github/v/release/LibertyDSNP/graph-sdk?style=for-the-badge
-[release-url]: https://github.com/LibertyDSNP/graph-sdk/releases
+[issues-shield]: https://img.shields.io/github/issues/ProjectLibertyLabs/graph-sdk.svg?style=for-the-badge
+[issues-url]: https://github.com/ProjectLibertyLabs/graph-sdk/issues
+[release-shield]: https://img.shields.io/github/v/release/ProjectLibertyLabs/graph-sdk?style=for-the-badge
+[release-url]: https://github.com/ProjectLibertyLabs/graph-sdk/releases

@@ -3,13 +3,13 @@
 ## Setting up package dependencies
 
 The GraphSDK JAR package is hosted in a GitHub Maven repository. The URL for the Maven repo is:
-https://maven.pkg.github.com/LibertyDSNP/graph-sdk
+https://maven.pkg.github.com/ProjectLibertyLabs/graph-sdk
 
 Package imports:
 ```kotlin
-import io.amplica.graphsdk.Configuration
-import io.amplica.graphsdk.Graph
-import io.amplica.graphsdk.models.*
+import io.projectliberty.graphsdk.Configuration
+import io.projectliberty.graphsdk.Graph
+import io.projectliberty.graphsdk.models.*
 ```
 
 ## Prerequisites

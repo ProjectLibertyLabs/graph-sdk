@@ -1,6 +1,6 @@
 //! API implementation for the DSNP Graph SDK using Neon
 //! This crate provides a bridge between the DSNP graph sdk and Node.js.
-//! It is intended to be used as a dependency in the `@dsnp/graph-sdk` npm package.
+//! It is intended to be used as a dependency in the `@projectlibertylabs/graph-sdk` npm package.
 use crate::helper::*;
 use dsnp_graph_config::{Config, ConnectionType, DsnpUserId, GraphKeyType, PrivacyType};
 use dsnp_graph_core::{

@@ -80,7 +80,7 @@ pub fn describe_panic(any: &Box<dyn std::any::Any + Send>) -> String {
 	}
 }
 
-const JAVA_ERROR_PATH: &'static str = "io/amplica/graphsdk/exceptions/";
+const JAVA_ERROR_PATH: &'static str = "io/projectliberty/graphsdk/exceptions/";
 
 impl SdkJniError {
 	fn get_java_class_and_constructor_signature(&self) -> (String, String) {

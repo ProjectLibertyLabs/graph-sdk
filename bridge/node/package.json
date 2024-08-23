@@ -1,7 +1,7 @@
 {
-  "name": "@dsnp/graph-sdk",
-  "version": "1.1.4",
-  "author": "Amplica Labs",
+  "name": "@projectlibertylabs/graph-sdk",
+  "version": "2.0.0",
+  "author": "Project Liberty LLC",
   "license": "Apache-2.0",
   "description": "dsnp-graph-sdk-node",
   "main": "dist/js/index.js",
@@ -41,7 +41,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/LibertyDSNP/graph-sdk.git"
+    "url": "git+https://github.com/ProjectLibertyLabs/graph-sdk.git"
   },
   "keywords": [
     "Graph",
@@ -52,9 +52,9 @@
     "Encryption"
   ],
   "bugs": {
-    "url": "https://github.com/LibertyDSNP/graph-sdk/issues"
+    "url": "https://github.com/ProjectLibertyLabs/graph-sdk/issues"
   },
-  "homepage": "https://github.com/LibertyDSNP/graph-sdk/bridge/node/README.md",
+  "homepage": "https://github.com/ProjectLibertyLabs/graph-sdk/bridge/node/README.md",
   "customProperties": {
     "uploadedBinariesVersion": "v1.1.3"
   }

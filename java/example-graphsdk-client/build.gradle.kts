@@ -20,7 +20,7 @@ repositories {
     // Add the GitHub Packages repository as a source for resolving dependencies
     maven {
         name = "GithubPackages"
-        url = uri("https://maven.pkg.github.com/LibertyDSNP/graph-sdk")
+        url = uri("https://maven.pkg.github.com/ProjectLibertyLabs/graph-sdk")
         credentials {
             username = project.findProperty("gpr.user") as String? ?: System.getenv("GITHUB_ACTOR")
             password = project.findProperty("gpr.key") as String? ?: System.getenv("GITHUB_TOKEN")
@@ -36,7 +36,7 @@ repositories {
 dependencies {
     implementation("org.slf4j:slf4j-api:2.0.7")
     implementation("org.slf4j:slf4j-simple:2.0.7")
-    implementation("io.amplica.graphsdk:lib:1.0.2")
+    implementation("io.projectliberty.graphsdk:lib:1.0.2")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
     testImplementation("org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable:1.6.21")
     testImplementation("org.jetbrains.kotlin:kotlin-script-runtime:1.6.21")

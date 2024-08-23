@@ -7,7 +7,7 @@ UNAME := $(shell uname)
 
 PROTOC := protoc
  ifeq ($(UNAME), Darwin)
-	PROTOC = /opt/homebrew/opt/protobuf@27/bin/protoc
+	PROTOC = /opt/homebrew/opt/protobuf@21/bin/protoc
 endif
 
 CBINDGEN=${HOME}/.cargo/bin/cbindgen
@@ -159,7 +159,7 @@ install-protobuf-codegen:
 ifeq ($(UNAME), Darwin)
 install-protos: install-protobuf-codegen
 	@echo "Installing protobuf package..."
-	@brew install protobuf@27
+	@brew install protobuf@21
 endif
 ifeq ($(UNAME), Linux)
 install-protos: install-protobuf-codegen
@@ -178,5 +178,5 @@ build-rust-protos:
 .PHONY: build-java-protos
 build-java-protos:
 	@echo "Generating Java protobuf types..."
-	@rm -f ./java/lib/src/main/java/io/amplica/graphsdk/models/*
+	@rm -f ./java/lib/src/main/java/io/projectliberty/graphsdk/models/*
 	@$(PROTOC) --java_out ./java/lib/src/main/java/ ./bridge/common/protos/input.proto ./bridge/common/protos/output.proto

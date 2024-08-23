@@ -162,7 +162,7 @@ fn set_max_level_from_slf4j_level(max_level: jint) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerInitialize(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_loggerInitialize(
 	env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
@@ -201,7 +201,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerInitialize(
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerSetMaxLevel(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_Native_loggerSetMaxLevel(
 	_env: JNIEnv,
 	_class: JClass,
 	max_level: jint,
@@ -212,7 +212,7 @@ pub unsafe extern "C" fn Java_io_amplica_graphsdk_Native_loggerSetMaxLevel(
 /// Function mainly just for testing the Java side of this implementation.
 /// Can be called in production code, but there's really no reason to.
 #[no_mangle]
-pub unsafe extern "C" fn Java_io_amplica_graphsdk_LibraryTest_log(
+pub unsafe extern "C" fn Java_io_projectliberty_graphsdk_LibraryTest_log(
 	mut env: JNIEnv,
 	_class: JClass,
 	level: jint,

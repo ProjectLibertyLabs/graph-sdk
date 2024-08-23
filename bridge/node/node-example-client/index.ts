@@ -1,4 +1,4 @@
-import { Graph, EnvironmentInterface, Action, DsnpKeys, EnvironmentType, ConnectAction, Connection, ConnectionType, PrivacyType } from "@dsnp/graph-sdk";
+import { Graph, EnvironmentInterface, Action, DsnpKeys, EnvironmentType, ConnectAction, Connection, ConnectionType, PrivacyType } from "@projectlibertylabs/graph-sdk";
 
 function interactWithGraph() {
     const environment: EnvironmentInterface =  {environmentType: EnvironmentType.Mainnet};

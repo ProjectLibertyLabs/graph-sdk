@@ -7,7 +7,7 @@ The DSNP Graph SDK is a TypeScript library that provides a high-level interface 
 You can install the DSNP Graph SDK using npm:
 
 ```bash
-npm install @dsnp/graph-sdk@latest
+npm install @projectlibertylabs/graph-sdk@latest
 ```
 
 ## Usage
@@ -15,7 +15,7 @@ npm install @dsnp/graph-sdk@latest
 Here's an example of how to use the DSNP Graph SDK:
 
 ```typescript
-import { Graph, EnvironmentInterface, EnvironmentType, ImportBundle, Action, Update, DsnpGraphEdge, DsnpPublicKey, DsnpKeys } from "@dsnp/graph-sdk";
+import { Graph, EnvironmentInterface, EnvironmentType, ImportBundle, Action, Update, DsnpGraphEdge, DsnpPublicKey, DsnpKeys } from "@projectlibertylabs/graph-sdk";
 
 // Create a new instance of the Graph class
 const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
@@ -152,7 +152,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 ### Create and export a new graph
 
   ```typescript
-  import { Graph, EnvironmentInterface, EnvironmentType } from "@dsnp/graph-sdk";
+  import { Graph, EnvironmentInterface, EnvironmentType } from "@projectlibertylabs/graph-sdk";
 
   const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
 
@@ -186,7 +186,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 ### Add a new graph key
 
   ```typescript
-  import { Graph, EnvironmentInterface, EnvironmentType } from "@dsnp/graph-sdk";
+  import { Graph, EnvironmentInterface, EnvironmentType } from "@projectlibertylabs/graph-sdk";
 
   const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
 
@@ -214,7 +214,7 @@ The SDK provides various type definitions that can be used with the Graph class 
 
   ```typescript
 
-  import { Graph, EnvironmentInterface, EnvironmentType, DsnpPublicKey } from "@dsnp/graph-sdk";
+  import { Graph, EnvironmentInterface, EnvironmentType, DsnpPublicKey } from "@projectlibertylabs/graph-sdk";
 
   const environment: EnvironmentInterface = { environmentType: EnvironmentType.Mainnet };
 

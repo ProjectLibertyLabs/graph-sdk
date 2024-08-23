@@ -23,7 +23,7 @@ switch (platform) {
 }
 
 // URL of the file to download
-const fileUrl = 'https://github.com/LibertyDSNP/graph-sdk/releases/download/' + version + '/' + fileName;
+const fileUrl = 'https://github.com/ProjectLibertyLabs/graph-sdk/releases/download/' + version + '/' + fileName;
 
 // Complete output file path
 const outputFile = path.join(__dirname, 'dsnp_graph_sdk_node.node');
